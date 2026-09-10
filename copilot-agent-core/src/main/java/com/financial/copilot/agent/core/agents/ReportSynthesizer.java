@@ -1,6 +1,5 @@
 package com.financial.copilot.agent.core.agents;
 
-import com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel;
 import com.financial.copilot.agent.core.llm.service.LlmService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -12,7 +11,7 @@ import reactor.core.publisher.Flux;
  * 职责：作为多智能体复合投研流水线的首席主编（CIO 角色），整合黑板中沉淀的各阶段客观事实底座
  * （标的初筛池、多维量化评分、决赛圈对标、底层持仓与季报观点文本），
  * 严格遵循 Tool-as-Truth 纪律，生成专业、客观、严谨的结构化投研深度 Markdown 报告。
- * 支持同步阻塞输出与 SSE 响应式流式输出。
+ * 支持同步阻塞输出与 SSE 响应式流式输出，支持双模型路由选择。
  * </p>
  *
  * @author FinancialCopilot
@@ -69,50 +68,50 @@ public class ReportSynthesizer {
     }
 
     /**
-     * 同步生成完整报告文本
+     * 同步生成完整报告文本（默认极速标准投研模式）
      *
      * @param factualContext 事实上下文（由各 Agent 收集并汇总于黑板中的客观数据）
      * @param userGoal       用户原始研究诉求
      * @return 深度 Markdown 研报文本
      */
     public String synthesize(String factualContext, String userGoal) {
-        return synthesize(factualContext, userGoal, LlmPerformanceLevel.MIDDLE);
+        return synthesize(factualContext, userGoal, false);
     }
 
     /**
-     * 同步生成完整报告文本（支持指定客户投研深度档位）
+     * 同步生成完整报告文本（支持指定是否开启深度思考推理模式）
      *
      * @param factualContext 事实上下文
      * @param userGoal       用户原始研究诉求
-     * @param level          投研深度档位
+     * @param enableThinking 是否开启深度思考模式 (true 路由至 reasoning_model)
      * @return 深度 Markdown 研报文本
      */
-    public String synthesize(String factualContext, String userGoal, LlmPerformanceLevel level) {
+    public String synthesize(String factualContext, String userGoal, boolean enableThinking) {
         String prompt = "【用户诉求】: " + userGoal + "\n\n" + factualContext;
-        return clientService.chat(SYSTEM_PROMPT, prompt, level != null ? level : LlmPerformanceLevel.MIDDLE);
+        return clientService.chat(SYSTEM_PROMPT, prompt, enableThinking);
     }
 
     /**
-     * 响应式流式生成报告文本 (SSE 打字机输出)
+     * 响应式流式生成报告文本 (SSE 打字机输出，默认极速标准投研模式)
      *
      * @param factualContext 事实上下文
      * @param userGoal       用户原始研究诉求
      * @return 响应式 Token 片段 Flux
      */
     public Flux<String> synthesizeStream(String factualContext, String userGoal) {
-        return synthesizeStream(factualContext, userGoal, LlmPerformanceLevel.MIDDLE);
+        return synthesizeStream(factualContext, userGoal, false);
     }
 
     /**
-     * 响应式流式生成报告文本 (支持指定客户投研深度档位)
+     * 响应式流式生成报告文本 (支持指定是否开启深度思考推理模式)
      *
      * @param factualContext 事实上下文
      * @param userGoal       用户原始研究诉求
-     * @param level          投研深度档位
+     * @param enableThinking 是否开启深度思考模式 (true 路由至 reasoning_model)
      * @return 响应式 Token 片段 Flux
      */
-    public Flux<String> synthesizeStream(String factualContext, String userGoal, LlmPerformanceLevel level) {
+    public Flux<String> synthesizeStream(String factualContext, String userGoal, boolean enableThinking) {
         String prompt = "【用户诉求】: " + userGoal + "\n\n" + factualContext;
-        return clientService.chatStream(SYSTEM_PROMPT, prompt, level != null ? level : LlmPerformanceLevel.MIDDLE);
+        return clientService.chatStream(SYSTEM_PROMPT, prompt, enableThinking);
     }
 }

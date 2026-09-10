@@ -86,8 +86,7 @@ erDiagram
     *   **关系型时序库**：PostgreSQL 16（存储基金日行情、净值、持仓穿透、指标汇总）
     *   **向量数据库**：PGVector 插件（与 Postgres 一体化，初期大幅降低运维复杂度）或 Milvus
     *   **缓存与会话**：Redis 7（多轮对话 Agent 记忆上下文、热点筛选结果缓存）
-*   **金融数学核心库**：Ta4j + 自研 `copilot-math-core`（精确实现金融指标数学公式）
-*   **模型对接层**：**多厂商统一大模型适配架构 (Multi-Provider LLM Engine)**，预置支持 DeepSeek、OpenAI、阿里通义千问 (Qwen)、智谱清言 (GLM)、本地 Ollama 及自定义兼容端点，支持前端动态热切换与超参数调优。
+*   **模型对接层**：**多厂商统一大模型适配架构 (Multi-Provider LLM Engine)**，预置支持 DeepSeek、OpenAI、阿里通义千问 (Qwen)、智谱清言 (GLM)、本地 Ollama 及自定义端点。严格实施客户端标准对话 vs 深度思考推理模型路由（Dual-Model Routing: standard vs reasoning）与研发测试后台动态热切换。
 
 ### 3.2 系统架构拓扑图
 

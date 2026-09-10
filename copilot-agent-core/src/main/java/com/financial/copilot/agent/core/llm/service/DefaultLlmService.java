@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.core.llm.config.LlmConfigManager;
 import com.financial.copilot.agent.core.llm.dto.*;
 import com.financial.copilot.agent.core.llm.factory.LlmDynamicWebClientFactory;
-import com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel;
 import com.financial.copilot.agent.core.llm.provider.LlmProviderMetadata;
 import com.financial.copilot.agent.core.llm.provider.LlmProviderRegistry;
 import com.financial.copilot.agent.core.llm.provider.LlmProviderType;
@@ -21,8 +20,12 @@ import java.util.Map;
 /**
  * <h1>多厂商通用大模型调用服务实现类 (Default Universal LLM Service)</h1>
  * <p>
- * 职责：基于统一 OpenAI 兼容规范驱动各底层模型厂商（DeepSeek、OpenAI、千问、智谱、Ollama 等），
- * 处理双层参数解析、网络连接池复用、开发模式智能 Mock 兜底以及连通性探测。
+ * 职责：基于统一 OpenAI 兼容协议驱动各底层厂商模型，支持双模型路由机制：
+ * <ul>
+ *   <li>标准极速投研模式：调用标准对话模型（如 deepseek-chat, gpt-4o），支持温度与 TopP 调优；</li>
+ *   <li>深度思考推理模式：调用推理大模型（如 deepseek-reasoner, o3-mini），自动遵循官方 API 规范（免去冲突参数，防范 400 异常）。</li>
+ * </ul>
+ * 具备连接池复用、开发模式智能 Mock 兜底以及网络连通性探测。
  * </p>
  *
  * @author FinancialCopilot
@@ -49,11 +52,12 @@ public class DefaultLlmService implements LlmService {
     @Override
     public String chat(LlmRequest request) {
         LlmSettingsDTO resolvedSettings = resolveSettings(request.getSettings());
+        String effectiveModel = resolvedSettings.resolveEffectiveModel();
 
         // 开发测试模式无有效 Key 时的防熔断兜底
         if (isMockMode(resolvedSettings.getCustomApiKey())) {
-            log.warn("[LLM] 未检测到有效的 API Key，启用开发测试模式智能响应兜底: provider={}, model={}",
-                    resolvedSettings.getProvider(), resolvedSettings.getModel());
+            log.warn("[LLM] 未检测到有效的 API Key，启用开发测试模式智能响应兜底: provider={}, model={}, enableThinking={}",
+                    resolvedSettings.getProvider(), effectiveModel, resolvedSettings.isEnableThinking());
             return generateMockResponse(request.getSystemPrompt(), request.getUserPrompt());
         }
 
@@ -76,15 +80,15 @@ public class DefaultLlmService implements LlmService {
             return root.path("choices").get(0).path("message").path("content").asText();
         } catch (Exception e) {
             log.error("[LLM] 大模型同步推理请求失败: provider={}, model={}, error={}",
-                    resolvedSettings.getProvider(), resolvedSettings.getModel(), e.getMessage());
+                    resolvedSettings.getProvider(), effectiveModel, e.getMessage());
             return generateMockResponse(request.getSystemPrompt(), request.getUserPrompt());
         }
     }
 
     @Override
-    public String chat(String systemPrompt, String userMessage, LlmPerformanceLevel level) {
+    public String chat(String systemPrompt, String userMessage, boolean enableThinking) {
         LlmSettingsDTO settings = LlmSettingsDTO.builder()
-                .performanceLevel(level)
+                .enableThinking(enableThinking)
                 .build();
         return chat(LlmRequest.of(systemPrompt, userMessage, settings));
     }
@@ -92,6 +96,7 @@ public class DefaultLlmService implements LlmService {
     @Override
     public Flux<String> chatStream(LlmRequest request) {
         LlmSettingsDTO resolvedSettings = resolveSettings(request.getSettings());
+        String effectiveModel = resolvedSettings.resolveEffectiveModel();
 
         if (isMockMode(resolvedSettings.getCustomApiKey())) {
             return Flux.just(generateMockResponse(request.getSystemPrompt(), request.getUserPrompt()));
@@ -118,9 +123,9 @@ public class DefaultLlmService implements LlmService {
     }
 
     @Override
-    public Flux<String> chatStream(String systemPrompt, String userMessage, LlmPerformanceLevel level) {
+    public Flux<String> chatStream(String systemPrompt, String userMessage, boolean enableThinking) {
         LlmSettingsDTO settings = LlmSettingsDTO.builder()
-                .performanceLevel(level)
+                .enableThinking(enableThinking)
                 .build();
         return chatStream(LlmRequest.of(systemPrompt, userMessage, settings));
     }
@@ -182,11 +187,17 @@ public class DefaultLlmService implements LlmService {
         LlmProviderType provider = override.getProvider() != null ? override.getProvider() : base.getProvider();
         LlmProviderMetadata metadata = providerRegistry.getMetadata(provider);
 
-        String model = (override.getModel() != null && !override.getModel().isBlank())
-                ? override.getModel() : base.getModel();
+        boolean enableThinking = override.isEnableThinking() || base.isEnableThinking();
 
-        LlmPerformanceLevel level = override.getPerformanceLevel() != null
-                ? override.getPerformanceLevel() : base.getPerformanceLevel();
+        String model = (override.getModel() != null && !override.getModel().isBlank())
+                ? override.getModel()
+                : (base.getModel() != null && !base.getModel().isBlank())
+                ? base.getModel() : metadata.defaultModel();
+
+        String reasoningModel = (override.getReasoningModel() != null && !override.getReasoningModel().isBlank())
+                ? override.getReasoningModel()
+                : (base.getReasoningModel() != null && !base.getReasoningModel().isBlank())
+                ? base.getReasoningModel() : metadata.defaultReasoningModel();
 
         String baseUrl = (override.getCustomBaseUrl() != null && !override.getCustomBaseUrl().isBlank())
                 ? override.getCustomBaseUrl()
@@ -199,7 +210,8 @@ public class DefaultLlmService implements LlmService {
         return LlmSettingsDTO.builder()
                 .provider(provider)
                 .model(model)
-                .performanceLevel(level)
+                .reasoningModel(reasoningModel)
+                .enableThinking(enableThinking)
                 .temperature(override.getTemperature() != null ? override.getTemperature() : base.getTemperature())
                 .topP(override.getTopP() != null ? override.getTopP() : base.getTopP())
                 .maxTokens(override.getMaxTokens() != null ? override.getMaxTokens() : base.getMaxTokens())
@@ -209,24 +221,33 @@ public class DefaultLlmService implements LlmService {
     }
 
     private Map<String, Object> buildPayload(LlmRequest request, LlmSettingsDTO settings, boolean stream) {
+        String effectiveModel = settings.resolveEffectiveModel();
+        boolean isReasoning = LlmSettingsDTO.isReasoningModel(effectiveModel);
+
         Map<String, Object> payload = new HashMap<>();
-        payload.put("model", settings.getModel());
+        payload.put("model", effectiveModel);
         payload.put("messages", List.of(
                 Map.of("role", "system", "content", request.getSystemPrompt() != null ? request.getSystemPrompt() : ""),
                 Map.of("role", "user", "content", request.getUserPrompt() != null ? request.getUserPrompt() : "")
         ));
-        payload.put("temperature", settings.resolveTemperature());
-        payload.put("max_tokens", settings.resolveMaxTokens());
         payload.put("stream", stream);
 
-        if (settings.getTopP() != null) {
-            payload.put("top_p", settings.getTopP());
+        // 推理模型严格遵循官方规范：避免传递温度和 top_p 参数以防 400 Bad Request
+        if (!isReasoning) {
+            Double temp = settings.resolveTemperature();
+            if (temp != null) {
+                payload.put("temperature", temp);
+            }
+            if (settings.getTopP() != null) {
+                payload.put("top_p", settings.getTopP());
+            }
         }
 
-        // 推理模型附带思考强度预算参数
-        String modelName = settings.getModel().toLowerCase();
-        if (modelName.contains("reasoner") || modelName.contains("o1") || modelName.contains("o3")) {
-            payload.put("reasoning_effort", settings.resolveReasoningEffort());
+        // OpenAI o1/o3-mini 使用 max_completion_tokens 代替 max_tokens，deepseek-reasoner 使用 max_tokens
+        if (effectiveModel.toLowerCase().contains("o1") || effectiveModel.toLowerCase().contains("o3")) {
+            payload.put("max_completion_tokens", settings.resolveMaxTokens());
+        } else {
+            payload.put("max_tokens", settings.resolveMaxTokens());
         }
 
         return payload;

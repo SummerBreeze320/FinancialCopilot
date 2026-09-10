@@ -1,6 +1,5 @@
 package com.financial.copilot.agent.core.llm.config;
 
-import com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel;
 import com.financial.copilot.agent.core.llm.provider.LlmProviderType;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -12,7 +11,7 @@ import java.util.Map;
 /**
  * <h1>多厂商大模型基础配置属性 (LLM Configuration Properties)</h1>
  * <p>
- * 职责：映射 Spring 配置文件中的 {@code copilot.llm} 命名空间，定义系统默认大模型厂商、模型标识与连接信息。
+ * 职责：映射 Spring 配置文件中的 {@code copilot.llm} 命名空间，定义系统默认大模型厂商、标准模型、深度推理模型与连接信息。
  * </p>
  *
  * @author FinancialCopilot
@@ -28,14 +27,19 @@ public class LlmProperties {
     private LlmProviderType defaultProvider = LlmProviderType.DEEPSEEK;
 
     /**
-     * 默认模型名称（默认 deepseek-chat）
+     * 默认标准对话模型名称（默认 deepseek-chat）
      */
     private String defaultModel = "deepseek-chat";
 
     /**
-     * 默认投研性能/思考强度档位（默认 MIDDLE）
+     * 默认深度思考推理模型名称（默认 deepseek-reasoner）
      */
-    private LlmPerformanceLevel defaultPerformanceLevel = LlmPerformanceLevel.MIDDLE;
+    private String defaultReasoningModel = "deepseek-reasoner";
+
+    /**
+     * 默认是否开启深度思考推理模式（默认 false，极速标准模式）
+     */
+    private boolean defaultEnableThinking = false;
 
     /**
      * 默认 Base URL
@@ -60,5 +64,6 @@ public class LlmProperties {
         private String baseUrl;
         private String apiKey;
         private String defaultModel;
+        private String defaultReasoningModel;
     }
 }

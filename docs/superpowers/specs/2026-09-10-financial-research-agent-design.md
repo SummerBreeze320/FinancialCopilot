@@ -566,15 +566,15 @@ graph TD
 
 ---
 
-### 9.3 客户侧投研深度与思考强度规范（LOW / MIDDLE / HIGH）
+### 9.3 客户端投研模式规范：标准模式 vs 深度思考推理模式 (Dual-Model Routing)
 
-客户在前端界面仅看到 **“投研深度”** 切换控件，系统在底层根据深度档位自动计算大模型执行参数：
+拒绝“温度参数伪装思考深度”的概念幻觉（真实大模型中 `temperature` 仅控制采样随机性，并非思考深度，且对 o1 传 temperature 会直接导致 400 报错，对 R1 传 reasoning_effort 属于未知字段）。
+系统对齐 DeepSeek / OpenAI 官方工业界实践，在客户端提供明确的 **`[深度思考 (Reasoning)]`** 模式切换：
 
-| 客户可见深度 (`researchDepth`) | 业务名称 | 映射 `reasoning_effort` | 映射 `temperature` | 映射 `maxTokens` | 投研业务场景定位 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **`LOW`** | **快速初筛 (极速模式)** | `"low"` | `0.0` (严谨确定) | `2048` | 自然语言初筛、代码提取，最快响应、最低计费 |
-| **`MIDDLE`** (默认) | **标准投研 (平衡模式)** | `"medium"` | `0.2` (微创新平衡) | `4096` | 基金全维度量化体检、定期观点抽取、常规双标的对标 |
-| **`HIGH`** | **深度推演 (深度思考)** | `"high"` | `0.4` (多维推演) | `8192` | 跨周期大势研判、风格漂移归因与万字 CIO 资产配置研报终审 |
+| 客户端投研模式 (`enableThinking`) | 路由底层模型类型 | 典型驱动模型 | 行为特征与 API 传参约束 | 投研业务场景定位 |
+| :--- | :--- | :--- | :--- | :--- |
+| **`false` (标准快速模式 - 默认)** | 标准对话模型 (Standard Chat) | `deepseek-chat` (V3)<br>`gpt-4o`<br>`qwen-plus` | 极速响应，低 Token 消耗；正常传递标准采样参数，不开启长思维链。 | 自然语言初筛、标的代码提取、常规基金多维体检、两两对标基础对比。 |
+| **`true` (深度思考推理模式)** | 深度推理模型 (Reasoning / CoT) | `deepseek-reasoner` (R1)<br>`o1` / `o3-mini`<br>`qwq-32b` | 开启模型原生思维链推演与反思；严格遵循各厂商 API 规范（如 o1 严禁传 temperature，R1 遵循原生思考预算）。 | 跨周期大势研判、复杂风格漂移归因、季报观点知行合一性推演与终审研报生成。 |
 
 ---
 
@@ -582,17 +582,17 @@ graph TD
 
 系统在接口层实行完全的职责分离：
 
-#### 1. 客户业务投研接口（面向终端用户，不可切换底层模型）：
+#### 1. 客户业务投研接口（面向终端用户，不可直接切换底层模型厂商）：
 - **`POST /api/v1/research/chat`**：
-  - 请求体：`{"prompt": "帮我筛选表现稳定的医药基金", "researchDepth": "HIGH"}`（`researchDepth` 可选，默认为 `MIDDLE`）。
+  - 请求体：`{"prompt": "帮我筛选表现稳定的医药基金", "enableThinking": true}`（`enableThinking` 可选，默认为 `false`）。
 - **`GET /api/v1/research/chat/pipeline/stream`**：
-  - 查询参数：`prompt=...&researchDepth=HIGH`。
-  - 说明：客户无权传入 `provider`, `model`, `apiKey` 等底层参数。
+  - 查询参数：`prompt=...&enableThinking=true`。
+  - 说明：客户无权传入 `provider`, `model`, `apiKey` 等底层参数，仅可按需开启“深度思考”。
 
 #### 2. 研发测试与后台管理接口（面向内部开发、测试与管理员，拥有底层模型切换权）：
-- **`GET /api/v1/admin/llm/providers`**：查询系统支持的厂商列表、预置模型字典与默认端点（研发测试面板）；
-- **`GET /api/v1/admin/llm/config`**：查看当前平台生效的底层厂商、模型及默认参数；
-- **`POST /api/v1/admin/llm/config`**：在研发环境或通过管理员权限热更新系统当前使用的厂商和模型；
+- **`GET /api/v1/admin/llm/providers`**：查询系统支持的厂商列表、预置标准模型与推理模型字典、默认端点；
+- **`GET /api/v1/admin/llm/config`**：查看当前平台生效的底层厂商、主选标准模型、主选推理模型及连接参数；
+- **`POST /api/v1/admin/llm/config`**：在研发环境或通过管理员权限热更新系统当前使用的厂商、标准模型与推理模型；
 - **`POST /api/v1/admin/llm/test`**：研发测试工具，对指定厂商和 API Key 进行实时连通性、响应延迟与可用性验证。
 
 

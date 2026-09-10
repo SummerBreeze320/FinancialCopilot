@@ -87,4 +87,17 @@ class TaskDecomposerTest {
         assertEquals(1, plan.getSteps().size());
         assertEquals("COMPARISON", plan.getSteps().get(0).getTaskType());
     }
+
+    /**
+     * 测试验证开启深度思考模式下的解构流程
+     */
+    @Test
+    @DisplayName("验证开启深度思考推理模式下的解构调用")
+    void testDecomposeWithEnableThinking() {
+        String complexQuery = "帮我筛选过去三年表现稳定的医药基金，然后分析前 5 名基金经理的能力，再比较其中最优秀的两个，最后生成投资建议。";
+        ExecutionPlan plan = taskDecomposer.decompose(complexQuery, true);
+        assertNotNull(plan);
+        assertTrue(plan.isComplex());
+        assertEquals(4, plan.getSteps().size());
+    }
 }

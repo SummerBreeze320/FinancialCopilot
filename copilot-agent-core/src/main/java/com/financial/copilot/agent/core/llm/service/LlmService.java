@@ -3,7 +3,6 @@ package com.financial.copilot.agent.core.llm.service;
 import com.financial.copilot.agent.core.llm.dto.LlmConnectionTestRequest;
 import com.financial.copilot.agent.core.llm.dto.LlmConnectionTestResult;
 import com.financial.copilot.agent.core.llm.dto.LlmRequest;
-import com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel;
 import reactor.core.publisher.Flux;
 
 /**
@@ -11,6 +10,7 @@ import reactor.core.publisher.Flux;
  * <p>
  * 职责：作为全工程大模型交互的唯一核心契约，屏蔽底层厂商具体 API 协议差异，
  * 支持同步非流式推理、反应式 SSE 流式推送以及连通性探测。
+ * 支持双模型路由（标准对话模型 vs 深度思考推理模型）。
  * </p>
  *
  * @author FinancialCopilot
@@ -26,7 +26,7 @@ public interface LlmService {
     String chat(LlmRequest request);
 
     /**
-     * 便捷同步推理调用（使用当前系统默认活动模型）
+     * 便捷同步推理调用（使用当前系统默认活动模型，极速标准模式）
      *
      * @param systemPrompt 系统角色提示词
      * @param userMessage  用户提问或事实上下文
@@ -37,14 +37,14 @@ public interface LlmService {
     }
 
     /**
-     * 便捷同步推理调用（指定客户投研深度档位）
+     * 便捷同步推理调用（指定是否开启深度思考推理模型）
      *
-     * @param systemPrompt 系统角色提示词
-     * @param userMessage  用户提问或事实上下文
-     * @param level        投研深度与思考档位 (HIGH / MIDDLE / LOW)
+     * @param systemPrompt   系统角色提示词
+     * @param userMessage    用户提问或事实上下文
+     * @param enableThinking 是否开启深度思考模式 (true 路由至 reasoning_model 如 deepseek-reasoner / o3-mini)
      * @return 大模型返回正文内容
      */
-    String chat(String systemPrompt, String userMessage, LlmPerformanceLevel level);
+    String chat(String systemPrompt, String userMessage, boolean enableThinking);
 
     /**
      * 响应式流式推理 (SSE Token 实时流)
@@ -55,7 +55,7 @@ public interface LlmService {
     Flux<String> chatStream(LlmRequest request);
 
     /**
-     * 便捷响应式流式推理（使用当前系统默认活动模型）
+     * 便捷响应式流式推理（使用当前系统默认活动模型，极速标准模式）
      *
      * @param systemPrompt 系统角色提示词
      * @param userMessage  用户提问或事实上下文
@@ -66,14 +66,14 @@ public interface LlmService {
     }
 
     /**
-     * 便捷响应式流式推理（指定客户投研深度档位）
+     * 便捷响应式流式推理（指定是否开启深度思考推理模型）
      *
-     * @param systemPrompt 系统角色提示词
-     * @param userMessage  用户提问或事实上下文
-     * @param level        投研深度与思考档位 (HIGH / MIDDLE / LOW)
+     * @param systemPrompt   系统角色提示词
+     * @param userMessage    用户提问或事实上下文
+     * @param enableThinking 是否开启深度思考模式 (true 路由至 reasoning_model 如 deepseek-reasoner / o3-mini)
      * @return 响应式 Token 文本块 Flux 流
      */
-    Flux<String> chatStream(String systemPrompt, String userMessage, LlmPerformanceLevel level);
+    Flux<String> chatStream(String systemPrompt, String userMessage, boolean enableThinking);
 
     /**
      * 研发测试专用：探测指定厂商端点与模型的连通性与网络延迟

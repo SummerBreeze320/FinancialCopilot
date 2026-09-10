@@ -155,4 +155,19 @@ class FinancialResearchWorkflowTest {
         assertTrue(events.stream().anyMatch(e -> "PLAN".equals(e.getType())), "必须包含 PLAN 事件");
         assertTrue(events.stream().anyMatch(e -> "STEP_START".equals(e.getType())), "必须包含 STEP_START 事件");
     }
+
+    @Test
+    @DisplayName("验证开启深度思考推理模式下的工作流同步与流式执行")
+    void testExecuteWithEnableThinking() {
+        String complexPrompt = "深度推演医药基金配置方案";
+
+        String report = workflow.execute(complexPrompt, true);
+        assertNotNull(report);
+        assertFalse(report.isBlank());
+
+        List<ResearchStreamEvent> events = workflow.executePipelineStream(complexPrompt, true).collectList().block();
+        assertNotNull(events);
+        assertFalse(events.isEmpty());
+        assertTrue(events.stream().anyMatch(e -> "PLAN".equals(e.getType())));
+    }
 }

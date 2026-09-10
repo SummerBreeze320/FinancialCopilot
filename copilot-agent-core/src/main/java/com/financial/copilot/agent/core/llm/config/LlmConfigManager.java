@@ -1,7 +1,6 @@
 package com.financial.copilot.agent.core.llm.config;
 
 import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
-import com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel;
 import com.financial.copilot.agent.core.llm.provider.LlmProviderType;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * <h1>全局动态大模型配置管理器 (LLM Runtime Configuration Manager)</h1>
  * <p>
- * 职责：维护当前系统运行时的活动大模型配置。
+ * 职责：维护当前系统运行时的活动大模型配置（包括标准模型与深度推理模型）。
  * 初始化自 {@link LlmProperties}，并支持研发测试/管理员通过后台接口动态热切换全局生效模型，具备线程安全保障。
  * </p>
  *
@@ -34,13 +33,14 @@ public class LlmConfigManager {
         LlmSettingsDTO initial = LlmSettingsDTO.builder()
                 .provider(properties.getDefaultProvider() != null ? properties.getDefaultProvider() : LlmProviderType.DEEPSEEK)
                 .model(properties.getDefaultModel() != null ? properties.getDefaultModel() : "deepseek-chat")
-                .performanceLevel(properties.getDefaultPerformanceLevel() != null ? properties.getDefaultPerformanceLevel() : LlmPerformanceLevel.MIDDLE)
+                .reasoningModel(properties.getDefaultReasoningModel() != null ? properties.getDefaultReasoningModel() : "deepseek-reasoner")
+                .enableThinking(properties.isDefaultEnableThinking())
                 .customBaseUrl(properties.getBaseUrl())
                 .customApiKey(properties.getApiKey())
                 .build();
         activeSettings.set(initial);
-        log.info("[LLM-CONFIG] 初始载入活动大模型配置: provider={}, model={}, level={}, baseUrl={}",
-                initial.getProvider(), initial.getModel(), initial.getPerformanceLevel(), initial.getCustomBaseUrl());
+        log.info("[LLM-CONFIG] 初始载入活动大模型配置: provider={}, model={}, reasoningModel={}, enableThinking={}, baseUrl={}",
+                initial.getProvider(), initial.getModel(), initial.getReasoningModel(), initial.isEnableThinking(), initial.getCustomBaseUrl());
     }
 
     /**
@@ -67,7 +67,9 @@ public class LlmConfigManager {
         LlmSettingsDTO merged = LlmSettingsDTO.builder()
                 .provider(newSettings.getProvider() != null ? newSettings.getProvider() : current.getProvider())
                 .model((newSettings.getModel() != null && !newSettings.getModel().isBlank()) ? newSettings.getModel() : current.getModel())
-                .performanceLevel(newSettings.getPerformanceLevel() != null ? newSettings.getPerformanceLevel() : current.getPerformanceLevel())
+                .reasoningModel((newSettings.getReasoningModel() != null && !newSettings.getReasoningModel().isBlank())
+                        ? newSettings.getReasoningModel() : current.getReasoningModel())
+                .enableThinking(newSettings.isEnableThinking())
                 .temperature(newSettings.getTemperature() != null ? newSettings.getTemperature() : current.getTemperature())
                 .topP(newSettings.getTopP() != null ? newSettings.getTopP() : current.getTopP())
                 .maxTokens(newSettings.getMaxTokens() != null ? newSettings.getMaxTokens() : current.getMaxTokens())
@@ -78,8 +80,8 @@ public class LlmConfigManager {
                 .build();
 
         activeSettings.set(merged);
-        log.info("[LLM-CONFIG] 系统大模型活动配置已热更新: provider={}, model={}, level={}",
-                merged.getProvider(), merged.getModel(), merged.getPerformanceLevel());
+        log.info("[LLM-CONFIG] 系统大模型活动配置已热更新: provider={}, model={}, reasoningModel={}, enableThinking={}",
+                merged.getProvider(), merged.getModel(), merged.getReasoningModel(), merged.isEnableThinking());
         return merged;
     }
 }

@@ -15,7 +15,8 @@ import java.util.List;
  * @param description     厂商特点与场景说明
  * @param officialWebsite 官方文档与控制台网址
  * @param supportedModels 支持的模型选项列表
- * @param defaultModel    默认推荐模型标识
+ * @param defaultModel          默认推荐对话模型标识
+ * @param defaultReasoningModel 默认推荐深度思考推理模型标识
  * @author FinancialCopilot
  */
 public record LlmProviderMetadata(
@@ -25,6 +26,7 @@ public record LlmProviderMetadata(
         String description,
         String officialWebsite,
         List<LlmModelOption> supportedModels,
-        String defaultModel
+        String defaultModel,
+        String defaultReasoningModel
 ) implements Serializable {
 }

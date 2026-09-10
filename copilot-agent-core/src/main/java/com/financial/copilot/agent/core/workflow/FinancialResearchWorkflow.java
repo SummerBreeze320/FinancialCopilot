@@ -76,33 +76,31 @@ public class FinancialResearchWorkflow {
     }
 
     /**
-     * 同步执行投研工作流，统一基于 DAG 执行计划推进（使用默认标准深度）
+     * 同步执行复合投研流水线（使用默认极速标准投研模式）
      *
      * @param userPrompt 用户原始提问或复合投研指令
      * @return 最终合成的专业投研报告 Markdown 文本
      */
     public String execute(String userPrompt) {
-        return execute(userPrompt, com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel.MIDDLE);
+        return execute(userPrompt, false);
     }
 
     /**
-     * 同步执行投研工作流，支持客户端指定的投研深度档位
+     * 同步执行投研工作流，支持客户端指定是否开启深度思考推理模式
      *
-     * @param userPrompt    用户原始提问或复合投研指令
-     * @param researchDepth 投研深度档位 (HIGH / MIDDLE / LOW)
+     * @param userPrompt     用户原始提问或复合投研指令
+     * @param enableThinking 是否开启深度思考模式 (true 路由至 reasoning_model)
      * @return 最终合成的专业投研报告 Markdown 文本
      */
-    public String execute(String userPrompt, com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel researchDepth) {
-        com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel depth =
-                researchDepth != null ? researchDepth : com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel.MIDDLE;
-        log.info("[WORKFLOW] 启动投研工作流: prompt={}, researchDepth={}", userPrompt, depth);
+    public String execute(String userPrompt, boolean enableThinking) {
+        log.info("[WORKFLOW] 启动投研工作流: prompt={}, enableThinking={}", userPrompt, enableThinking);
 
-        ExecutionPlan plan = taskDecomposer.decompose(userPrompt, depth);
+        ExecutionPlan plan = taskDecomposer.decompose(userPrompt, enableThinking);
         log.info("[WORKFLOW] 任务解构规划完成: isComplex={}, steps={}, summary={}",
                 plan.isComplex(), plan.getSteps().size(), plan.getSummary());
 
         ResearchBlackboard blackboard = new ResearchBlackboard();
-        blackboard.setPerformanceLevel(depth);
+        blackboard.setEnableThinking(enableThinking);
 
         // 统一流水线推进，每个步骤均基于 Blackboard 上下文
         for (SubTask step : plan.getSteps()) {
@@ -112,7 +110,7 @@ public class FinancialResearchWorkflow {
         // 若执行计划中未显式包含独立 SYNTHESIS 步骤，则统一执行研报合成
         if (blackboard.getFinalReport() == null || blackboard.getFinalReport().isBlank()) {
             String facts = buildSynthesisContext(blackboard);
-            String report = reportSynthesizer.synthesize(facts, userPrompt, depth);
+            String report = reportSynthesizer.synthesize(facts, userPrompt, enableThinking);
             blackboard.put(ResearchBlackboard.KEY_FINAL_REPORT, report);
         }
 
@@ -120,38 +118,36 @@ public class FinancialResearchWorkflow {
     }
 
     /**
-     * 响应式阶段式 SSE 流式推送（使用默认标准深度）
+     * 响应式阶段式 SSE 流式推送（使用默认极速标准投研模式）
      *
      * @param userPrompt 用户自然语言诉求
      * @return 响应式事件流 Flux
      */
     public Flux<ResearchStreamEvent> executePipelineStream(String userPrompt) {
-        return executePipelineStream(userPrompt, com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel.MIDDLE);
+        return executePipelineStream(userPrompt, false);
     }
 
     /**
-     * 响应式阶段式 SSE 流式推送，支持客户端指定的投研深度档位
+     * 响应式阶段式 SSE 流式推送，支持客户端指定是否开启深度思考推理模式
      * <p>
      * 依次产生：PLAN (规划纲要)、STEP_START (步骤启动)、STEP_COMPLETE (步骤总结)、CONTENT (报告 Token)、DONE (结束)。
      * </p>
      *
-     * @param userPrompt    用户自然语言诉求
-     * @param researchDepth 投研深度档位 (HIGH / MIDDLE / LOW)
+     * @param userPrompt     用户自然语言诉求
+     * @param enableThinking 是否开启深度思考模式 (true 路由至 reasoning_model)
      * @return 响应式事件流 Flux
      */
-    public Flux<ResearchStreamEvent> executePipelineStream(String userPrompt, com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel researchDepth) {
-        com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel depth =
-                researchDepth != null ? researchDepth : com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel.MIDDLE;
-        log.info("[WORKFLOW-STREAM] 启动阶段式事件流推送: prompt={}, researchDepth={}", userPrompt, depth);
+    public Flux<ResearchStreamEvent> executePipelineStream(String userPrompt, boolean enableThinking) {
+        log.info("[WORKFLOW-STREAM] 启动阶段式事件流推送: prompt={}, enableThinking={}", userPrompt, enableThinking);
 
         return Flux.create(sink -> {
             try {
-                ExecutionPlan plan = taskDecomposer.decompose(userPrompt, depth);
+                ExecutionPlan plan = taskDecomposer.decompose(userPrompt, enableThinking);
                 int totalSteps = plan.getSteps().size();
                 sink.next(ResearchStreamEvent.plan(totalSteps, plan.getSummary()));
 
                 ResearchBlackboard blackboard = new ResearchBlackboard();
-                blackboard.setPerformanceLevel(depth);
+                blackboard.setEnableThinking(enableThinking);
 
                 for (int i = 0; i < plan.getSteps().size(); i++) {
                     SubTask step = plan.getSteps().get(i);
@@ -166,7 +162,7 @@ public class FinancialResearchWorkflow {
                     // 2. 执行具体步骤
                     if ("SYNTHESIS".equalsIgnoreCase(step.getTaskType())) {
                         String synthesisFacts = buildSynthesisContext(blackboard);
-                        reportSynthesizer.synthesizeStream(synthesisFacts, userPrompt, depth)
+                        reportSynthesizer.synthesizeStream(synthesisFacts, userPrompt, enableThinking)
                                 .doOnNext(chunk -> sink.next(ResearchStreamEvent.content(chunk)))
                                 .doOnComplete(() -> {
                                     sink.next(ResearchStreamEvent.stepComplete(
@@ -191,7 +187,7 @@ public class FinancialResearchWorkflow {
                 // 若全流程中无 SYNTHESIS 步骤，自动触发流式合成完成闭环
                 if (blackboard.getFinalReport() == null) {
                     String facts = buildSynthesisContext(blackboard);
-                    reportSynthesizer.synthesizeStream(facts, userPrompt, depth)
+                    reportSynthesizer.synthesizeStream(facts, userPrompt, enableThinking)
                             .doOnNext(chunk -> sink.next(ResearchStreamEvent.content(chunk)))
                             .doOnComplete(() -> {
                                 sink.next(ResearchStreamEvent.done());
@@ -335,7 +331,7 @@ public class FinancialResearchWorkflow {
      */
     private void executeSynthesisStep(SubTask step, ResearchBlackboard blackboard, String userPrompt) {
         String factualContext = buildSynthesisContext(blackboard);
-        String finalReport = reportSynthesizer.synthesize(factualContext, userPrompt);
+        String finalReport = reportSynthesizer.synthesize(factualContext, userPrompt, blackboard.isEnableThinking());
         blackboard.put(ResearchBlackboard.KEY_FINAL_REPORT, finalReport);
         log.info("[STEP-4 SYNTHESIS] 成功合成最终投研配置建议报告");
     }

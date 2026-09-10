@@ -14,6 +14,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -63,14 +64,14 @@ class ResearchAgentControllerTest {
     void testStreamPipelineChat() {
         String prompt = "帮我筛选过去三年表现稳定的医药基金，然后分析前 5 名基金经理的能力，再比较其中最优秀的两个，最后生成投资建议。";
 
-        when(mockWorkflow.executePipelineStream(anyString(), any()))
+        when(mockWorkflow.executePipelineStream(anyString(), anyBoolean()))
                 .thenReturn(Flux.just(
                         ResearchStreamEvent.plan(4, "测试规划"),
                         ResearchStreamEvent.stepStart(1, 4, "SCREENING", "初筛中"),
                         ResearchStreamEvent.done()
                 ));
 
-        List<ResearchStreamEvent> events = controller.streamPipelineChat(prompt, "HIGH", 1L).collectList().block();
+        List<ResearchStreamEvent> events = controller.streamPipelineChat(prompt, true, 1L).collectList().block();
 
         assertNotNull(events);
         assertEquals(3, events.size());
@@ -85,9 +86,9 @@ class ResearchAgentControllerTest {
     void testSyncChat() {
         ResearchAgentController.ChatRequest req = new ResearchAgentController.ChatRequest();
         req.setPrompt("分析中欧医疗健康混合A");
-        req.setResearchDepth("MIDDLE");
+        req.setEnableThinking(true);
 
-        when(mockWorkflow.execute(anyString(), any())).thenReturn("# 投研分析报告");
+        when(mockWorkflow.execute(anyString(), anyBoolean())).thenReturn("# 投研分析报告");
 
         ApiResult<String> result = controller.syncChat(req);
         assertNotNull(result);

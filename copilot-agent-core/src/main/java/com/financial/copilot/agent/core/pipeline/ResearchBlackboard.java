@@ -45,8 +45,8 @@ public class ResearchBlackboard {
     /** 最终投资建议研报 Key */
     public static final String KEY_FINAL_REPORT = "finalReport";
 
-    /** 客户指定的投研深度/思考档位 Key */
-    public static final String KEY_PERFORMANCE_LEVEL = "performanceLevel";
+    /** 客户端是否开启深度思考推理模式 Key */
+    public static final String KEY_ENABLE_THINKING = "enableThinking";
 
     private final Map<String, Object> state = new ConcurrentHashMap<>();
 
@@ -154,27 +154,25 @@ public class ResearchBlackboard {
     }
 
     /**
-     * 获取当前生效的投研深度/思考档位
+     * 获取当前是否开启深度思考推理模式
      *
-     * @return 性能档位，默认为 MIDDLE
+     * @return true 若开启深度思考推理模式，false 极速标准投研模式
      */
-    public com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel getPerformanceLevel() {
-        Object val = state.get(KEY_PERFORMANCE_LEVEL);
-        if (val instanceof com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel level) {
-            return level;
+    public boolean isEnableThinking() {
+        Object val = state.get(KEY_ENABLE_THINKING);
+        if (val instanceof Boolean b) {
+            return b;
         }
-        return com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel.MIDDLE;
+        return false;
     }
 
     /**
-     * 设置投研深度/思考档位
+     * 设置是否开启深度思考推理模式
      *
-     * @param level 性能档位
+     * @param enableThinking 是否开启深度思考
      */
-    public void setPerformanceLevel(com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel level) {
-        if (level != null) {
-            state.put(KEY_PERFORMANCE_LEVEL, level);
-        }
+    public void setEnableThinking(Boolean enableThinking) {
+        state.put(KEY_ENABLE_THINKING, Boolean.TRUE.equals(enableThinking));
     }
 
     /**

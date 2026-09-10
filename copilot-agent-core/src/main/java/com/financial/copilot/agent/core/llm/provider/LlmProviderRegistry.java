@@ -37,7 +37,8 @@ public class LlmProviderRegistry {
                         new LlmModelOption("deepseek-chat", "DeepSeek-V3", "通用快速大模型，适合初筛与常规体检", "64k", false, true),
                         new LlmModelOption("deepseek-reasoner", "DeepSeek-R1", "深度思维链推理大模型，适合复杂归因与研报终审", "64k", true, true)
                 ),
-                "deepseek-chat"
+                "deepseek-chat",
+                "deepseek-reasoner"
         ));
 
         // 2. OpenAI
@@ -53,7 +54,8 @@ public class LlmProviderRegistry {
                         new LlmModelOption("o1", "OpenAI o1", "深度思维链高阶推理模型", "128k", true, false),
                         new LlmModelOption("o3-mini", "OpenAI o3-mini", "低延迟推理模型，支持三档思考预算", "128k", true, true)
                 ),
-                "gpt-4o"
+                "gpt-4o",
+                "o3-mini"
         ));
 
         // 3. Qwen (阿里百炼)
@@ -66,9 +68,11 @@ public class LlmProviderRegistry {
                 List.of(
                         new LlmModelOption("qwen-plus", "Qwen-Plus", "主力平衡型大模型，性能与成本均衡", "128k", false, true),
                         new LlmModelOption("qwen-max", "Qwen-Max", "千问系列旗舰模型，复杂推理能力极强", "32k", false, true),
+                        new LlmModelOption("qwq-32b", "Qwen-QwQ", "通义思维链深度推理模型", "32k", true, true),
                         new LlmModelOption("qwen-turbo", "Qwen-Turbo", "极速低成本模型，适合高频初筛", "128k", false, true)
                 ),
-                "qwen-plus"
+                "qwen-plus",
+                "qwq-32b"
         ));
 
         // 4. Zhipu (智谱清言)
@@ -80,9 +84,11 @@ public class LlmProviderRegistry {
                 "https://open.bigmodel.cn",
                 List.of(
                         new LlmModelOption("glm-4-plus", "GLM-4-Plus", "智谱旗舰大模型，高质量长文本处理", "128k", false, true),
-                        new LlmModelOption("glm-4-flash", "GLM-4-Flash", "高速免费版轻量模型", "128k", false, true)
+                        new LlmModelOption("glm-4-flash", "GLM-4-Flash", "高速免费版轻量模型", "128k", false, true),
+                        new LlmModelOption("glm-zero-preview", "GLM-Zero", "智谱推理思维链模型", "128k", true, true)
                 ),
-                "glm-4-plus"
+                "glm-4-plus",
+                "glm-zero-preview"
         ));
 
         // 5. Ollama (本地私有化)
@@ -96,6 +102,7 @@ public class LlmProviderRegistry {
                         new LlmModelOption("deepseek-r1:8b", "DeepSeek-R1 (8B Local)", "本地轻量级推理蒸馏模型", "32k", true, true),
                         new LlmModelOption("qwen2.5:14b", "Qwen-2.5 (14B Local)", "本地中等规模全能模型", "32k", false, true)
                 ),
+                "qwen2.5:14b",
                 "deepseek-r1:8b"
         ));
 
@@ -107,6 +114,7 @@ public class LlmProviderRegistry {
                 "支持任意符合 OpenAI API 规范的私有云网关或自建服务 (vLLM, OneAPI 等)",
                 "",
                 List.of(),
+                "",
                 ""
         ));
     }

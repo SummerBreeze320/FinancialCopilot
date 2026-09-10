@@ -5,7 +5,6 @@ import com.financial.copilot.agent.core.llm.config.LlmProperties;
 import com.financial.copilot.agent.core.llm.dto.LlmConnectionTestRequest;
 import com.financial.copilot.agent.core.llm.dto.LlmConnectionTestResult;
 import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
-import com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel;
 import com.financial.copilot.agent.core.llm.provider.LlmProviderMetadata;
 import com.financial.copilot.agent.core.llm.provider.LlmProviderRegistry;
 import com.financial.copilot.agent.core.llm.provider.LlmProviderType;
@@ -44,6 +43,8 @@ class LlmAdminConfigControllerTest {
         LlmProperties properties = new LlmProperties();
         properties.setDefaultProvider(LlmProviderType.DEEPSEEK);
         properties.setDefaultModel("deepseek-chat");
+        properties.setDefaultReasoningModel("deepseek-reasoner");
+        properties.setDefaultEnableThinking(false);
         properties.setBaseUrl("https://api.deepseek.com/v1");
         properties.setApiKey("test-key");
 
@@ -71,12 +72,16 @@ class LlmAdminConfigControllerTest {
         assertNotNull(currentResult);
         assertEquals(200, currentResult.getCode());
         assertEquals(LlmProviderType.DEEPSEEK, currentResult.getData().getProvider());
+        assertEquals("deepseek-chat", currentResult.getData().getModel());
+        assertEquals("deepseek-reasoner", currentResult.getData().getReasoningModel());
+        assertFalse(currentResult.getData().isEnableThinking());
 
-        // 2. 模拟研发人员热更新为通义千问
+        // 2. 模拟研发人员热更新为通义千问双模型
         LlmSettingsDTO updateReq = LlmSettingsDTO.builder()
                 .provider(LlmProviderType.QWEN)
                 .model("qwen-plus")
-                .performanceLevel(LlmPerformanceLevel.HIGH)
+                .reasoningModel("qwq-32b")
+                .enableThinking(true)
                 .build();
 
         ApiResult<LlmSettingsDTO> updateResult = controller.updateActiveConfig(updateReq);
@@ -84,7 +89,8 @@ class LlmAdminConfigControllerTest {
         assertEquals(200, updateResult.getCode());
         assertEquals(LlmProviderType.QWEN, updateResult.getData().getProvider());
         assertEquals("qwen-plus", updateResult.getData().getModel());
-        assertEquals(LlmPerformanceLevel.HIGH, updateResult.getData().getPerformanceLevel());
+        assertEquals("qwq-32b", updateResult.getData().getReasoningModel());
+        assertTrue(updateResult.getData().isEnableThinking());
     }
 
     @Test

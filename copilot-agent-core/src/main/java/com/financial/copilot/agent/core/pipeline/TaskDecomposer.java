@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.core.llm.dto.LlmRequest;
 import com.financial.copilot.agent.core.llm.dto.LlmResponse;
-import com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel;
 import com.financial.copilot.agent.core.llm.service.LlmService;
 import com.financial.copilot.common.enums.AssetCategory;
 import lombok.extern.slf4j.Slf4j;
@@ -90,31 +89,30 @@ public class TaskDecomposer {
     }
 
     /**
-     * 将用户自然语言诉求解构为有序 ExecutionPlan（使用系统默认模型与档位）
+     * 将用户自然语言诉求解构为有序 ExecutionPlan（使用系统默认极速标准投研模式）
      *
      * @param userQuery 用户的投研指令文本
      * @return 结构化的任务执行计划
      */
     public ExecutionPlan decompose(String userQuery) {
-        return decompose(userQuery, LlmPerformanceLevel.MIDDLE);
+        return decompose(userQuery, false);
     }
 
     /**
-     * 将用户自然语言诉求解构为有序 ExecutionPlan，支持客户端指定的投研深度档位
+     * 将用户自然语言诉求解构为有序 ExecutionPlan，支持客户端指定是否开启深度思考推理模式
      *
-     * @param userQuery        用户的投研指令文本
-     * @param performanceLevel 投研深度/思考强度档位 (LOW / MIDDLE / HIGH)
+     * @param userQuery      用户的投研指令文本
+     * @param enableThinking 是否开启深度思考推理模式 (true 路由至 reasoning_model)
      * @return 结构化的任务执行计划
      */
-    public ExecutionPlan decompose(String userQuery, LlmPerformanceLevel performanceLevel) {
+    public ExecutionPlan decompose(String userQuery, boolean enableThinking) {
         if (userQuery == null || userQuery.isBlank()) {
             return fallbackSingleTask(AssetCategory.FUND, "SCREENING", "默认展示优质公募基金标的");
         }
 
         try {
             String llmResponse = llmService.chat(
-                    DECOMPOSER_PROMPT, userQuery,
-                    performanceLevel != null ? performanceLevel : LlmPerformanceLevel.MIDDLE
+                    DECOMPOSER_PROMPT, userQuery, enableThinking
             );
             ExecutionPlan plan = parseJsonPlan(llmResponse, userQuery);
             if (plan != null && !plan.getSteps().isEmpty()) {
