@@ -13,6 +13,7 @@ import com.financial.copilot.common.fund.dto.FundMetricsDTO;
 import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
 import com.financial.copilot.domain.fund.entity.FundInfo;
 import com.financial.copilot.domain.fund.port.FundDataPort;
+import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -82,7 +83,7 @@ public class FinancialResearchWorkflow {
      * @return 最终合成的专业投研报告 Markdown 文本
      */
     public String execute(String userPrompt) {
-        return execute(userPrompt, false);
+        return execute(userPrompt, false, null);
     }
 
     /**
@@ -93,7 +94,20 @@ public class FinancialResearchWorkflow {
      * @return 最终合成的专业投研报告 Markdown 文本
      */
     public String execute(String userPrompt, boolean enableThinking) {
-        log.info("[WORKFLOW] 启动投研工作流: prompt={}, enableThinking={}", userPrompt, enableThinking);
+        return execute(userPrompt, enableThinking, null);
+    }
+
+    /**
+     * 同步执行投研工作流，支持注入用户投资画像约束与深度思考模式
+     *
+     * @param userPrompt          用户原始提问或复合投研指令
+     * @param enableThinking      是否开启深度思考模式
+     * @param userInvestmentProfile 用户投资风险偏好与画像（为 null 时按通用标准合成）
+     * @return 最终合成的专业投研报告 Markdown 文本
+     */
+    public String execute(String userPrompt, boolean enableThinking, UserInvestmentProfile userInvestmentProfile) {
+        log.info("[WORKFLOW] 启动投研工作流: prompt={}, enableThinking={}, userProfile={}",
+                userPrompt, enableThinking, userInvestmentProfile != null ? userInvestmentProfile.getRiskToleranceLevel() : "none");
 
         ExecutionPlan plan = taskDecomposer.decompose(userPrompt, enableThinking);
         log.info("[WORKFLOW] 任务解构规划完成: isComplex={}, steps={}, summary={}",
@@ -101,6 +115,7 @@ public class FinancialResearchWorkflow {
 
         ResearchBlackboard blackboard = new ResearchBlackboard();
         blackboard.setEnableThinking(enableThinking);
+        blackboard.setUserInvestmentProfile(userInvestmentProfile);
 
         // 统一流水线推进，每个步骤均基于 Blackboard 上下文
         for (SubTask step : plan.getSteps()) {
@@ -124,7 +139,7 @@ public class FinancialResearchWorkflow {
      * @return 响应式事件流 Flux
      */
     public Flux<ResearchStreamEvent> executePipelineStream(String userPrompt) {
-        return executePipelineStream(userPrompt, false);
+        return executePipelineStream(userPrompt, false, null);
     }
 
     /**
@@ -138,7 +153,20 @@ public class FinancialResearchWorkflow {
      * @return 响应式事件流 Flux
      */
     public Flux<ResearchStreamEvent> executePipelineStream(String userPrompt, boolean enableThinking) {
-        log.info("[WORKFLOW-STREAM] 启动阶段式事件流推送: prompt={}, enableThinking={}", userPrompt, enableThinking);
+        return executePipelineStream(userPrompt, enableThinking, null);
+    }
+
+    /**
+     * 响应式阶段式 SSE 流式推送，支持注入用户画像并指定思考模式
+     *
+     * @param userPrompt          用户自然语言诉求
+     * @param enableThinking      是否开启深度思考模式
+     * @param userInvestmentProfile 用户投资风险偏好与画像（为 null 时按通用标准合成）
+     * @return 响应式事件流 Flux
+     */
+    public Flux<ResearchStreamEvent> executePipelineStream(String userPrompt, boolean enableThinking, UserInvestmentProfile userInvestmentProfile) {
+        log.info("[WORKFLOW-STREAM] 启动阶段式事件流推送: prompt={}, enableThinking={}, userProfile={}",
+                userPrompt, enableThinking, userInvestmentProfile != null ? userInvestmentProfile.getRiskToleranceLevel() : "none");
 
         return Flux.create(sink -> {
             try {
@@ -148,6 +176,7 @@ public class FinancialResearchWorkflow {
 
                 ResearchBlackboard blackboard = new ResearchBlackboard();
                 blackboard.setEnableThinking(enableThinking);
+                blackboard.setUserInvestmentProfile(userInvestmentProfile);
 
                 for (int i = 0; i < plan.getSteps().size(); i++) {
                     SubTask step = plan.getSteps().get(i);
@@ -372,6 +401,13 @@ public class FinancialResearchWorkflow {
         if (comparisonFacts != null && !comparisonFacts.isBlank()) {
             sb.append("【阶段 3 决赛圈最优标的横向对标与归因事实】:\n");
             sb.append(comparisonFacts).append("\n");
+        }
+
+        UserInvestmentProfile userProfile = blackboard.getUserInvestmentProfile();
+        if (userProfile != null) {
+            sb.append("【用户专属投资画像与风险偏好约束】:\n");
+            sb.append(userProfile.toAgentPromptSummary()).append("\n\n");
+            sb.append("【主编 Agent 指令要求】: 必须结合上述用户的风险承受能力与投资画像，在研报「投资配置建议」章节中，为该用户制定完全匹配其风险等级的股债配置比率、建仓策略与风险对冲提示！\n\n");
         }
 
         return sb.toString();

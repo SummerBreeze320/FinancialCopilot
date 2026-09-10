@@ -787,3 +787,126 @@ sequenceDiagram
 | `GET` | `/api/v1/billing/stats/trend` | 查询过去 7 天 / 30 天每日消耗 Token 数量与点数统计趋势（供前端图表渲染） |
 | `GET` | `/api/v1/billing/pricing` | 查询当前系统各厂商模型的公开计费单价矩阵 |
 
+---
+
+## 11. 用户体系、金融实名认证 (KYC)、投资画像与 Spring Security RBAC 权限规范
+
+### 11.1 需求背景与产品全景 (PRD)
+
+为实现企业级金融投研平台的合规运营、精准服务与多租户分权治理，系统构建了**用户身份认证、金融合规实名认证 (KYC)、个人投资画像 (User Investment Persona) 以及基于 Spring Security (WebFlux) 的 RBAC 权限中心**。
+
+#### 核心诉求与业务闭环：
+1. **统一认证与多角色权限隔离 (RBAC)**：
+   - 基于 Spring Security 响应式 WebFlux 安全框架与无状态 JWT (Access Token + Refresh Token)；
+   - 细粒度角色设计：
+     - `ROLE_ADMIN`（平台管理/算法研发）：拥有大模型配置热切换、用户风控审计全量特权；
+     - `ROLE_ANALYST`（买方机构专业分析师/VIP）：拥有高并发吞吐、无限深度思考推理配额；
+     - `ROLE_USER`（普通个人注册投资者）：基础投研问答、账单管理、个人画像配置；
+2. **金融合规实名认证 (KYC)**：
+   - 满足金融监管与适格投资者认定要求；
+   - 真实姓名、证件哈希判重（SHA-256）与对称密文存储，前端脱敏显示（如 `110101********1234`）；
+   - 严密的认证生命周期（`UNVERIFIED`、`PENDING`、`VERIFIED`、`REJECTED`）；
+3. **用户投资画像与偏好建模 (User Investment Persona) —— 赋能 Agent 个性化**：
+   - 建模投资者的风险偏好（C1保守型 ~ C5进取型）、投资期限、目标年化收益率、最大可承受回撤、偏好行业板块与投资风格；
+   - **投研 Agent 深度联动**：将投资画像作为事实上下文直接载入 `ResearchBlackboard`，驱动主编 Agent (`ReportSynthesizer`) 生成千人千面的个性化资产配置建议方案；
+4. **跨模块自动联动**：
+   - **注册即开户**：新用户注册事务自动向 `sys_user_wallet` 初始化钱包并赠送 **10,000 体验算力点**；
+   - **废除硬编码**：全平台投研与计费接口全面基于当前登录用户的安全上下文动态绑定。
+
+---
+
+### 11.2 数据模型设计 (PostgreSQL 16)
+
+```mermaid
+erDiagram
+    sys_user ||--o{ sys_user_role : "分配角色"
+    sys_role ||--o{ sys_user_role : "关联用户"
+    sys_role ||--o{ sys_role_permission : "拥有权限"
+    sys_permission ||--o{ sys_role_permission : "关联角色"
+    sys_user ||--|| sys_user_profile : "扩展个人资料"
+    sys_user ||--|| sys_user_identity : "实名认证档案"
+    sys_user ||--|| sys_user_investment_profile : "投资偏好画像"
+    sys_user ||--|| sys_user_wallet : "绑定点数钱包"
+
+    sys_user {
+        bigint id PK "用户主键 ID"
+        varchar username UK "登录账号"
+        varchar password_hash "BCrypt 密码哈希"
+        varchar mobile UK "手机号"
+        varchar email UK "电子邮箱"
+        varchar status "状态: ACTIVE, LOCKED, DISABLED"
+        timestamp created_at "创建时间"
+    }
+
+    sys_role {
+        bigint id PK "角色主键 ID"
+        varchar role_code UK "角色标识 (ROLE_ADMIN, ROLE_ANALYST, ROLE_USER)"
+        varchar role_name "角色名称"
+        varchar description "角色描述"
+        boolean is_system "是否系统内置"
+    }
+
+    sys_permission {
+        bigint id PK "权限主键 ID"
+        varchar perm_code UK "权限标识 (research:chat, research:thinking, admin:llm:config)"
+        varchar perm_name "权限名称"
+        varchar resource_type "资源类型"
+        varchar path "路由路径"
+        varchar method "HTTP 动作"
+    }
+
+    sys_user_profile {
+        bigint user_id PK "关联用户 ID"
+        varchar nickname "用户昵称"
+        varchar avatar_url "头像 URL"
+        varchar company "所属机构/公司"
+        varchar occupation "职业/身份"
+        varchar bio "个人签名/简介"
+        varchar city "所在城市"
+    }
+
+    sys_user_identity {
+        bigint user_id PK "关联用户 ID"
+        varchar real_name "真实姓名"
+        varchar id_card_type "证件类型"
+        varchar id_card_hash UK "身份证唯一判重哈希"
+        varchar id_card_encrypted "对称加密密文"
+        varchar id_card_masked "脱敏显示文本"
+        varchar verify_status "状态: UNVERIFIED, PENDING, VERIFIED, REJECTED"
+        varchar reject_reason "驳回原因"
+        timestamp verified_at "认证通过时间"
+    }
+
+    sys_user_investment_profile {
+        bigint user_id PK "关联用户 ID"
+        varchar risk_tolerance_level "风险等级: C1, C2, C3, C4, C5"
+        varchar investment_horizon "投资期限: SHORT_TERM, MEDIUM_TERM, LONG_TERM"
+        text preferred_asset_classes "偏好资产 (JSON 数组)"
+        text preferred_sectors "偏好行业板块 (JSON 数组)"
+        decimal max_drawdown_tolerance "最大承受回撤 (%)"
+        decimal target_annual_return "目标年化收益率 (%)"
+        varchar investment_style "投资风格: VALUE, GROWTH, BALANCED, DIVIDEND"
+        decimal single_position_limit "单标的持仓上限 (%)"
+    }
+```
+
+---
+
+### 11.3 核心 RESTful API 契约清单
+
+| 请求方式 | 端点路径 | 接口功能与业务描述 | 鉴权与权限要求 |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/auth/register` | 用户注册（密码 BCrypt 加密，自动分配 `ROLE_USER`，自动赠送 10,000 体验点并初始化画像） | 匿名公开 |
+| `POST` | `/api/v1/auth/login` | 用户登录（账号密码校验，签发 Access Token + Refresh Token） | 匿名公开 |
+| `POST` | `/api/v1/auth/refresh-token` | 刷新 Access Token | 匿名公开（携带 Refresh Token） |
+| `GET` | `/api/v1/auth/me` | 获取当前鉴权登录用户的基础信息与权限列表 | 已登录鉴权 |
+| `GET` | `/api/v1/user/profile` | 查询当前用户个人资料 | 已登录鉴权 |
+| `PUT` | `/api/v1/user/profile` | 更新当前用户个人资料（昵称、头像、简介、机构） | 已登录鉴权 |
+| `POST` | `/api/v1/user/identity/submit` | 提交实名认证申请（身份证号加密存储，哈希判重） | 已登录鉴权 |
+| `GET` | `/api/v1/user/identity` | 查询当前用户的实名认证进度与脱敏信息 | 已登录鉴权 |
+| `GET` | `/api/v1/user/investment-profile` | 获取当前用户的投资画像与风险偏好评级 | 已登录鉴权 |
+| `PUT` | `/api/v1/user/investment-profile` | 投资者问卷评测/主动更新风险偏好与行业偏好 | 已登录鉴权 |
+| `POST` | `/api/v1/admin/user/identity/review`| 管理员审核实名认证申请（通过/驳回） | 需 `ROLE_ADMIN` |
+| `GET` | `/api/v1/admin/user/list` | 管理员分页查询系统用户与角色状态 | 需 `ROLE_ADMIN` |
+
+

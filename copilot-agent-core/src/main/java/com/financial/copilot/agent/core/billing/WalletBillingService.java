@@ -262,4 +262,17 @@ public class WalletBillingService {
         Long uid = userId != null ? userId : 1L;
         return billingPort.getUsageTrend(uid, days);
     }
+
+    /**
+     * 新用户注册自动赠送初始体验算力包
+     *
+     * @param userId     用户 ID
+     * @param giftPoints 赠送算力点数 (例如 10,000 点)
+     */
+    public void grantInitialTrialPoints(Long userId, long giftPoints) {
+        if (userId == null || giftPoints <= 0) return;
+        billingPort.getOrCreateWallet(userId, null);
+        billingPort.addRechargePoints(userId, giftPoints);
+        log.info("[WALLET-GIFT] 新用户注册成功，赠送初始体验算力点: userId={}, points={}", userId, giftPoints);
+    }
 }

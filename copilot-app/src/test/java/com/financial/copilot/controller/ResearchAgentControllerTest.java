@@ -1,6 +1,7 @@
 package com.financial.copilot.controller;
 
 import com.financial.copilot.agent.core.workflow.FinancialResearchWorkflow;
+import com.financial.copilot.agent.core.user.service.UserService;
 import com.financial.copilot.common.event.ResearchStreamEvent;
 import com.financial.copilot.common.result.ApiResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,9 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 /**
@@ -32,12 +31,14 @@ class ResearchAgentControllerTest {
     private ResearchAgentController controller;
     private FinancialResearchWorkflow mockWorkflow;
     private com.financial.copilot.agent.core.billing.WalletBillingService mockBillingService;
+    private UserService mockUserService;
 
     @BeforeEach
     void setUp() {
         mockWorkflow = Mockito.mock(FinancialResearchWorkflow.class);
         mockBillingService = Mockito.mock(com.financial.copilot.agent.core.billing.WalletBillingService.class);
-        controller = new ResearchAgentController(mockWorkflow, mockBillingService);
+        mockUserService = Mockito.mock(UserService.class);
+        controller = new ResearchAgentController(mockWorkflow, mockBillingService, mockUserService);
     }
 
     /**
@@ -64,7 +65,7 @@ class ResearchAgentControllerTest {
     void testStreamPipelineChat() {
         String prompt = "帮我筛选过去三年表现稳定的医药基金，然后分析前 5 名基金经理的能力，再比较其中最优秀的两个，最后生成投资建议。";
 
-        when(mockWorkflow.executePipelineStream(anyString(), anyBoolean()))
+        when(mockWorkflow.executePipelineStream(anyString(), anyBoolean(), any()))
                 .thenReturn(Flux.just(
                         ResearchStreamEvent.plan(4, "测试规划"),
                         ResearchStreamEvent.stepStart(1, 4, "SCREENING", "初筛中"),
@@ -88,9 +89,9 @@ class ResearchAgentControllerTest {
         req.setPrompt("分析中欧医疗健康混合A");
         req.setEnableThinking(true);
 
-        when(mockWorkflow.execute(anyString(), anyBoolean())).thenReturn("# 投研分析报告");
+        when(mockWorkflow.execute(anyString(), anyBoolean(), any())).thenReturn("# 投研分析报告");
 
-        ApiResult<String> result = controller.syncChat(req);
+        ApiResult<String> result = controller.syncChat(req).block();
         assertNotNull(result);
         assertEquals(200, result.getCode());
         assertEquals("# 投研分析报告", result.getData());

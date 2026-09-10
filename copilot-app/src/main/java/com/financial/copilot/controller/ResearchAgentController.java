@@ -1,13 +1,18 @@
 package com.financial.copilot.controller;
 
+import com.financial.copilot.agent.core.billing.WalletBillingService;
+import com.financial.copilot.agent.core.user.service.UserService;
 import com.financial.copilot.agent.core.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.common.event.ResearchStreamEvent;
 import com.financial.copilot.common.result.ApiResult;
+import com.financial.copilot.config.security.SecurityUtils;
+import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
@@ -35,18 +40,26 @@ public class ResearchAgentController {
     /**
      * 算力计量计费与账户钱包业务服务
      */
-    private final com.financial.copilot.agent.core.billing.WalletBillingService billingService;
+    private final WalletBillingService billingService;
 
     /**
-     * 构造函数，自动注入工作流组件与计费中心
+     * 用户统一管理与画像业务服务
+     */
+    private final UserService userService;
+
+    /**
+     * 构造函数，自动注入工作流组件、计费中心与用户画像服务
      *
      * @param workflow       投研总调度工作流
      * @param billingService 算力计费与钱包服务
+     * @param userService    用户业务服务
      */
     public ResearchAgentController(FinancialResearchWorkflow workflow,
-                                   com.financial.copilot.agent.core.billing.WalletBillingService billingService) {
+                                   WalletBillingService billingService,
+                                   UserService userService) {
         this.workflow = workflow;
         this.billingService = billingService;
+        this.userService = userService;
     }
 
     /**
@@ -76,11 +89,12 @@ public class ResearchAgentController {
      * 依次产生 PLAN、STEP_START、STEP_COMPLETE、CONTENT、DONE 等结构化事件。
      * 客户端可通过 enableThinking 一键开启深度思考推理（默认为 false 极速标准模式）。
      * 执行前执行算力点数前置探测（最低起步 100 点），不足则抛出 402 欠费异常。
+     * 自动挂载当前登录用户的投资风险画像约束。
      * </p>
      *
      * @param prompt         用户自然语言诉求
      * @param enableThinking 是否开启深度思考推理模式
-     * @param userId         用户 ID (可选)
+     * @param userId         用户 ID (可选，若不传则优先取当前已认证的 UID)
      * @return 响应式事件流
      */
     @GetMapping(value = "/chat/pipeline/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -88,20 +102,25 @@ public class ResearchAgentController {
             @RequestParam("prompt") String prompt,
             @RequestParam(value = "enableThinking", defaultValue = "false") Boolean enableThinking,
             @RequestParam(value = "userId", required = false) Long userId) {
-        Long uid = userId != null ? userId : 1L;
-        boolean thinking = Boolean.TRUE.equals(enableThinking);
-        // 1. 前置配额与余额探测 (门槛 100 算力点)
-        billingService.checkBalance(uid, 100L);
+        return resolveUserId(userId).flatMapMany(uid -> {
+            boolean thinking = Boolean.TRUE.equals(enableThinking);
+            // 1. 前置配额与余额探测 (门槛 100 算力点)
+            billingService.checkBalance(uid, 100L);
 
-        log.info("[HTTP-SSE-PIPELINE] 收到阶段式投研流水线请求: user={}, prompt={}, enableThinking={}", uid, prompt, thinking);
+            // 获取用户投资画像
+            UserInvestmentProfile userProfile = userService.getInvestmentProfile(uid);
 
-        long startTime = System.currentTimeMillis();
-        String model = thinking ? "deepseek-reasoner" : "deepseek-chat";
-        return workflow.executePipelineStream(prompt, thinking)
-                .doOnComplete(() -> {
-                    long latency = System.currentTimeMillis() - startTime;
-                    billingService.deductTokenPoints(uid, null, "PIPELINE_STREAM", "DEEPSEEK", model, 800, 1500, latency);
-                });
+            log.info("[HTTP-SSE-PIPELINE] 收到阶段式投研流水线请求: user={}, prompt={}, enableThinking={}, riskLevel={}",
+                    uid, prompt, thinking, userProfile != null ? userProfile.getRiskToleranceLevel() : "none");
+
+            long startTime = System.currentTimeMillis();
+            String model = thinking ? "deepseek-reasoner" : "deepseek-chat";
+            return workflow.executePipelineStream(prompt, thinking, userProfile)
+                    .doOnComplete(() -> {
+                        long latency = System.currentTimeMillis() - startTime;
+                        billingService.deductTokenPoints(uid, null, "PIPELINE_STREAM", "DEEPSEEK", model, 800, 1500, latency);
+                    });
+        });
     }
 
     /**
@@ -111,26 +130,41 @@ public class ResearchAgentController {
      * @return 最终研报 Markdown 结果
      */
     @PostMapping("/chat")
-    public ApiResult<String> syncChat(@RequestBody ChatRequest request) {
-        Long uid = request.getUserId() != null ? request.getUserId() : 1L;
-        boolean thinking = Boolean.TRUE.equals(request.getEnableThinking());
-        // 1. 前置配额与余额探测 (门槛 100 算力点)
-        billingService.checkBalance(uid, 100L);
+    public Mono<ApiResult<String>> syncChat(@RequestBody ChatRequest request) {
+        return resolveUserId(request.getUserId()).map(uid -> {
+            boolean thinking = Boolean.TRUE.equals(request.getEnableThinking());
+            // 1. 前置配额与余额探测 (门槛 100 算力点)
+            billingService.checkBalance(uid, 100L);
 
-        log.info("[HTTP-POST] 收到同步投研分析请求: user={}, prompt={}, enableThinking={}", uid, request.getPrompt(), thinking);
+            // 获取用户投资画像
+            UserInvestmentProfile userProfile = userService.getInvestmentProfile(uid);
 
-        long startTime = System.currentTimeMillis();
-        String report = workflow.execute(request.getPrompt(), thinking);
-        long latency = System.currentTimeMillis() - startTime;
+            log.info("[HTTP-POST] 收到同步投研分析请求: user={}, prompt={}, enableThinking={}, riskLevel={}",
+                    uid, request.getPrompt(), thinking, userProfile != null ? userProfile.getRiskToleranceLevel() : "none");
 
-        // 2. 扣费记账
-        String model = thinking ? "deepseek-reasoner" : "deepseek-chat";
-        int promptTokens = Math.max(10, request.getPrompt().length() * 2);
-        int completionTokens = Math.max(50, report != null ? report.length() * 2 : 100);
-        billingService.deductTokenPoints(uid, null, "COMPOSITE_PIPELINE", "DEEPSEEK", model,
-                promptTokens, completionTokens, latency);
+            long startTime = System.currentTimeMillis();
+            String report = workflow.execute(request.getPrompt(), thinking, userProfile);
+            long latency = System.currentTimeMillis() - startTime;
 
-        return ApiResult.success(report);
+            // 2. 扣费记账
+            String model = thinking ? "deepseek-reasoner" : "deepseek-chat";
+            int promptTokens = Math.max(10, request.getPrompt().length() * 2);
+            int completionTokens = Math.max(50, report != null ? report.length() * 2 : 100);
+            billingService.deductTokenPoints(uid, null, "COMPOSITE_PIPELINE", "DEEPSEEK", model,
+                    promptTokens, completionTokens, latency);
+
+            return ApiResult.success(report);
+        });
+    }
+
+    /**
+     * 辅助解析当前有效用户 ID
+     */
+    private Mono<Long> resolveUserId(Long paramUserId) {
+        if (paramUserId != null) {
+            return Mono.just(paramUserId);
+        }
+        return SecurityUtils.getCurrentUserId().defaultIfEmpty(1L);
     }
 
     /**

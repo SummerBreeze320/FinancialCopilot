@@ -234,3 +234,155 @@ INSERT INTO sys_user_wallet (user_id, balance_points, total_recharged_points, wa
 VALUES (1, 100000, 100000, 'NORMAL', 0)
 ON CONFLICT (user_id) DO NOTHING;
 
+-- ==============================================================================
+-- 12. 用户、金融实名认证与 RBAC 权限中心
+-- ==============================================================================
+
+-- 12.1 系统用户基础表
+CREATE TABLE IF NOT EXISTS sys_user (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(100) NOT NULL,
+    mobile VARCHAR(20) UNIQUE,
+    email VARCHAR(100) UNIQUE,
+    status VARCHAR(20) DEFAULT 'ACTIVE',                -- ACTIVE(正常), LOCKED(锁定), DISABLED(禁用)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_username ON sys_user(username);
+
+-- 12.2 系统角色表
+CREATE TABLE IF NOT EXISTS sys_role (
+    id BIGSERIAL PRIMARY KEY,
+    role_code VARCHAR(50) NOT NULL UNIQUE,              -- ROLE_ADMIN, ROLE_ANALYST, ROLE_USER
+    role_name VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
+    is_system BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12.3 系统权限点表
+CREATE TABLE IF NOT EXISTS sys_permission (
+    id BIGSERIAL PRIMARY KEY,
+    perm_code VARCHAR(100) NOT NULL UNIQUE,             -- research:chat, research:thinking, billing:recharge, admin:llm:config
+    perm_name VARCHAR(100) NOT NULL,
+    resource_type VARCHAR(20) DEFAULT 'API',
+    path VARCHAR(200),
+    method VARCHAR(10),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12.4 用户-角色关联表
+CREATE TABLE IF NOT EXISTS sys_user_role (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES sys_user(id) ON DELETE CASCADE,
+    role_id BIGINT NOT NULL REFERENCES sys_role(id) ON DELETE CASCADE,
+    CONSTRAINT uk_user_role UNIQUE(user_id, role_id)
+);
+
+-- 12.5 角色-权限关联表
+CREATE TABLE IF NOT EXISTS sys_role_permission (
+    id BIGSERIAL PRIMARY KEY,
+    role_id BIGINT NOT NULL REFERENCES sys_role(id) ON DELETE CASCADE,
+    permission_id BIGINT NOT NULL REFERENCES sys_permission(id) ON DELETE CASCADE,
+    CONSTRAINT uk_role_perm UNIQUE(role_id, permission_id)
+);
+
+-- 12.6 用户个人资料表
+CREATE TABLE IF NOT EXISTS sys_user_profile (
+    user_id BIGINT PRIMARY KEY REFERENCES sys_user(id) ON DELETE CASCADE,
+    nickname VARCHAR(50),
+    avatar_url VARCHAR(255),
+    company VARCHAR(100),
+    occupation VARCHAR(100),
+    bio VARCHAR(255),
+    city VARCHAR(50),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12.7 金融实名认证表 (KYC)
+CREATE TABLE IF NOT EXISTS sys_user_identity (
+    user_id BIGINT PRIMARY KEY REFERENCES sys_user(id) ON DELETE CASCADE,
+    real_name VARCHAR(50) NOT NULL,
+    id_card_type VARCHAR(20) DEFAULT 'ID_CARD',         -- ID_CARD, PASSPORT, HK_MACAO_PASS
+    id_card_hash VARCHAR(64) NOT NULL UNIQUE,           -- 身份证 SHA-256 哈希判重
+    id_card_encrypted VARCHAR(255) NOT NULL,            -- 对称加密密文
+    id_card_masked VARCHAR(30) NOT NULL,               -- 前端脱敏显示 (如: 110101********1234)
+    verify_status VARCHAR(20) DEFAULT 'PENDING',        -- UNVERIFIED, PENDING, VERIFIED, REJECTED
+    reject_reason VARCHAR(255),
+    verified_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12.8 用户投资画像与偏好表 (投研个性化底座)
+CREATE TABLE IF NOT EXISTS sys_user_investment_profile (
+    user_id BIGINT PRIMARY KEY REFERENCES sys_user(id) ON DELETE CASCADE,
+    risk_tolerance_level VARCHAR(20) DEFAULT 'C3',      -- C1(保守型), C2(相对保守型), C3(平衡型), C4(相对积极型), C5(进取型)
+    investment_horizon VARCHAR(20) DEFAULT 'MEDIUM_TERM',-- SHORT_TERM(<1年), MEDIUM_TERM(1-3年), LONG_TERM(>3年)
+    preferred_asset_classes TEXT,                       -- JSON 数组，如 ["FUND", "STOCK"]
+    preferred_sectors TEXT,                             -- JSON 数组，如 ["医药生物", "半导体芯片", "大消费"]
+    max_drawdown_tolerance NUMERIC(5, 2) DEFAULT 15.00, -- 最大承受回撤 (%)
+    target_annual_return NUMERIC(5, 2) DEFAULT 12.00,   -- 目标年化收益率 (%)
+    investment_style VARCHAR(30) DEFAULT 'BALANCED',    -- VALUE, GROWTH, BALANCED, DIVIDEND
+    single_position_limit NUMERIC(5, 2) DEFAULT 20.00,  -- 单标的持仓上限比例 (%)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 预置基础角色
+INSERT INTO sys_role (id, role_code, role_name, description, is_system)
+VALUES 
+    (1, 'ROLE_ADMIN', '平台研发管理员', '拥有大模型参数热切换、实名审批与用户全量管理特权', true),
+    (2, 'ROLE_ANALYST', '专业机构分析师', '拥有深度思考推理、批量对标与高并发投研特权', true),
+    (3, 'ROLE_USER', '个人注册投资者', '拥有标准投研检索问答与基础点数钱包功能', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 预置基础权限
+INSERT INTO sys_permission (id, perm_code, perm_name, resource_type)
+VALUES
+    (1, 'research:chat', '标准投研问答', 'API'),
+    (2, 'research:thinking', '深度思考推理推演', 'API'),
+    (3, 'billing:recharge', '算力点数充值', 'API'),
+    (4, 'admin:llm:config', '大模型动态热切换', 'API'),
+    (5, 'admin:user:manage', '用户与实名风控管理', 'API')
+ON CONFLICT (id) DO NOTHING;
+
+-- 预置角色权限
+INSERT INTO sys_role_permission (role_id, permission_id) VALUES
+    (1, 1), (1, 2), (1, 3), (1, 4), (1, 5),
+    (2, 1), (2, 2), (2, 3),
+    (3, 1), (3, 3)
+ON CONFLICT DO NOTHING;
+
+-- 预置系统管理员与演示用户 (初始密码均为 123456，BCrypt 哈希为 $2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2)
+INSERT INTO sys_user (id, username, password_hash, mobile, email, status)
+VALUES
+    (1, 'admin', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '13800000001', 'admin@financialcopilot.com', 'ACTIVE'),
+    (2, 'analyst', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '13800000002', 'analyst@fund.com', 'ACTIVE'),
+    (3, 'investor', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '13800000003', 'investor@qq.com', 'ACTIVE')
+ON CONFLICT (id) DO NOTHING;
+
+-- 关联用户角色
+INSERT INTO sys_user_role (user_id, role_id) VALUES
+    (1, 1),
+    (2, 2),
+    (3, 3)
+ON CONFLICT DO NOTHING;
+
+-- 预置用户资料
+INSERT INTO sys_user_profile (user_id, nickname, avatar_url, company, occupation, bio, city)
+VALUES
+    (1, '平台超管', 'https://avatar.vercel.sh/admin', 'FinancialCopilot', '算法架构师', '系统首席架构', '上海'),
+    (2, '王牌分析师', 'https://avatar.vercel.sh/analyst', '中欧基金', '公募资深研究员', '专注医药与大健康成长股挖掘', '深圳'),
+    (3, '价值投资者', 'https://avatar.vercel.sh/investor', '个人投资', '独立投资人', '寻找安全边际与稳健复利', '北京')
+ON CONFLICT (user_id) DO NOTHING;
+
+-- 预置用户投资画像 (为 User 2 & 3 分别设置 C4 进取型与 C3 平衡型)
+INSERT INTO sys_user_investment_profile (user_id, risk_tolerance_level, investment_horizon, preferred_asset_classes, preferred_sectors, max_drawdown_tolerance, target_annual_return, investment_style, single_position_limit)
+VALUES
+    (1, 'C5', 'LONG_TERM', '["FUND","STOCK","FUTURES"]', '["人工智能","半导体芯片","算力硬件"]', 25.00, 20.00, 'GROWTH', 30.00),
+    (2, 'C4', 'MEDIUM_TERM', '["FUND","STOCK"]', '["医药生物","医疗器械","创新药"]', 18.00, 15.00, 'GROWTH', 25.00),
+    (3, 'C3', 'LONG_TERM', '["FUND"]', '["大消费","红利低波","金融地产"]', 12.00, 10.00, 'BALANCED', 20.00)
+ON CONFLICT (user_id) DO NOTHING;
+
+

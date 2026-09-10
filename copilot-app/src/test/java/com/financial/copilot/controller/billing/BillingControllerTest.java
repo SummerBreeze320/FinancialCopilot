@@ -49,7 +49,7 @@ class BillingControllerTest {
                 .build();
         when(mockBillingService.getWallet(1L)).thenReturn(walletDTO);
 
-        ApiResult<WalletDTO> result = controller.getWallet(1L);
+        ApiResult<WalletDTO> result = controller.getWallet(1L).block();
         assertNotNull(result);
         assertEquals(200, result.getCode());
         assertEquals(86400L, result.getData().getBalancePoints());
@@ -87,7 +87,7 @@ class BillingControllerTest {
 
         when(mockBillingService.createOrder(1L, 2L, "WECHAT")).thenReturn(order);
 
-        ApiResult<RechargeOrder> result = controller.createOrder(req, 1L);
+        ApiResult<RechargeOrder> result = controller.createOrder(req, 1L).block();
         assertNotNull(result);
         assertEquals(200, result.getCode());
         assertEquals("ORD20260910001", result.getData().getOrderNo());
@@ -125,10 +125,12 @@ class BillingControllerTest {
         when(mockBillingService.listPricing())
                 .thenReturn(List.of(ModelPricing.builder().modelName("deepseek-chat").build()));
 
-        ApiResult<Map<String, Object>> ledgerResult = controller.getLedger(1L, 1, 10, null, null);
+        ApiResult<Map<String, Object>> ledgerResult = controller.getLedger(1L, 1, 10, null, null).block();
+        assertNotNull(ledgerResult);
         assertEquals(200, ledgerResult.getCode());
 
-        ApiResult<List<UsageTrendPointDTO>> trendResult = controller.getUsageTrend(1L, 7);
+        ApiResult<List<UsageTrendPointDTO>> trendResult = controller.getUsageTrend(1L, 7).block();
+        assertNotNull(trendResult);
         assertEquals(200, trendResult.getCode());
         assertEquals(1, trendResult.getData().size());
 

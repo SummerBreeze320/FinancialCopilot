@@ -2,6 +2,7 @@ package com.financial.copilot.agent.core.pipeline;
 
 import com.financial.copilot.common.fund.dto.FundMetricsDTO;
 import com.financial.copilot.domain.fund.entity.FundInfo;
+import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>多维经理能力评分矩阵 (managerRatings)</li>
  *   <li>决赛圈两强标的代码 (topCandidates)</li>
  *   <li>横向对标事实数据 (comparisonFacts)</li>
+ *   <li>用户投资画像偏好 (userInvestmentProfile)</li>
  *   <li>最终合成投研研报 (finalReport)</li>
  * </ul>
  * 采用并发安全容器实现，支持并发 Fan-Out / Fan-In 评估模式。
@@ -41,6 +43,9 @@ public class ResearchBlackboard {
 
     /** 横向对标事实上下文 Key */
     public static final String KEY_COMPARISON_FACTS = "comparisonFacts";
+
+    /** 用户投资画像偏好 Key */
+    public static final String KEY_USER_INVESTMENT_PROFILE = "userInvestmentProfile";
 
     /** 最终投资建议研报 Key */
     public static final String KEY_FINAL_REPORT = "finalReport";
@@ -142,6 +147,26 @@ public class ResearchBlackboard {
             return (List<String>) list;
         }
         return Collections.emptyList();
+    }
+
+    /**
+     * 获取当前研报目标用户的投资画像与风险偏好
+     *
+     * @return 用户投资偏好画像实体，未设置时返回 null
+     */
+    public UserInvestmentProfile getUserInvestmentProfile() {
+        return get(KEY_USER_INVESTMENT_PROFILE, UserInvestmentProfile.class);
+    }
+
+    /**
+     * 设置当前研报目标用户的投资画像与风险偏好
+     *
+     * @param profile 用户投资画像
+     */
+    public void setUserInvestmentProfile(UserInvestmentProfile profile) {
+        if (profile != null) {
+            state.put(KEY_USER_INVESTMENT_PROFILE, profile);
+        }
     }
 
     /**

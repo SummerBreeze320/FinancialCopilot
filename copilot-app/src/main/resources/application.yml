@@ -11,13 +11,17 @@ spring:
     driver-class-name: org.postgresql.Driver
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
-  type-aliases-package: com.financial.copilot.data.fund.po
+  type-aliases-package: com.financial.copilot.data.*.po
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
-# 多厂商大模型核心配置 (copilot.llm)
+# 金融智能投研核心配置 (copilot)
 copilot:
+  jwt:
+    secret: ${JWT_SECRET:FinancialCopilotSecretKeyForJwtAuthentication2026SecureKeyWithAtLeast256BitsLong!}
+    access-token-expiration-ms: 7200000
+    refresh-token-expiration-ms: 604800000
   llm:
     default-provider: DEEPSEEK
     default-model: ${LLM_MODEL:deepseek-chat}

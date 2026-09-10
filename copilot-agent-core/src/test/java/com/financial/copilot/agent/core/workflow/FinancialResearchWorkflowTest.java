@@ -28,6 +28,8 @@ import com.financial.copilot.data.fund.mapper.FundReportVectorMapper;
 import com.financial.copilot.domain.fund.entity.FundInfo;
 import com.financial.copilot.domain.fund.port.FundDataPort;
 import com.financial.copilot.domain.stock.port.StockDataPort;
+import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
+import com.financial.copilot.domain.user.enums.RiskToleranceLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -166,6 +168,28 @@ class FinancialResearchWorkflowTest {
         assertFalse(report.isBlank());
 
         List<ResearchStreamEvent> events = workflow.executePipelineStream(complexPrompt, true).collectList().block();
+        assertNotNull(events);
+        assertFalse(events.isEmpty());
+        assertTrue(events.stream().anyMatch(e -> "PLAN".equals(e.getType())));
+    }
+
+    @Test
+    @DisplayName("验证用户个性化投资画像注入工作流与黑板上下文")
+    void testExecuteWithUserInvestmentProfile() {
+        String prompt = "为我量身定制医药与消费基金组合投资方案";
+
+        UserInvestmentProfile profile = UserInvestmentProfile.builder()
+                .userId(9001L)
+                .riskToleranceLevel(RiskToleranceLevel.C4)
+                .preferredSectors(List.of("医药", "大消费"))
+                .maxDrawdownTolerance(new BigDecimal("25.00"))
+                .build();
+
+        String report = workflow.execute(prompt, false, profile);
+        assertNotNull(report);
+        assertFalse(report.isBlank());
+
+        List<ResearchStreamEvent> events = workflow.executePipelineStream(prompt, false, profile).collectList().block();
         assertNotNull(events);
         assertFalse(events.isEmpty());
         assertTrue(events.stream().anyMatch(e -> "PLAN".equals(e.getType())));

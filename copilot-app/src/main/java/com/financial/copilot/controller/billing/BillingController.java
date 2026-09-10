@@ -2,6 +2,7 @@ package com.financial.copilot.controller.billing;
 
 import com.financial.copilot.agent.core.billing.WalletBillingService;
 import com.financial.copilot.common.result.ApiResult;
+import com.financial.copilot.config.security.SecurityUtils;
 import com.financial.copilot.domain.billing.dto.RechargeOrderCreateDTO;
 import com.financial.copilot.domain.billing.dto.UsageTrendPointDTO;
 import com.financial.copilot.domain.billing.dto.WalletDTO;
@@ -10,6 +11,7 @@ import com.financial.copilot.domain.billing.entity.RechargeOrder;
 import com.financial.copilot.domain.billing.entity.RechargePackage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -41,14 +43,15 @@ public class BillingController {
     /**
      * 查询当前登录用户的算力钱包资产状态
      *
-     * @param userId 用户 ID (可选，默认为 1)
+     * @param userId 用户 ID (可选，未提供时动态取已认证用户)
      * @return 钱包展示对象
      */
     @GetMapping("/wallet")
-    public ApiResult<WalletDTO> getWallet(@RequestParam(value = "userId", required = false) Long userId) {
-        Long uid = userId != null ? userId : 1L;
-        log.info("[HTTP-BILLING] 查询用户算力资产: userId={}", uid);
-        return ApiResult.success(billingService.getWallet(uid));
+    public Mono<ApiResult<WalletDTO>> getWallet(@RequestParam(value = "userId", required = false) Long userId) {
+        return resolveUserId(userId).map(uid -> {
+            log.info("[HTTP-BILLING] 查询用户算力资产: userId={}", uid);
+            return ApiResult.success(billingService.getWallet(uid));
+        });
     }
 
     /**
@@ -66,17 +69,18 @@ public class BillingController {
      * 创建算力充值交易订单
      *
      * @param request 创建订单参数 (套餐 ID 与支付通道)
-     * @param userId  用户 ID (可选，默认为 1)
+     * @param userId  用户 ID (可选，未提供时动态取已认证用户)
      * @return 待支付交易订单详情
      */
     @PostMapping("/order/create")
-    public ApiResult<RechargeOrder> createOrder(@RequestBody RechargeOrderCreateDTO request,
-                                               @RequestParam(value = "userId", required = false) Long userId) {
-        Long uid = userId != null ? userId : 1L;
-        log.info("[HTTP-BILLING] 用户发起算力充值下单: userId={}, packageId={}, channel={}",
-                uid, request.getPackageId(), request.getPayChannel());
-        RechargeOrder order = billingService.createOrder(uid, request.getPackageId(), request.getPayChannel());
-        return ApiResult.success(order);
+    public Mono<ApiResult<RechargeOrder>> createOrder(@RequestBody RechargeOrderCreateDTO request,
+                                                      @RequestParam(value = "userId", required = false) Long userId) {
+        return resolveUserId(userId).map(uid -> {
+            log.info("[HTTP-BILLING] 用户发起算力充值下单: userId={}, packageId={}, channel={}",
+                    uid, request.getPackageId(), request.getPayChannel());
+            RechargeOrder order = billingService.createOrder(uid, request.getPackageId(), request.getPayChannel());
+            return ApiResult.success(order);
+        });
     }
 
     /**
@@ -105,15 +109,16 @@ public class BillingController {
      * @return 分页结果映射 (total, list, page, size)
      */
     @GetMapping("/ledger")
-    public ApiResult<Map<String, Object>> getLedger(
+    public Mono<ApiResult<Map<String, Object>>> getLedger(
             @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "model", required = false) String model,
             @RequestParam(value = "taskType", required = false) String taskType) {
-        Long uid = userId != null ? userId : 1L;
-        log.info("[HTTP-BILLING] 分页查询消费流水: userId={}, page={}, size={}, model={}", uid, page, size, model);
-        return ApiResult.success(billingService.getLedger(uid, page, size, model, taskType));
+        return resolveUserId(userId).map(uid -> {
+            log.info("[HTTP-BILLING] 分页查询消费流水: userId={}, page={}, size={}, model={}", uid, page, size, model);
+            return ApiResult.success(billingService.getLedger(uid, page, size, model, taskType));
+        });
     }
 
     /**
@@ -124,12 +129,13 @@ public class BillingController {
      * @return 每日时序数据点列表
      */
     @GetMapping("/stats/trend")
-    public ApiResult<List<UsageTrendPointDTO>> getUsageTrend(
+    public Mono<ApiResult<List<UsageTrendPointDTO>>> getUsageTrend(
             @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "days", defaultValue = "7") int days) {
-        Long uid = userId != null ? userId : 1L;
-        log.info("[HTTP-BILLING] 查询消费趋势走势: userId={}, days={}", uid, days);
-        return ApiResult.success(billingService.getUsageTrend(uid, days));
+        return resolveUserId(userId).map(uid -> {
+            log.info("[HTTP-BILLING] 查询消费趋势走势: userId={}, days={}", uid, days);
+            return ApiResult.success(billingService.getUsageTrend(uid, days));
+        });
     }
 
     /**
@@ -141,5 +147,15 @@ public class BillingController {
     public ApiResult<List<ModelPricing>> getPricing() {
         log.info("[HTTP-BILLING] 查询大模型公开计价矩阵");
         return ApiResult.success(billingService.listPricing());
+    }
+
+    /**
+     * 辅助解析有效用户 ID
+     */
+    private Mono<Long> resolveUserId(Long paramUserId) {
+        if (paramUserId != null) {
+            return Mono.just(paramUserId);
+        }
+        return SecurityUtils.getCurrentUserId().defaultIfEmpty(1L);
     }
 }

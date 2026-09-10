@@ -14,7 +14,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @author FinancialCopilot
  */
 @SpringBootApplication(scanBasePackages = "com.financial.copilot")
-@MapperScan({"com.financial.copilot.data.fund.mapper", "com.financial.copilot.data.stock.mapper"})
+@MapperScan({
+        "com.financial.copilot.data.fund.mapper",
+        "com.financial.copilot.data.stock.mapper",
+        "com.financial.copilot.data.billing.mapper",
+        "com.financial.copilot.data.user.mapper"
+})
 public class FinancialCopilotApplication {
 
     /**
