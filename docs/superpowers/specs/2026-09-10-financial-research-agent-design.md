@@ -2,9 +2,11 @@
 
 > **设计日期**：2026-09-10  
 > **文档定位**：系统设计标准与实施基准规范 (Design Specification)  
+> **设计日期**：2026-09-10  
+> **文档定位**：系统设计标准与实施基准规范 (Design Specification)  
 > **核心框架**：AgentScope Java 2.x + Spring Boot 3.3.x (Java 21 LTS, 启用虚拟线程)  
 > **持久层规范**：Lombok + MyBatis-Plus 3.5.x + PostgreSQL 16 + PGVector  
-> **推理模型**：DeepSeek 官方 API (DeepSeek-V3 / DeepSeek-R1)  
+> **推理模型底座**：**多厂商统一大模型适配架构 (Multi-Provider LLM Engine)**，预置支持 DeepSeek、OpenAI、阿里通义千问 (Qwen)、智谱清言 (GLM)、本地 Ollama 及自定义兼容端点，支持前端无缝动态热切换与超参数调优。  
 > **领域定位**：**通用投研底座**，首期深度实施**公募基金（Fund）领域**，预留**股票（Stock）**、**期货（Futures）**、**银行理财（Wealth Management）**平滑扩展接口。
 
 ---
@@ -495,3 +497,284 @@ data: {"type":"DONE"}
 4. **里程碑 4 (Week 4)：阶段式 SSE 交互与端到端复杂场景闭环**
    - 完善 WebFlux 控制器，输出阶段事件（`step_start`, `step_complete`）与报告打字机流。
    - 验证典型复合投研用例：“帮我筛选过去三年表现稳定的医药基金，然后分析前 5 名基金经理的能力，再比较其中最优秀的两个，最后生成投资建议”。
+
+---
+
+## 9. 多厂商大模型适配底座与前端动态调参架构设计 (Multi-Provider LLM Engine)
+
+### 9.1 架构设计理念
+为满足不同机构和个人投资者在不同场景下的模型选择诉求（如：高精度推理采用 DeepSeek-R1 / OpenAI o1，低成本通用筛选采用 DeepSeek-V3 / Qwen-Plus，合规私有化场景采用本地 Ollama / vLLM），系统将大模型通信层全面解耦并抽象为**多厂商统一适配底座**。
+
+```mermaid
+graph TD
+    Frontend([前端 Web 终端 / 设置抽屉]) -->|1. 查询可用厂商与模型 GET /api/v1/llm/providers| LlmConfigController[LLM 配置管理控制器 LlmConfigController]
+    Frontend -->|2. 修改全局默认配置 POST /api/v1/llm/config| LlmConfigController
+    Frontend -->|3. 连通性测试 POST /api/v1/llm/test| LlmConfigController
+    Frontend -->|4. 会话请求携带参数 LlmSettingsDTO| ResearchAgentController[投研接口控制器 ResearchAgentController]
+
+    ResearchAgentController --> FinancialResearchWorkflow[投研总工作流 FinancialResearchWorkflow]
+    FinancialResearchWorkflow --> ResearchBlackboard[投研黑板 ResearchBlackboard (存储生效模型设置)]
+
+    subgraph MultiProviderEngine [多厂商大模型通信底座 Multi-Provider Engine]
+        LlmService[统一大模型服务接口 LlmService]
+        LlmProviderRegistry[厂商元数据与模型字典注册表 LlmProviderRegistry]
+        LlmConfigManager[全局动态配置管理器 LlmConfigManager]
+        LlmWebClientFactory[动态高性能 WebClient 缓存工厂 LlmDynamicWebClientFactory]
+        DefaultLlmService[统一 OpenAI 驱动实现 DefaultLlmService]
+    end
+
+    LlmService --> DefaultLlmService
+    DefaultLlmService --> LlmProviderRegistry
+    DefaultLlmService --> LlmConfigManager
+    DefaultLlmService --> LlmWebClientFactory
+
+    subgraph CloudAndLocalProviders [支持的底层模型生态]
+        DeepSeek[DeepSeek 官方 API (deepseek-chat / deepseek-reasoner)]
+        OpenAI[OpenAI 官方 API (gpt-4o / gpt-4o-mini / o1 / o3-mini)]
+        Qwen[阿里百炼 DashScope (qwen-plus / qwen-max / qwen-turbo)]
+        Zhipu[智谱清言 GLM (glm-4-plus / glm-4-flash)]
+        Ollama[本地私有化 Ollama (deepseek-r1 / qwen2.5 / llama3)]
+        Custom[自定义 OpenAI 兼容私有网关]
+    end
+
+    LlmWebClientFactory --> DeepSeek
+    LlmWebClientFactory --> OpenAI
+    LlmWebClientFactory --> Qwen
+    LlmWebClientFactory --> Zhipu
+    LlmWebClientFactory --> Ollama
+    LlmWebClientFactory --> Custom
+```
+
+### 9.2 预置支持的厂商与模型矩阵
+
+| 厂商标识 (`LlmProviderType`) | 厂商显示名称 | 默认 Base URL | 典型推荐模型 | 场景定位与特点 |
+| :--- | :--- | :--- | :--- | :--- |
+| `DEEPSEEK` (默认) | DeepSeek 深度求索 | `https://api.deepseek.com/v1` | `deepseek-chat`<br>`deepseek-reasoner` | 高性价比金融长文本投研分析与思维链推理 |
+| `OPENAI` | OpenAI | `https://api.openai.com/v1` | `gpt-4o`<br>`gpt-4o-mini`<br>`o1` | 业界标杆综合推理与结构化输出能力 |
+| `QWEN` | 阿里通义千问 (百炼) | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus`<br>`qwen-max`<br>`qwen-turbo` | 国内合规首选，具备优秀中文金融语义理解 |
+| `ZHIPU` | 智谱清言 (BigModel) | `https://open.bigmodel.cn/api/paas/v4` | `glm-4-plus`<br>`glm-4-flash` | 高速响应与企业级中文金融语料调优 |
+| `OLLAMA` | Ollama 本地部署 | `http://localhost:11434/v1` | `deepseek-r1:8b`<br>`qwen2.5:14b` | 完全离线私有化运行，零数据出境合规保障 |
+| `CUSTOM` | 自定义兼容端点 | 用户自填 | 用户自填 | 适配私有私有云网关 (如 vLLM、OneAPI、SiliconFlow) |
+
+### 9.3 运行时性能档位与思考强度规范（HIGH / MIDDLE / LOW）
+
+针对大模型的性能与推理开销调节，系统在 `LlmSettingsDTO` 中原生提供面向业务直观易用的 **“高中低” 三档调节器 (`LlmPerformanceLevel`)**：
+
+| 档位枚举 (`LlmPerformanceLevel`) | 档位显示名称 | 推理思考强度 (`reasoning_effort`) | 默认采样温度 (`temperature`) | 最大生成 Token (`maxTokens`) | 投研业务场景定位 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`LOW`** | **低 (极速 / 低耗)** | `"low"` | `0.0` (确定性最高) | `2048` | 快速自然语言意图初筛、代码实体提取、低延迟快速响应场景 |
+| **`MIDDLE`** (默认) | **中 (标准 / 平衡)** | `"medium"` | `0.2` (微创新平衡) | `4096` | 标准基金经理量化体检、研报定性观点检索、两两双标的常规横向对标 |
+| **`HIGH`** | **高 (深度 / 强化)** | `"high"` | `0.4` (多维推演) | `8192` | 跨周期深度长程归因、重仓股风格漂移穿透、CIO 级别资产配置与综合研报终审 |
+
+#### 双模兼容与智能映射机制：
+1. **一键预设应用 (Preset Mode)**：前端界面直接提供 `[ 低 (Low) | 中 (Middle) | 高 (High) ]` 分段控制器。用户切换档位时，系统自动联动预设的最佳 `temperature` 与 `maxTokens`；
+2. **推理模型深度集成 (Reasoning Effort)**：当所选模型具备深度思考能力（如 OpenAI `o1`、`o3-mini`、`deepseek-reasoner` 等）时，系统自动将档位映射为标准 API 字段 `reasoning_effort: "low" | "medium" | "high"` 随 Payload 提交给大模型；
+3. **高级微调覆盖 (Custom Override)**：若前端用户在高级设置中手动调整了数值型滑块（如显式指定了 `temperature = 0.7` 或 `maxTokens = 6000`），系统以用户显式指定的数值为最高优先级。
+
+### 9.4 运行时参数双层解析机制（Per-Request Override）
+
+系统采用“**全局系统默认 + 请求级动态热覆盖**”的解析模式：
+1. **系统默认层 (`application.yml` + `LlmConfigManager`)**：定义未传参时的默认厂商（默认 DeepSeek）、默认模型、默认档位（`MIDDLE`）等基础设定；
+2. **请求级动态覆盖 (`LlmSettingsDTO`)**：前端在界面上提供模型选择下拉框与性能超参数滑块。请求到达后端时，若包含非空设置字段，将**动态覆盖**系统默认值，仅对当前会话/请求生效；
+3. **全流程上下文穿透**：工作流入口将生效的 `LlmSettingsDTO` 存入 `ResearchBlackboard`，确保在多步骤链路中（筛选 -> 体检 -> 对标 -> 合成）所有子智能体保持完全一致的模型与档位配置。
+
+### 9.5 接口规范（RESTful & SSE）
+
+1. **`GET /api/v1/llm/providers`**：获取系统内置的所有厂商元数据、可用模型列表及高中低档位配置模板；
+2. **`GET /api/v1/llm/config`**：获取当前系统生效的全局默认大模型配置（含默认厂商、模型、高中低档位）；
+3. **`POST /api/v1/llm/config`**：更新系统全局默认大模型配置；
+4. **`POST /api/v1/llm/test`**：测试指定厂商、端点、API Key 与模型的连通性及网络延迟；
+5. **`POST /api/v1/research/chat`**：同步研报生成接口，请求体中包含可选字段 `llmSettings`（支持传递 `performanceLevel: "HIGH"|"MIDDLE"|"LOW"`）；
+6. **`GET /api/v1/research/chat/pipeline/stream`**：阶段式 SSE 流式接口，URL 查询参数支持可选传入 `provider`, `model`, `performanceLevel`, `temperature`, `topP`, `maxTokens`。
+
+### 9.6 彻底去兼容化设计重构路线
+
+- 彻底删除旧版单一模型配置类 `DeepSeekModelConfig` 与单体服务 `DeepSeekClientService`；
+- 统一建立 `LlmService` 标准契约；
+- 全工程 6 大核心 Agent（`TaskDecomposer`, `PlannerAgent`, `ReportSynthesizer`, `FundScreenerAgent`, `StockScreenerAgent`, `FundComparatorAgent`）全量直接依赖 `LlmService`；
+- 严格遵守 Lombok 风格与全量中文 Javadoc 注释规范。
+
+---
+
+## 10. 商业化运营与 Token 计量计费系统规范 (Token Metering, Billing & Commercialization)
+
+### 10.1 需求背景与产品模式定义 (PRD - 业务全景)
+
+作为专业级金融多资产投研 Copilot，系统在底层依赖多厂商异构大模型（DeepSeek-V3/R1、GPT-4o/o1、Qwen-Plus、GLM-4 等）进行深度计算、意图解构与长文研报生成。为实现商业化可持续闭环（SaaS / ToB 机构私有化授权 / ToC 投顾会员），系统构建了**企业级 Token 计量、计费、充值与账户钱包中心**。
+
+#### 商业化计费模式：
+1. **“点数制”统一虚拟货币（Compute Points / 智算点）**：
+   - **基准汇率**：`1 元人民币 (CNY) = 10,000 智算点`；
+   - 对客户屏蔽不同厂商极其零碎的“0.0015元/千tokens”小数感知，转换为整数点数扣减；
+2. **按量计费（Pay-as-you-go）+ 预付费规格包（Prepaid Packages）**：
+   - 客户通过在线购买充值包获得账户点数余额；
+   - 每次投研根据使用的实际模型、输入 Token 与输出 Token 实时精确扣费；
+3. **前置额度保护与并发流控 (Pre-check & Rate Limiting)**：
+   - 发起投研前执行钱包余额探测，低于起步门槛（如 100 点）优雅拦截并引导充值；
+   - 欠费熔断保障服务商不被无限薅羊毛。
+
+---
+
+### 10.2 多模型阶梯定价矩阵 (Pricing Matrix)
+
+平台支持运营人员在管理后台动态维护各厂商模型的单价策略（支持输入、输出及 Prompt 缓存命中差异化定价）：
+
+| 厂商 | 模型标识 (`model_name`) | 输入单价 (点 / 1k Tokens) | 输出单价 (点 / 1k Tokens) | 缓存命中单价 (点 / 1k Tokens) | 对应法币成本与场景设计 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **DeepSeek** | `deepseek-chat` (V3) | `10 点` (0.001元) | `20 点` (0.002元) | `2 点` (0.0002元) | 低成本极速初筛，主打性价比 |
+| **DeepSeek** | `deepseek-reasoner` (R1) | `40 点` (0.004元) | `160 点` (0.016元) | `10 点` (0.001元) | 深度思维链推演，主打专业级投研 |
+| **OpenAI** | `gpt-4o-mini` | `15 点` (0.0015元) | `60 点` (0.006元) | `7.5 点` | 轻量级高吞吐分析 |
+| **OpenAI** | `gpt-4o` | `250 点` (0.025元) | `1000 点` (0.1元) | `125 点` | 业界标杆级综合金融对标 |
+| **OpenAI** | `o1` / `o3-mini` | `300 点` (0.03元) | `1200 点` (0.12元) | `150 点` | 复杂量化归因与极端压力测试推演 |
+| **阿里千问** | `qwen-plus` | `8 点` (0.0008元) | `20 点` (0.002元) | `2 点` | 国内合规主流金融投研 |
+| **本地私有** | `ollama/*` | `0 点` (或固定通道费) | `0 点` | `0 点` | 机构本地部署硬件，零模型 API 费 |
+
+---
+
+### 10.3 商业化数据库实体模型设计 (PostgreSQL 16)
+
+```mermaid
+erDiagram
+    sys_user_wallet ||--o{ llm_token_usage_ledger : "产生消费流水"
+    sys_user_wallet ||--o{ sys_recharge_order : "产生充值订单"
+    sys_recharge_package ||--o{ sys_recharge_order : "选择套餐"
+    llm_model_pricing ||--o{ llm_token_usage_ledger : "套用定价规则"
+
+    sys_user_wallet {
+        bigint id PK "钱包主键 ID"
+        bigint user_id UK "用户 ID"
+        varchar tenant_id "多租户/机构 ID"
+        bigint balance_points "可用算力点余额"
+        bigint frozen_points "冻结算力点 (并发投研占用)"
+        bigint total_recharged_points "累计充值点数"
+        bigint total_consumed_points "累计消耗点数"
+        varchar wallet_status "状态: NORMAL(正常), ARREARS(欠费), FROZEN(冻结)"
+        bigint version "乐观锁版本号"
+        timestamp updated_at "更新时间"
+    }
+
+    llm_model_pricing {
+        bigint id PK "主键 ID"
+        varchar provider_type "厂商标识 (DEEPSEEK, OPENAI等)"
+        varchar model_name UK "模型名称 (如 deepseek-reasoner)"
+        decimal input_price_per_k "每千 Token 输入点数"
+        decimal output_price_per_k "每千 Token 输出点数"
+        decimal cache_hit_price_per_k "每千 Token 缓存命中点数"
+        boolean is_active "是否启用"
+    }
+
+    llm_token_usage_ledger {
+        bigint id PK "流水主键 ID"
+        bigint user_id "用户 ID"
+        varchar session_id "投研会话/任务跟踪 ID"
+        varchar task_type "步骤类型 (SCREENING, ANALYSIS, COMPARISON, SYNTHESIS)"
+        varchar provider "实际使用厂商"
+        varchar model "实际使用模型"
+        integer prompt_tokens "输入 Token 数量"
+        integer completion_tokens "输出 Token 数量"
+        integer total_tokens "总 Token 数量"
+        bigint consumed_points "扣减智算点"
+        integer latency_ms "响应耗时 (毫秒)"
+        timestamp created_at "扣费入账时间"
+    }
+
+    sys_recharge_package {
+        bigint id PK "套餐主键 ID"
+        varchar package_name "套餐名称 (如 体验包 / 专业包 / 机构包)"
+        decimal price_cny "标价人民币 (元)"
+        bigint granted_points "基础充值点数"
+        bigint bonus_points "赠送福利点数"
+        varchar badge "角标说明 (如 热销推荐 / 送20%等)"
+        integer sort_order "排序权重"
+        boolean is_active "是否上架"
+    }
+
+    sys_recharge_order {
+        bigint id PK "订单主键 ID"
+        varchar order_no UK "唯一交易流水号"
+        bigint user_id "充值用户 ID"
+        bigint package_id "充值套餐 ID"
+        decimal pay_amount_cny "实付金额 (元)"
+        bigint target_points "到账总点数"
+        varchar pay_channel "支付渠道: WECHAT(微信), ALIPAY(支付宝), BANK(对公)"
+        varchar order_status "状态: PENDING(待支付), PAID(已支付), CANCELLED(已取消)"
+        varchar third_party_trade_no "第三方支付凭单号"
+        timestamp paid_at "支付到账时间"
+    }
+```
+
+---
+
+### 10.4 核心业务处理流程（时序交互）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 投研客户 / 分析师
+    participant Web as 前端界面 (Web UI)
+    participant Controller as 投研调度器 (ResearchController)
+    participant Billing as 计费钱包中心 (WalletBillingService)
+    participant LLM as 多厂商大模型驱动 (LlmService)
+    participant DB as 数据库 (PostgreSQL 16)
+
+    User->>Web: 提交投研问题 (如 "筛选医药基金并对比前两名")
+    Web->>Controller: POST /chat 或 SSE /chat/pipeline/stream (携带 userId & llmSettings)
+    
+    Note over Controller,Billing: 1. 前置配额与余额校验 (Pre-check)
+    Controller->>Billing: checkBalance(userId, minThreshold=100点)
+    Billing->>DB: 查询 sys_user_wallet 余额
+    alt 余额不足 (balance < 100)
+        Billing-->>Controller: 抛出 WalletInsufficientException
+        Controller-->>Web: 返回 402 Payment Required ("智算点不足，请前往充值")
+        Web-->>User: 弹出快捷充值收银台抽屉
+    else 余额充足
+        Billing-->>Controller: 校验通过 (允许执行)
+    end
+
+    Note over Controller,LLM: 2. 流水线执行与 Token 消耗统计
+    Controller->>LLM: 调度执行初筛/评估/对比/报告合成
+    LLM-->>Controller: 返回投研成果 + Usage 元数据 (promptTokens, completionTokens)
+
+    Note over Controller,Billing: 3. 异步原子扣费与对账记账 (Billing Ledger)
+    Controller->>Billing: deductTokenPoints(userId, model, promptTokens, completionTokens)
+    Billing->>DB: 根据 llm_model_pricing 计算本次消耗点数
+    Billing->>DB: 扣减 sys_user_wallet.balance_points (乐观锁防超扣)
+    Billing->>DB: 写入不可篡改账单流水 llm_token_usage_ledger
+
+    Controller-->>Web: 推送完整报告 + 本次消耗摘要 (模型、Token数、消耗点数)
+    Web-->>User: 呈现报告，并在报告底部与顶栏实时刷新剩余可用算力点
+```
+
+---
+
+### 10.5 前端交互与数据可视化规范 (UI/UX Specification)
+
+1. **顶栏“算力点数胶囊” (Global Compute Bar)**：
+   - 顶部导航栏常驻展示：`⚡ 86,400 算力点`，鼠标悬浮显示“当前约可生成 43 份深度投研报告”；
+   - 当点数低于 1,000 点时，图标变为橙黄色预警，并展示闪烁的“立即充值”按钮；
+2. **研报卡片底部“消耗透明度仪表” (Transparency Footer)**：
+   - 每一份由 AI 生成的专业投研报告末尾，自动附带极简暗色透明面板：
+     > *本次投研生成由 **DeepSeek-Reasoner (R1)** 强力驱动 ｜ 消耗输入: 1,420 tokens, 输出: 3,890 tokens ｜ 本次计费: 68 智算点 (约合 ¥0.0068) ｜ 耗时: 6.4s*
+3. **在线充值收银台 (Recharge Drawer / Modal)**：
+   - 预设 4 款标准阶梯充值卡片（¥49 尝鲜版、¥199 进阶版、¥599 专业版、¥2999 机构旗舰版）；
+   - 支持展示立省折扣与赠送点数徽章（“送 20% 点数”）；
+   - 唤起微信支付/支付宝扫码即时到账，到账后基于 WebSocket / SSE 瞬间刷新用户前台点数。
+4. **财务中心与消耗趋势报表 (Billing & Analytics Dashboard)**：
+   - **消耗折线图/面积图**：展示过去 30 天每日 Token 消耗量与每日消费点数走势；
+   - **资产模块分布饼图**：展示公募基金、个股、研报合成各模块的消耗占比；
+   - **消费流水清单**：支持按时间、任务类型、模型筛选每一笔扣费详情，并支持一键导出 CSV 财务对账单。
+
+---
+
+### 10.6 商业化核心 RESTful API 清单
+
+| 请求方式 | 端点路径 | 接口功能与业务描述 |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/billing/wallet` | 查询当前登录用户的钱包资产（可用点数、累计充值、累计消耗、钱包状态） |
+| `GET` | `/api/v1/billing/packages` | 获取当前平台已上架的充值规格套餐列表 |
+| `POST` | `/api/v1/billing/order/create` | 创建充值订单，生成唯一订单号与待支付收银台信息 |
+| `POST` | `/api/v1/billing/order/pay-callback` | 第三方支付网关异步回调接口（验签、原子充值入账、更新钱包余额） |
+| `GET` | `/api/v1/billing/ledger` | 分页查询用户的 Token 消费对账明细列表（支持按时间/模型筛选） |
+| `GET` | `/api/v1/billing/stats/trend` | 查询过去 7 天 / 30 天每日消耗 Token 数量与点数统计趋势（供前端图表渲染） |
+| `GET` | `/api/v1/billing/pricing` | 查询当前系统各厂商模型的公开计费单价矩阵 |
+

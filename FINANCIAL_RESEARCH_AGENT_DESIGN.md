@@ -87,7 +87,7 @@ erDiagram
     *   **向量数据库**：PGVector 插件（与 Postgres 一体化，初期大幅降低运维复杂度）或 Milvus
     *   **缓存与会话**：Redis 7（多轮对话 Agent 记忆上下文、热点筛选结果缓存）
 *   **金融数学核心库**：Ta4j + 自研 `copilot-math-core`（精确实现金融指标数学公式）
-*   **模型对接层**：支持接入 DeepSeek-R1/V3、Qwen-2.5-72B-Finance、OpenAI 兼容接口
+*   **模型对接层**：**多厂商统一大模型适配架构 (Multi-Provider LLM Engine)**，预置支持 DeepSeek、OpenAI、阿里通义千问 (Qwen)、智谱清言 (GLM)、本地 Ollama 及自定义兼容端点，支持前端动态热切换与超参数调优。
 
 ### 3.2 系统架构拓扑图
 
@@ -382,6 +382,16 @@ public interface FundAiAgents {
     *   [ ] 实现 `ComparatorAgent`（双标的定量数据对齐 + 定性观点对标）
     *   [ ] 实现 Spring WebFlux SSE 流式推送（展示 Agent 思考链过程与打字机输出）
     *   [ ] 前端界面对接与全链路评测调优
+
+---
+
+## 8. 商业化运营与 Token 计量计费中心 (Commercialization & FinOps)
+
+系统引入类似于 DeepSeek / OpenAI 的按量计费与预充值钱包机制，形成完整的 AI 原生商业化闭环：
+*   **统一虚拟算力货币（智算点）**：基准汇率 `1 元 = 10,000 智算点`，实现直观计费；
+*   **多模型阶梯定价矩阵**：支持针对各厂商不同模型（如快速型 V3 vs 深度推理型 R1/o1）配置独立的 Input、Output 及 Prompt 缓存单价；
+*   **企业级账户与钱包中心**：包含用户/租户钱包 (`sys_user_wallet`)、模型定价规则 (`llm_model_pricing`)、不可篡改流水明细 (`llm_token_usage_ledger`)、充值套餐 (`sys_recharge_package`) 与充值订单 (`sys_recharge_order`)；
+*   **前置额度保护与并发流控**：前置拦截欠费请求，并在投研报告末尾实时透出 Token 消耗审计与算力点扣减明细。
 
 ---
 *本设计文档已保存在工程工作区，后续将根据讨论反馈持续演进。*
