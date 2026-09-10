@@ -105,3 +105,21 @@ CREATE TABLE IF NOT EXISTS fund_report_vector (
 -- 创建 HNSW 向量索引 (极大提升相似度召回效率)
 CREATE INDEX IF NOT EXISTS idx_fund_report_vector_hnsw 
 ON fund_report_vector USING hnsw (embedding vector_cosine_ops);
+
+-- ==============================================================================
+-- 9. 股票基础信息表 (多金融产品兼容扩展)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS stock_info (
+    stock_code VARCHAR(20) PRIMARY KEY,
+    stock_name VARCHAR(100) NOT NULL,
+    exchange VARCHAR(20) NOT NULL,                         -- SSE / SZSE / BSE
+    industry VARCHAR(50),                                  -- 申万一级行业
+    pe_ttm NUMERIC(10, 2),                                 -- 市盈率 TTM
+    pb NUMERIC(10, 2),                                     -- 市净率
+    market_cap_billion NUMERIC(12, 2) DEFAULT 0.00,        -- 总市值 (亿元)
+    roe NUMERIC(8, 2),                                     -- 净资产收益率 (%)
+    dividend_yield NUMERIC(8, 2),                          -- 股息率 (%)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_stock_industry ON stock_info(industry);

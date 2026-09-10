@@ -42,10 +42,10 @@
             <artifactId>pgvector</artifactId>
         </dependency>
 
-        <!-- 测试内存库 -->
+        <!-- 测试支持 (JUnit 5 + Mockito) -->
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

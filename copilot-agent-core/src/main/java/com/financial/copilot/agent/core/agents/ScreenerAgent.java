@@ -1,14 +1,16 @@
 package com.financial.copilot.agent.core.agents;
 
 import com.financial.copilot.agent.core.agents.fund.FundScreenerAgent;
+import com.financial.copilot.agent.core.agents.stock.StockScreenerAgent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * <h1>智能筛选专员门面 (Screener Agent Facade)</h1>
+ * <h1>多资产智能筛选专员统一门面 (Unified Screener Agent Facade)</h1>
  * <p>
- * 当前版本作为公募基金筛选专员 {@link FundScreenerAgent} 的兼容门面。
- * 在未来扩展场景下（如股票筛选、期货筛选、理财筛选），可在此类中根据上下文资产类型调度具体的领域筛选专员。
+ * 职责：作为多资产（公募基金 Fund、股票 Stock 等）筛选专员的智能路由门面。
+ * 能够根据用户自然语言意图中的资产特征（如识别出包含“股票”、“A股”、“个股”、“市盈率”等股票特征，
+ * 或“基金”、“基金经理”、“偏股混合”等基金特征），精准路由派发给对应的底层资产筛选专员执行。
  * </p>
  *
  * @author FinancialCopilot
@@ -23,22 +25,59 @@ public class ScreenerAgent {
     private final FundScreenerAgent fundScreenerAgent;
 
     /**
-     * 构造函数，注入公募基金筛选专员
-     *
-     * @param fundScreenerAgent 基金筛选代理
+     * 股票领域多因子筛选专员
      */
-    public ScreenerAgent(FundScreenerAgent fundScreenerAgent) {
+    private final StockScreenerAgent stockScreenerAgent;
+
+    /**
+     * 构造函数，自动注入各资产领域的筛选专员
+     *
+     * @param fundScreenerAgent  公募基金筛选代理
+     * @param stockScreenerAgent 股票筛选代理
+     */
+    public ScreenerAgent(FundScreenerAgent fundScreenerAgent, StockScreenerAgent stockScreenerAgent) {
         this.fundScreenerAgent = fundScreenerAgent;
+        this.stockScreenerAgent = stockScreenerAgent;
     }
 
     /**
-     * 执行自然语言标的筛选（当前默认路由至公募基金筛选）
+     * 兼容单入参的历史构造函数（便于轻量级单元测试）
+     *
+     * @param fundScreenerAgent 基金筛选专员
+     */
+    public ScreenerAgent(FundScreenerAgent fundScreenerAgent) {
+        this(fundScreenerAgent, null);
+    }
+
+    /**
+     * 执行自然语言标的筛选，支持多资产智能意图识别与动态派发
      *
      * @param userPrompt 用户自然语言筛选需求
      * @return 命中标的的 JSON 数组文本
      */
     public String executeScreening(String userPrompt) {
-        log.info("[SCREENER-FACADE] 正在将筛选请求转发至基金专员: prompt={}", userPrompt);
+        if (isStockIntent(userPrompt) && stockScreenerAgent != null) {
+            log.info("[SCREENER-FACADE] 识别到股票标的筛选意图，路由至股票筛选专员: prompt={}", userPrompt);
+            return stockScreenerAgent.executeScreening(userPrompt);
+        }
+
+        log.info("[SCREENER-FACADE] 默认路由至公募基金筛选专员: prompt={}", userPrompt);
         return fundScreenerAgent.executeScreening(userPrompt);
+    }
+
+    /**
+     * 判断是否属于股票资产领域的筛选意图
+     *
+     * @param prompt 用户提问文本
+     * @return true 若命中股票典型关键词
+     */
+    private boolean isStockIntent(String prompt) {
+        if (prompt == null) {
+            return false;
+        }
+        String p = prompt.toLowerCase();
+        return p.contains("股票") || p.contains("个股") || p.contains("a股")
+                || p.contains("龙头股") || p.contains("白马股") || p.contains("股息率")
+                || (p.contains("市盈率") && !p.contains("基金"));
     }
 }
