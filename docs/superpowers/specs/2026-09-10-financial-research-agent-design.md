@@ -502,90 +502,99 @@ data: {"type":"DONE"}
 
 ## 9. 多厂商大模型适配底座与前端动态调参架构设计 (Multi-Provider LLM Engine)
 
-### 9.1 架构设计理念
-为满足不同机构和个人投资者在不同场景下的模型选择诉求（如：高精度推理采用 DeepSeek-R1 / OpenAI o1，低成本通用筛选采用 DeepSeek-V3 / Qwen-Plus，合规私有化场景采用本地 Ollama / vLLM），系统将大模型通信层全面解耦并抽象为**多厂商统一适配底座**。
+### 9.1 架构设计理念与角色权限边界划分
+
+在专业级金融多资产投研领域，Agent 的推理质量、合规防幻觉机制、金融术语标准与结构化抽取准确度，均经过严格的金融 Prompt 工程调优与回归评测。因此，系统确立了**严格的角色权限隔离与边界设计**：
+
+#### 1. 金融终端客户侧（Client / End-User）：
+- **绝对禁止切换底层模型与厂商**：客户不应感知、也不允许直接切换底层模型厂商（如自由在 OpenAI、DeepSeek、Qwen 之间跳切）或填入自定义 API Key，避免破坏领域 Prompt 对齐、造成合规失控或输出质量骤降。
+- **客户唯一可见与可调节项**：仅限业务语义层面的 **“投研深度 / 思考强度 (Research Depth: LOW / MIDDLE / HIGH)”**：
+  - **`LOW` (极速初筛模式)**：低延迟、低点数消耗，适合标的代码抽取、意图快速初筛；
+  - **`MIDDLE` (标准投研模式 - 默认)**：平衡型深度，适合标准基金/个股多维体检与常规对标；
+  - **`HIGH` (深度推演模式)**：开启全链条深度思考与多角度长程归因，适合万字 CIO 资产配置研报终审。
+
+#### 2. 开发、测试与系统管理侧（Developer / Tester / Admin Console）：
+- **多厂商大模型通信底座 (`Multi-Provider LLM Engine`) 是专门为研发迭代、评测对标、私有化适配与平台运维而构建的底层 SPI**：
+  - **研发与评测**：算法工程师与测试人员可在开发测试环境下无缝切换不同厂商（DeepSeek、OpenAI、阿里千问、本地 Ollama 等），执行 Prompt 效果评估、自动化回归测试与性能基准跑分（Benchmarking）；
+  - **运维与容灾**：平台管理员可通过管理接口或生产运维面板动态无感切换平台主备模型，实现服务故障热切换与供应商容灾，无需修改代码或重启微服务。
 
 ```mermaid
 graph TD
-    Frontend([前端 Web 终端 / 设置抽屉]) -->|1. 查询可用厂商与模型 GET /api/v1/llm/providers| LlmConfigController[LLM 配置管理控制器 LlmConfigController]
-    Frontend -->|2. 修改全局默认配置 POST /api/v1/llm/config| LlmConfigController
-    Frontend -->|3. 连通性测试 POST /api/v1/llm/test| LlmConfigController
-    Frontend -->|4. 会话请求携带参数 LlmSettingsDTO| ResearchAgentController[投研接口控制器 ResearchAgentController]
-
-    ResearchAgentController --> FinancialResearchWorkflow[投研总工作流 FinancialResearchWorkflow]
-    FinancialResearchWorkflow --> ResearchBlackboard[投研黑板 ResearchBlackboard (存储生效模型设置)]
-
-    subgraph MultiProviderEngine [多厂商大模型通信底座 Multi-Provider Engine]
-        LlmService[统一大模型服务接口 LlmService]
-        LlmProviderRegistry[厂商元数据与模型字典注册表 LlmProviderRegistry]
-        LlmConfigManager[全局动态配置管理器 LlmConfigManager]
-        LlmWebClientFactory[动态高性能 WebClient 缓存工厂 LlmDynamicWebClientFactory]
-        DefaultLlmService[统一 OpenAI 驱动实现 DefaultLlmService]
+    subgraph ClientView [面向金融终端客户 (Client View)]
+        Client([机构客户 / 个人投资者]) -->|提交自然语言问题 + 可选投研深度 depth: HIGH/MID/LOW| ResearchController[投研接口 ResearchAgentController]
     end
 
-    LlmService --> DefaultLlmService
-    DefaultLlmService --> LlmProviderRegistry
-    DefaultLlmService --> LlmConfigManager
-    DefaultLlmService --> LlmWebClientFactory
-
-    subgraph CloudAndLocalProviders [支持的底层模型生态]
-        DeepSeek[DeepSeek 官方 API (deepseek-chat / deepseek-reasoner)]
-        OpenAI[OpenAI 官方 API (gpt-4o / gpt-4o-mini / o1 / o3-mini)]
-        Qwen[阿里百炼 DashScope (qwen-plus / qwen-max / qwen-turbo)]
-        Zhipu[智谱清言 GLM (glm-4-plus / glm-4-flash)]
-        Ollama[本地私有化 Ollama (deepseek-r1 / qwen2.5 / llama3)]
-        Custom[自定义 OpenAI 兼容私有网关]
+    subgraph AdminDevView [面向研发/测试/运维端 (Admin & Dev Console)]
+        Developer([研发工程师 / 测试人员 / 平台运维]) -->|1. 厂商与模型矩阵探测 GET /api/v1/admin/llm/providers| AdminLlmController[开发管理接口 LlmConfigController]
+        Developer -->|2. 模型连通性与网络延迟探测 POST /api/v1/admin/llm/test| AdminLlmController
+        Developer -->|3. 研发/运维切换平台模型 POST /api/v1/admin/llm/config| AdminLlmController
     end
 
-    LlmWebClientFactory --> DeepSeek
-    LlmWebClientFactory --> OpenAI
-    LlmWebClientFactory --> Qwen
-    LlmWebClientFactory --> Zhipu
-    LlmWebClientFactory --> Ollama
-    LlmWebClientFactory --> Custom
+    AdminLlmController --> LlmConfigManager[全局动态配置管理器 LlmConfigManager]
+
+    ResearchController --> FinancialResearchWorkflow[投研总调度工作流 FinancialResearchWorkflow]
+    FinancialResearchWorkflow --> LlmService[统一大模型调度服务 LlmService]
+
+    subgraph MultiProviderCore [开发测试多厂商适配底座 Multi-Provider Engine]
+        LlmConfigManager --> LlmService
+        LlmProviderRegistry[厂商元数据与模型字典注册表 LlmProviderRegistry] --> LlmService
+        LlmWebClientFactory[动态连接池缓存工厂 LlmDynamicWebClientFactory] --> LlmService
+    end
+
+    LlmService --> DeepSeek[DeepSeek 官方 API (开发/生产主力)]
+    LlmService --> OpenAI[OpenAI 官方 API (研发评测基准)]
+    LlmService --> Qwen[阿里百炼 DashScope (国内合规候选)]
+    LlmService --> Zhipu[智谱清言 GLM (合规候选)]
+    LlmService --> Ollama[本地私有化 Ollama (离线测试与私有交付)]
+    LlmService --> Custom[私有云 OpenAI 兼容网关]
 ```
 
-### 9.2 预置支持的厂商与模型矩阵
+---
 
-| 厂商标识 (`LlmProviderType`) | 厂商显示名称 | 默认 Base URL | 典型推荐模型 | 场景定位与特点 |
+### 9.2 预置支持的开发/测试厂商与模型矩阵
+
+平台内置多厂商适配器，便于研发人员在测试和部署阶段自由选型与切换：
+
+| 厂商标识 (`LlmProviderType`) | 厂商显示名称 | 默认 Base URL | 典型推荐模型 | 研发测试与部署场景定位 |
 | :--- | :--- | :--- | :--- | :--- |
-| `DEEPSEEK` (默认) | DeepSeek 深度求索 | `https://api.deepseek.com/v1` | `deepseek-chat`<br>`deepseek-reasoner` | 高性价比金融长文本投研分析与思维链推理 |
-| `OPENAI` | OpenAI | `https://api.openai.com/v1` | `gpt-4o`<br>`gpt-4o-mini`<br>`o1` | 业界标杆综合推理与结构化输出能力 |
-| `QWEN` | 阿里通义千问 (百炼) | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus`<br>`qwen-max`<br>`qwen-turbo` | 国内合规首选，具备优秀中文金融语义理解 |
-| `ZHIPU` | 智谱清言 (BigModel) | `https://open.bigmodel.cn/api/paas/v4` | `glm-4-plus`<br>`glm-4-flash` | 高速响应与企业级中文金融语料调优 |
-| `OLLAMA` | Ollama 本地部署 | `http://localhost:11434/v1` | `deepseek-r1:8b`<br>`qwen2.5:14b` | 完全离线私有化运行，零数据出境合规保障 |
-| `CUSTOM` | 自定义兼容端点 | 用户自填 | 用户自填 | 适配私有私有云网关 (如 vLLM、OneAPI、SiliconFlow) |
+| `DEEPSEEK` (默认首选) | DeepSeek 深度求索 | `https://api.deepseek.com/v1` | `deepseek-chat`<br>`deepseek-reasoner` | 高性价比金融投研主力，生产与开发基准模型 |
+| `OPENAI` | OpenAI | `https://api.openai.com/v1` | `gpt-4o`<br>`gpt-4o-mini`<br>`o1` | 业界标杆综合推理，作为研发 Prompt 黄金标准对齐 |
+| `QWEN` | 阿里通义千问 (百炼) | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus`<br>`qwen-max`<br>`qwen-turbo` | 国内信创与云上合规部署选型 |
+| `ZHIPU` | 智谱清言 (BigModel) | `https://open.bigmodel.cn/api/paas/v4` | `glm-4-plus`<br>`glm-4-flash` | 中文金融语料调优备选模型 |
+| `OLLAMA` | Ollama 本地部署 | `http://localhost:11434/v1` | `deepseek-r1:8b`<br>`qwen2.5:14b` | 完全离线内网研发测试与私有化交付验证 |
+| `CUSTOM` | 自定义兼容端点 | 研发自填 | 研发自填 | 适配私有 vLLM、OneAPI 或第三方算力网关 |
 
-### 9.3 运行时性能档位与思考强度规范（HIGH / MIDDLE / LOW）
+---
 
-针对大模型的性能与推理开销调节，系统在 `LlmSettingsDTO` 中原生提供面向业务直观易用的 **“高中低” 三档调节器 (`LlmPerformanceLevel`)**：
+### 9.3 客户侧投研深度与思考强度规范（LOW / MIDDLE / HIGH）
 
-| 档位枚举 (`LlmPerformanceLevel`) | 档位显示名称 | 推理思考强度 (`reasoning_effort`) | 默认采样温度 (`temperature`) | 最大生成 Token (`maxTokens`) | 投研业务场景定位 |
+客户在前端界面仅看到 **“投研深度”** 切换控件，系统在底层根据深度档位自动计算大模型执行参数：
+
+| 客户可见深度 (`researchDepth`) | 业务名称 | 映射 `reasoning_effort` | 映射 `temperature` | 映射 `maxTokens` | 投研业务场景定位 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`LOW`** | **低 (极速 / 低耗)** | `"low"` | `0.0` (确定性最高) | `2048` | 快速自然语言意图初筛、代码实体提取、低延迟快速响应场景 |
-| **`MIDDLE`** (默认) | **中 (标准 / 平衡)** | `"medium"` | `0.2` (微创新平衡) | `4096` | 标准基金经理量化体检、研报定性观点检索、两两双标的常规横向对标 |
-| **`HIGH`** | **高 (深度 / 强化)** | `"high"` | `0.4` (多维推演) | `8192` | 跨周期深度长程归因、重仓股风格漂移穿透、CIO 级别资产配置与综合研报终审 |
+| **`LOW`** | **快速初筛 (极速模式)** | `"low"` | `0.0` (严谨确定) | `2048` | 自然语言初筛、代码提取，最快响应、最低计费 |
+| **`MIDDLE`** (默认) | **标准投研 (平衡模式)** | `"medium"` | `0.2` (微创新平衡) | `4096` | 基金全维度量化体检、定期观点抽取、常规双标的对标 |
+| **`HIGH`** | **深度推演 (深度思考)** | `"high"` | `0.4` (多维推演) | `8192` | 跨周期大势研判、风格漂移归因与万字 CIO 资产配置研报终审 |
 
-#### 双模兼容与智能映射机制：
-1. **一键预设应用 (Preset Mode)**：前端界面直接提供 `[ 低 (Low) | 中 (Middle) | 高 (High) ]` 分段控制器。用户切换档位时，系统自动联动预设的最佳 `temperature` 与 `maxTokens`；
-2. **推理模型深度集成 (Reasoning Effort)**：当所选模型具备深度思考能力（如 OpenAI `o1`、`o3-mini`、`deepseek-reasoner` 等）时，系统自动将档位映射为标准 API 字段 `reasoning_effort: "low" | "medium" | "high"` 随 Payload 提交给大模型；
-3. **高级微调覆盖 (Custom Override)**：若前端用户在高级设置中手动调整了数值型滑块（如显式指定了 `temperature = 0.7` 或 `maxTokens = 6000`），系统以用户显式指定的数值为最高优先级。
+---
 
-### 9.4 运行时参数双层解析机制（Per-Request Override）
+### 9.4 架构隔离与接口规范（Client vs Admin/Dev）
 
-系统采用“**全局系统默认 + 请求级动态热覆盖**”的解析模式：
-1. **系统默认层 (`application.yml` + `LlmConfigManager`)**：定义未传参时的默认厂商（默认 DeepSeek）、默认模型、默认档位（`MIDDLE`）等基础设定；
-2. **请求级动态覆盖 (`LlmSettingsDTO`)**：前端在界面上提供模型选择下拉框与性能超参数滑块。请求到达后端时，若包含非空设置字段，将**动态覆盖**系统默认值，仅对当前会话/请求生效；
-3. **全流程上下文穿透**：工作流入口将生效的 `LlmSettingsDTO` 存入 `ResearchBlackboard`，确保在多步骤链路中（筛选 -> 体检 -> 对标 -> 合成）所有子智能体保持完全一致的模型与档位配置。
+系统在接口层实行完全的职责分离：
 
-### 9.5 接口规范（RESTful & SSE）
+#### 1. 客户业务投研接口（面向终端用户，不可切换底层模型）：
+- **`POST /api/v1/research/chat`**：
+  - 请求体：`{"prompt": "帮我筛选表现稳定的医药基金", "researchDepth": "HIGH"}`（`researchDepth` 可选，默认为 `MIDDLE`）。
+- **`GET /api/v1/research/chat/pipeline/stream`**：
+  - 查询参数：`prompt=...&researchDepth=HIGH`。
+  - 说明：客户无权传入 `provider`, `model`, `apiKey` 等底层参数。
 
-1. **`GET /api/v1/llm/providers`**：获取系统内置的所有厂商元数据、可用模型列表及高中低档位配置模板；
-2. **`GET /api/v1/llm/config`**：获取当前系统生效的全局默认大模型配置（含默认厂商、模型、高中低档位）；
-3. **`POST /api/v1/llm/config`**：更新系统全局默认大模型配置；
-4. **`POST /api/v1/llm/test`**：测试指定厂商、端点、API Key 与模型的连通性及网络延迟；
-5. **`POST /api/v1/research/chat`**：同步研报生成接口，请求体中包含可选字段 `llmSettings`（支持传递 `performanceLevel: "HIGH"|"MIDDLE"|"LOW"`）；
-6. **`GET /api/v1/research/chat/pipeline/stream`**：阶段式 SSE 流式接口，URL 查询参数支持可选传入 `provider`, `model`, `performanceLevel`, `temperature`, `topP`, `maxTokens`。
+#### 2. 研发测试与后台管理接口（面向内部开发、测试与管理员，拥有底层模型切换权）：
+- **`GET /api/v1/admin/llm/providers`**：查询系统支持的厂商列表、预置模型字典与默认端点（研发测试面板）；
+- **`GET /api/v1/admin/llm/config`**：查看当前平台生效的底层厂商、模型及默认参数；
+- **`POST /api/v1/admin/llm/config`**：在研发环境或通过管理员权限热更新系统当前使用的厂商和模型；
+- **`POST /api/v1/admin/llm/test`**：研发测试工具，对指定厂商和 API Key 进行实时连通性、响应延迟与可用性验证。
+
 
 ### 9.6 彻底去兼容化设计重构路线
 
