@@ -107,7 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_fund_report_vector_hnsw
 ON fund_report_vector USING hnsw (embedding vector_cosine_ops);
 
 -- ==============================================================================
--- 9. 股票基础信息表 (多金融产品兼容扩展)
+-- 9. 股票基础信息表 (多金融兼容扩展)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS stock_info (
     stock_code VARCHAR(20) PRIMARY KEY,

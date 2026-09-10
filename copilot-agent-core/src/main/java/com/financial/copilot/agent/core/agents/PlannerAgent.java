@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * <h1>多资产意图识别与任务规划主管 Agent (Planner Agent)</h1>
+ * <h1>金融意图识别与任务规划主管 Agent (Planner Agent)</h1>
  * <p>
  * 职责：作为投研系统的第一道认知门户，精通公募基金 (FUND)、股票 (STOCK)、期货 (FUTURES)
  * 与银行理财 (WEALTH_MANAGEMENT) 等多金融大类。
@@ -130,13 +130,13 @@ public class PlannerAgent {
     }
 
     /**
-     * 解析用户输入并生成多资产意图规划
+     * 解析用户输入并生成金融意图规划
      *
      * @param userPrompt 用户原始输入
      * @return 规划结果封装对象 {@link PlanResult}
      */
     public PlanResult plan(String userPrompt) {
-        log.info("[PLANNER] 正在启动多资产意图深度认知与规划: prompt={}", userPrompt);
+        log.info("[PLANNER] 正在启动金融意图深度认知与规划: prompt={}", userPrompt);
         String response = clientService.chat(SYSTEM_PROMPT, userPrompt);
         try {
             String cleanJson = response.trim();
@@ -174,7 +174,7 @@ public class PlannerAgent {
                     .rawUserPrompt(userPrompt)
                     .build();
         } catch (Exception e) {
-            log.warn("[PLANNER] 解析响应 JSON 失败，启用多资产规则匹配兜底: response={}", response);
+            log.warn("[PLANNER] 解析响应 JSON 失败，启用金融规则匹配兜底: response={}", response);
             AssetCategory category = AssetCategory.FUND;
             if (userPrompt.contains("股票") || userPrompt.contains("个股") || userPrompt.contains("A股")) {
                 category = AssetCategory.STOCK;

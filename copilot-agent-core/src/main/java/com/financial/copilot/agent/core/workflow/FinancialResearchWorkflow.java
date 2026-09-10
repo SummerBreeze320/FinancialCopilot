@@ -29,13 +29,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * <h1>复合金融投研 Agent 工作流总调度器 (Financial Research Workflow)</h1>
+ * <h1>金融投研多智能体复合工作流总调度器 (Financial Research Workflow)</h1>
  * <p>
- * 核心职责：
- * 1. 作为投研大脑的调度中枢，将复杂自然语言投研诉求通过 {@link TaskDecomposer} 分解为多阶段 DAG 执行计划；
- * 2. 借助共享黑板 {@link ResearchBlackboard} 沉淀各子任务的事实数据（初筛候选池、Fan-out 并发评测打分、横向对标事实）；
- * 3. 驱动各专职 Agent（筛选、分析、对标、研报合成）协同作业，保障 Tool-as-Truth 防幻觉机制；
- * 4. 支持同步完整生成、SSE 阶段式事件流推送（包含进度节点与内容 Token）以及传统纯文本流。
+ * 职责：作为投研系统的核心大脑，全面遵循基于黑板模式 (Blackboard Pattern) 的 DAG 执行体系：
+ * 1. 通过 {@link TaskDecomposer} 将用户诉求拆解为规范步骤计划 {@link ExecutionPlan}；
+ * 2. 调度各专职智能体协作并将客观数据沉淀于 {@link ResearchBlackboard}；
+ * 3. 驱动 {@link ReportSynthesizer} 生成专业研报；
+ * 4. 原生提供同步完整执行与基于 {@link ResearchStreamEvent} 的响应式 SSE 阶段流式推送。
  * </p>
  *
  * @author FinancialCopilot
@@ -44,44 +44,21 @@ import java.util.concurrent.Executors;
 @Service
 public class FinancialResearchWorkflow {
 
-    /**
-     * 复杂意图任务拆解规划器
-     */
     private final TaskDecomposer taskDecomposer;
-
-    /**
-     * 标的筛选专员门面
-     */
     private final ScreenerAgent screenerAgent;
-
-    /**
-     * 单标的深度体检专员门面
-     */
     private final AnalyzerAgent analyzerAgent;
-
-    /**
-     * 双标的横向对标专员门面
-     */
     private final ComparatorAgent comparatorAgent;
-
-    /**
-     * 研报终审主编 Agent
-     */
     private final ReportSynthesizer reportSynthesizer;
-
-    /**
-     * 公募基金领域数据网关 Port
-     */
     private final FundDataPort fundDataPort;
 
     /**
-     * 全参构造函数，由 Spring 容器自动装配
+     * 构造函数，由 Spring 容器自动装配全部核心组件
      *
      * @param taskDecomposer    任务拆解器
-     * @param screenerAgent     筛选专员
-     * @param analyzerAgent     深度分析专员
-     * @param comparatorAgent   横向对比专员
-     * @param reportSynthesizer 研报合成主编
+     * @param screenerAgent     标的初筛专员门面
+     * @param analyzerAgent     深度体检专员门面
+     * @param comparatorAgent   横向对标专员门面
+     * @param reportSynthesizer 研报终审主编
      * @param fundDataPort      基金数据端口
      */
     public FinancialResearchWorkflow(TaskDecomposer taskDecomposer,
@@ -99,13 +76,13 @@ public class FinancialResearchWorkflow {
     }
 
     /**
-     * 同步全流程执行投研任务（适用于单次批量调用或接口测试）
+     * 同步执行投研工作流，统一基于 DAG 执行计划推进
      *
-     * @param userPrompt 用户原始提问或复合投研诉求
+     * @param userPrompt 用户原始提问或复合投研指令
      * @return 最终合成的专业投研报告 Markdown 文本
      */
     public String execute(String userPrompt) {
-        log.info("[WORKFLOW] 启动复合投研流水线: prompt={}", userPrompt);
+        log.info("[WORKFLOW] 启动投研工作流: prompt={}", userPrompt);
 
         ExecutionPlan plan = taskDecomposer.decompose(userPrompt);
         log.info("[WORKFLOW] 任务解构规划完成: isComplex={}, steps={}, summary={}",
@@ -113,36 +90,32 @@ public class FinancialResearchWorkflow {
 
         ResearchBlackboard blackboard = new ResearchBlackboard();
 
-        // 简单单意图直接走单步执行
-        if (!plan.isComplex() && plan.getSteps().size() == 1) {
-            SubTask single = plan.getSteps().get(0);
-            return executeSingleIntent(single.getTaskType(), userPrompt);
-        }
-
-        // 复合多步骤流水线依次推进
+        // 统一流水线推进，每个步骤均基于 Blackboard 上下文
         for (SubTask step : plan.getSteps()) {
             executeStep(step, blackboard, userPrompt);
+        }
+
+        // 若执行计划中未显式包含独立 SYNTHESIS 步骤，则统一执行研报合成
+        if (blackboard.getFinalReport() == null || blackboard.getFinalReport().isBlank()) {
+            String facts = buildSynthesisContext(blackboard);
+            String report = reportSynthesizer.synthesize(facts, userPrompt);
+            blackboard.put(ResearchBlackboard.KEY_FINAL_REPORT, report);
         }
 
         return blackboard.getFinalReport();
     }
 
     /**
-     * 响应式阶段式 SSE 流式推送（推荐 Web 前端使用）
+     * 响应式阶段式 SSE 流式推送
      * <p>
-     * 依次发出：
-     * 1. 规划事件 PLAN：包含总步骤数与执行纲要；
-     * 2. 步骤开始事件 STEP_START：当前步骤描述与进度；
-     * 3. 步骤完成事件 STEP_COMPLETE：当前步骤执行总结；
-     * 4. 内容流事件 CONTENT：主编生成的 Markdown 文本 Token 增量；
-     * 5. 结束事件 DONE：全流程完结信号。
+     * 依次产生：PLAN (规划纲要)、STEP_START (步骤启动)、STEP_COMPLETE (步骤总结)、CONTENT (报告 Token)、DONE (结束)。
      * </p>
      *
-     * @param userPrompt 用户原始输入
+     * @param userPrompt 用户自然语言诉求
      * @return 响应式事件流 Flux
      */
     public Flux<ResearchStreamEvent> executePipelineStream(String userPrompt) {
-        log.info("[WORKFLOW-STREAM] 启动阶段式复合流式推送: prompt={}", userPrompt);
+        log.info("[WORKFLOW-STREAM] 启动阶段式事件流推送: prompt={}", userPrompt);
 
         return Flux.create(sink -> {
             try {
@@ -156,7 +129,7 @@ public class FinancialResearchWorkflow {
                     SubTask step = plan.getSteps().get(i);
                     int currentStep = i + 1;
 
-                    // 1. 发送步骤开始事件
+                    // 1. 发送步骤启动事件
                     sink.next(ResearchStreamEvent.stepStart(
                             currentStep, totalSteps, step.getTaskType(),
                             "步骤 " + currentStep + "/" + totalSteps + ": " + step.getDescription()
@@ -164,7 +137,6 @@ public class FinancialResearchWorkflow {
 
                     // 2. 执行具体步骤
                     if ("SYNTHESIS".equalsIgnoreCase(step.getTaskType())) {
-                        // 报告合成阶段：准备完整事实输入并流式输出 Token
                         String synthesisFacts = buildSynthesisContext(blackboard);
                         reportSynthesizer.synthesizeStream(synthesisFacts, userPrompt)
                                 .doOnNext(chunk -> sink.next(ResearchStreamEvent.content(chunk)))
@@ -177,11 +149,10 @@ public class FinancialResearchWorkflow {
                                 })
                                 .doOnError(sink::error)
                                 .subscribe();
-                        return; // 异步流转接给 reportSynthesizer
+                        return;
                     } else {
                         executeStep(step, blackboard, userPrompt);
 
-                        // 发送步骤完成事件
                         String stepSummary = getStepSummary(step, blackboard);
                         sink.next(ResearchStreamEvent.stepComplete(
                                 currentStep, totalSteps, step.getTaskType(), stepSummary
@@ -189,8 +160,21 @@ public class FinancialResearchWorkflow {
                     }
                 }
 
-                sink.next(ResearchStreamEvent.done());
-                sink.complete();
+                // 若全流程中无 SYNTHESIS 步骤，自动触发流式合成完成闭环
+                if (blackboard.getFinalReport() == null) {
+                    String facts = buildSynthesisContext(blackboard);
+                    reportSynthesizer.synthesizeStream(facts, userPrompt)
+                            .doOnNext(chunk -> sink.next(ResearchStreamEvent.content(chunk)))
+                            .doOnComplete(() -> {
+                                sink.next(ResearchStreamEvent.done());
+                                sink.complete();
+                            })
+                            .doOnError(sink::error)
+                            .subscribe();
+                } else {
+                    sink.next(ResearchStreamEvent.done());
+                    sink.complete();
+                }
             } catch (Exception e) {
                 log.error("[WORKFLOW-STREAM] 流水线执行失败: {}", e.getMessage(), e);
                 sink.error(e);
@@ -199,19 +183,7 @@ public class FinancialResearchWorkflow {
     }
 
     /**
-     * 兼容传统纯字符串流式接口（仅推送文本 Chunk）
-     *
-     * @param userPrompt 用户输入
-     * @return 纯文本流 Flux
-     */
-    public Flux<String> executeStream(String userPrompt) {
-        return executePipelineStream(userPrompt)
-                .filter(event -> "CONTENT".equalsIgnoreCase(event.getType()))
-                .map(ResearchStreamEvent::getChunk);
-    }
-
-    /**
-     * 内部单步调度派发器
+     * 内部单步调度派发器，统一更新共享黑板
      *
      * @param step       当前子任务
      * @param blackboard 共享黑板
@@ -241,7 +213,6 @@ public class FinancialResearchWorkflow {
 
         List<FundInfo> funds = fundDataPort.screenFunds(criteria);
         if (funds.isEmpty()) {
-            // 真实样本兜底，保障无网络/空数据时投研演示流水线不断流
             funds = List.of(
                     FundInfo.builder().fundCode("003095").fundName("中欧医疗健康混合A").fundType("偏股混合型").managementCompanyId("中欧基金").build(),
                     FundInfo.builder().fundCode("005827").fundName("易方达蓝筹精选混合").fundType("偏股混合型").managementCompanyId("易方达基金").build(),
@@ -272,13 +243,11 @@ public class FinancialResearchWorkflow {
         LocalDate threeYearsAgo = LocalDate.now().minusYears(3);
         LocalDate today = LocalDate.now();
 
-        // 并发体检 (Fan-Out)
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, Math.max(1, targetCandidates.size())));
         try {
             List<CompletableFuture<Void>> futures = targetCandidates.stream().map(fund -> CompletableFuture.runAsync(() -> {
                 FundMetricsDTO metrics = fundDataPort.getFundMetrics(fund.getFundCode(), threeYearsAgo, today);
 
-                // 综合能力评分: 夏普 (40%) + 卡玛 (30%) + 年化收益 (30%)
                 BigDecimal sharpe = metrics.getSharpeRatio() != null ? metrics.getSharpeRatio() : BigDecimal.ZERO;
                 BigDecimal calmar = metrics.getCalmarRatio() != null ? metrics.getCalmarRatio() : BigDecimal.ZERO;
                 BigDecimal annualized = metrics.getAnnualizedReturn() != null ? metrics.getAnnualizedReturn() : BigDecimal.ZERO;
@@ -302,7 +271,6 @@ public class FinancialResearchWorkflow {
             executor.shutdown();
         }
 
-        // Fan-In 排序，选出综合实力最强的 Top 2
         evaluatedList.sort((a, b) -> ((BigDecimal) b.get("score")).compareTo((BigDecimal) a.get("score")));
         List<String> topCandidates = evaluatedList.stream()
                 .limit(selectBest)
@@ -315,7 +283,7 @@ public class FinancialResearchWorkflow {
     }
 
     /**
-     * 阶段 3：决赛两强标的深度横向对标
+     * 阶段 3：决赛圈标的横向深度对标
      *
      * @param step       对标子任务配置
      * @param blackboard 黑板上下文
@@ -327,11 +295,11 @@ public class FinancialResearchWorkflow {
 
         String comparisonFacts = comparatorAgent.compareFunds(codeA, codeB);
         blackboard.put(ResearchBlackboard.KEY_COMPARISON_FACTS, comparisonFacts);
-        log.info("[STEP-3 COMPARISON] 完成 {} 与 {} 的深度定量与定性季报对标", codeA, codeB);
+        log.info("[STEP-3 COMPARISON] 完成 {} 与 {} 的深度定量与定性对标", codeA, codeB);
     }
 
     /**
-     * 阶段 4：同步模式下的投研报告合成
+     * 阶段 4：专业投研报告合成
      *
      * @param step       报告合成任务
      * @param blackboard 黑板上下文
@@ -355,15 +323,17 @@ public class FinancialResearchWorkflow {
         sb.append("=== 流水线全景事实总览 ===\n\n");
 
         List<FundInfo> candidates = blackboard.getCandidateFunds();
-        sb.append("【阶段 1 筛选命中候选标的池 (共 ").append(candidates.size()).append(" 只)】:\n");
-        for (FundInfo c : candidates) {
-            sb.append("- ").append(c.getFundCode()).append(" ").append(c.getFundName()).append("\n");
+        if (candidates != null && !candidates.isEmpty()) {
+            sb.append("【阶段 1 筛选命中候选标的池 (共 ").append(candidates.size()).append(" 只)】:\n");
+            for (FundInfo c : candidates) {
+                sb.append("- ").append(c.getFundCode()).append(" ").append(c.getFundName()).append("\n");
+            }
+            sb.append("\n");
         }
-        sb.append("\n");
 
-        sb.append("【阶段 2 基金经理综合能力量化评分排名】:\n");
         List<?> ratings = blackboard.get(ResearchBlackboard.KEY_MANAGER_RATINGS, List.class);
-        if (ratings != null) {
+        if (ratings != null && !ratings.isEmpty()) {
+            sb.append("【阶段 2 基金经理综合能力量化评分排名】:\n");
             for (Object item : ratings) {
                 if (item instanceof Map<?, ?> map) {
                     sb.append("- 标的: ").append(map.get("fundName"))
@@ -371,12 +341,12 @@ public class FinancialResearchWorkflow {
                       .append(map.get("score")).append("\n");
                 }
             }
+            sb.append("\n");
         }
-        sb.append("\n");
 
-        sb.append("【阶段 3 决赛圈最优两强横向对标事实 (定量对齐 + 季报定性切片)】:\n");
         String comparisonFacts = (String) blackboard.getRaw(ResearchBlackboard.KEY_COMPARISON_FACTS);
-        if (comparisonFacts != null) {
+        if (comparisonFacts != null && !comparisonFacts.isBlank()) {
+            sb.append("【阶段 3 决赛圈最优标的横向对标与归因事实】:\n");
             sb.append(comparisonFacts).append("\n");
         }
 
@@ -395,31 +365,8 @@ public class FinancialResearchWorkflow {
             case "SCREENING" -> "初筛完成，共命中 " + blackboard.getCandidateFunds().size() + " 只候选标的";
             case "BATCH_ANALYSIS" -> "完成多维量化评估，选拔出综合实力最优的前两强标的: " + blackboard.getTopCandidates();
             case "COMPARISON" -> "深度横向对标完成，形成风险收益与投资哲学差异矩阵";
-            default -> "步骤执行完成";
-        };
-    }
-
-    /**
-     * 单意图快速处理兜底分支
-     *
-     * @param intent     意图类型
-     * @param userPrompt 用户原始输入
-     * @return 研报结果
-     */
-    private String executeSingleIntent(String intent, String userPrompt) {
-        return switch (intent.toUpperCase()) {
-            case "SCREENING" -> {
-                String facts = screenerAgent.executeScreening(userPrompt);
-                yield reportSynthesizer.synthesize("【多维筛选结果集】:\n" + facts, userPrompt);
-            }
-            case "COMPARISON" -> {
-                String facts = comparatorAgent.compareFunds("005827", "161005");
-                yield reportSynthesizer.synthesize(facts, userPrompt);
-            }
-            default -> {
-                String facts = analyzerAgent.analyzeFund("005827");
-                yield reportSynthesizer.synthesize(facts, userPrompt);
-            }
+            case "SYNTHESIS" -> "投研建议研报合成完毕";
+            default -> "步骤执行完成: " + step.getDescription();
         };
     }
 }

@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * <h1>金融多资产大类领域策略 SPI 契约 (Asset Domain Strategy SPI)</h1>
+ * <h1>金融大类领域策略 SPI 契约 (Asset Domain Strategy SPI)</h1>
  * <p>
- * 职责：作为多资产投研底座的核心抽象 SPI。无论是公募基金 (FUND)、股票 (STOCK)、期货 (FUTURES)
+ * 职责：作为金融投研底座的核心抽象 SPI。无论是公募基金 (FUND)、股票 (STOCK)、期货 (FUTURES)
  * 还是银行理财 (WEALTH_MANAGEMENT)，均通过实现此策略契约接入到多智能体投研协同总线中。
  * </p>
  *

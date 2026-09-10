@@ -5,11 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * <h1>多资产横向对标与对比专员统一门面 (Unified Comparator Agent Facade)</h1>
+ * <h1>金融横向对标与对比专员统一门面 (Unified Comparator Agent Facade)</h1>
  * <p>
- * 职责：作为多资产横向对标的统一调度门面。
+ * 职责：作为金融横向对标的统一调度门面。
  * 现阶段默认调度公募基金深度对标专员 {@link FundComparatorAgent}，
- * 在多资产混合对比时可根据标的代码动态分流，为研报主编提供对称的定量与定性对标分析底座。
+ * 在金融混合对比时可根据标的代码动态分流，为研报主编提供对称的定量与定性对标分析底座。
  * </p>
  *
  * @author FinancialCopilot
@@ -45,14 +45,14 @@ public class ComparatorAgent {
     }
 
     /**
-     * 通用多资产对标路由接口
+     * 通用金融对标路由接口
      *
      * @param codeA 标的A代码
      * @param codeB 标的B代码
      * @return 深度对标分析报告
      */
     public String compareAssets(String codeA, String codeB) {
-        log.info("[COMPARATOR-FACADE] 启动多资产横向对标: codeA={}, codeB={}", codeA, codeB);
+        log.info("[COMPARATOR-FACADE] 启动金融横向对标: codeA={}, codeB={}", codeA, codeB);
         // 当前默认派发至基金对比，未来可无缝分流股票对标
         return compareFunds(codeA, codeB);
     }

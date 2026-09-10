@@ -29,7 +29,7 @@ public class AnalyzerAgent {
     private final StockAnalyzerAgent stockAnalyzerAgent;
 
     /**
-     * 全参构造函数
+     * 全参构造函数，强制装配所有资产分析专员
      *
      * @param fundAnalyzerAgent  基金分析专员
      * @param stockAnalyzerAgent 股票分析专员
@@ -37,15 +37,6 @@ public class AnalyzerAgent {
     public AnalyzerAgent(FundAnalyzerAgent fundAnalyzerAgent, StockAnalyzerAgent stockAnalyzerAgent) {
         this.fundAnalyzerAgent = fundAnalyzerAgent;
         this.stockAnalyzerAgent = stockAnalyzerAgent;
-    }
-
-    /**
-     * 兼容单入参的基金构造函数
-     *
-     * @param fundAnalyzerAgent 基金分析专员
-     */
-    public AnalyzerAgent(FundAnalyzerAgent fundAnalyzerAgent) {
-        this(fundAnalyzerAgent, null);
     }
 
     /**
@@ -66,11 +57,8 @@ public class AnalyzerAgent {
      * @return 格式化后的个股体检事实文本
      */
     public String analyzeStock(String stockCode) {
-        if (stockAnalyzerAgent != null) {
-            log.info("[ANALYZER-FACADE] 转发股票体检请求至股票分析专员: stockCode={}", stockCode);
-            return stockAnalyzerAgent.analyzeStock(stockCode);
-        }
-        return "【股票分析】: 暂未接入股票分析专员实例";
+        log.info("[ANALYZER-FACADE] 转发股票体检请求至股票分析专员: stockCode={}", stockCode);
+        return stockAnalyzerAgent.analyzeStock(stockCode);
     }
 
     /**

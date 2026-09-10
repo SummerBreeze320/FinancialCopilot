@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
  * <h1>投研 Web 控制器单元测试 (Research Agent Controller Test)</h1>
  * <p>
  * 测试验证 {@link ResearchAgentController} 对健康检查接口、阶段式 SSE 流式推送接口以及同步生成接口的响应规范。
+ * 完全基于新设计端点，无任何遗留兼容接口测试。
  * </p>
  *
  * @author FinancialCopilot
@@ -36,7 +37,7 @@ class ResearchAgentControllerTest {
     }
 
     /**
-     * 测试验证健康检查端点元数据与多资产能力清单
+     * 测试验证健康检查端点元数据与能力清单
      */
     @Test
     @DisplayName("验证健康检查端点元数据与能力清单")
@@ -71,5 +72,22 @@ class ResearchAgentControllerTest {
         assertNotNull(events);
         assertEquals(3, events.size());
         assertEquals("PLAN", events.get(0).getType());
+    }
+
+    /**
+     * 测试验证同步投研分析生成端点
+     */
+    @Test
+    @DisplayName("验证同步研报生成端点响应")
+    void testSyncChat() {
+        ResearchAgentController.ChatRequest req = new ResearchAgentController.ChatRequest();
+        req.setPrompt("分析中欧医疗健康混合A");
+
+        when(mockWorkflow.execute(anyString())).thenReturn("# 投研分析报告");
+
+        ApiResult<String> result = controller.syncChat(req);
+        assertNotNull(result);
+        assertEquals(200, result.getCode());
+        assertEquals("# 投研分析报告", result.getData());
     }
 }

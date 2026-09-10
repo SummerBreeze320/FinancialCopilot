@@ -41,22 +41,13 @@ public class ScreenerAgent {
     }
 
     /**
-     * 兼容单入参的历史构造函数（便于轻量级单元测试）
-     *
-     * @param fundScreenerAgent 基金筛选专员
-     */
-    public ScreenerAgent(FundScreenerAgent fundScreenerAgent) {
-        this(fundScreenerAgent, null);
-    }
-
-    /**
      * 执行自然语言标的筛选，支持多资产智能意图识别与动态派发
      *
      * @param userPrompt 用户自然语言筛选需求
      * @return 命中标的的 JSON 数组文本
      */
     public String executeScreening(String userPrompt) {
-        if (isStockIntent(userPrompt) && stockScreenerAgent != null) {
+        if (isStockIntent(userPrompt)) {
             log.info("[SCREENER-FACADE] 识别到股票标的筛选意图，路由至股票筛选专员: prompt={}", userPrompt);
             return stockScreenerAgent.executeScreening(userPrompt);
         }

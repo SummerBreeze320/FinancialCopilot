@@ -9,10 +9,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * <h1>公募基金季度持仓穿透查询工具</h1>
+ * <h1>基金持仓穿透查询工具 (Fund Holdings Query Tool)</h1>
  * <p>
- * 供分析专员与对标专员调用，穿透查询公募基金前十大重仓股票及所属行业板块，
- * 用于识别基金持仓集中度、行业偏好与风格漂移度。
+ * 职责：遵循 Tool-as-Truth 规范，为各类 Agent 提供基金季度前十大重仓股及行业配置的穿透明细。
  * </p>
  *
  * @author FinancialCopilot
@@ -24,19 +23,25 @@ public class FundHoldingsQueryTool {
     private final FundDataPort fundDataPort;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 构造函数，自动注入基金数据访问端口与 JSON 序列化器
+     *
+     * @param fundDataPort 基金数据端口
+     * @param objectMapper 对象映射器
+     */
     public FundHoldingsQueryTool(FundDataPort fundDataPort, ObjectMapper objectMapper) {
         this.fundDataPort = fundDataPort;
         this.objectMapper = objectMapper;
     }
 
     /**
-     * 查询基金在指定报告期的重仓股票与行业配置
+     * 查询基金在指定报告期的前十大重仓股票与行业配置明细
      *
      * @param fundCode      6位基金代码
-     * @param reportQuarter 报告期 (如 "2024Q2"，可留空默认最新)
+     * @param reportQuarter 报告期 (如 "2024Q2"，可为 null 则默认最新季度)
      * @return 季度持仓明细列表 JSON 格式
      */
-    public String getHoldings(String fundCode, String reportQuarter) {
+    public String getTopHoldings(String fundCode, String reportQuarter) {
         log.info("[TOOL CALL-FUND] 查询基金持仓明细: fundCode={}, quarter={}", fundCode, reportQuarter);
 
         try {
@@ -46,16 +51,5 @@ public class FundHoldingsQueryTool {
             log.error("查询基金持仓失败: fundCode={}", fundCode, e);
             return "{\"error\": \"查询持仓失败: " + e.getMessage() + "\"}";
         }
-    }
-
-    /**
-     * 获取前十大重仓股票及持仓行业 (兼容别名方法)
-     *
-     * @param fundCode      6位基金代码
-     * @param reportQuarter 报告期
-     * @return 季度持仓明细列表 JSON 格式
-     */
-    public String getTopHoldings(String fundCode, String reportQuarter) {
-        return getHoldings(fundCode, reportQuarter);
     }
 }

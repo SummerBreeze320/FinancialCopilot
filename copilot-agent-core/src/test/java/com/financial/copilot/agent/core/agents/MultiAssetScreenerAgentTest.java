@@ -11,7 +11,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
- * <h1>多资产筛选统一门面单元测试 (Multi-Asset Screener Agent Test)</h1>
+ * <h1>金融筛选统一门面单元测试 (Multi-Asset Screener Agent Test)</h1>
  * <p>
  * 测试验证 {@link ScreenerAgent} 针对基金与股票自然语言诉求的智能路由分发。
  * </p>

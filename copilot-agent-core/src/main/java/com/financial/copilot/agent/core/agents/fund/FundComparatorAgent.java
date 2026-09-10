@@ -59,7 +59,7 @@ public class FundComparatorAgent {
         """;
 
     /**
-     * 构造函数，自动装配底层数据工具与大模型服务
+     * 构造函数，强制注入底层数据工具与大模型服务
      *
      * @param quantTool     量化分析工具
      * @param holdingsTool  持仓穿透工具
@@ -74,19 +74,6 @@ public class FundComparatorAgent {
         this.holdingsTool = holdingsTool;
         this.reportTool = reportTool;
         this.clientService = clientService;
-    }
-
-    /**
-     * 兼容历史三参数构造函数（便于简化测试）
-     *
-     * @param quantTool    量化工具
-     * @param holdingsTool 持仓工具
-     * @param reportTool   研报工具
-     */
-    public FundComparatorAgent(FundQuantAnalysisTool quantTool,
-                               FundHoldingsQueryTool holdingsTool,
-                               FundReportRetrieverTool reportTool) {
-        this(quantTool, holdingsTool, reportTool, null);
     }
 
     /**
@@ -122,16 +109,13 @@ public class FundComparatorAgent {
             - 季报定性展望: %s
             """.formatted(codeA, metricsA, holdingsA, reportA, codeB, metricsB, holdingsB, reportB);
 
-        if (clientService != null) {
-            try {
-                String prompt = "【对比诉求】: 对比基金 " + codeA + " 与 " + codeB + " 的综合表现与风格差异\n\n" + rawFacts;
-                String comparisonAnalysis = clientService.chat(SYSTEM_PROMPT, prompt);
-                return rawFacts + "\n\n=== 智能对标深度归因 ===\n" + comparisonAnalysis;
-            } catch (Exception e) {
-                log.warn("[FUND-COMPARATOR] 调用 LLM 深度对比失败，返回客观事实: error={}", e.getMessage());
-            }
+        try {
+            String prompt = "【对比诉求】: 对比基金 " + codeA + " 与 " + codeB + " 的综合表现与风格差异\n\n" + rawFacts;
+            String comparisonAnalysis = clientService.chat(SYSTEM_PROMPT, prompt);
+            return rawFacts + "\n\n=== 智能对标深度归因 ===\n" + comparisonAnalysis;
+        } catch (Exception e) {
+            log.warn("[FUND-COMPARATOR] 调用 LLM 深度对比失败，使用客观事实兜底: error={}", e.getMessage());
+            return rawFacts;
         }
-
-        return rawFacts;
     }
 }

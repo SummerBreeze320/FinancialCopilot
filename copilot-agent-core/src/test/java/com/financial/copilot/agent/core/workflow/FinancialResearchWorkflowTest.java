@@ -8,6 +8,8 @@ import com.financial.copilot.agent.core.agents.ScreenerAgent;
 import com.financial.copilot.agent.core.agents.fund.FundAnalyzerAgent;
 import com.financial.copilot.agent.core.agents.fund.FundComparatorAgent;
 import com.financial.copilot.agent.core.agents.fund.FundScreenerAgent;
+import com.financial.copilot.agent.core.agents.stock.StockAnalyzerAgent;
+import com.financial.copilot.agent.core.agents.stock.StockScreenerAgent;
 import com.financial.copilot.agent.core.config.DeepSeekModelConfig;
 import com.financial.copilot.agent.core.pipeline.TaskDecomposer;
 import com.financial.copilot.agent.core.service.DeepSeekClientService;
@@ -15,11 +17,14 @@ import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
+import com.financial.copilot.agent.tools.stock.StockQuantAnalysisTool;
+import com.financial.copilot.agent.tools.stock.StockScreeningTool;
 import com.financial.copilot.common.event.ResearchStreamEvent;
 import com.financial.copilot.common.fund.dto.FundMetricsDTO;
 import com.financial.copilot.data.fund.mapper.FundReportVectorMapper;
 import com.financial.copilot.domain.fund.entity.FundInfo;
 import com.financial.copilot.domain.fund.port.FundDataPort;
+import com.financial.copilot.domain.stock.port.StockDataPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +51,7 @@ class FinancialResearchWorkflowTest {
 
     private FinancialResearchWorkflow workflow;
     private FundDataPort mockDataPort;
+    private StockDataPort mockStockPort;
 
     @BeforeEach
     void setUp() {
@@ -55,6 +61,7 @@ class FinancialResearchWorkflowTest {
         DeepSeekClientService clientService = new DeepSeekClientService(WebClient.builder().build(), config, objectMapper);
 
         mockDataPort = Mockito.mock(FundDataPort.class);
+        mockStockPort = Mockito.mock(StockDataPort.class);
         FundReportVectorMapper mockVectorMapper = Mockito.mock(FundReportVectorMapper.class);
 
         // 模拟 5 只样本基金数据
@@ -83,20 +90,25 @@ class FinancialResearchWorkflowTest {
                     .build();
         });
 
-        // 实例化基金专有工具
+        // 实例化公募基金专有工具与 Agent
         FundScreeningTool screeningTool = new FundScreeningTool(mockDataPort, objectMapper);
         FundQuantAnalysisTool quantTool = new FundQuantAnalysisTool(mockDataPort, objectMapper);
         FundHoldingsQueryTool holdingsTool = new FundHoldingsQueryTool(mockDataPort, objectMapper);
         FundReportRetrieverTool reportTool = new FundReportRetrieverTool(mockVectorMapper);
 
-        // 实例化基金专员 Agent
         FundScreenerAgent fundScreenerAgent = new FundScreenerAgent(clientService, screeningTool, objectMapper);
         FundAnalyzerAgent fundAnalyzerAgent = new FundAnalyzerAgent(quantTool, holdingsTool, reportTool);
-        FundComparatorAgent fundComparatorAgent = new FundComparatorAgent(quantTool, holdingsTool, reportTool);
+        FundComparatorAgent fundComparatorAgent = new FundComparatorAgent(quantTool, holdingsTool, reportTool, clientService);
 
-        // 实例化门面
-        ScreenerAgent screenerAgent = new ScreenerAgent(fundScreenerAgent);
-        AnalyzerAgent analyzerAgent = new AnalyzerAgent(fundAnalyzerAgent);
+        // 实例化股票专有工具与 Agent
+        StockScreeningTool stockScreeningTool = new StockScreeningTool(mockStockPort, objectMapper);
+        StockQuantAnalysisTool stockQuantTool = new StockQuantAnalysisTool(mockStockPort, objectMapper);
+        StockScreenerAgent stockScreenerAgent = new StockScreenerAgent(clientService, stockScreeningTool, objectMapper);
+        StockAnalyzerAgent stockAnalyzerAgent = new StockAnalyzerAgent(stockQuantTool);
+
+        // 实例化多资产顶层门面（完全基于新设计全参注入）
+        ScreenerAgent screenerAgent = new ScreenerAgent(fundScreenerAgent, stockScreenerAgent);
+        AnalyzerAgent analyzerAgent = new AnalyzerAgent(fundAnalyzerAgent, stockAnalyzerAgent);
         ComparatorAgent comparatorAgent = new ComparatorAgent(fundComparatorAgent);
         ReportSynthesizer reportSynthesizer = new ReportSynthesizer(clientService);
         TaskDecomposer taskDecomposer = new TaskDecomposer(clientService, objectMapper);
@@ -133,7 +145,6 @@ class FinancialResearchWorkflowTest {
         assertNotNull(events);
         assertFalse(events.isEmpty());
 
-        // 应该包含 PLAN 事件、STEP_START 事件、STEP_COMPLETE 事件等
         assertTrue(events.stream().anyMatch(e -> "PLAN".equals(e.getType())), "必须包含 PLAN 事件");
         assertTrue(events.stream().anyMatch(e -> "STEP_START".equals(e.getType())), "必须包含 STEP_START 事件");
     }
