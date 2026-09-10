@@ -5,10 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * <h1>横向对标专员门面 (Comparator Agent Facade)</h1>
+ * <h1>多资产横向对标与对比专员统一门面 (Unified Comparator Agent Facade)</h1>
  * <p>
- * 当前默认作为公募基金横向对标专员 {@link FundComparatorAgent} 的统一门面。
- * 在未来扩展场景下，支持根据双方标的代码类别分发至对应的资产对比专员。
+ * 职责：作为多资产横向对标的统一调度门面。
+ * 现阶段默认调度公募基金深度对标专员 {@link FundComparatorAgent}，
+ * 在多资产混合对比时可根据标的代码动态分流，为研报主编提供对称的定量与定性对标分析底座。
  * </p>
  *
  * @author FinancialCopilot
@@ -23,7 +24,7 @@ public class ComparatorAgent {
     private final FundComparatorAgent fundComparatorAgent;
 
     /**
-     * 构造函数
+     * 构造函数，注入基金对比专员
      *
      * @param fundComparatorAgent 基金对比专员
      */
@@ -32,14 +33,27 @@ public class ComparatorAgent {
     }
 
     /**
-     * 采集双标的对称数据上下文
+     * 采集并对比两只公募基金的对称事实与深度归因
      *
-     * @param codeA 标的A代码
-     * @param codeB 标的B代码
-     * @return 对称事实 Markdown 文本
+     * @param codeA 标的A基金代码
+     * @param codeB 标的B基金代码
+     * @return 对称事实与归因分析 Markdown 文本
      */
     public String compareFunds(String codeA, String codeB) {
         log.info("[COMPARATOR-FACADE] 转发横向对标请求至基金对比专员: codeA={}, codeB={}", codeA, codeB);
         return fundComparatorAgent.compareFunds(codeA, codeB);
+    }
+
+    /**
+     * 通用多资产对标路由接口
+     *
+     * @param codeA 标的A代码
+     * @param codeB 标的B代码
+     * @return 深度对标分析报告
+     */
+    public String compareAssets(String codeA, String codeB) {
+        log.info("[COMPARATOR-FACADE] 启动多资产横向对标: codeA={}, codeB={}", codeA, codeB);
+        // 当前默认派发至基金对比，未来可无缝分流股票对标
+        return compareFunds(codeA, codeB);
     }
 }
