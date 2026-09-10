@@ -30,11 +30,13 @@ class ResearchAgentControllerTest {
 
     private ResearchAgentController controller;
     private FinancialResearchWorkflow mockWorkflow;
+    private com.financial.copilot.agent.core.billing.WalletBillingService mockBillingService;
 
     @BeforeEach
     void setUp() {
         mockWorkflow = Mockito.mock(FinancialResearchWorkflow.class);
-        controller = new ResearchAgentController(mockWorkflow);
+        mockBillingService = Mockito.mock(com.financial.copilot.agent.core.billing.WalletBillingService.class);
+        controller = new ResearchAgentController(mockWorkflow, mockBillingService);
     }
 
     /**
@@ -68,7 +70,7 @@ class ResearchAgentControllerTest {
                         ResearchStreamEvent.done()
                 ));
 
-        List<ResearchStreamEvent> events = controller.streamPipelineChat(prompt, "HIGH").collectList().block();
+        List<ResearchStreamEvent> events = controller.streamPipelineChat(prompt, "HIGH", 1L).collectList().block();
 
         assertNotNull(events);
         assertEquals(3, events.size());
@@ -91,5 +93,22 @@ class ResearchAgentControllerTest {
         assertNotNull(result);
         assertEquals(200, result.getCode());
         assertEquals("# 投研分析报告", result.getData());
+    }
+
+    /**
+     * 测试验证算力余额不足异常捕获处理 (HTTP 402)
+     */
+    @Test
+    @DisplayName("验证算力余额不足异常捕获处理")
+    void testWalletInsufficientExceptionHandling() {
+        com.financial.copilot.common.exception.WalletInsufficientException ex =
+                new com.financial.copilot.common.exception.WalletInsufficientException(1L, 30L, 100L);
+
+        ApiResult<Map<String, Object>> result = controller.handleWalletInsufficient(ex);
+        assertNotNull(result);
+        assertEquals(402, result.getCode());
+        assertEquals(1L, result.getData().get("userId"));
+        assertEquals(30L, result.getData().get("currentBalance"));
+        assertEquals(100L, result.getData().get("requiredPoints"));
     }
 }

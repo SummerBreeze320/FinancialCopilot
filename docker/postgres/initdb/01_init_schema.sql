@@ -123,3 +123,114 @@ CREATE TABLE IF NOT EXISTS stock_info (
 );
 
 CREATE INDEX IF NOT EXISTS idx_stock_industry ON stock_info(industry);
+
+-- ==============================================================================
+-- 10. 商业化运营与 Token 计量计费中心表
+-- ==============================================================================
+
+-- 10.1 用户算力钱包表 (1 元人民币 = 10,000 智算点)
+CREATE TABLE IF NOT EXISTS sys_user_wallet (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+    tenant_id VARCHAR(50) DEFAULT 'DEFAULT',
+    balance_points BIGINT DEFAULT 0,                       -- 可用算力点余额
+    frozen_points BIGINT DEFAULT 0,                        -- 投研并发冻结占用点数
+    total_recharged_points BIGINT DEFAULT 0,               -- 累计充值点数
+    total_consumed_points BIGINT DEFAULT 0,                -- 累计消费点数
+    wallet_status VARCHAR(20) DEFAULT 'NORMAL',            -- NORMAL(正常), ARREARS(欠费), FROZEN(冻结)
+    version BIGINT DEFAULT 0,                              -- 乐观锁版本号
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_wallet_user ON sys_user_wallet(user_id);
+
+-- 10.2 大模型阶梯定价规格表
+CREATE TABLE IF NOT EXISTS llm_model_pricing (
+    id BIGSERIAL PRIMARY KEY,
+    provider_type VARCHAR(50) NOT NULL,                    -- DEEPSEEK, OPENAI, QWEN, ZHIPU, OLLAMA
+    model_name VARCHAR(100) NOT NULL UNIQUE,               -- deepseek-chat, deepseek-reasoner, gpt-4o 等
+    input_price_per_k NUMERIC(10, 4) NOT NULL,             -- 每千 Token 输入单价 (点)
+    output_price_per_k NUMERIC(10, 4) NOT NULL,            -- 每千 Token 输出单价 (点)
+    cache_hit_price_per_k NUMERIC(10, 4) DEFAULT 0.00,     -- 每千 Token 缓存命中优惠价 (点)
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10.3 Token 消费对账明细流水表
+CREATE TABLE IF NOT EXISTS llm_token_usage_ledger (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    session_id VARCHAR(64),                                -- 任务/会话跟踪 ID
+    task_type VARCHAR(50) NOT NULL,                        -- SCREENING, BATCH_ANALYSIS, COMPARISON, SYNTHESIS
+    provider VARCHAR(50) NOT NULL,
+    model VARCHAR(100) NOT NULL,
+    prompt_tokens INT NOT NULL DEFAULT 0,
+    completion_tokens INT NOT NULL DEFAULT 0,
+    total_tokens INT NOT NULL DEFAULT 0,
+    consumed_points BIGINT NOT NULL DEFAULT 0,             -- 本次扣减智算点数
+    latency_ms INT DEFAULT 0,                              -- 端到端模型响应耗时 (ms)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_ledger_user_time ON llm_token_usage_ledger(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ledger_session ON llm_token_usage_ledger(session_id);
+
+-- 10.4 充值规格套餐表
+CREATE TABLE IF NOT EXISTS sys_recharge_package (
+    id BIGSERIAL PRIMARY KEY,
+    package_name VARCHAR(100) NOT NULL,
+    price_cny NUMERIC(10, 2) NOT NULL,                     -- 售价人民币 (元)
+    granted_points BIGINT NOT NULL,                        -- 基础算力点数
+    bonus_points BIGINT DEFAULT 0,                         -- 赠送点数
+    badge VARCHAR(50),                                     -- 营销角标
+    sort_order INT DEFAULT 0,                              -- 排序权重
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10.5 充值交易订单表
+CREATE TABLE IF NOT EXISTS sys_recharge_order (
+    id BIGSERIAL PRIMARY KEY,
+    order_no VARCHAR(64) NOT NULL UNIQUE,                  -- 唯一业务订单号
+    user_id BIGINT NOT NULL,
+    package_id BIGINT REFERENCES sys_recharge_package(id),
+    pay_amount_cny NUMERIC(10, 2) NOT NULL,
+    target_points BIGINT NOT NULL,                         -- 最终到账点数
+    pay_channel VARCHAR(30) NOT NULL,                      -- WECHAT, ALIPAY, BANK
+    order_status VARCHAR(20) DEFAULT 'PENDING',            -- PENDING, PAID, CANCELLED
+    third_party_trade_no VARCHAR(100),                     -- 第三方流水凭证
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    paid_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_user ON sys_recharge_order(user_id, created_at DESC);
+
+-- ==============================================================================
+-- 11. 初始业务种子数据 (Seed Data)
+-- ==============================================================================
+
+-- 预置大模型定价矩阵
+INSERT INTO llm_model_pricing (provider_type, model_name, input_price_per_k, output_price_per_k, cache_hit_price_per_k, is_active)
+VALUES 
+    ('DEEPSEEK', 'deepseek-chat', 10.0, 20.0, 2.0, true),
+    ('DEEPSEEK', 'deepseek-reasoner', 40.0, 160.0, 10.0, true),
+    ('OPENAI', 'gpt-4o-mini', 15.0, 60.0, 7.5, true),
+    ('OPENAI', 'gpt-4o', 250.0, 1000.0, 125.0, true),
+    ('OPENAI', 'o1', 300.0, 1200.0, 150.0, true),
+    ('QWEN', 'qwen-plus', 8.0, 20.0, 2.0, true)
+ON CONFLICT (model_name) DO NOTHING;
+
+-- 预置在线充值规格套餐
+INSERT INTO sys_recharge_package (id, package_name, price_cny, granted_points, bonus_points, badge, sort_order, is_active)
+VALUES 
+    (1, '投研尝鲜包', 49.00, 500000, 0, '入门推荐', 1, true),
+    (2, '专业分析师包', 199.00, 2000000, 200000, '热销首选 (送10%)', 2, true),
+    (3, '机构进阶包', 599.00, 6000000, 1200000, '超值加赠 (送20%)', 3, true),
+    (4, '企业旗舰包', 2999.00, 30000000, 9000000, '尊享 1V1 投研支持', 4, true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 预置体验用户钱包 (User 1 初始赠送 100,000 点数)
+INSERT INTO sys_user_wallet (user_id, balance_points, total_recharged_points, wallet_status, version)
+VALUES (1, 100000, 100000, 'NORMAL', 0)
+ON CONFLICT (user_id) DO NOTHING;
+
