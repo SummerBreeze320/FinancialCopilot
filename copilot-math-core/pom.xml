@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.financial.copilot</groupId>
+        <artifactId>financial-copilot</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>copilot-math-core</artifactId>
+    <name>copilot-math-core</name>
+    <description>金融量化数学算法库 (夏普比率、最大回撤、卡玛比率、波动率等，严防幻觉核心)</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.financial.copilot</groupId>
+            <artifactId>copilot-common</artifactId>
+        </dependency>
+    </dependencies>
+</project>
