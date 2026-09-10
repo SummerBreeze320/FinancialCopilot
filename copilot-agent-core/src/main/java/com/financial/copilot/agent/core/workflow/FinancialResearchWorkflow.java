@@ -1,12 +1,18 @@
 package com.financial.copilot.agent.core.workflow;
 
-import com.financial.copilot.agent.core.agents.*;
-import com.financial.copilot.agent.core.pipeline.*;
-import com.financial.copilot.common.dto.FundMetricsDTO;
-import com.financial.copilot.common.dto.FundScreeningCriteria;
+import com.financial.copilot.agent.core.agents.AnalyzerAgent;
+import com.financial.copilot.agent.core.agents.ComparatorAgent;
+import com.financial.copilot.agent.core.agents.ReportSynthesizer;
+import com.financial.copilot.agent.core.agents.ScreenerAgent;
+import com.financial.copilot.agent.core.pipeline.ExecutionPlan;
+import com.financial.copilot.agent.core.pipeline.ResearchBlackboard;
+import com.financial.copilot.agent.core.pipeline.SubTask;
+import com.financial.copilot.agent.core.pipeline.TaskDecomposer;
 import com.financial.copilot.common.event.ResearchStreamEvent;
-import com.financial.copilot.domain.entity.FundInfo;
-import com.financial.copilot.domain.port.FundDataPort;
+import com.financial.copilot.common.fund.dto.FundMetricsDTO;
+import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
+import com.financial.copilot.domain.fund.entity.FundInfo;
+import com.financial.copilot.domain.fund.port.FundDataPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -14,24 +20,70 @@ import reactor.core.publisher.Flux;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
- * 复合金融投研 Agent 工作流总调度器 (Pipeline Orchestrator)
- * 支持单意图直达与高阶复合链式任务执行 (Screening -> Batch Evaluating -> Comparing -> Synthesizing)
+ * <h1>复合金融投研 Agent 工作流总调度器 (Financial Research Workflow)</h1>
+ * <p>
+ * 核心职责：
+ * 1. 作为投研大脑的调度中枢，将复杂自然语言投研诉求通过 {@link TaskDecomposer} 分解为多阶段 DAG 执行计划；
+ * 2. 借助共享黑板 {@link ResearchBlackboard} 沉淀各子任务的事实数据（初筛候选池、Fan-out 并发评测打分、横向对标事实）；
+ * 3. 驱动各专职 Agent（筛选、分析、对标、研报合成）协同作业，保障 Tool-as-Truth 防幻觉机制；
+ * 4. 支持同步完整生成、SSE 阶段式事件流推送（包含进度节点与内容 Token）以及传统纯文本流。
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Slf4j
 @Service
 public class FinancialResearchWorkflow {
 
+    /**
+     * 复杂意图任务拆解规划器
+     */
     private final TaskDecomposer taskDecomposer;
+
+    /**
+     * 标的筛选专员门面
+     */
     private final ScreenerAgent screenerAgent;
+
+    /**
+     * 单标的深度体检专员门面
+     */
     private final AnalyzerAgent analyzerAgent;
+
+    /**
+     * 双标的横向对标专员门面
+     */
     private final ComparatorAgent comparatorAgent;
+
+    /**
+     * 研报终审主编 Agent
+     */
     private final ReportSynthesizer reportSynthesizer;
+
+    /**
+     * 公募基金领域数据网关 Port
+     */
     private final FundDataPort fundDataPort;
 
+    /**
+     * 全参构造函数，由 Spring 容器自动装配
+     *
+     * @param taskDecomposer    任务拆解器
+     * @param screenerAgent     筛选专员
+     * @param analyzerAgent     深度分析专员
+     * @param comparatorAgent   横向对比专员
+     * @param reportSynthesizer 研报合成主编
+     * @param fundDataPort      基金数据端口
+     */
     public FinancialResearchWorkflow(TaskDecomposer taskDecomposer,
                                      ScreenerAgent screenerAgent,
                                      AnalyzerAgent analyzerAgent,
@@ -47,7 +99,10 @@ public class FinancialResearchWorkflow {
     }
 
     /**
-     * 同步全流程复合任务执行
+     * 同步全流程执行投研任务（适用于单次批量调用或接口测试）
+     *
+     * @param userPrompt 用户原始提问或复合投研诉求
+     * @return 最终合成的专业投研报告 Markdown 文本
      */
     public String execute(String userPrompt) {
         log.info("[WORKFLOW] 启动复合投研流水线: prompt={}", userPrompt);
@@ -73,7 +128,18 @@ public class FinancialResearchWorkflow {
     }
 
     /**
-     * 响应式阶段式 SSE 流式推送
+     * 响应式阶段式 SSE 流式推送（推荐 Web 前端使用）
+     * <p>
+     * 依次发出：
+     * 1. 规划事件 PLAN：包含总步骤数与执行纲要；
+     * 2. 步骤开始事件 STEP_START：当前步骤描述与进度；
+     * 3. 步骤完成事件 STEP_COMPLETE：当前步骤执行总结；
+     * 4. 内容流事件 CONTENT：主编生成的 Markdown 文本 Token 增量；
+     * 5. 结束事件 DONE：全流程完结信号。
+     * </p>
+     *
+     * @param userPrompt 用户原始输入
+     * @return 响应式事件流 Flux
      */
     public Flux<ResearchStreamEvent> executePipelineStream(String userPrompt) {
         log.info("[WORKFLOW-STREAM] 启动阶段式复合流式推送: prompt={}", userPrompt);
@@ -133,7 +199,10 @@ public class FinancialResearchWorkflow {
     }
 
     /**
-     * 兼容传统纯字符串流式接口
+     * 兼容传统纯字符串流式接口（仅推送文本 Chunk）
+     *
+     * @param userPrompt 用户输入
+     * @return 纯文本流 Flux
      */
     public Flux<String> executeStream(String userPrompt) {
         return executePipelineStream(userPrompt)
@@ -141,6 +210,13 @@ public class FinancialResearchWorkflow {
                 .map(ResearchStreamEvent::getChunk);
     }
 
+    /**
+     * 内部单步调度派发器
+     *
+     * @param step       当前子任务
+     * @param blackboard 共享黑板
+     * @param userPrompt 原始请求
+     */
     private void executeStep(SubTask step, ResearchBlackboard blackboard, String userPrompt) {
         switch (step.getTaskType().toUpperCase()) {
             case "SCREENING" -> executeScreeningStep(step, blackboard);
@@ -151,6 +227,12 @@ public class FinancialResearchWorkflow {
         }
     }
 
+    /**
+     * 阶段 1：公募基金初筛任务执行
+     *
+     * @param step       初筛任务配置
+     * @param blackboard 黑板上下文
+     */
     private void executeScreeningStep(SubTask step, ResearchBlackboard blackboard) {
         String sector = (String) step.getParams().getOrDefault("sector", "医药");
         FundScreeningCriteria criteria = new FundScreeningCriteria(
@@ -173,6 +255,12 @@ public class FinancialResearchWorkflow {
         log.info("[STEP-1 SCREENING] 完成初筛，共命中 {} 只标的", funds.size());
     }
 
+    /**
+     * 阶段 2：Fan-out 并发多维体检与量化评分打擂台
+     *
+     * @param step       批量评估子任务配置
+     * @param blackboard 黑板上下文
+     */
     private void executeBatchAnalysisStep(SubTask step, ResearchBlackboard blackboard) {
         List<FundInfo> candidates = blackboard.getCandidateFunds();
         int topN = ((Number) step.getParams().getOrDefault("topN", 5)).intValue();
@@ -223,9 +311,15 @@ public class FinancialResearchWorkflow {
 
         blackboard.put(ResearchBlackboard.KEY_MANAGER_RATINGS, evaluatedList);
         blackboard.put(ResearchBlackboard.KEY_TOP_CANDIDATES, topCandidates);
-        log.info("[STEP-2 BATCH_ANALYSIS] 完成前 {} 名经理多维体检，选出最优 2 名决赛候选: {}", topN, topCandidates);
+        log.info("[STEP-2 BATCH_ANALYSIS] 完成前 {} 名经理多维体检，选出最优 {} 名决赛候选: {}", topN, selectBest, topCandidates);
     }
 
+    /**
+     * 阶段 3：决赛两强标的深度横向对标
+     *
+     * @param step       对标子任务配置
+     * @param blackboard 黑板上下文
+     */
     private void executeComparisonStep(SubTask step, ResearchBlackboard blackboard) {
         List<String> topCandidates = blackboard.getTopCandidates();
         String codeA = topCandidates.size() > 0 ? topCandidates.get(0) : "005827";
@@ -236,6 +330,13 @@ public class FinancialResearchWorkflow {
         log.info("[STEP-3 COMPARISON] 完成 {} 与 {} 的深度定量与定性季报对标", codeA, codeB);
     }
 
+    /**
+     * 阶段 4：同步模式下的投研报告合成
+     *
+     * @param step       报告合成任务
+     * @param blackboard 黑板上下文
+     * @param userPrompt 用户诉求
+     */
     private void executeSynthesisStep(SubTask step, ResearchBlackboard blackboard, String userPrompt) {
         String factualContext = buildSynthesisContext(blackboard);
         String finalReport = reportSynthesizer.synthesize(factualContext, userPrompt);
@@ -243,6 +344,12 @@ public class FinancialResearchWorkflow {
         log.info("[STEP-4 SYNTHESIS] 成功合成最终投研配置建议报告");
     }
 
+    /**
+     * 提取并组装黑板中的全量事实上下文，作为主编 Agent 的输入底座
+     *
+     * @param blackboard 黑板实例
+     * @return 结构化事实上下文纯文本
+     */
     private String buildSynthesisContext(ResearchBlackboard blackboard) {
         StringBuilder sb = new StringBuilder();
         sb.append("=== 流水线全景事实总览 ===\n\n");
@@ -276,6 +383,13 @@ public class FinancialResearchWorkflow {
         return sb.toString();
     }
 
+    /**
+     * 生成各步骤完成时的进度摘要信息
+     *
+     * @param step       当前子任务
+     * @param blackboard 黑板实例
+     * @return 简明阶段性总结文字
+     */
     private String getStepSummary(SubTask step, ResearchBlackboard blackboard) {
         return switch (step.getTaskType().toUpperCase()) {
             case "SCREENING" -> "初筛完成，共命中 " + blackboard.getCandidateFunds().size() + " 只候选标的";
@@ -285,6 +399,13 @@ public class FinancialResearchWorkflow {
         };
     }
 
+    /**
+     * 单意图快速处理兜底分支
+     *
+     * @param intent     意图类型
+     * @param userPrompt 用户原始输入
+     * @return 研报结果
+     */
     private String executeSingleIntent(String intent, String userPrompt) {
         return switch (intent.toUpperCase()) {
             case "SCREENING" -> {

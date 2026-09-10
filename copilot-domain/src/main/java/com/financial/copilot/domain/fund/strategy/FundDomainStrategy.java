@@ -3,16 +3,20 @@ package com.financial.copilot.domain.fund.strategy;
 import com.financial.copilot.common.enums.AssetCategory;
 import com.financial.copilot.common.model.AssetProfile;
 import com.financial.copilot.domain.core.strategy.AssetDomainStrategy;
-import com.financial.copilot.domain.entity.FundInfo;
-import com.financial.copilot.domain.port.FundDataPort;
+import com.financial.copilot.domain.fund.entity.FundInfo;
+import com.financial.copilot.domain.fund.port.FundDataPort;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * 公募基金领域策略实现
- * 首期深度实施资产大类：FUND
+ * <h1>公募基金领域策略落地实现 (深度实施)</h1>
+ * <p>
+ * 实现 {@link AssetDomainStrategy} 契约，将公募基金专属的标的查询、净值时序及持仓事实挂载至通用投研注册中心。
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Component
 public class FundDomainStrategy implements AssetDomainStrategy {
@@ -36,7 +40,6 @@ public class FundDomainStrategy implements AssetDomainStrategy {
 
     @Override
     public List<AssetProfile> searchAssets(String keyword) {
-        // 模糊搜索基金
         return fundDataPort.getFundByCode(keyword)
                 .map(f -> List.of(toAssetProfile(f)))
                 .orElseGet(List::of);
@@ -48,7 +51,7 @@ public class FundDomainStrategy implements AssetDomainStrategy {
                 .assetName(fund.getFundName())
                 .category(AssetCategory.FUND)
                 .issuerOrExchange(fund.getManagementCompanyId())
-                .latestPriceOrNav(null) // 可通过净值时序动态扩充
+                .latestPriceOrNav(null)
                 .benchmarkOrDescription(fund.getTrackingBenchmark())
                 .build();
     }

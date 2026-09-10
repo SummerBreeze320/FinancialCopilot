@@ -10,8 +10,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * 基金量化多维度健康体检指标 DTO
- * 由 copilot-math-core 计算产出，作为 Agent 对标与报告的权威只读事实源。
+ * <h1>基金量化指标数据传输对象 (兼容性门面)</h1>
+ * <p>
+ * 推荐迁移使用专属领域包: {@link com.financial.copilot.common.fund.dto.FundMetricsDTO}
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Data
 @Builder
@@ -24,21 +28,35 @@ public class FundMetricsDTO implements Serializable {
     private String fundType;
     private LocalDate startDate;
     private LocalDate endDate;
+    private BigDecimal cumulativeReturn;
+    private BigDecimal annualizedReturn;
+    private BigDecimal maxDrawdown;
+    private BigDecimal annualizedVolatility;
+    private BigDecimal sharpeRatio;
+    private BigDecimal calmarRatio;
+    private BigDecimal top10Concentration;
+    private String primarySector;
+    private BigDecimal primarySectorRatio;
 
-    // 收益特征
-    private BigDecimal cumulativeReturn;    // 区间累计回报率 (%)
-    private BigDecimal annualizedReturn;    // 区间年化复合回报率 (%)
-
-    // 风险与下行控制
-    private BigDecimal maxDrawdown;          // 最大回撤 (%)
-    private BigDecimal annualizedVolatility; // 年化波动率 (%)
-
-    // 风险调整收益
-    private BigDecimal sharpeRatio;          // 夏普比率
-    private BigDecimal calmarRatio;          // 卡玛比率
-
-    // 持仓结构穿透特征
-    private BigDecimal top10Concentration;   // 前十大持仓集中度 (%)
-    private String primarySector;            // 第一大权重配置行业
-    private BigDecimal primarySectorRatio;   // 第一大行业占比 (%)
+    /**
+     * 转换为领域包标准 DTO
+     */
+    public com.financial.copilot.common.fund.dto.FundMetricsDTO toDomainDTO() {
+        return com.financial.copilot.common.fund.dto.FundMetricsDTO.builder()
+                .fundCode(fundCode)
+                .fundName(fundName)
+                .fundType(fundType)
+                .startDate(startDate)
+                .endDate(endDate)
+                .cumulativeReturn(cumulativeReturn)
+                .annualizedReturn(annualizedReturn)
+                .maxDrawdown(maxDrawdown)
+                .annualizedVolatility(annualizedVolatility)
+                .sharpeRatio(sharpeRatio)
+                .calmarRatio(calmarRatio)
+                .top10Concentration(top10Concentration)
+                .primarySector(primarySector)
+                .primarySectorRatio(primarySectorRatio)
+                .build();
+    }
 }

@@ -1,6 +1,6 @@
-# FinancialCopilot (金融投研多资产多智能体系统)
+# FinancialCopilot (金融投研多智能体系统)
 
-> **基于 AgentScope Java 2.x + Spring Boot 3.3.x + Lombok + MyBatis-Plus + PostgreSQL 16 (PGVector) 的专业金融多资产智能投研协同平台**
+> **基于 AgentScope Java 2.x + Spring Boot 3.3.x + Lombok + MyBatis-Plus + PostgreSQL 16 (PGVector) 的专业金融智能投研协同平台**
 
 [![Java Version](https://img.shields.io/badge/Java-17%20%2F%2021-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.3-brightgreen.svg)](https://spring.io/projects/spring-boot)
@@ -11,9 +11,9 @@
 
 ## 📌 项目定位与核心优势
 
-`FinancialCopilot` 旨在构建一个具备金融从业者级别严谨度的多资产投研协同底座：
+`FinancialCopilot` 旨在构建一个具备金融从业者级别严谨度的投研协同底座：
 - **首期深度实施公募基金（Fund）领域**（涵盖基金标的、基金经理、基金管理公司三层拓扑网络）；
-- **具备通用多资产可扩展架构**：预留股票（Stock）、期货（Futures）、银行理财（Wealth Management）扩展插槽；
+- **具备通用可扩展架构**：预留股票（Stock）、期货（Futures）、银行理财（Wealth Management）扩展插槽；
 - **解决长链路复杂投研问题**：攻克单意图 Router 无法处理复合依赖链的痛点（如：*“筛选过去三年稳定的医药基金 $\to$ 分析前 5 名基金经理 $\to$ 对标最优 2 强 $\to$ 生成最终资产配置建议”*）；
 - **Tool-as-Truth 严防幻觉**：年化收益率、最大回撤、夏普比率、卡玛比率等数字一律由原生纯 Java 数学库高精度计算，严禁大模型心算；
 - **定性研报混合 RAG**：通过 PostgreSQL PGVector 对基金经理定期报告进行高维切片检索，挖掘知行合一性与投资哲学。
@@ -22,11 +22,11 @@
 
 ## 🏗️ 系统架构设计
 
-### 1. 多资产分层与领域隔离体系
+### 1. 分层与领域隔离体系
 
 ```text
 financial-copilot/
-├── copilot-common/       // 多资产通用规范 (AssetCategory, AssetProfile) 与流式协议 (ResearchStreamEvent)
+├── copilot-common/       // 通用规范 (AssetCategory, AssetProfile) 与流式协议 (ResearchStreamEvent)
 ├── copilot-domain/       // 领域模型与 SPI 端口 (AssetDomainStrategy, FundDataPort)
 ├── copilot-math-core/    // 原生纯 Java 高精度金融计算引擎 (TDD 完备单测，夏普/回撤/卡玛)
 ├── copilot-data-engine/  // 持久层：Lombok + MyBatis-Plus 3.5.7 + PGVector 向量检索 (<=> 操作符)
@@ -125,7 +125,7 @@ mvn spring-boot:run -pl copilot-app
 - **请求体**: `{"prompt": "帮我分析张坤的投资能力"}`
 - **响应**: `ApiResult<String>` 包含完整结构化 Markdown 报告
 
-### 4. 平台健康检查与多资产能力清单
+### 4. 平台健康检查与能力清单
 - **URL**: `GET /api/v1/research/health`
 - **响应示例**:
 ```json

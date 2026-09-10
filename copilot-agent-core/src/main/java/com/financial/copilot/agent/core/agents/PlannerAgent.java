@@ -9,15 +9,31 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 意图识别与任务规划主管 Agent (Planner)
+ * <h1>意图识别与单阶段任务规划主管 Agent (Planner)</h1>
+ * <p>
+ * 职责：负责对单意图场景的用户提问进行分类与核心实体（基金代码、基金经理、板块主题）抽取。
+ * 针对复杂多步骤投研工作流，推荐协同使用任务分解器 {@link com.financial.copilot.agent.core.pipeline.TaskDecomposer}。
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Slf4j
 @Component
 public class PlannerAgent {
 
+    /**
+     * 大模型客户端服务
+     */
     private final DeepSeekClientService clientService;
+
+    /**
+     * JSON 对象序列化与反序列化器
+     */
     private final ObjectMapper objectMapper;
 
+    /**
+     * 规划主管意图抽取 System Prompt
+     */
     private static final String SYSTEM_PROMPT = """
         你是一个精通中国公募基金领域的投研主管 Planner Agent。
         请对用户的提问进行意图分类与实体抽取。
@@ -37,27 +53,64 @@ public class PlannerAgent {
         }
         """;
 
+    /**
+     * 构造函数，注入依赖
+     *
+     * @param clientService 大模型调用服务
+     * @param objectMapper  JSON 解析器
+     */
     public PlannerAgent(DeepSeekClientService clientService, ObjectMapper objectMapper) {
         this.clientService = clientService;
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 单阶段规划解析结果载体
+     */
     @Data
     @Builder
     public static class PlanResult {
+        /**
+         * 识别意图枚举 (SCREENING / SINGLE_ANALYSIS / COMPARISON / GENERAL_QA)
+         */
         private String intent;
+
+        /**
+         * 主标的代码（如 "005827"）
+         */
         private String primaryCode;
+
+        /**
+         * 对标辅助标的代码（如 "161005"）
+         */
         private String secondaryCode;
+
+        /**
+         * 涉及的基金经理姓名（如 "张坤"）
+         */
         private String managerName;
+
+        /**
+         * 涉及的行业或主题板块（如 "医药"、"消费"）
+         */
         private String sectorTheme;
+
+        /**
+         * 用户原始自然语言 Prompt
+         */
         private String rawUserPrompt;
     }
 
+    /**
+     * 解析用户输入并生成意图实体规划
+     *
+     * @param userPrompt 用户输入
+     * @return 规划结果封装对象
+     */
     public PlanResult plan(String userPrompt) {
         log.info("[PLANNER] 正在解析用户意图: prompt={}", userPrompt);
         String response = clientService.chat(SYSTEM_PROMPT, userPrompt);
         try {
-            // 清理可能包含的 markdown 代码块包裹
             String cleanJson = response.trim();
             if (cleanJson.startsWith("```json")) {
                 cleanJson = cleanJson.substring(7);

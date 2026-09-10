@@ -16,6 +16,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+/**
+ * <h1>投研 Web 控制器单元测试 (Research Agent Controller Test)</h1>
+ * <p>
+ * 测试验证 {@link ResearchAgentController} 对健康检查接口、阶段式 SSE 流式推送接口以及同步生成接口的响应规范。
+ * </p>
+ *
+ * @author FinancialCopilot
+ */
 class ResearchAgentControllerTest {
 
     private ResearchAgentController controller;
@@ -27,6 +35,9 @@ class ResearchAgentControllerTest {
         controller = new ResearchAgentController(mockWorkflow);
     }
 
+    /**
+     * 测试验证健康检查端点元数据与多资产能力清单
+     */
     @Test
     @DisplayName("验证健康检查端点元数据与能力清单")
     void testHealthCheck() {
@@ -40,6 +51,9 @@ class ResearchAgentControllerTest {
         assertEquals("Lombok + MyBatis-Plus 3.5.7 + PGVector", data.get("orm"));
     }
 
+    /**
+     * 测试验证阶段式流式投研端点正常调用工作流
+     */
     @Test
     @DisplayName("验证阶段式流式投研端点正常调用工作流")
     void testStreamPipelineChat() {

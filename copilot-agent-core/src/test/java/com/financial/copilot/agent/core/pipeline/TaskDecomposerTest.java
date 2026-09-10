@@ -10,6 +10,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * <h1>任务拆解规划器单元测试 (Task Decomposer Test)</h1>
+ * <p>
+ * 测试验证 {@link TaskDecomposer} 能否准确识别复合投研意图，
+ * 并将其精准拆解为结构化四阶段 DAG 执行计划 {@link ExecutionPlan}。
+ * </p>
+ *
+ * @author FinancialCopilot
+ */
 class TaskDecomposerTest {
 
     private TaskDecomposer taskDecomposer;
@@ -23,6 +32,9 @@ class TaskDecomposerTest {
         taskDecomposer = new TaskDecomposer(clientService, objectMapper);
     }
 
+    /**
+     * 测试验证复合投研指令被正确解构为4阶段执行计划
+     */
     @Test
     @DisplayName("验证复合投研指令被正确解构为4阶段执行计划")
     void testDecomposeComplexPrompt() {
@@ -54,6 +66,9 @@ class TaskDecomposerTest {
         assertTrue(step4.getDependsOn().containsAll(java.util.List.of(1, 2, 3)));
     }
 
+    /**
+     * 测试验证简单对比请求退化为单步计划
+     */
     @Test
     @DisplayName("验证简单对比请求退化为单步计划")
     void testDecomposeSingleIntentComparison() {

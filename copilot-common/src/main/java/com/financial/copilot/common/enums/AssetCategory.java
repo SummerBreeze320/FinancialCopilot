@@ -4,7 +4,7 @@ import lombok.Getter;
 
 /**
  * 金融资产大类枚举
- * 统一多资产投研底座核心抽象
+ * 统一投研底座核心抽象
  */
 @Getter
 public enum AssetCategory {

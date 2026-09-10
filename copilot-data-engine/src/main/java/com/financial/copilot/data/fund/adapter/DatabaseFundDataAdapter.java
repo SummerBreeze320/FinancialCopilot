@@ -1,12 +1,12 @@
-package com.financial.copilot.data.adapter;
+package com.financial.copilot.data.fund.adapter;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.financial.copilot.common.dto.FundMetricsDTO;
-import com.financial.copilot.common.dto.FundScreeningCriteria;
+import com.financial.copilot.common.fund.dto.FundMetricsDTO;
+import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
 import com.financial.copilot.data.fund.mapper.*;
 import com.financial.copilot.data.fund.po.*;
-import com.financial.copilot.domain.entity.*;
-import com.financial.copilot.domain.port.FundDataPort;
+import com.financial.copilot.domain.fund.entity.*;
+import com.financial.copilot.domain.fund.port.FundDataPort;
 import com.financial.copilot.math.FinancialMathUtils;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +20,13 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 基于 PostgreSQL 关系表与 MyBatis-Plus 的 FundDataPort SPI 实现
+ * <h1>基于 MyBatis-Plus 与 PostgreSQL 的基金数据访问适配器</h1>
+ * <p>
+ * 实现领域层 {@link FundDataPort} SPI 契约，基于 MyBatis-Plus 的 {@link LambdaQueryWrapper} 提供强类型安全的
+ * 关系型数据库查询，并集成纯 Java 原生量化计算引擎产出确定性的金融收益与风险指标。
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Component
 public class DatabaseFundDataAdapter implements FundDataPort {

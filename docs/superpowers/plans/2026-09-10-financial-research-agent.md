@@ -1,11 +1,11 @@
-# 金融多资产研究 Agent（公募基金深度实施版）落地实施计划
+# 金融研究 Agent（公募基金深度实施版）落地实施计划
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 构建具备通用多资产可扩展架构（首期深度落地公募基金领域，具备股票、期货、银行理财扩展性），基于 AgentScope Java 2.x、Spring Boot 3.3.3、Java 21、Lombok + MyBatis-Plus 与 PostgreSQL 16 + PGVector，能够自主解构并执行复杂复合投研流水线（如“筛选医药基金 -> 评估前5名经理 -> 对比最优2个 -> 输出投资配置建议”）的金融研究 Agent。
+**Goal:** 构建具备通用可扩展架构（首期深度落地公募基金领域，具备股票、期货、银行理财扩展性），基于 AgentScope Java 2.x、Spring Boot 3.3.3、Java 21、Lombok + MyBatis-Plus 与 PostgreSQL 16 + PGVector，能够自主解构并执行复杂复合投研流水线（如“筛选医药基金 -> 评估前5名经理 -> 对比最优2个 -> 输出投资配置建议”）的金融研究 Agent。
 
 **Architecture:** 
-1. **多资产分层底座**：抽象出 `AssetCategory`, `AssetProfile`, `AssetDomainStrategy`, `AssetDomainRegistry`，明确划分通用投研层与特定资产插件层。公募基金（Fund）为首发深度实现，包命名与命名空间清晰隔离（`fund`）。
+1. **分层底座**：抽象出 `AssetCategory`, `AssetProfile`, `AssetDomainStrategy`, `AssetDomainRegistry`，明确划分通用投研层与特定资产插件层。公募基金（Fund）为首发深度实现，包命名与命名空间清晰隔离（`fund`）。
 2. **复合流水线解构器**：引入 `TaskDecomposer` 识别复合拓扑任务，生成 `ExecutionPlan`；通过 `ResearchBlackboard` 跨步骤安全传递量化结果与候选标的；通过 Java 21 虚拟线程支持批量经理评估的 Fan-Out / Fan-In 并发提速。
 3. **数据访问与模型标准**：全面采用 **Lombok** 消除冗余模板代码，持久层采用 **MyBatis-Plus 3.5.x for Spring Boot 3**，单表 CRUD 零 XML，PGVector 向量检索通过注解式 SQL 极简实现。
 4. **Tool-as-Truth 规范**：夏普、回撤、卡玛、胜率等指标由 `copilot-math-core` 确定性高精度计算，严防模型幻觉；定期报告定性分析通过向量语义检索赋能。
@@ -22,18 +22,18 @@
 ```text
 financial-copilot/
 ├── pom.xml                                           // 根 POM: Java 21, Spring Boot 3.3.3, MyBatis-Plus, Lombok
-├── copilot-common/                                   // 公共通用层与多资产基础规范
+├── copilot-common/                                   // 公共通用层与基础规范
 │   └── src/main/java/com/financial/copilot/common/
-│       ├── enums/AssetCategory.java                  // [多资产] 资产大类 (FUND, STOCK, FUTURES, WEALTH)
-│       ├── model/AssetProfile.java                   // [多资产] 统一资产简档模型
+│       ├── enums/AssetCategory.java                  // [] 资产大类 (FUND, STOCK, FUTURES, WEALTH)
+│       ├── model/AssetProfile.java                   // [] 统一资产简档模型
 │       ├── result/ApiResult.java                     // 统一 API 响应包装
 │       └── fund/dto/                                 // [基金专属]
 │           ├── FundScreeningCriteria.java            // 选基 DSL
 │           └── FundMetricsDTO.java                   // 基金量化指标传输对象
 ├── copilot-domain/                                   // 领域模型与核心业务抽象
 │   └── src/main/java/com/financial/copilot/domain/
-│       ├── core/strategy/AssetDomainStrategy.java    // [多资产] 领域策略抽象
-│       ├── core/registry/AssetDomainRegistry.java    // [多资产] 领域路由中心
+│       ├── core/strategy/AssetDomainStrategy.java    // [] 领域策略抽象
+│       ├── core/registry/AssetDomainRegistry.java    // [] 领域路由中心
 │       └── fund/                                     // [基金专属] 领域核心模型
 │           ├── entity/ (FundInfo, FundManager, FundCompany, FundNavHistory, FundHolding)
 │           └── port/FundDataPort.java                // 数据访问 SPI 接口
@@ -79,17 +79,17 @@ financial-copilot/
 - [ ] 重构 `DatabaseFundDataAdapter`，通过 MyBatis-Plus `LambdaQueryWrapper` 与 Mapper 实现 `FundDataPort`。
 - [ ] 运行 `mvn test-compile` 验证持久层编译与测试通过。
 
-### Task 2: 多资产架构抽象与基金领域命名空间隔离
-- [ ] 在 `copilot-common` 中创建通用多资产包：
+### Task 2: 架构抽象与基金领域命名空间隔离
+- [ ] 在 `copilot-common` 中创建通用包：
   - 定义 `com.financial.copilot.common.enums.AssetCategory` (`FUND`, `STOCK`, `FUTURES`, `WEALTH_MANAGEMENT`)。
   - 定义 `com.financial.copilot.common.model.AssetProfile`。
-- [ ] 在 `copilot-domain` 中创建多资产策略注册抽象：
+- [ ] 在 `copilot-domain` 中创建策略注册抽象：
   - 定义 `com.financial.copilot.domain.core.strategy.AssetDomainStrategy` 接口。
   - 定义 `com.financial.copilot.domain.core.registry.AssetDomainRegistry` 注册中心。
 - [ ] 将所有现有基金相关代码整齐划归至 `fund` 专属包路径：
   - `copilot-domain/src/.../domain/fund/`
   - `copilot-agent-tools/src/.../tools/fund/`
-- [ ] 编译并验证多资产底座结构清晰、基金特征鲜明。
+- [ ] 编译并验证底座结构清晰、基金特征鲜明。
 
 ### Task 3: 复合投研任务解构器与投研黑板（copilot-agent-core）
 - [ ] 在 `copilot-agent-core` 的 `pipeline` 包下定义数据结构：

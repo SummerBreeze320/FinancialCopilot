@@ -12,27 +12,55 @@ import reactor.core.publisher.Flux;
 import java.util.Map;
 
 /**
- * 金融多资产投研 Agent REST / SSE 交互控制器
- * 提供单步直达与高阶长链路流水线交互端点
+ * <h1>金融智能投研 Agent REST / SSE 控制器</h1>
+ * <p>
+ * 提供多端交互接入端点：
+ * 1. 阶段式复合流水线 SSE 流式输出接口（包含执行计划、步骤通知、Markdown 研报增量与完结信号）；
+ * 2. 纯打字机流式接口（适配常规 Markdown 聊天窗口）；
+ * 3. 同步阻塞式研报生成接口（适合批处理或一次性拉取）；
+ * 4. 平台健康度与资产能力矩阵探针。
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/research")
 public class ResearchAgentController {
 
+    /**
+     * 投研多智能体工作流总调度器
+     */
     private final FinancialResearchWorkflow workflow;
 
+    /**
+     * 构造函数，自动注入工作流组件
+     *
+     * @param workflow 投研总调度工作流
+     */
     public ResearchAgentController(FinancialResearchWorkflow workflow) {
         this.workflow = workflow;
     }
 
+    /**
+     * 同步问答分析请求体传输对象
+     */
     @Data
     public static class ChatRequest {
+        /**
+         * 用户输入的自然语言投研问题或选基要求
+         */
         private String prompt;
     }
 
     /**
-     * 阶段式复合流水线 SSE 流式交互接口 (输出 PLAN, STEP_START, STEP_COMPLETE, CONTENT, DONE)
+     * 阶段式复合流水线 SSE 流式交互接口
+     * <p>
+     * 依次产生 PLAN、STEP_START、STEP_COMPLETE、CONTENT、DONE 等结构化事件。
+     * </p>
+     *
+     * @param prompt 用户自然语言诉求
+     * @return 响应式事件流
      */
     @GetMapping(value = "/chat/pipeline/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ResearchStreamEvent> streamPipelineChat(@RequestParam("prompt") String prompt) {
@@ -41,7 +69,10 @@ public class ResearchAgentController {
     }
 
     /**
-     * 纯打字机 Markdown 文本流接口 (兼容简易聊天窗口)
+     * 纯打字机 Markdown 文本流接口（兼容普通 Web 聊天窗口）
+     *
+     * @param prompt 用户自然语言诉求
+     * @return Markdown Token 纯文本流
      */
     @GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> streamChat(@RequestParam("prompt") String prompt) {
@@ -51,6 +82,9 @@ public class ResearchAgentController {
 
     /**
      * 同步全量投研研报生成接口
+     *
+     * @param request 请求体封装
+     * @return 最终研报 Markdown 结果
      */
     @PostMapping("/chat")
     public ApiResult<String> syncChat(@RequestBody ChatRequest request) {
@@ -60,7 +94,9 @@ public class ResearchAgentController {
     }
 
     /**
-     * 健康检查与平台能力清单
+     * 平台健康检查与能力清单
+     *
+     * @return 系统运行状态与已挂载资产模块概览
      */
     @GetMapping("/health")
     public ApiResult<Map<String, Object>> healthCheck() {

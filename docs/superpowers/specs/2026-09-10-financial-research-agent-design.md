@@ -1,17 +1,17 @@
-# 金融多资产研究 Agent 架构设计规范书（公募基金深度实施版）
+# 金融研究 Agent 架构设计规范书（公募基金深度实施版）
 
 > **设计日期**：2026-09-10  
 > **文档定位**：系统设计标准与实施基准规范 (Design Specification)  
 > **核心框架**：AgentScope Java 2.x + Spring Boot 3.3.x (Java 21 LTS, 启用虚拟线程)  
 > **持久层规范**：Lombok + MyBatis-Plus 3.5.x + PostgreSQL 16 + PGVector  
 > **推理模型**：DeepSeek 官方 API (DeepSeek-V3 / DeepSeek-R1)  
-> **领域定位**：**通用多资产投研底座**，首期深度实施**公募基金（Fund）领域**，预留**股票（Stock）**、**期货（Futures）**、**银行理财（Wealth Management）**平滑扩展接口。
+> **领域定位**：**通用投研底座**，首期深度实施**公募基金（Fund）领域**，预留**股票（Stock）**、**期货（Futures）**、**银行理财（Wealth Management）**平滑扩展接口。
 
 ---
 
-## 1. 业务目标与多资产领域架构设计
+## 1. 业务目标与领域架构设计
 
-### 1.1 多资产可扩展分层体系（Multi-Asset Architecture）
+### 1.1 可扩展分层体系（Multi-Asset Architecture）
 
 为避免系统过度耦合于单一资产形态，整体架构划分为“**通用投研抽象层（Universal Asset Layer）**”与“**特定资产领域插件层（Asset Domain Plugins）**”：
 
@@ -41,7 +41,7 @@ graph TD
     AssetDomainRegistry -.->|未来扩展| WealthDomain
 ```
 
-#### 统一多资产抽象规范：
+#### 统一抽象规范：
 1. **`AssetCategory` 枚举**：定义资产类别（`FUND` 基金、`STOCK` 股票、`FUTURES` 期货、`WEALTH_MANAGEMENT` 银行理财）。
 2. **`AssetProfile` 统一标的契约**：包含跨资产通用的基础字段（`assetCode`, `assetName`, `category`, `exchangeOrIssuer`, `latestPriceOrNav`, `updateDate`）。
 3. **`AssetDomainStrategy` 策略接口体系**：
@@ -315,21 +315,21 @@ public interface FundReportVectorMapper extends BaseMapper<FundReportVectorPO> {
 
 ## 4. 系统分层与 Maven 工程模块设计
 
-清晰划分“通用多资产底座”与“基金专属领域模块”的包结构：
+清晰划分“通用底座”与“基金专属领域模块”的包结构：
 
 ```text
 financial-copilot/
 ├── pom.xml                                  // 父 POM：管理 Java 21、Spring Boot 3.3.x、MyBatis-Plus、Lombok
 ├── copilot-common/                          // 通用资产模型、枚举、统一结果集
 │   └── src/main/java/com/financial/copilot/common/
-│       ├── enums/AssetCategory.java         // [多资产核心] FUND, STOCK, FUTURES, WEALTH
-│       ├── model/AssetProfile.java          // [多资产核心] 统一资产简档
+│       ├── enums/AssetCategory.java         // [核心] FUND, STOCK, FUTURES, WEALTH
+│       ├── model/AssetProfile.java          // [核心] 统一资产简档
 │       ├── result/ApiResult.java            // 全局统一结果封装
 │       └── fund/dto/                        // 基金专属 DTO (FundScreeningCriteria, FundMetricsDTO)
 ├── copilot-domain/                          // 领域模型与核心业务抽象
 │   └── src/main/java/com/financial/copilot/domain/
-│       ├── core/strategy/AssetDomainStrategy.java // [多资产核心] 通用资产策略接口
-│       ├── core/registry/AssetDomainRegistry.java // [多资产核心] 策略路由注册中心
+│       ├── core/strategy/AssetDomainStrategy.java // [核心] 通用资产策略接口
+│       ├── core/registry/AssetDomainRegistry.java // [核心] 策略路由注册中心
 │       └── fund/                            // [首期深度实现] 基金领域模型
 │           ├── entity/ (FundInfo, FundManager, FundCompany, FundNavHistory, FundHolding)
 │           └── port/FundDataPort.java       // 基金数据访问 SPI
@@ -480,7 +480,7 @@ data: {"type":"DONE"}
 
 ## 8. 实施里程碑与验收标准
 
-1. **里程碑 1 (Week 1)：多资产通用接口定义与 MyBatis-Plus 持久层改造**
+1. **里程碑 1 (Week 1)：通用接口定义与 MyBatis-Plus 持久层改造**
    - 确立 `AssetCategory`, `AssetProfile`, `AssetDomainStrategy`, `AssetDomainRegistry`。
    - 在 `copilot-data-engine` 引入 `mybatis-plus-spring-boot3-starter` 与 `lombok`，编写 `FundInfoPO` 及对应 Mapper。
    - 验证 H2/PostgreSQL 环境下单表 CRUD 与向量查询单元测试。

@@ -9,8 +9,13 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * 基金定期报告定性策略观点召回工具 (MyBatis-Plus + PGVector 混合 RAG)
- * 归属: 基金专属领域 (Fund Domain)
+ * <h1>基金定期报告定性策略观点召回工具 (MyBatis-Plus + PGVector 混合 RAG)</h1>
+ * <p>
+ * 从高维向量库和关系表中检索基金经理在各期季报中对宏观经济、行业轮动与投资哲学的定性表态，
+ * 供 ComparatorAgent 评估其知行合一性与风格稳定性。
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Slf4j
 @Component
@@ -24,6 +29,9 @@ public class FundReportRetrieverTool {
 
     /**
      * 获取指定基金最新的季度策略观点全文切片
+     *
+     * @param fundCode 6位基金代码
+     * @return 格式化后的季报观点文本
      */
     public String getLatestQuarterlyReportView(String fundCode) {
         log.info("[TOOL CALL-FUND] 查询基金定性季报策略观点: fundCode={}", fundCode);
@@ -52,7 +60,12 @@ public class FundReportRetrieverTool {
     }
 
     /**
-     * 语义向量检索相似段落
+     * 基于余弦距离 (<=>) 进行近邻向量检索，召回语义最相近的研报切片
+     *
+     * @param fundCode     6位基金代码
+     * @param embeddingStr 1536维文本向量 JSON 字符串
+     * @param topK         召回最大段落数
+     * @return 相似研报切片 PO 列表
      */
     public List<FundReportVectorPO> searchSimilarSections(String fundCode, String embeddingStr, int topK) {
         try {

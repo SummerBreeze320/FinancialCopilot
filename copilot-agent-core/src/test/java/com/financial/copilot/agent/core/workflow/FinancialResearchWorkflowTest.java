@@ -1,7 +1,13 @@
 package com.financial.copilot.agent.core.workflow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.core.agents.*;
+import com.financial.copilot.agent.core.agents.AnalyzerAgent;
+import com.financial.copilot.agent.core.agents.ComparatorAgent;
+import com.financial.copilot.agent.core.agents.ReportSynthesizer;
+import com.financial.copilot.agent.core.agents.ScreenerAgent;
+import com.financial.copilot.agent.core.agents.fund.FundAnalyzerAgent;
+import com.financial.copilot.agent.core.agents.fund.FundComparatorAgent;
+import com.financial.copilot.agent.core.agents.fund.FundScreenerAgent;
 import com.financial.copilot.agent.core.config.DeepSeekModelConfig;
 import com.financial.copilot.agent.core.pipeline.TaskDecomposer;
 import com.financial.copilot.agent.core.service.DeepSeekClientService;
@@ -9,11 +15,11 @@ import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
-import com.financial.copilot.common.dto.FundMetricsDTO;
 import com.financial.copilot.common.event.ResearchStreamEvent;
+import com.financial.copilot.common.fund.dto.FundMetricsDTO;
 import com.financial.copilot.data.fund.mapper.FundReportVectorMapper;
-import com.financial.copilot.domain.entity.FundInfo;
-import com.financial.copilot.domain.port.FundDataPort;
+import com.financial.copilot.domain.fund.entity.FundInfo;
+import com.financial.copilot.domain.fund.port.FundDataPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,14 +27,21 @@ import org.mockito.Mockito;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
+/**
+ * <h1>金融投研多智能体复合工作流单元测试 (Financial Research Workflow Test)</h1>
+ * <p>
+ * 测试验证复杂四阶段投研任务（筛选 -> 经理批量能力评估 -> 决赛圈对标 -> 研报合成）
+ * 在同步阻塞模式与响应式 SSE 事件流模式下的正确性与鲁棒性。
+ * </p>
+ *
+ * @author FinancialCopilot
+ */
 class FinancialResearchWorkflowTest {
 
     private FinancialResearchWorkflow workflow;
@@ -70,32 +83,32 @@ class FinancialResearchWorkflowTest {
                     .build();
         });
 
+        // 实例化基金专有工具
         FundScreeningTool screeningTool = new FundScreeningTool(mockDataPort, objectMapper);
         FundQuantAnalysisTool quantTool = new FundQuantAnalysisTool(mockDataPort, objectMapper);
         FundHoldingsQueryTool holdingsTool = new FundHoldingsQueryTool(mockDataPort, objectMapper);
         FundReportRetrieverTool reportTool = new FundReportRetrieverTool(mockVectorMapper);
 
-        // 兼容别名
-        com.financial.copilot.agent.tools.FundScreeningTool topScreeningTool =
-                new com.financial.copilot.agent.tools.FundScreeningTool(mockDataPort, objectMapper);
-        com.financial.copilot.agent.tools.FundQuantAnalysisTool topQuantTool =
-                new com.financial.copilot.agent.tools.FundQuantAnalysisTool(mockDataPort, objectMapper);
-        com.financial.copilot.agent.tools.FundHoldingsQueryTool topHoldingsTool =
-                new com.financial.copilot.agent.tools.FundHoldingsQueryTool(mockDataPort, objectMapper);
-        com.financial.copilot.agent.tools.FundReportRetrieverTool topReportTool =
-                new com.financial.copilot.agent.tools.FundReportRetrieverTool(mockVectorMapper);
+        // 实例化基金专员 Agent
+        FundScreenerAgent fundScreenerAgent = new FundScreenerAgent(clientService, screeningTool, objectMapper);
+        FundAnalyzerAgent fundAnalyzerAgent = new FundAnalyzerAgent(quantTool, holdingsTool, reportTool);
+        FundComparatorAgent fundComparatorAgent = new FundComparatorAgent(quantTool, holdingsTool, reportTool);
 
-        TaskDecomposer taskDecomposer = new TaskDecomposer(clientService, objectMapper);
-        ScreenerAgent screenerAgent = new ScreenerAgent(clientService, topScreeningTool, objectMapper);
-        AnalyzerAgent analyzerAgent = new AnalyzerAgent(topQuantTool, topHoldingsTool, topReportTool);
-        ComparatorAgent comparatorAgent = new ComparatorAgent(topQuantTool, topHoldingsTool, topReportTool);
+        // 实例化门面
+        ScreenerAgent screenerAgent = new ScreenerAgent(fundScreenerAgent);
+        AnalyzerAgent analyzerAgent = new AnalyzerAgent(fundAnalyzerAgent);
+        ComparatorAgent comparatorAgent = new ComparatorAgent(fundComparatorAgent);
         ReportSynthesizer reportSynthesizer = new ReportSynthesizer(clientService);
+        TaskDecomposer taskDecomposer = new TaskDecomposer(clientService, objectMapper);
 
         workflow = new FinancialResearchWorkflow(
                 taskDecomposer, screenerAgent, analyzerAgent, comparatorAgent, reportSynthesizer, mockDataPort
         );
     }
 
+    /**
+     * 测试验证复合投研流水线同步阻塞执行
+     */
     @Test
     @DisplayName("验证复合投研流水线同步阻塞执行")
     void testExecuteComplexPipeline() {
@@ -107,6 +120,9 @@ class FinancialResearchWorkflowTest {
         assertFalse(report.isBlank());
     }
 
+    /**
+     * 测试验证复合投研流水线响应式事件流推送
+     */
     @Test
     @DisplayName("验证复合投研流水线响应式事件流推送")
     void testExecutePipelineStream() {
