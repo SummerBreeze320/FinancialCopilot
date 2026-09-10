@@ -2,7 +2,10 @@ package com.financial.copilot.agent.core.pipeline;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.core.service.DeepSeekClientService;
+import com.financial.copilot.agent.core.llm.dto.LlmRequest;
+import com.financial.copilot.agent.core.llm.dto.LlmResponse;
+import com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel;
+import com.financial.copilot.agent.core.llm.service.LlmService;
 import com.financial.copilot.common.enums.AssetCategory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,7 +20,7 @@ import java.util.Map;
  * <p>
  * 负责分析用户的自然语言指令，识别目标资产大类（公募基金 FUND、股票 STOCK、期货 FUTURES、银行理财 WEALTH），
  * 判断属于单意图直达还是多步复合流水线，并将其智能解构为带拓扑依赖的 {@link ExecutionPlan}。
- * 具备 DeepSeek 大模型深度规划与离线规则引擎双重兜底能力。
+ * 具备多厂商大模型深度规划与离线规则引擎双重兜底能力。
  * </p>
  *
  * @author FinancialCopilot
@@ -26,7 +29,7 @@ import java.util.Map;
 @Component
 public class TaskDecomposer {
 
-    private final DeepSeekClientService deepSeekClient;
+    private final LlmService llmService;
     private final ObjectMapper objectMapper;
 
     private static final String DECOMPOSER_PROMPT = """
@@ -49,42 +52,31 @@ public class TaskDecomposer {
         {
           "assetCategory": "FUND",
           "isComplex": true,
-          "summary": "简述整个任务流水线目标",
+          "summary": "简述任务流水线规划概要",
           "steps": [
             {
-              "stepIndex": 1,
+              "stepId": 1,
               "taskType": "SCREENING",
-              "description": "筛选过去三年表现稳定的医药基金",
-              "dependsOn": [],
-              "outputKey": "candidateFunds",
-              "params": {"sector": "医药", "minYears": 3, "limit": 10}
+              "description": "按板块与稳定性指标初筛公募基金",
+              "dependencies": []
             },
             {
-              "stepIndex": 2,
+              "stepId": 2,
               "taskType": "BATCH_ANALYSIS",
-              "description": "评估候选基金排名前5的基金经理专业能力并打分",
-              "dependsOn": [1],
-              "inputKey": "candidateFunds",
-              "outputKey": "topCandidates",
-              "params": {"topN": 5, "selectBest": 2}
+              "description": "分析初筛候选池前 5 名基金经理的能力表现",
+              "dependencies": [1]
             },
             {
-              "stepIndex": 3,
+              "stepId": 3,
               "taskType": "COMPARISON",
-              "description": "对排名前2的最优标的进行全方位定量与定性对标",
-              "dependsOn": [2],
-              "inputKey": "topCandidates",
-              "outputKey": "comparisonFacts",
-              "params": {}
+              "description": "对比综合评分最优的两强基金标的",
+              "dependencies": [2]
             },
             {
-              "stepIndex": 4,
+              "stepId": 4,
               "taskType": "SYNTHESIS",
-              "description": "汇总前序事实，生成包含配置逻辑与风险提示的最终投资建议",
-              "dependsOn": [1, 2, 3],
-              "inputKey": "comparisonFacts",
-              "outputKey": "finalReport",
-              "params": {}
+              "description": "综合生成资产配置与投资建议研报",
+              "dependencies": [3]
             }
           ]
         }
@@ -92,24 +84,38 @@ public class TaskDecomposer {
         如果是简单单意图请求（如仅筛选、仅查询单只基金或仅对比指定的两只基金），isComplex 为 false，steps 数组只包含 1 个步骤。
         """;
 
-    public TaskDecomposer(DeepSeekClientService deepSeekClient, ObjectMapper objectMapper) {
-        this.deepSeekClient = deepSeekClient;
+    public TaskDecomposer(LlmService llmService, ObjectMapper objectMapper) {
+        this.llmService = llmService;
         this.objectMapper = objectMapper;
     }
 
     /**
-     * 将用户自然语言诉求解构为有序 ExecutionPlan
+     * 将用户自然语言诉求解构为有序 ExecutionPlan（使用系统默认模型与档位）
      *
      * @param userQuery 用户的投研指令文本
      * @return 结构化的任务执行计划
      */
     public ExecutionPlan decompose(String userQuery) {
+        return decompose(userQuery, LlmPerformanceLevel.MIDDLE);
+    }
+
+    /**
+     * 将用户自然语言诉求解构为有序 ExecutionPlan，支持客户端指定的投研深度档位
+     *
+     * @param userQuery        用户的投研指令文本
+     * @param performanceLevel 投研深度/思考强度档位 (LOW / MIDDLE / HIGH)
+     * @return 结构化的任务执行计划
+     */
+    public ExecutionPlan decompose(String userQuery, LlmPerformanceLevel performanceLevel) {
         if (userQuery == null || userQuery.isBlank()) {
             return fallbackSingleTask(AssetCategory.FUND, "SCREENING", "默认展示优质公募基金标的");
         }
 
         try {
-            String llmResponse = deepSeekClient.chat(DECOMPOSER_PROMPT, userQuery);
+            String llmResponse = llmService.chat(
+                    DECOMPOSER_PROMPT, userQuery,
+                    performanceLevel != null ? performanceLevel : LlmPerformanceLevel.MIDDLE
+            );
             ExecutionPlan plan = parseJsonPlan(llmResponse, userQuery);
             if (plan != null && !plan.getSteps().isEmpty()) {
                 log.info("[TaskDecomposer] 成功解构任务: category={}, isComplex={}, steps={}, summary={}",

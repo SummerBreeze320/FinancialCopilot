@@ -1,6 +1,6 @@
 package com.financial.copilot.agent.core.agents.fund;
 
-import com.financial.copilot.agent.core.service.DeepSeekClientService;
+import com.financial.copilot.agent.core.llm.service.LlmService;
 import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
@@ -36,9 +36,9 @@ public class FundComparatorAgent {
     private final FundReportRetrieverTool reportTool;
 
     /**
-     * 大模型客户端服务（用于生成深度横向归因分析）
+     * 大模型统一服务接口（用于生成深度横向归因分析）
      */
-    private final DeepSeekClientService clientService;
+    private final LlmService clientService;
 
     /**
      * 基金横向对标专员 System Prompt
@@ -64,12 +64,12 @@ public class FundComparatorAgent {
      * @param quantTool     量化分析工具
      * @param holdingsTool  持仓穿透工具
      * @param reportTool    研报检索工具
-     * @param clientService 大模型客户端调用服务
+     * @param clientService 大模型调用服务
      */
     public FundComparatorAgent(FundQuantAnalysisTool quantTool,
                                FundHoldingsQueryTool holdingsTool,
                                FundReportRetrieverTool reportTool,
-                               DeepSeekClientService clientService) {
+                               LlmService clientService) {
         this.quantTool = quantTool;
         this.holdingsTool = holdingsTool;
         this.reportTool = reportTool;

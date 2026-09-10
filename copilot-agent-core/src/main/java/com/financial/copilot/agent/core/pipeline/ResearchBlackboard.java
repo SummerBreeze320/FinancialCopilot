@@ -45,6 +45,9 @@ public class ResearchBlackboard {
     /** 最终投资建议研报 Key */
     public static final String KEY_FINAL_REPORT = "finalReport";
 
+    /** 客户指定的投研深度/思考档位 Key */
+    public static final String KEY_PERFORMANCE_LEVEL = "performanceLevel";
+
     private final Map<String, Object> state = new ConcurrentHashMap<>();
 
     /**
@@ -148,6 +151,30 @@ public class ResearchBlackboard {
      */
     public String getFinalReport() {
         return (String) state.get(KEY_FINAL_REPORT);
+    }
+
+    /**
+     * 获取当前生效的投研深度/思考档位
+     *
+     * @return 性能档位，默认为 MIDDLE
+     */
+    public com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel getPerformanceLevel() {
+        Object val = state.get(KEY_PERFORMANCE_LEVEL);
+        if (val instanceof com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel level) {
+            return level;
+        }
+        return com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel.MIDDLE;
+    }
+
+    /**
+     * 设置投研深度/思考档位
+     *
+     * @param level 性能档位
+     */
+    public void setPerformanceLevel(com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel level) {
+        if (level != null) {
+            state.put(KEY_PERFORMANCE_LEVEL, level);
+        }
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.financial.copilot.agent.core.agents;
 
-import com.financial.copilot.agent.core.service.DeepSeekClientService;
+import com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel;
+import com.financial.copilot.agent.core.llm.service.LlmService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -21,9 +22,9 @@ import reactor.core.publisher.Flux;
 public class ReportSynthesizer {
 
     /**
-     * 大模型客户端服务
+     * 大模型统一服务
      */
-    private final DeepSeekClientService clientService;
+    private final LlmService clientService;
 
     /**
      * 首席投资总监 (CIO) 级别研报主编 System Prompt
@@ -59,11 +60,11 @@ public class ReportSynthesizer {
         """;
 
     /**
-     * 构造函数，注入大模型调用客户端
+     * 构造函数，注入大模型统一服务
      *
-     * @param clientService 大模型客户端服务
+     * @param clientService 大模型调用服务
      */
-    public ReportSynthesizer(DeepSeekClientService clientService) {
+    public ReportSynthesizer(LlmService clientService) {
         this.clientService = clientService;
     }
 
@@ -75,19 +76,43 @@ public class ReportSynthesizer {
      * @return 深度 Markdown 研报文本
      */
     public String synthesize(String factualContext, String userGoal) {
-        String prompt = "【用户诉求】: " + userGoal + "\n\n" + factualContext;
-        return clientService.chat(SYSTEM_PROMPT, prompt);
+        return synthesize(factualContext, userGoal, LlmPerformanceLevel.MIDDLE);
     }
 
     /**
-     * SSE 响应式流式输出报告（Token 级平滑推送）
+     * 同步生成完整报告文本（支持指定客户投研深度档位）
      *
      * @param factualContext 事实上下文
      * @param userGoal       用户原始研究诉求
-     * @return 响应式 Token 数据流 Flux
+     * @param level          投研深度档位
+     * @return 深度 Markdown 研报文本
+     */
+    public String synthesize(String factualContext, String userGoal, LlmPerformanceLevel level) {
+        String prompt = "【用户诉求】: " + userGoal + "\n\n" + factualContext;
+        return clientService.chat(SYSTEM_PROMPT, prompt, level != null ? level : LlmPerformanceLevel.MIDDLE);
+    }
+
+    /**
+     * 响应式流式生成报告文本 (SSE 打字机输出)
+     *
+     * @param factualContext 事实上下文
+     * @param userGoal       用户原始研究诉求
+     * @return 响应式 Token 片段 Flux
      */
     public Flux<String> synthesizeStream(String factualContext, String userGoal) {
+        return synthesizeStream(factualContext, userGoal, LlmPerformanceLevel.MIDDLE);
+    }
+
+    /**
+     * 响应式流式生成报告文本 (支持指定客户投研深度档位)
+     *
+     * @param factualContext 事实上下文
+     * @param userGoal       用户原始研究诉求
+     * @param level          投研深度档位
+     * @return 响应式 Token 片段 Flux
+     */
+    public Flux<String> synthesizeStream(String factualContext, String userGoal, LlmPerformanceLevel level) {
         String prompt = "【用户诉求】: " + userGoal + "\n\n" + factualContext;
-        return clientService.chatStream(SYSTEM_PROMPT, prompt);
+        return clientService.chatStream(SYSTEM_PROMPT, prompt, level != null ? level : LlmPerformanceLevel.MIDDLE);
     }
 }

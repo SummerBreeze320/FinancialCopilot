@@ -1,7 +1,7 @@
 package com.financial.copilot.agent.core.agents.fund;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.core.service.DeepSeekClientService;
+import com.financial.copilot.agent.core.llm.service.LlmService;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
 import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class FundScreenerAgent {
 
-    private final DeepSeekClientService clientService;
+    private final LlmService clientService;
     private final FundScreeningTool screeningTool;
     private final ObjectMapper objectMapper;
 
@@ -43,7 +43,7 @@ public class FundScreenerAgent {
         严格输出合法的 JSON 格式，禁止附带任何多余文字。
         """;
 
-    public FundScreenerAgent(DeepSeekClientService clientService, FundScreeningTool screeningTool, ObjectMapper objectMapper) {
+    public FundScreenerAgent(LlmService clientService, FundScreeningTool screeningTool, ObjectMapper objectMapper) {
         this.clientService = clientService;
         this.screeningTool = screeningTool;
         this.objectMapper = objectMapper;

@@ -50,33 +50,46 @@ public class ResearchAgentController {
          * 用户输入的自然语言投研问题或选基要求
          */
         private String prompt;
+
+        /**
+         * 客户端选择的投研深度/思考强度档位 (LOW: 快速初筛, MIDDLE: 标准投研, HIGH: 深度推演)
+         */
+        private String researchDepth;
     }
 
     /**
      * 阶段式复合流水线 SSE 流式交互接口
      * <p>
      * 依次产生 PLAN、STEP_START、STEP_COMPLETE、CONTENT、DONE 等结构化事件。
+     * 客户端可按需传递投研深度档位 researchDepth（默认为 MIDDLE）。
      * </p>
      *
-     * @param prompt 用户自然语言诉求
+     * @param prompt        用户自然语言诉求
+     * @param researchDepth 投研深度档位 (LOW / MIDDLE / HIGH)
      * @return 响应式事件流
      */
     @GetMapping(value = "/chat/pipeline/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ResearchStreamEvent> streamPipelineChat(@RequestParam("prompt") String prompt) {
-        log.info("[HTTP-SSE-PIPELINE] 收到阶段式投研流水线请求: prompt={}", prompt);
-        return workflow.executePipelineStream(prompt);
+    public Flux<ResearchStreamEvent> streamPipelineChat(
+            @RequestParam("prompt") String prompt,
+            @RequestParam(value = "researchDepth", required = false) String researchDepth) {
+        com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel depth =
+                com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel.fromString(researchDepth);
+        log.info("[HTTP-SSE-PIPELINE] 收到阶段式投研流水线请求: prompt={}, depth={}", prompt, depth);
+        return workflow.executePipelineStream(prompt, depth);
     }
 
     /**
      * 同步全量投研研报生成接口
      *
-     * @param request 请求体封装
+     * @param request 请求体封装（含投研问题与可选投研深度）
      * @return 最终研报 Markdown 结果
      */
     @PostMapping("/chat")
     public ApiResult<String> syncChat(@RequestBody ChatRequest request) {
-        log.info("[HTTP-POST] 收到同步投研分析请求: prompt={}", request.getPrompt());
-        String report = workflow.execute(request.getPrompt());
+        com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel depth =
+                com.financial.copilot.agent.core.llm.provider.LlmPerformanceLevel.fromString(request.getResearchDepth());
+        log.info("[HTTP-POST] 收到同步投研分析请求: prompt={}, depth={}", request.getPrompt(), depth);
+        String report = workflow.execute(request.getPrompt(), depth);
         return ApiResult.success(report);
     }
 

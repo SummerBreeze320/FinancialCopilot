@@ -10,9 +10,12 @@ import com.financial.copilot.agent.core.agents.fund.FundComparatorAgent;
 import com.financial.copilot.agent.core.agents.fund.FundScreenerAgent;
 import com.financial.copilot.agent.core.agents.stock.StockAnalyzerAgent;
 import com.financial.copilot.agent.core.agents.stock.StockScreenerAgent;
-import com.financial.copilot.agent.core.config.DeepSeekModelConfig;
+import com.financial.copilot.agent.core.llm.config.LlmConfigManager;
+import com.financial.copilot.agent.core.llm.config.LlmProperties;
+import com.financial.copilot.agent.core.llm.factory.LlmDynamicWebClientFactory;
+import com.financial.copilot.agent.core.llm.provider.LlmProviderRegistry;
+import com.financial.copilot.agent.core.llm.service.DefaultLlmService;
 import com.financial.copilot.agent.core.pipeline.TaskDecomposer;
-import com.financial.copilot.agent.core.service.DeepSeekClientService;
 import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
@@ -56,9 +59,13 @@ class FinancialResearchWorkflowTest {
     @BeforeEach
     void setUp() {
         ObjectMapper objectMapper = new ObjectMapper();
-        DeepSeekModelConfig config = new DeepSeekModelConfig();
-        config.setApiKey("placeholder-test-key");
-        DeepSeekClientService clientService = new DeepSeekClientService(WebClient.builder().build(), config, objectMapper);
+        LlmProperties properties = new LlmProperties();
+        properties.setApiKey("placeholder-test-key");
+        LlmConfigManager configManager = new LlmConfigManager(properties);
+        configManager.init();
+        LlmProviderRegistry providerRegistry = new LlmProviderRegistry();
+        LlmDynamicWebClientFactory webClientFactory = new LlmDynamicWebClientFactory();
+        DefaultLlmService llmService = new DefaultLlmService(webClientFactory, configManager, providerRegistry, objectMapper);
 
         mockDataPort = Mockito.mock(FundDataPort.class);
         mockStockPort = Mockito.mock(StockDataPort.class);
@@ -96,22 +103,22 @@ class FinancialResearchWorkflowTest {
         FundHoldingsQueryTool holdingsTool = new FundHoldingsQueryTool(mockDataPort, objectMapper);
         FundReportRetrieverTool reportTool = new FundReportRetrieverTool(mockVectorMapper);
 
-        FundScreenerAgent fundScreenerAgent = new FundScreenerAgent(clientService, screeningTool, objectMapper);
+        FundScreenerAgent fundScreenerAgent = new FundScreenerAgent(llmService, screeningTool, objectMapper);
         FundAnalyzerAgent fundAnalyzerAgent = new FundAnalyzerAgent(quantTool, holdingsTool, reportTool);
-        FundComparatorAgent fundComparatorAgent = new FundComparatorAgent(quantTool, holdingsTool, reportTool, clientService);
+        FundComparatorAgent fundComparatorAgent = new FundComparatorAgent(quantTool, holdingsTool, reportTool, llmService);
 
         // 实例化股票专有工具与 Agent
         StockScreeningTool stockScreeningTool = new StockScreeningTool(mockStockPort, objectMapper);
         StockQuantAnalysisTool stockQuantTool = new StockQuantAnalysisTool(mockStockPort, objectMapper);
-        StockScreenerAgent stockScreenerAgent = new StockScreenerAgent(clientService, stockScreeningTool, objectMapper);
+        StockScreenerAgent stockScreenerAgent = new StockScreenerAgent(llmService, stockScreeningTool, objectMapper);
         StockAnalyzerAgent stockAnalyzerAgent = new StockAnalyzerAgent(stockQuantTool);
 
         // 实例化多资产顶层门面（完全基于新设计全参注入）
         ScreenerAgent screenerAgent = new ScreenerAgent(fundScreenerAgent, stockScreenerAgent);
         AnalyzerAgent analyzerAgent = new AnalyzerAgent(fundAnalyzerAgent, stockAnalyzerAgent);
         ComparatorAgent comparatorAgent = new ComparatorAgent(fundComparatorAgent);
-        ReportSynthesizer reportSynthesizer = new ReportSynthesizer(clientService);
-        TaskDecomposer taskDecomposer = new TaskDecomposer(clientService, objectMapper);
+        ReportSynthesizer reportSynthesizer = new ReportSynthesizer(llmService);
+        TaskDecomposer taskDecomposer = new TaskDecomposer(llmService, objectMapper);
 
         workflow = new FinancialResearchWorkflow(
                 taskDecomposer, screenerAgent, analyzerAgent, comparatorAgent, reportSynthesizer, mockDataPort

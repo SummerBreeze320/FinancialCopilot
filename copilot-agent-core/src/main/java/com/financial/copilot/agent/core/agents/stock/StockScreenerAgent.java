@@ -1,7 +1,7 @@
 package com.financial.copilot.agent.core.agents.stock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.core.service.DeepSeekClientService;
+import com.financial.copilot.agent.core.llm.service.LlmService;
 import com.financial.copilot.agent.tools.stock.StockScreeningTool;
 import com.financial.copilot.common.stock.dto.StockScreeningCriteria;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class StockScreenerAgent {
 
-    private final DeepSeekClientService clientService;
+    private final LlmService clientService;
     private final StockScreeningTool screeningTool;
     private final ObjectMapper objectMapper;
 
@@ -50,7 +50,7 @@ public class StockScreenerAgent {
      * @param screeningTool 股票筛选只读工具
      * @param objectMapper  JSON 解析器
      */
-    public StockScreenerAgent(DeepSeekClientService clientService,
+    public StockScreenerAgent(LlmService clientService,
                               StockScreeningTool screeningTool,
                               ObjectMapper objectMapper) {
         this.clientService = clientService;

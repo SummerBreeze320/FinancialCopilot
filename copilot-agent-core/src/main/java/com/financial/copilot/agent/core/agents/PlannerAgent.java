@@ -2,7 +2,7 @@ package com.financial.copilot.agent.core.agents;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.core.service.DeepSeekClientService;
+import com.financial.copilot.agent.core.llm.service.LlmService;
 import com.financial.copilot.common.enums.AssetCategory;
 import lombok.Builder;
 import lombok.Data;
@@ -24,9 +24,9 @@ import org.springframework.stereotype.Component;
 public class PlannerAgent {
 
     /**
-     * 大模型客户端调用服务
+     * 大模型统一调用服务
      */
-    private final DeepSeekClientService clientService;
+    private final LlmService clientService;
 
     /**
      * JSON 对象序列化与反序列化工具
@@ -72,7 +72,7 @@ public class PlannerAgent {
      * @param clientService 大模型调用服务
      * @param objectMapper  JSON 解析器
      */
-    public PlannerAgent(DeepSeekClientService clientService, ObjectMapper objectMapper) {
+    public PlannerAgent(LlmService clientService, ObjectMapper objectMapper) {
         this.clientService = clientService;
         this.objectMapper = objectMapper;
     }

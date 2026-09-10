@@ -1,12 +1,14 @@
 package com.financial.copilot.agent.core.pipeline;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.core.config.DeepSeekModelConfig;
-import com.financial.copilot.agent.core.service.DeepSeekClientService;
+import com.financial.copilot.agent.core.llm.config.LlmConfigManager;
+import com.financial.copilot.agent.core.llm.config.LlmProperties;
+import com.financial.copilot.agent.core.llm.factory.LlmDynamicWebClientFactory;
+import com.financial.copilot.agent.core.llm.provider.LlmProviderRegistry;
+import com.financial.copilot.agent.core.llm.service.DefaultLlmService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,10 +28,14 @@ class TaskDecomposerTest {
     @BeforeEach
     void setUp() {
         ObjectMapper objectMapper = new ObjectMapper();
-        DeepSeekModelConfig config = new DeepSeekModelConfig();
-        config.setApiKey("placeholder-test-key");
-        DeepSeekClientService clientService = new DeepSeekClientService(WebClient.builder().build(), config, objectMapper);
-        taskDecomposer = new TaskDecomposer(clientService, objectMapper);
+        LlmProperties properties = new LlmProperties();
+        properties.setApiKey("placeholder-test-key");
+        LlmConfigManager configManager = new LlmConfigManager(properties);
+        configManager.init();
+        LlmProviderRegistry providerRegistry = new LlmProviderRegistry();
+        LlmDynamicWebClientFactory webClientFactory = new LlmDynamicWebClientFactory();
+        DefaultLlmService llmService = new DefaultLlmService(webClientFactory, configManager, providerRegistry, objectMapper);
+        taskDecomposer = new TaskDecomposer(llmService, objectMapper);
     }
 
     /**
