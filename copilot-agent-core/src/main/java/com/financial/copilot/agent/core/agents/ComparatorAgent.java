@@ -6,6 +6,8 @@ import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
 import com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.llm.dto.LlmResponse;
+import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
+import com.financial.copilot.agent.core.dag.runtime.NodeInput;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -101,5 +103,12 @@ public class ComparatorAgent {
             Consumer<LlmResponse> usageConsumer
     ) {
         return fundComparatorAgent.compareArtifact(node, store, usageConsumer);
+    }
+
+    public Artifact<ComparisonReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
+        ArtifactStore bound = new ArtifactStore();
+        input.artifacts().values().forEach(artifact -> bound.store(artifact.producerNodeId(), artifact));
+        return compareArtifact(node, bound,
+                context.request() == null ? null : context.request().usageConsumer());
     }
 }

@@ -10,6 +10,8 @@ import com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisRepor
 import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
+import com.financial.copilot.agent.core.dag.runtime.NodeInput;
 import com.financial.copilot.agent.core.llm.dto.LlmRequest;
 import com.financial.copilot.agent.core.llm.dto.LlmResponse;
 import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
@@ -277,6 +279,14 @@ public class ReportSynthesizer {
             String userGoal
     ) {
         return synthesizeArtifact(node, store, userGoal, false, null, null, null, null);
+    }
+
+    public Artifact<FinalSynthesisReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
+        ArtifactStore bound = new ArtifactStore();
+        input.artifacts().values().forEach(artifact -> bound.store(artifact.producerNodeId(), artifact));
+        if (context.request() == null) return synthesizeArtifact(node, bound, "");
+        return synthesizeArtifact(node, bound, context.request().prompt(), context.request().enableThinking(),
+                context.request().profile(), List.of(), List.of(), context.request().usageConsumer());
     }
 
     /**

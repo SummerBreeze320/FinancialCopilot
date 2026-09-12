@@ -5,6 +5,8 @@ import com.financial.copilot.agent.core.agents.stock.StockScreenerAgent;
 import com.financial.copilot.agent.core.dag.artifact.Artifact;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
+import com.financial.copilot.agent.core.dag.runtime.NodeInput;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -68,6 +70,11 @@ public class ScreenerAgent {
      */
     public Artifact<FundPool> screenArtifact(GraphNode node, String userPrompt) {
         return fundScreenerAgent.screenArtifact(node, userPrompt);
+    }
+
+    public Artifact<FundPool> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
+        String prompt = context.request() == null ? "" : context.request().prompt();
+        return screenArtifact(node, prompt);
     }
 
     /**

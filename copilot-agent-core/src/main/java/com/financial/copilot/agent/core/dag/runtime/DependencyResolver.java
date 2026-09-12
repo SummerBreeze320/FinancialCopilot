@@ -24,6 +24,7 @@ public class DependencyResolver {
 
     public static NodeInput resolve(GraphNode node, ArtifactStore store) {
         Map<String, Object> values = new LinkedHashMap<>();
+        Map<String, Artifact<?>> artifacts = new LinkedHashMap<>();
         for (InputBinding binding : node.getInputBindings()) {
             Artifact<?> artifact = store.get(binding.producerNodeId());
             if (artifact == null) {
@@ -39,8 +40,9 @@ public class DependencyResolver {
                 throw new IllegalStateException("Required binding path is missing: " + binding.path());
             }
             if (value != null) values.put(binding.name(), value);
+            artifacts.put(binding.name(), artifact);
         }
-        return new NodeInput(values);
+        return new NodeInput(values, artifacts);
     }
 
     private static Object project(Object value, String path) {

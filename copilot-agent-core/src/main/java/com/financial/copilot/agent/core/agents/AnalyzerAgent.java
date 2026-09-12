@@ -6,6 +6,8 @@ import com.financial.copilot.agent.core.dag.artifact.Artifact;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
+import com.financial.copilot.agent.core.dag.runtime.NodeInput;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -92,5 +94,12 @@ public class AnalyzerAgent {
             String userPrompt
     ) {
         return fundAnalyzerAgent.analyzeArtifact(node, store, userPrompt);
+    }
+
+    public Artifact<FundResearchResult> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
+        ArtifactStore bound = new ArtifactStore();
+        input.artifacts().values().forEach(artifact -> bound.store(artifact.producerNodeId(), artifact));
+        String prompt = context.request() == null ? "" : context.request().prompt();
+        return analyzeArtifact(node, bound, prompt);
     }
 }
