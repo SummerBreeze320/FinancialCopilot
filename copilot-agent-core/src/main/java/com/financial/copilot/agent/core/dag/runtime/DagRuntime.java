@@ -45,6 +45,10 @@ public class DagRuntime {
     private final NodeQualityGate qualityGate;
     private final PriorityReadyQueue readyQueue = new PriorityReadyQueue();
 
+    public DagRuntime(NodeExecutor nodeExecutor) {
+        this(nodeExecutor, new ArtifactStore(), ResourceManager.defaultManager(), new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate());
+    }
+
     public DagRuntime(
             NodeExecutor nodeExecutor,
             ArtifactStore artifactStore,
@@ -53,7 +57,7 @@ public class DagRuntime {
             NodeQualityGate qualityGate
     ) {
         this.nodeExecutor = Objects.requireNonNull(nodeExecutor, "nodeExecutor cannot be null");
-        this.artifactStore = Objects.requireNonNull(artifactStore, "artifactStore cannot be null");
+        this.artifactStore = artifactStore != null ? artifactStore : new ArtifactStore();
         this.resourceManager = resourceManager != null ? resourceManager : ResourceManager.defaultManager();
         this.checkpointStore = checkpointStore != null ? checkpointStore : new InMemoryDagCheckpointStore();
         this.qualityGate = qualityGate != null ? qualityGate : new DefaultNodeQualityGate();
@@ -65,7 +69,7 @@ public class DagRuntime {
             Consumer<DagEvent> eventPublisher
     ) {
         String runId = "run-" + UUID.randomUUID().toString().substring(0, 8);
-        return executeGraph(runId, graph, cancellationToken, eventPublisher);
+        return executeGraph(runId, graph, this.artifactStore, cancellationToken, eventPublisher);
     }
 
     public CompletableFuture<Void> executeGraph(
@@ -74,8 +78,19 @@ public class DagRuntime {
             CancellationToken cancellationToken,
             Consumer<DagEvent> eventPublisher
     ) {
+        return executeGraph(runId, graph, this.artifactStore, cancellationToken, eventPublisher);
+    }
+
+    public CompletableFuture<Void> executeGraph(
+            String runId,
+            ExecutionGraph graph,
+            ArtifactStore customStore,
+            CancellationToken cancellationToken,
+            Consumer<DagEvent> eventPublisher
+    ) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(cancellationToken, "cancellationToken cannot be null");
+        ArtifactStore effectiveStore = customStore != null ? customStore : this.artifactStore;
         Consumer<DagEvent> publisher = eventPublisher != null ? eventPublisher : e -> {};
 
         CompletableFuture<Void> graphFuture = new CompletableFuture<>();
@@ -104,7 +119,7 @@ public class DagRuntime {
         for (String rootId : rootNodeIds) {
             enqueueReadyNode(rootId, graph, statusMap, publisher);
         }
-        drainReadyQueue(runId, graph, statusMap, activeOrPendingNodes, graphFuture, cancellationToken, publisher);
+        drainReadyQueue(runId, graph, effectiveStore, statusMap, activeOrPendingNodes, graphFuture, cancellationToken, publisher);
 
         return graphFuture;
     }
@@ -162,7 +177,7 @@ public class DagRuntime {
                 }
             }
         }
-        drainReadyQueue(runId, graph, statusMap, activeOrPendingNodes, graphFuture, cancellationToken, publisher);
+        drainReadyQueue(runId, graph, this.artifactStore, statusMap, activeOrPendingNodes, graphFuture, cancellationToken, publisher);
 
         return graphFuture;
     }
@@ -189,6 +204,7 @@ public class DagRuntime {
             GraphNode node,
             String runId,
             ExecutionGraph graph,
+            ArtifactStore currentStore,
             Map<String, AtomicReference<NodeStatus>> statusMap,
             AtomicInteger activeOrPendingNodes,
             CompletableFuture<Void> graphFuture,
@@ -207,36 +223,38 @@ public class DagRuntime {
                 statusMap.get(nodeId).set(NodeStatus.RUNNING);
                 publisher.accept(new DagEvent(nodeId, NodeStatus.RUNNING, "Node execution started"));
 
-                Artifact<?> result = nodeExecutor.execute(node, artifactStore, nodeToken);
+                Artifact<?> result = nodeExecutor.execute(node, currentStore, nodeToken);
 
                 // 节点质量门禁三态裁决
                 NodeQualityGate.GateVerdict verdict = qualityGate.evaluate(node, result, graph);
                 switch (verdict.decision()) {
                     case PASS -> {
-                        artifactStore.store(nodeId, result);
+                        currentStore.store(nodeId, result);
                         statusMap.get(nodeId).set(NodeStatus.SUCCEEDED);
-                        saveRunCheckpoint(runId, graph, statusMap);
-                        onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, result, null, runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                        saveRunCheckpoint(runId, graph, currentStore, statusMap);
+                        onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, result, null, runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
                     }
                     case NEED_MORE_DATA -> {
                         // 缺少数据时仍存入当前产物并放行，由后续规划或报告体现
-                        artifactStore.store(nodeId, result);
+                        currentStore.store(nodeId, result);
                         statusMap.get(nodeId).set(NodeStatus.SUCCEEDED);
-                        saveRunCheckpoint(runId, graph, statusMap);
+                        saveRunCheckpoint(runId, graph, currentStore, statusMap);
                         publisher.accept(new DagEvent(nodeId, NodeStatus.SUCCEEDED, "Gate: NEED_MORE_DATA - " + verdict.reason(), result));
-                        onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, result, null, runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                        onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, result, null, runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
                     }
                     case INVALID -> {
                         handleNodeFailure(node, new IllegalStateException("Gate rejected artifact: " + verdict.reason()),
-                                runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                                runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
                     }
                 }
             } catch (Exception e) {
-                handleNodeFailure(node, e, runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                if (!nodeToken.isCancelled() && !parentToken.isCancelled() && !graphFuture.isDone()) {
+                    handleNodeFailure(node, e, runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                }
             } finally {
                 // 释放物理配额并唤醒队列中等待的就绪节点
                 resourceManager.release(node.getResourceRequirement());
-                drainReadyQueue(runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                drainReadyQueue(runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
             }
         });
     }
@@ -246,6 +264,7 @@ public class DagRuntime {
             Exception e,
             String runId,
             ExecutionGraph graph,
+            ArtifactStore currentStore,
             Map<String, AtomicReference<NodeStatus>> statusMap,
             AtomicInteger activeOrPendingNodes,
             CompletableFuture<Void> graphFuture,
@@ -262,7 +281,7 @@ public class DagRuntime {
                     log.warn("Node {} failed (attempt {}/{}), retrying: {}", nodeId, node.getRetryCount(), node.getMaxRetries(), e.getMessage());
                     statusMap.get(nodeId).set(NodeStatus.PENDING);
                     enqueueReadyNode(nodeId, graph, statusMap, publisher);
-                    drainReadyQueue(runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                    drainReadyQueue(runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
                 } else {
                     log.error("Node {} retries exhausted, failing fast: {}", nodeId, e.getMessage());
                     failFast(nodeId, e, runId, graph, statusMap, graphFuture, parentToken, publisher);
@@ -279,14 +298,14 @@ public class DagRuntime {
                         fallbackPayload,
                         ArtifactMetadata.partial("FALLBACK", List.of(), e.getMessage())
                 );
-                artifactStore.store(nodeId, fallbackArt);
-                saveRunCheckpoint(runId, graph, statusMap);
-                onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, fallbackArt, null, runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
-            }
-            case OPTIONAL -> {
-                onNodeCompleted(nodeId, NodeStatus.SKIPPED, null, e, runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                currentStore.store(nodeId, fallbackArt);
+                statusMap.get(nodeId).set(NodeStatus.SUCCEEDED);
+                log.info("Node {} executed fallback successfully", nodeId);
+                saveRunCheckpoint(runId, graph, currentStore, statusMap);
+                onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, fallbackArt, null, runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
             }
             case CONTINUE -> {
+                log.warn("Node {} failed with policy CONTINUE, bypassing downstream blocking: {}", nodeId, e.getMessage());
                 Artifact<?> degradedArt = Artifact.of(
                         "art_degraded_" + nodeId,
                         node.getOutputType() != null ? node.getOutputType() : ArtifactType.GENERAL,
@@ -294,11 +313,19 @@ public class DagRuntime {
                         "Degraded: " + e.getMessage(),
                         ArtifactMetadata.partial("DEGRADED", List.of(), e.getMessage())
                 );
-                artifactStore.store(nodeId, degradedArt);
-                saveRunCheckpoint(runId, graph, statusMap);
-                onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, degradedArt, null, runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                currentStore.store(nodeId, degradedArt);
+                statusMap.get(nodeId).set(NodeStatus.SUCCEEDED);
+                saveRunCheckpoint(runId, graph, currentStore, statusMap);
+                onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, degradedArt, null, runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+            }
+            case OPTIONAL -> {
+                log.info("Optional node {} failed, marking SKIPPED and proceeding: {}", nodeId, e.getMessage());
+                statusMap.get(nodeId).set(NodeStatus.SKIPPED);
+                saveRunCheckpoint(runId, graph, currentStore, statusMap);
+                onNodeCompleted(nodeId, NodeStatus.SKIPPED, null, null, runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
             }
             case FAIL_FAST -> {
+                log.error("Node {} failed under FAIL_FAST, aborting graph: {}", nodeId, e.getMessage());
                 failFast(nodeId, e, runId, graph, statusMap, graphFuture, parentToken, publisher);
             }
         }
@@ -306,7 +333,7 @@ public class DagRuntime {
 
     private void failFast(
             String nodeId,
-            Exception e,
+            Throwable e,
             String runId,
             ExecutionGraph graph,
             Map<String, AtomicReference<NodeStatus>> statusMap,
@@ -315,8 +342,8 @@ public class DagRuntime {
             Consumer<DagEvent> publisher
     ) {
         statusMap.get(nodeId).set(NodeStatus.FAILED);
-        saveRunCheckpoint(runId, graph, statusMap);
-        publisher.accept(new DagEvent(nodeId, NodeStatus.FAILED, "Critical node failed: " + e.getMessage()));
+        publisher.accept(new DagEvent(nodeId, NodeStatus.FAILED, "Node failed: " + e.getMessage()));
+        saveRunCheckpoint(runId, graph, this.artifactStore, statusMap);
         graphFuture.completeExceptionally(e);
         parentToken.cancel("FAIL_FAST triggered by node: " + nodeId);
     }
@@ -328,6 +355,7 @@ public class DagRuntime {
             Throwable error,
             String runId,
             ExecutionGraph graph,
+            ArtifactStore currentStore,
             Map<String, AtomicReference<NodeStatus>> statusMap,
             AtomicInteger activeOrPendingNodes,
             CompletableFuture<Void> graphFuture,
@@ -352,7 +380,7 @@ public class DagRuntime {
         for (String childId : readyChildren) {
             enqueueReadyNode(childId, graph, statusMap, publisher);
         }
-        drainReadyQueue(runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+        drainReadyQueue(runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
 
         // 计数递减，归零则图整体完成
         if (activeOrPendingNodes.decrementAndGet() == 0) {
@@ -363,6 +391,7 @@ public class DagRuntime {
     private synchronized void drainReadyQueue(
             String runId,
             ExecutionGraph graph,
+            ArtifactStore currentStore,
             Map<String, AtomicReference<NodeStatus>> statusMap,
             AtomicInteger activeOrPendingNodes,
             CompletableFuture<Void> graphFuture,
@@ -379,7 +408,7 @@ public class DagRuntime {
 
             if (resourceManager.tryAcquire(nextNode.getResourceRequirement())) {
                 readyQueue.poll();
-                submitToVirtualThread(nextNode, runId, graph, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                submitToVirtualThread(nextNode, runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
             } else {
                 // 信号量不足，等待后续释放唤醒
                 break;
@@ -387,13 +416,13 @@ public class DagRuntime {
         }
     }
 
-    private void saveRunCheckpoint(String runId, ExecutionGraph graph, Map<String, AtomicReference<NodeStatus>> statusMap) {
+    private void saveRunCheckpoint(String runId, ExecutionGraph graph, ArtifactStore currentStore, Map<String, AtomicReference<NodeStatus>> statusMap) {
         try {
             Map<String, NodeStatus> snapshot = new HashMap<>();
             statusMap.forEach((k, v) -> snapshot.put(k, v.get()));
 
             Map<String, String> artMap = new HashMap<>();
-            artifactStore.getAllArtifacts().forEach((k, v) -> artMap.put(k, v.id()));
+            currentStore.getAllArtifacts().forEach((k, v) -> artMap.put(k, v.id()));
 
             DagCheckpoint cp = new DagCheckpoint(
                     runId,

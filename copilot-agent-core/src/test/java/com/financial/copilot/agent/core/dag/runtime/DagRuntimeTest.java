@@ -175,6 +175,10 @@ class DagRuntimeTest {
         // 验证虚拟线程收到中断信号
         assertThat(threadInterrupted.get()).isTrue();
         // 验证信号量已彻底归还
+        long deadline = System.currentTimeMillis() + 2000;
+        while (rm.getAvailablePermits(ResourceType.LLM) < 1 && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10);
+        }
         assertThat(rm.getAvailablePermits(ResourceType.LLM)).isEqualTo(1);
     }
 

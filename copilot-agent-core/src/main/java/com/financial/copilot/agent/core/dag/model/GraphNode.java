@@ -36,7 +36,14 @@ public class GraphNode {
         this.name = builder.name != null ? builder.name : builder.nodeId;
         this.requiredInputs = builder.requiredInputs != null ? Set.copyOf(builder.requiredInputs) : Set.of();
         this.outputType = builder.outputType != null ? builder.outputType : ArtifactType.GENERAL;
-        this.params = new ConcurrentHashMap<>(builder.params != null ? builder.params : Map.of());
+        this.params = new ConcurrentHashMap<>();
+        if (builder.params != null) {
+            builder.params.forEach((k, v) -> {
+                if (k != null && v != null) {
+                    this.params.put(k, v);
+                }
+            });
+        }
         this.timeout = builder.timeout != null ? builder.timeout : Duration.ofMinutes(2);
         this.failurePolicy = builder.failurePolicy != null ? builder.failurePolicy : FailurePolicy.CONTINUE;
         this.maxRetries = builder.maxRetries >= 0 ? builder.maxRetries : 2;
