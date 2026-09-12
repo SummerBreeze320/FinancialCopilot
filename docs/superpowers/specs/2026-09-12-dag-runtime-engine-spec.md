@@ -57,42 +57,62 @@
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.1 运行时全景协同蓝图
+### 2.1 运行时全景收敛架构 (Converged Final Architecture)
 
 ```text
-                             ┌────────────────────────┐
-                             │  ReAct Graph Planner   │◄────────────────┐
-                             │ (Tool-Augmented 规划器) │                 │
-                             └───────────┬────────────┘                 │
-                                         │                              │
-                                     生成/增量演进                       │
-                                         ▼                              │
-                             ┌────────────────────────┐                 │
-                             │     ExecutionGraph     │                 │
-                             │ (双向邻接表，支持增删改查) │                 │
-                             └───────────┬────────────┘                 │
-                                         │ 提交调度                      │
-                                         ▼                              │
-                             ┌────────────────────────┐                 │
-                             │       DagRuntime       │                 │
-                             │   (依赖就绪即派发调度器)  │                 │
-                             └───────────┬────────────┘                 │
-                                         │ Java 21 虚拟线程池并发派发     │
-                                         ▼                              │
-                                   [Node A: 执行]                       │
-                                         │ 产出 Artifact                 │
-                                         ▼                              │
-                             ┌────────────────────────┐                 │
-                             │      Node Result       │                 │
-                             └─────┬────────────┬─────┘                 │
-                                   │            │                       │
-                                   ▼            ▼                       │
-                            [ArtifactStore]  [Re-plan Checkpoint]───────┘
-                                                  │
-                                                  ├─► 1. 保持 (KEEP)：下游继续放行
-                                                  ├─► 2. 插桩 (ADD)：发现新事实，动态追加节点
-                                                  ├─► 3. 剪枝 (PRUNE)：初筛为空，级联跳过
-                                                  └─► 4. 调参 (MODIFY)：动态重设后续输入
+                         User Query
+                             │
+                             ▼
+                    ┌────────────────┐
+                    │  Graph Planner │
+                    │     ReAct      │
+                    └───────┬────────┘
+                            │
+               RAG / Skill / Capability
+                            │
+                            ▼
+                    Execution Graph
+                            │
+                            ▼
+                 ┌─────────────────────┐
+                 │      DAG Runtime    │
+                 │                     │
+                 │ Dependency Resolver │
+                 │ Ready Queue         │
+                 │ ConcurrencyLimiter  │
+                 │ Retry/Timeout       │
+                 └─────────┬───────────┘
+                           │
+             ┌─────────────┼─────────────┐
+             ▼             ▼             ▼
+          Agent A       Agent B       Agent C
+           ReAct         ReAct         ReAct
+             │             │             │
+             └───────┬─────┴─────┬───────┘
+                     ▼           ▼
+                   Artifact Store
+                          │
+                          ▼
+                   Node Completed
+                          │
+              ┌───────────┴───────────┐
+              ▼                       ▼
+        Dependency Resolver       Graph Planner
+              │                       │
+          Ready Node             是否需要改图？
+              │                       │
+              └───────────────┬───────┘
+                              ▼
+                       Updated Graph
+                              │
+                              ▼
+                         DAG Runtime
+                              │
+                              ▼
+                      Final Synthesizer
+                              │
+                              ▼
+                            Report
 ```
 
 ---
