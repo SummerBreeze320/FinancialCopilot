@@ -6,7 +6,10 @@ import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
 import com.financial.copilot.agent.core.dag.artifact.EvidenceContract;
 import com.financial.copilot.agent.core.pipeline.ResearchBlackboard;
+import com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport;
 import com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
 import com.financial.copilot.domain.fund.entity.FundInfo;
 import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
 
@@ -155,6 +158,10 @@ public class BlackboardAdapter {
             case FUND_POOL -> {
                 if (artifact.payload() instanceof List<?> list) {
                     blackboard.put(ResearchBlackboard.KEY_CANDIDATE_FUNDS, list);
+                } else if (artifact.payload() instanceof FundPool pool) {
+                    if (pool.funds() != null && !pool.funds().isEmpty()) {
+                        blackboard.put(ResearchBlackboard.KEY_CANDIDATE_FUNDS, pool.funds());
+                    }
                 }
             }
             case FUND_RESEARCH -> {
@@ -165,10 +172,19 @@ public class BlackboardAdapter {
                     if (map.containsKey("topCandidates")) {
                         blackboard.put(ResearchBlackboard.KEY_TOP_CANDIDATES, map.get("topCandidates"));
                     }
+                } else if (artifact.payload() instanceof FundResearchResult res) {
+                    if (res.evaluatedFunds() != null && !res.evaluatedFunds().isEmpty()) {
+                        blackboard.put(ResearchBlackboard.KEY_MANAGER_RATINGS, res.evaluatedFunds());
+                    }
+                    if (res.topCandidates() != null && !res.topCandidates().isEmpty()) {
+                        blackboard.put(ResearchBlackboard.KEY_TOP_CANDIDATES, res.topCandidates());
+                    }
                 }
             }
             case COMPARISON_REPORT -> {
-                if (artifact.payload() != null) {
+                if (artifact.payload() instanceof ComparisonReport comp) {
+                    blackboard.put(ResearchBlackboard.KEY_COMPARISON_FACTS, comp.comparisonAnalysis());
+                } else if (artifact.payload() != null) {
                     blackboard.put(ResearchBlackboard.KEY_COMPARISON_FACTS, artifact.payload().toString());
                 }
             }

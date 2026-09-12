@@ -23,6 +23,10 @@ public record Artifact<T>(
         evidenceContract = evidenceContract != null ? evidenceContract : EvidenceContract.empty();
     }
 
+    public static <T> Artifact<T> of(String id, ArtifactType type, String producerNodeId, T payload) {
+        return new Artifact<>(id, type, producerNodeId, payload, ArtifactMetadata.standard(producerNodeId), EvidenceContract.empty());
+    }
+
     public static <T> Artifact<T> of(String id, ArtifactType type, String producerNodeId, T payload, ArtifactMetadata metadata) {
         return new Artifact<>(id, type, producerNodeId, payload, metadata, EvidenceContract.empty());
     }

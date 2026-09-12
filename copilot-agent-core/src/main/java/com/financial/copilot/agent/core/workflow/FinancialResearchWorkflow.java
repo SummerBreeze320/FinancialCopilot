@@ -532,7 +532,7 @@ public class FinancialResearchWorkflow {
             ArtifactStore store,
             CancellationToken token
     ) {
-        SubTask step = LegacyPlanAdapter.extractSubTask(node, null);
+        String taskType = node.getTaskType().toUpperCase();
         ResearchBlackboard blackboard = (ResearchBlackboard) store.getGlobalContext("blackboard");
         if (blackboard == null) {
             blackboard = new ResearchBlackboard();
@@ -541,15 +541,46 @@ public class FinancialResearchWorkflow {
         }
         String userPrompt = (String) store.getGlobalContext("userPrompt");
         String sessionId = (String) store.getGlobalContext("sessionId");
+        Boolean enableThinking = (Boolean) store.getGlobalContext(ResearchBlackboard.KEY_ENABLE_THINKING);
+        if (enableThinking == null) enableThinking = false;
+        UserInvestmentProfile profile = (UserInvestmentProfile) store.getGlobalContext(ResearchBlackboard.KEY_USER_INVESTMENT_PROFILE);
+        @SuppressWarnings("unchecked")
+        Consumer<LlmResponse> usageConsumer = (Consumer<LlmResponse>) store.getGlobalContext("usageConsumer");
 
-        executeStep(step, blackboard, userPrompt, sessionId);
+        Artifact<?> artifact;
+        switch (taskType) {
+            case "SCREENING" -> artifact = screenerAgent.screenArtifact(node, userPrompt);
+            case "BATCH_ANALYSIS" -> artifact = analyzerAgent.analyzeArtifact(node, store, userPrompt);
+            case "COMPARISON" -> artifact = comparatorAgent.compareArtifact(node, store, usageConsumer);
+            case "SYNTHESIS" -> {
+                if (sessionId != null) {
+                    shortTermMemoryService.pruneIfNeeded(sessionId);
+                }
+                List<String> pastEntries = sessionId != null ? longTermMemoryService.retrieve(sessionId, 5) : List.of();
+                List<String> refinedFacts = sessionId != null ? longTermMemoryService.retrieveRelevantFacts(sessionId, userPrompt, 5) : List.of();
+                artifact = reportSynthesizer.synthesizeArtifact(
+                        node, store, userPrompt, enableThinking, profile, refinedFacts, pastEntries, usageConsumer
+                );
+            }
+            default -> {
+                log.warn("未知或自定义扩展任务类型: {}, 启用步骤兼容适配器", taskType);
+                SubTask step = LegacyPlanAdapter.extractSubTask(node, null);
+                executeStep(step, blackboard, userPrompt, sessionId);
+                artifact = BlackboardAdapter.extractArtifactFromBlackboard(node.getNodeId(), taskType, blackboard);
+            }
+        }
 
-        shortTermMemoryService.addMessage(sessionId,
-                "Executed step: " + step.getTaskType() + " - " + step.getDescription());
-        longTermMemoryService.record(sessionId,
-                "Executed step: " + step.getTaskType() + " - " + step.getDescription());
+        // 双向同步状态至共享黑板，确保所有现有单测和兼容层数据完整
+        BlackboardAdapter.applyArtifactToBlackboard(artifact, blackboard);
 
-        return BlackboardAdapter.extractArtifactFromBlackboard(node.getNodeId(), step.getTaskType(), blackboard);
+        if (sessionId != null) {
+            shortTermMemoryService.addMessage(sessionId,
+                    "Executed step: " + taskType + " - " + node.getName());
+            longTermMemoryService.record(sessionId,
+                    "Executed step: " + taskType + " - " + node.getName());
+        }
+
+        return artifact;
     }
 
     /**

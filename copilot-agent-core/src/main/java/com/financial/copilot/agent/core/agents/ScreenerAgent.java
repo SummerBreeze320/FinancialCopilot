@@ -57,6 +57,20 @@ public class ScreenerAgent {
     }
 
     /**
+     * 强类型 DAG 节点筛选执行入口
+     *
+     * @param node       当前 DAG 节点
+     * @param userPrompt 用户原始指令
+     * @return 强类型标的池产物
+     */
+    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.FundPool> screenArtifact(
+            com.financial.copilot.agent.core.dag.model.GraphNode node,
+            String userPrompt
+    ) {
+        return fundScreenerAgent.screenArtifact(node, userPrompt);
+    }
+
+    /**
      * 判断是否属于股票资产领域的筛选意图
      *
      * @param prompt 用户提问文本

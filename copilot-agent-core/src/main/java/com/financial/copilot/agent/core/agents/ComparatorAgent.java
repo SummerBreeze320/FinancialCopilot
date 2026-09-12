@@ -56,4 +56,30 @@ public class ComparatorAgent {
         // 当前默认派发至基金对比，未来可无缝分流股票对标
         return compareFunds(codeA, codeB);
     }
+    public String compareFunds(String codeA, String codeB,
+            java.util.function.Consumer<com.financial.copilot.agent.core.llm.dto.LlmResponse> usageConsumer) {
+        return fundComparatorAgent.compareFunds(codeA, codeB, usageConsumer);
+    }
+
+    /**
+     * 强类型 DAG 节点横向深度对标执行门面入口
+     *
+     * @param node  当前 DAG 节点
+     * @param store 产物存储总线
+     * @return 强类型横向对标报告产物
+     */
+    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport> compareArtifact(
+            com.financial.copilot.agent.core.dag.model.GraphNode node,
+            com.financial.copilot.agent.core.dag.artifact.ArtifactStore store
+    ) {
+        return compareArtifact(node, store, null);
+    }
+
+    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport> compareArtifact(
+            com.financial.copilot.agent.core.dag.model.GraphNode node,
+            com.financial.copilot.agent.core.dag.artifact.ArtifactStore store,
+            java.util.function.Consumer<com.financial.copilot.agent.core.llm.dto.LlmResponse> usageConsumer
+    ) {
+        return fundComparatorAgent.compareArtifact(node, store, usageConsumer);
+    }
 }

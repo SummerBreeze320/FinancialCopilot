@@ -58,22 +58,46 @@ public class FundComparatorAgent {
         严格基于输入事实数据，严禁编造任何未披露数据。
         """;
 
+    private final com.financial.copilot.agent.core.context.ObservationSanitizer sanitizer;
+    private final com.financial.copilot.agent.core.skill.SkillMatcher skillMatcher;
+    private final com.financial.copilot.agent.tools.graph.FinancialGraphTool graphTool;
+
     /**
      * 构造函数，强制注入底层数据工具与大模型服务
-     *
-     * @param quantTool     量化分析工具
-     * @param holdingsTool  持仓穿透工具
-     * @param reportTool    研报检索工具
-     * @param clientService 大模型调用服务
      */
     public FundComparatorAgent(FundQuantAnalysisTool quantTool,
                                FundHoldingsQueryTool holdingsTool,
                                FundReportRetrieverTool reportTool,
                                LlmService clientService) {
+        this(quantTool, holdingsTool, reportTool, clientService,
+                new com.financial.copilot.agent.core.context.ObservationSanitizer(new com.fasterxml.jackson.databind.ObjectMapper()),
+                null, null);
+    }
+
+    public FundComparatorAgent(FundQuantAnalysisTool quantTool,
+                               FundHoldingsQueryTool holdingsTool,
+                               FundReportRetrieverTool reportTool,
+                               LlmService clientService,
+                               com.financial.copilot.agent.core.context.ObservationSanitizer sanitizer,
+                               com.financial.copilot.agent.core.skill.SkillMatcher skillMatcher) {
+        this(quantTool, holdingsTool, reportTool, clientService, sanitizer, skillMatcher, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public FundComparatorAgent(FundQuantAnalysisTool quantTool,
+                               FundHoldingsQueryTool holdingsTool,
+                               FundReportRetrieverTool reportTool,
+                               LlmService clientService,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.financial.copilot.agent.core.context.ObservationSanitizer sanitizer,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.financial.copilot.agent.core.skill.SkillMatcher skillMatcher,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.financial.copilot.agent.tools.graph.FinancialGraphTool graphTool) {
         this.quantTool = quantTool;
         this.holdingsTool = holdingsTool;
         this.reportTool = reportTool;
         this.clientService = clientService;
+        this.sanitizer = sanitizer != null ? sanitizer : new com.financial.copilot.agent.core.context.ObservationSanitizer(new com.fasterxml.jackson.databind.ObjectMapper());
+        this.skillMatcher = skillMatcher;
+        this.graphTool = graphTool;
     }
 
     /**
@@ -84,8 +108,14 @@ public class FundComparatorAgent {
      * @return 对称事实与归因分析 Markdown 文本
      */
     public String compareFunds(String codeA, String codeB) {
+        return compareFunds(codeA, codeB, null);
+    }
+
+    public String compareFunds(String codeA, String codeB,
+            java.util.function.Consumer<com.financial.copilot.agent.core.llm.dto.LlmResponse> usageConsumer) {
         log.info("[FUND-COMPARATOR] 正在对标采集两只基金数据事实并执行深度归因: codeA={}, codeB={}", codeA, codeB);
 
+        // 1. 底层权威工具事实采集
         String metricsA = quantTool.getFundMetrics(codeA, null, null);
         String metricsB = quantTool.getFundMetrics(codeB, null, null);
 
@@ -95,27 +125,139 @@ public class FundComparatorAgent {
         String reportA = reportTool.getLatestQuarterlyReportView(codeA);
         String reportB = reportTool.getLatestQuarterlyReportView(codeB);
 
-        String rawFacts = """
+        // 2. 知识图谱持仓重合度分析 (Neo4j)
+        String graphOverlapFact = "";
+        if (graphTool != null) {
+            try {
+                String rawOverlap = graphTool.getSharedHoldings(codeA, codeB);
+                graphOverlapFact = sanitizer.sanitizeGraphOverlap(rawOverlap);
+            } catch (Exception e) {
+                log.warn("[FUND-COMPARATOR] 图谱持仓重合分析调用异常: {}", e.getMessage());
+            }
+        }
+
+        // 3. Context Engineering: Observation 净化与事实槽提纯
+        String cleanDataA = sanitizer.sanitizeFundMetrics(metricsA) + "\n" +
+                sanitizer.sanitizeHoldings(holdingsA) + "\n" +
+                "- 季报定性展望: " + sanitizer.sanitizeReportView(reportA, 800);
+
+        String cleanDataB = sanitizer.sanitizeFundMetrics(metricsB) + "\n" +
+                sanitizer.sanitizeHoldings(holdingsB) + "\n" +
+                "- 季报定性展望: " + sanitizer.sanitizeReportView(reportB, 800);
+
+        String factualFacts = """
             === 双基金标的横向对标事实输入 (Tool-as-Truth) ===
             【标的 A (基金代码: %s)】:
-            - 量化指标: %s
-            - 持仓穿透: %s
-            - 季报定性展望: %s
+            %s
 
             ----------------------------------------
             【标的 B (基金代码: %s)】:
-            - 量化指标: %s
-            - 持仓穿透: %s
-            - 季报定性展望: %s
-            """.formatted(codeA, metricsA, holdingsA, reportA, codeB, metricsB, holdingsB, reportB);
+            %s
+            %s
+            """.formatted(codeA, cleanDataA, codeB, cleanDataB,
+                (graphOverlapFact == null || graphOverlapFact.isBlank()) ? "" : "\n----------------------------------------\n【知识图谱持仓重合度穿透】:\n" + graphOverlapFact);
+
+        // 4. 按需匹配并动态注入基金对标 Skill 规范
+        String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("COMPARISON", codeA + " " + codeB) : "";
 
         try {
-            String prompt = "【对比诉求】: 对比基金 " + codeA + " 与 " + codeB + " 的综合表现与风格差异\n\n" + rawFacts;
-            String comparisonAnalysis = clientService.chat(SYSTEM_PROMPT, prompt);
-            return rawFacts + "\n\n=== 智能对标深度归因 ===\n" + comparisonAnalysis;
+            var spec = com.financial.copilot.agent.core.prompt.FundComparatorPrompt.buildSpec(
+                    codeA, cleanDataA, codeB, cleanDataB, skillRules, graphOverlapFact);
+            var request = spec.toLlmRequest();
+            request.setUsageConsumer(usageConsumer);
+            String comparisonAnalysis = clientService.chat(request);
+            return factualFacts + "\n\n=== 智能对标深度归因 ===\n" + comparisonAnalysis;
         } catch (Exception e) {
+            if (usageConsumer != null) {
+                if (e instanceof RuntimeException runtime) throw runtime;
+                throw new IllegalStateException("Metered comparison failed", e);
+            }
             log.warn("[FUND-COMPARATOR] 调用 LLM 深度对比失败，使用客观事实兜底: error={}", e.getMessage());
-            return rawFacts;
+            return factualFacts;
         }
+    }
+
+    /**
+     * 强类型 DAG 节点横向深度对标执行入口
+     *
+     * @param node          当前 DAG 节点
+     * @param store         产物存储总线
+     * @param usageConsumer Token 计量回调
+     * @return 强类型横向对标报告产物
+     */
+    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport> compareArtifact(
+            com.financial.copilot.agent.core.dag.model.GraphNode node,
+            com.financial.copilot.agent.core.dag.artifact.ArtifactStore store,
+            java.util.function.Consumer<com.financial.copilot.agent.core.llm.dto.LlmResponse> usageConsumer
+    ) {
+        String nodeId = node != null ? node.getNodeId() : "comparison";
+
+        // 1. 从上游提取候选对标标的
+        String codeA = "003095";
+        String codeB = "005827";
+        if (store != null) {
+            var resOpt = store.findFirstByType(com.financial.copilot.agent.core.dag.artifact.ArtifactType.FUND_RESEARCH);
+            if (resOpt.isPresent() && resOpt.get().payload() instanceof com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult research) {
+                java.util.List<String> candidates = research.topCandidates();
+                if (candidates != null && candidates.size() >= 2) {
+                    codeA = candidates.get(0);
+                    codeB = candidates.get(1);
+                } else if (candidates != null && candidates.size() == 1) {
+                    codeA = candidates.get(0);
+                } else if (research.evaluatedFunds() != null && research.evaluatedFunds().size() >= 2) {
+                    codeA = String.valueOf(research.evaluatedFunds().get(0).get("fundCode"));
+                    codeB = String.valueOf(research.evaluatedFunds().get(1).get("fundCode"));
+                }
+            }
+        }
+
+        // 2. 执行对标分析
+        String comparisonAnalysis = compareFunds(codeA, codeB, usageConsumer);
+
+        // 3. 提取知识图谱重合持仓
+        java.util.List<String> sharedHoldings = java.util.List.of();
+        if (graphTool != null) {
+            try {
+                String rawOverlap = graphTool.getSharedHoldings(codeA, codeB);
+                if (rawOverlap != null && rawOverlap.contains("sharedStockCodes")) {
+                    var jsonNode = new com.fasterxml.jackson.databind.ObjectMapper().readTree(rawOverlap);
+                    var arr = jsonNode.get("sharedStockCodes");
+                    if (arr != null && arr.isArray()) {
+                        java.util.List<String> list = new java.util.ArrayList<>();
+                        for (var elem : arr) {
+                            list.add(elem.asText());
+                        }
+                        sharedHoldings = list;
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("[FUND-COMPARATOR] 解析图谱重合持仓列表失败: {}", e.getMessage());
+            }
+        }
+
+        String artifactId = "art-comp-" + java.util.UUID.randomUUID().toString().substring(0, 8);
+        var metadata = com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata.standard("FundComparatorAgent");
+        java.util.List<String> evidenceUris = java.util.List.of("fund://" + codeA, "fund://" + codeB);
+        var contract = com.financial.copilot.agent.core.dag.artifact.EvidenceContract.sufficient(
+                "完成基金 " + codeA + " 与 " + codeB + " 横向深度对标", evidenceUris);
+
+        var report = com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport.of(
+                codeA, codeB, comparisonAnalysis, sharedHoldings);
+
+        return new com.financial.copilot.agent.core.dag.artifact.Artifact<>(
+                artifactId,
+                com.financial.copilot.agent.core.dag.artifact.ArtifactType.COMPARISON_REPORT,
+                nodeId,
+                report,
+                metadata,
+                contract
+        );
+    }
+
+    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport> compareArtifact(
+            com.financial.copilot.agent.core.dag.model.GraphNode node,
+            com.financial.copilot.agent.core.dag.artifact.ArtifactStore store
+    ) {
+        return compareArtifact(node, store, null);
     }
 }

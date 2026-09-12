@@ -2,6 +2,7 @@ package com.financial.copilot.agent.core.dag.planner;
 
 import com.financial.copilot.agent.core.dag.artifact.Artifact;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
 import com.financial.copilot.agent.core.dag.model.FailurePolicy;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
@@ -109,7 +110,15 @@ public class GraphPlanner implements RePlanAdvisor {
         String reason = "";
 
         // 1. 初筛标的池为空 -> 放宽筛选条件动态重试
-        if (result.type() == ArtifactType.FUND_POOL && result.payload() instanceof List<?> list && list.isEmpty()) {
+        boolean isPoolEmpty = false;
+        if (result.type() == ArtifactType.FUND_POOL) {
+            if (result.payload() instanceof List<?> list && list.isEmpty()) {
+                isPoolEmpty = true;
+            } else if (result.payload() instanceof FundPool pool && pool.isEmpty()) {
+                isPoolEmpty = true;
+            }
+        }
+        if (isPoolEmpty) {
             String retryNodeId = completedNodeId + "-relaxed";
             GraphNode retryNode = GraphNode.builder()
                     .nodeId(retryNodeId)
