@@ -83,26 +83,33 @@
 
 ---
 
-### Task 3: Resource-Aware ConcurrencyLimiter (★★★★☆)
+### Task 3: Resource-Aware Scheduling & ResourceManager (★★★★☆)
 
 **Files:**
-- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/ConcurrencyLimiter.java`
-- Test: `copilot-agent-core/src/test/java/com/financial/copilot/agent/core/dag/runtime/ConcurrencyLimiterTest.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/resource/ResourceType.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/resource/NodePriority.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/resource/ResourceRequirement.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/resource/ResourceManager.java`
+- Test: `copilot-agent-core/src/test/java/com/financial/copilot/agent/core/dag/runtime/resource/ResourceManagerTest.java`
 
 **Interfaces:**
 - Produces:
-  - `ConcurrencyLimiter`: `runWithAgentPermit(Callable<T>)`, `runWithLlmPermit(Callable<T>)`, `runWithDataPortPermit(Callable<T>)`
-  - Configurable permits: default Agent=8, LLM=4, DataPort=10
+  - `ResourceType`: `LLM`, `DPU`, `RAG`, `MCP`, `COMPONENT`
+  - `NodePriority`: `HIGH(10)`, `NORMAL(5)`, `LOW(1)`
+  - `ResourceRequirement(ResourceType, permits)`
+  - `ResourceManager`: `tryAcquire(req)`, `acquire(req)`, `release(req)`
+  - Default quotas: LLM=4, DPU=10, RAG=20, MCP=10, Component=8
 
-- [ ] **Step 1: Write unit tests verifying permit limits and virtual thread unmounting**
-  - Test concurrent executions capping at max permits.
+- [ ] **Step 1: Write unit tests verifying quota limits and semaphore unmounting**
+  - Test concurrent executions capping at declared quota per resource type.
+  - Test release permits wakes up blocked/waiting requests.
 - [ ] **Step 2: Run test to confirm it fails**
-  - Run `mvn test -pl copilot-agent-core -Dtest=ConcurrencyLimiterTest`
-- [ ] **Step 3: Implement `ConcurrencyLimiter` using Java `Semaphore`**
+  - Run `mvn test -pl copilot-agent-core -Dtest=ResourceManagerTest`
+- [ ] **Step 3: Implement `ResourceType`, `NodePriority`, `ResourceRequirement`, and `ResourceManager`**
 - [ ] **Step 4: Run tests and ensure they pass**
-  - Verify with `mvn test -pl copilot-agent-core -Dtest=ConcurrencyLimiterTest`
+  - Verify with `mvn test -pl copilot-agent-core -Dtest=ResourceManagerTest`
 - [ ] **Step 5: Commit changes**
-  - `git commit -m "feat(dag): add resource-aware ConcurrencyLimiter for virtual threads"`
+  - `git commit -m "feat(dag): add declarative ResourceManager with multi-resource quotas"`
 
 ---
 
@@ -112,29 +119,32 @@
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/DagEvent.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/NodeExecutor.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/DependencyResolver.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/PriorityReadyQueue.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/DagRuntime.java`
 - Test: `copilot-agent-core/src/test/java/com/financial/copilot/agent/core/dag/runtime/DagRuntimeTest.java`
 
 **Interfaces:**
-- Consumes: `ExecutionGraph`, `GraphNode`, `NodeStatus`, `ArtifactStore`, `ConcurrencyLimiter`
+- Consumes: `ExecutionGraph`, `GraphNode`, `NodeStatus`, `ArtifactStore`, `ResourceManager`
 - Produces:
   - `DagRuntime.executeGraph(graph, eventConsumer): CompletableFuture<Void>`
-  - Event-driven node completion: `onNodeCompleted` -> checks `graph.getDownstream()` -> if all `upstream` in terminal success/skip, CAS transitions to `READY` and immediately dispatches on Java 21 virtual threads.
-  - Zero runtime wavefront barrier: Downstream starts the instant its own dependencies succeed, regardless of straggler nodes in other branches.
+  - Event-driven node completion: `onNodeCompleted` -> checks `graph.getDownstream()` -> if all `upstream` in terminal success/skip, pushes to `PriorityReadyQueue`.
+  - Resource gate: `ResourceManager.tryAcquire()` -> if success dispatches on virtual threads; if quota full waits in `PriorityReadyQueue` until permit freed.
+  - Zero runtime wavefront barrier: Downstream starts the instant its own dependencies succeed and resource permit is available.
 
-- [ ] **Step 1: Write unit tests for diamond dependency, straggler non-blocking, and failure policies**
+- [ ] **Step 1: Write unit tests for diamond dependency, priority scheduling, straggler non-blocking, and failure policies**
   - Diamond DAG: A -> [B (slow 500ms), C (fast 50ms)] -> D (depends on C only!). Verify D runs at 50ms without waiting for B.
+  - Priority test: When LLM quota is 1, HIGH priority node runs before NORMAL priority node.
   - FailurePolicy tests: `CONTINUE` passes degraded artifact; `OPTIONAL` skips gracefully; `FAIL_FAST` fails graph.
 - [ ] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=DagRuntimeTest`
-- [ ] **Step 3: Implement `DagEvent`, `NodeExecutor`, `DependencyResolver`, and `DagRuntime`**
+- [ ] **Step 3: Implement `DagEvent`, `NodeExecutor`, `DependencyResolver`, `PriorityReadyQueue`, and `DagRuntime`**
   - Native virtual thread pool: `Executors.newVirtualThreadPerTaskExecutor()`.
   - Atomic CAS state transitions (`AtomicReference<NodeStatus>`).
   - Active node countdown for completion.
 - [ ] **Step 4: Run tests and ensure they pass**
   - Verify with `mvn test -pl copilot-agent-core -Dtest=DagRuntimeTest`
 - [ ] **Step 5: Commit changes**
-  - `git commit -m "feat(dag): implement event-driven DagRuntime with Java 21 virtual threads"`
+  - `git commit -m "feat(dag): implement event-driven DagRuntime with PriorityReadyQueue and ResourceManager"`
 
 ---
 

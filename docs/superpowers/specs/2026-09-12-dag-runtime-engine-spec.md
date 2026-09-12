@@ -350,6 +350,8 @@ public class GraphNode {
     private final FailurePolicy failurePolicy; // 节点级失败容错策略 (默认 CONTINUE)
     private final int maxRetries;              // 最大重试次数 (配合 RETRY 策略，默认 2)
     private final FallbackProvider fallbackProvider; // 降级数据提供者 (配合 FALLBACK 策略)
+    private final ResourceRequirement resourceRequirement; // 物理资源配额需求 (如 LLM:1, DPU:1)
+    private final NodePriority priority;       // 调度优先级 (HIGH, NORMAL, LOW)
 
     // Builder, Getters...
 }
@@ -676,69 +678,108 @@ public class DagRuntime {
 }
 ```
 
-### 5.2 资源感知并发限流器 (Resource-Aware ConcurrencyLimiter)
+### 5.2 资源感知优先级调度器 (Resource-Aware Scheduling & ResourceManager)
 
 > **核心原则**：**Virtual Thread ≠ 无限并发！**  
-> 投研工作流绝大多数任务为 I/O-bound（LLM HTTP、AkShare/Wind 数据源、向量数据库、PostgreSQL、远程组件）。虽然 Java 21 虚拟线程极其轻量（可创建数十万个），但下游物理资源均有硬性容量瓶颈：
-> 1. 大模型 API：具备 RPM / TPM 限额，瞬时超额将触发 HTTP 429；
-> 2. 数据库与数据源：HikariCP 连接池容量有限，外部数据端口有防爬并发限制。
-
-因此，**Graph 允许 100 个 Ready Node，但绝不能无脑无界并行打爆下游**。调度器内嵌基于 `Semaphore` 的 `ConcurrencyLimiter`：
-* 当虚拟线程获取不到许可证（Permit）在 `Semaphore.acquire()` 阻塞时，JVM 自动将该虚拟线程从 Carrier 平台线程上卸载（Unmount），**完全不浪费 OS 线程资源**；
-* 许可证一旦释放，JVM 自动唤醒并在可用平台线程上恢复调度。
+> 当 Planner 一次性生成 50 个扇出节点（例如 50 只标的并发评估）时，若同时打出 50 个 LLM 请求、50 个 DPU 调用和 20 个 RAG 向量检索，瞬间就会把下游接口打到 429 或将连接池耗尽。  
+> 
+> **每个节点显式声明资源需求 (`ResourceRequirement`) 与调度优先级 (`NodePriority`)**：
+> 1. **物理资源细粒度配额**：
+>    * `LLM`（大模型 API）：默认最大 4；
+>    * `DPU`（数据引擎与数据库）：默认最大 10；
+>    * `RAG`（向量与文档检索）：默认最大 20；
+>    * `MCP`（外部协议与工具）：默认最大 10；
+>    * `COMPONENT`（交互组件构建）：默认最大 8。
+> 2. **三级优先级队列 (`PriorityReadyQueue`)**：
+>    * `HIGH`：关键核心汇聚（如 Final Synthesis 终审研报合成、关键风控拦截）；
+>    * `NORMAL`：普通投研业务节点（如标的筛选、体检分析）；
+>    * `LOW`：后台弱时效任务（如长期记忆提纯、日志异步沉淀）。
+> 3. **调度流转**：
+>    * 节点依赖满足进入 `READY`；
+>    * 尝试向 `ResourceManager` 申请配额：
+>      * 成功：立即跃迁为 `RUNNING`，进入虚拟线程执行；
+>      * 失败：推入按优先级排序的 `PriorityReadyQueue` 挂起；
+>    * 任何节点执行结束释放配额时，自动触发 `drainReadyQueue()` 唤醒高优先级等待节点。
 
 ```java
-package com.financial.copilot.agent.core.dag.runtime;
+package com.financial.copilot.agent.core.dag.runtime.resource;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.Callable;
 
 /**
- * <h1>DAG 运行时资源感知限流器</h1>
+ * <h1>声明式物理资源配额管理器 (Resource Manager)</h1>
  */
-public class ConcurrencyLimiter {
+public class ResourceManager {
 
-    /** 业务 Agent 最大并发数 (默认 8) */
-    private final Semaphore agentSemaphore;
+    private final Map<ResourceType, Semaphore> semaphores = new ConcurrentHashMap<>();
 
-    /** 大模型推理 API 最大并发数 (默认 4) */
-    private final Semaphore llmSemaphore;
-
-    /** 金融数据端口/数据库拉取最大并发数 (默认 10) */
-    private final Semaphore dataPortSemaphore;
-
-    public ConcurrencyLimiter(int maxAgent, int maxLlm, int maxDataPort) {
-        this.agentSemaphore = new Semaphore(maxAgent);
-        this.llmSemaphore = new Semaphore(maxLlm);
-        this.dataPortSemaphore = new Semaphore(maxDataPort);
+    public ResourceManager(Map<ResourceType, Integer> limits) {
+        limits.forEach((type, maxPermits) -> semaphores.put(type, new Semaphore(maxPermits, true)));
     }
 
-    public <T> T runWithAgentPermit(Callable<T> task) throws Exception {
-        agentSemaphore.acquire();
-        try {
-            return task.call();
-        } finally {
-            agentSemaphore.release();
+    public static ResourceManager defaultManager() {
+        return new ResourceManager(Map.of(
+            ResourceType.LLM, 4,
+            ResourceType.DPU, 10,
+            ResourceType.RAG, 20,
+            ResourceType.MCP, 10,
+            ResourceType.COMPONENT, 8
+        ));
+    }
+
+    public boolean tryAcquire(ResourceRequirement requirement) {
+        if (requirement == null) return true;
+        Semaphore semaphore = semaphores.get(requirement.resourceType());
+        return semaphore == null || semaphore.tryAcquire(requirement.permits());
+    }
+
+    public void acquire(ResourceRequirement requirement) throws InterruptedException {
+        if (requirement == null) return;
+        Semaphore semaphore = semaphores.get(requirement.resourceType());
+        if (semaphore != null) {
+            semaphore.acquire(requirement.permits());
         }
     }
 
-    public <T> T runWithLlmPermit(Callable<T> task) throws Exception {
-        llmSemaphore.acquire();
-        try {
-            return task.call();
-        } finally {
-            llmSemaphore.release();
+    public void release(ResourceRequirement requirement) {
+        if (requirement == null) return;
+        Semaphore semaphore = semaphores.get(requirement.resourceType());
+        if (semaphore != null) {
+            semaphore.release(requirement.permits());
         }
     }
+}
 
-    public <T> T runWithDataPortPermit(Callable<T> task) throws Exception {
-        dataPortSemaphore.acquire();
-        try {
-            return task.call();
-        } finally {
-            dataPortSemaphore.release();
-        }
+public record ResourceRequirement(
+    ResourceType resourceType,
+    int permits
+) {
+    public static ResourceRequirement of(ResourceType type, int permits) {
+        return new ResourceRequirement(type, permits);
     }
+    public static ResourceRequirement llm() { return new ResourceRequirement(ResourceType.LLM, 1); }
+    public static ResourceRequirement dpu() { return new ResourceRequirement(ResourceType.DPU, 1); }
+    public static ResourceRequirement rag() { return new ResourceRequirement(ResourceType.RAG, 1); }
+}
+
+public enum ResourceType {
+    LLM,        // 大模型推理调用
+    DPU,        // 数据计算与数据库拉取
+    RAG,        // 知识向量库检索
+    MCP,        // 外部工具接口
+    COMPONENT   // 前端交互组件生成
+}
+
+public enum NodePriority {
+    HIGH(10),   // 终审研报合成等关键路径
+    NORMAL(5),  // 常规投研计算
+    LOW(1);     // 后台记忆整理
+
+    private final int weight;
+    NodePriority(int weight) { this.weight = weight; }
+    public int getWeight() { return weight; }
 }
 ```
 
