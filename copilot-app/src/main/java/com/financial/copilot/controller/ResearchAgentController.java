@@ -3,6 +3,11 @@ package com.financial.copilot.controller;
 import com.financial.copilot.agent.core.billing.WalletBillingService;
 import com.financial.copilot.agent.core.user.service.UserService;
 import com.financial.copilot.agent.core.workflow.FinancialResearchWorkflow;
+import com.financial.copilot.agent.core.dag.runtime.GraphRunRequest;
+import com.financial.copilot.agent.core.dag.runtime.GraphRunResult;
+import com.financial.copilot.agent.core.dag.runtime.RunMode;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
+import com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport;
 import com.financial.copilot.common.event.ResearchStreamEvent;
 import com.financial.copilot.common.exception.WalletInsufficientException;
 import com.financial.copilot.common.result.ApiResult;
@@ -211,8 +216,9 @@ public class ResearchAgentController {
             String clientSession = sessionId == null ? UUID.randomUUID().toString() : sessionId;
             String key = SecurityUtils.sessionKey(uid, clientSession);
             billingService.checkBalance(uid, 100L);
-            return workflow.executePipelineStream(key, prompt, Boolean.TRUE.equals(enableThinking),
-                    userService.getInvestmentProfile(uid), usage -> chargeUsage(uid, key, usage));
+            return workflow.run(new GraphRunRequest(UUID.randomUUID().toString(), uid, key, prompt,
+                    Boolean.TRUE.equals(enableThinking), userService.getInvestmentProfile(uid),
+                    usage -> chargeUsage(uid, key, usage), RunMode.STREAM)).events();
         });
     }
 
@@ -229,9 +235,11 @@ public class ResearchAgentController {
             String clientSession = request.getSessionId() == null ? UUID.randomUUID().toString() : request.getSessionId();
             String key = SecurityUtils.sessionKey(uid, clientSession);
             billingService.checkBalance(uid, 100L);
-            var result = workflow.executeWithResult(key, request.getPrompt(), Boolean.TRUE.equals(request.getEnableThinking()),
-                    userService.getInvestmentProfile(uid), usage -> chargeUsage(uid, key, usage));
-            return ApiResult.success(result.getReport());
+            GraphRunResult result = workflow.run(new GraphRunRequest(UUID.randomUUID().toString(), uid, key,
+                    request.getPrompt(), Boolean.TRUE.equals(request.getEnableThinking()),
+                    userService.getInvestmentProfile(uid), usage -> chargeUsage(uid, key, usage), RunMode.SYNC))
+                    .completion().join();
+            return ApiResult.success(report(result));
         });
     }
 
@@ -255,19 +263,21 @@ public class ResearchAgentController {
             String key = SecurityUtils.sessionKey(uid, clientSession);
             billingService.checkBalance(uid, 100L);
             List<LlmResponse> usages = new ArrayList<>();
-            var result = workflow.executeWithResult(key, request.getPrompt(), Boolean.TRUE.equals(request.getEnableThinking()),
+            GraphRunResult result = workflow.run(new GraphRunRequest(UUID.randomUUID().toString(), uid, key,
+                    request.getPrompt(), Boolean.TRUE.equals(request.getEnableThinking()),
                     userService.getInvestmentProfile(uid), usage -> {
                         chargeUsage(uid, key, usage);
                         usages.add(usage);
-                    });
+                    }, RunMode.SYNC)).completion().join();
             return ApiResult.success(WorkflowExecuteResponse.builder()
-                    .sessionId(clientSession).report(result.getReport())
+                    .sessionId(clientSession).report(report(result))
                     .model(usages.isEmpty() ? null : usages.get(usages.size() - 1).getModel())
                     .promptTokens(usages.stream().mapToInt(LlmResponse::getPromptTokens).sum())
                     .completionTokens(usages.stream().mapToInt(LlmResponse::getCompletionTokens).sum())
-                    .totalSteps(result.getPlan() == null ? 0 : result.getPlan().getSteps().size())
-                    .summary(result.getPlan() == null ? "" : result.getPlan().getSummary())
-                    .executionTimeMs(result.getDurationMs()).timestamp(System.currentTimeMillis()).build());
+                    .totalSteps(result.graph().getNodes().size())
+                    .summary("ExecutionGraph revision " + result.graph().getRevision())
+                    .executionTimeMs(java.time.Duration.between(result.startedAt(), result.completedAt()).toMillis())
+                    .timestamp(System.currentTimeMillis()).build());
         });
     }
 
@@ -310,6 +320,16 @@ public class ResearchAgentController {
     private void chargeUsage(Long uid, String sessionKey, LlmResponse usage) {
         billingService.deductTokenPoints(uid, sessionKey, "LLM_CALL", usage.getProvider().name(), usage.getModel(),
                 usage.getPromptTokens(), usage.getCompletionTokens(), usage.getLatencyMs());
+    }
+
+    private String report(GraphRunResult result) {
+        return result.artifacts().values().stream()
+                .filter(artifact -> artifact.type() == ArtifactType.FINAL_REPORT)
+                .map(artifact -> artifact.payload())
+                .filter(FinalSynthesisReport.class::isInstance)
+                .map(FinalSynthesisReport.class::cast)
+                .map(FinalSynthesisReport::markdownReport)
+                .findFirst().orElse("");
     }
 
     private void validatePrompt(String prompt) {
