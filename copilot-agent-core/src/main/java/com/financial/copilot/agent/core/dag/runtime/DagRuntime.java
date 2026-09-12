@@ -83,6 +83,32 @@ public class DagRuntime {
         this.rePlanAdvisor = rePlanAdvisor;
     }
 
+    public GraphRunHandle run(GraphRunRequest request, ExecutionGraph graph) {
+        Objects.requireNonNull(request, "request cannot be null");
+        Objects.requireNonNull(graph, "graph cannot be null");
+        DagRunContext context = new DagRunContext(request, graph);
+
+        if (graph.getNodes().isEmpty()) {
+            return new GraphRunHandle(request.runId(), context.events.flux(),
+                    CompletableFuture.completedFuture(context.result()), context.cancellation::cancel);
+        }
+
+        DagRuntime isolated = new DagRuntime(nodeExecutor, context.artifacts, resourceManager,
+                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor);
+        CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
+        isolated.executeGraph(request.runId(), graph, context.artifacts, context.cancellation, event -> {
+            context.statuses.put(event.nodeId(), event.status());
+        }).whenComplete((ignored, error) -> {
+            isolated.virtualThreadExecutor.shutdown();
+            if (error != null) {
+                completion.completeExceptionally(error);
+            } else {
+                completion.complete(context.result());
+            }
+        });
+        return new GraphRunHandle(request.runId(), context.events.flux(), completion, context.cancellation::cancel);
+    }
+
     public CompletableFuture<Void> executeGraph(
             ExecutionGraph graph,
             CancellationToken cancellationToken,
@@ -243,7 +269,7 @@ public class DagRuntime {
                 statusMap.get(nodeId).set(NodeStatus.RUNNING);
                 publisher.accept(new DagEvent(nodeId, NodeStatus.RUNNING, "Node execution started"));
 
-                Artifact<?> result = nodeExecutor.execute(node, currentStore, nodeToken);
+                Artifact<?> result = executeWithTimeout(node, currentStore, nodeToken);
 
                 // 节点质量门禁三态裁决
                 NodeQualityGate.GateVerdict verdict = qualityGate.evaluate(node, result, graph);
@@ -267,16 +293,43 @@ public class DagRuntime {
                                 runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
                     }
                 }
+            } catch (TimeoutException e) {
+                statusMap.get(nodeId).set(NodeStatus.TIMEOUT);
+                publisher.accept(new DagEvent(nodeId, NodeStatus.TIMEOUT, "Node timed out"));
+                saveRunCheckpoint(runId, graph, currentStore, statusMap);
+                if (activeOrPendingNodes.decrementAndGet() == 0) {
+                    graphFuture.complete(null);
+                }
             } catch (Exception e) {
                 if (!nodeToken.isCancelled() && !parentToken.isCancelled() && !graphFuture.isDone()) {
                     handleNodeFailure(node, e, runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
                 }
             } finally {
                 // 释放物理配额并唤醒队列中等待的就绪节点
-                resourceManager.release(node.getResourceRequirement());
+                resourceManager.release(node.getResourceRequirements());
                 drainReadyQueue(runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
             }
         });
+    }
+
+    private Artifact<?> executeWithTimeout(GraphNode node, ArtifactStore store,
+                                            CancellationToken token) throws Exception {
+        Future<Artifact<?>> future = virtualThreadExecutor.submit(() -> {
+            try (AutoCloseable ignored = token.bindCurrentThread()) {
+                return nodeExecutor.execute(node, store, token);
+            }
+        });
+        try {
+            return future.get(node.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof Exception exception) throw exception;
+            throw new IllegalStateException(cause);
+        } catch (TimeoutException e) {
+            token.cancel("Node timeout: " + node.getNodeId());
+            future.cancel(true);
+            throw e;
+        }
     }
 
     private void handleNodeFailure(
@@ -452,7 +505,7 @@ public class DagRuntime {
             GraphNode nextNode = readyQueue.peek();
             if (nextNode == null) break;
 
-            if (resourceManager.tryAcquire(nextNode.getResourceRequirement())) {
+            if (resourceManager.tryAcquire(nextNode.getResourceRequirements())) {
                 readyQueue.poll();
                 submitToVirtualThread(nextNode, runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
             } else {

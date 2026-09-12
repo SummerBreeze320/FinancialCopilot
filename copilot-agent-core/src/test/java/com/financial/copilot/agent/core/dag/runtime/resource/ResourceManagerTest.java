@@ -13,6 +13,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ResourceManagerTest {
 
     @Test
+    void defaultManagerLimitsConcurrentAgents() {
+        ResourceManager manager = ResourceManager.defaultManager();
+
+        assertThat(manager.getAvailablePermits(ResourceType.AGENT)).isEqualTo(8);
+    }
+
+    @Test
     @DisplayName("验证默认配额初始化")
     void testDefaultQuotaInitialization() {
         ResourceManager manager = ResourceManager.defaultManager();
@@ -82,5 +89,20 @@ class ResourceManagerTest {
             assertThat(maxObservedConcurrent.get()).isLessThanOrEqualTo(maxLlmPermits);
             assertThat(manager.getAvailablePermits(ResourceType.LLM)).isEqualTo(maxLlmPermits);
         }
+    }
+
+    @Test
+    void multipleRequirementsAcquireAllOrNothing() {
+        ResourceManager manager = new ResourceManager(Map.of(ResourceType.LLM, 1, ResourceType.DPU, 0));
+        Map<ResourceType, Integer> requirements = Map.of(ResourceType.LLM, 1, ResourceType.DPU, 1);
+
+        assertThat(manager.tryAcquire(requirements)).isFalse();
+        assertThat(manager.getAvailablePermits(ResourceType.LLM)).isEqualTo(1);
+
+        ResourceManager available = new ResourceManager(Map.of(ResourceType.LLM, 1, ResourceType.DPU, 1));
+        assertThat(available.tryAcquire(requirements)).isTrue();
+        available.release(requirements);
+        assertThat(available.getAvailablePermits(ResourceType.LLM)).isEqualTo(1);
+        assertThat(available.getAvailablePermits(ResourceType.DPU)).isEqualTo(1);
     }
 }

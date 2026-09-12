@@ -23,6 +23,7 @@ public class ResourceManager {
 
     public static ResourceManager defaultManager() {
         return new ResourceManager(Map.of(
+                ResourceType.AGENT, 8,
                 ResourceType.LLM, 4,
                 ResourceType.DPU, 10,
                 ResourceType.RAG, 20,
@@ -37,6 +38,23 @@ public class ResourceManager {
         }
         Semaphore semaphore = semaphores.get(requirement.resourceType());
         return semaphore == null || semaphore.tryAcquire(requirement.permits());
+    }
+
+    public synchronized boolean tryAcquire(Map<ResourceType, Integer> requirements) {
+        if (requirements == null || requirements.isEmpty()) return true;
+        for (ResourceType type : ResourceType.values()) {
+            int needed = Math.max(0, requirements.getOrDefault(type, 0));
+            Semaphore semaphore = semaphores.get(type);
+            if (semaphore != null && semaphore.availablePermits() < needed) return false;
+        }
+        for (ResourceType type : ResourceType.values()) {
+            int needed = Math.max(0, requirements.getOrDefault(type, 0));
+            Semaphore semaphore = semaphores.get(type);
+            if (semaphore != null && needed > 0 && !semaphore.tryAcquire(needed)) {
+                throw new IllegalStateException("Resource availability changed while locked");
+            }
+        }
+        return true;
     }
 
     public void acquire(ResourceRequirement requirement) throws InterruptedException {
@@ -57,6 +75,14 @@ public class ResourceManager {
         if (semaphore != null) {
             semaphore.release(requirement.permits());
         }
+    }
+
+    public synchronized void release(Map<ResourceType, Integer> requirements) {
+        if (requirements == null) return;
+        requirements.forEach((type, permits) -> {
+            Semaphore semaphore = semaphores.get(type);
+            if (semaphore != null && permits != null && permits > 0) semaphore.release(permits);
+        });
     }
 
     public int getAvailablePermits(ResourceType type) {

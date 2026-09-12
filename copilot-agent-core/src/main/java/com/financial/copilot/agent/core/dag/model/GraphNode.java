@@ -3,6 +3,7 @@ package com.financial.copilot.agent.core.dag.model;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
 import com.financial.copilot.agent.core.dag.runtime.resource.NodePriority;
 import com.financial.copilot.agent.core.dag.runtime.resource.ResourceRequirement;
+import com.financial.copilot.agent.core.dag.runtime.resource.ResourceType;
 
 import java.time.Duration;
 import java.util.*;
@@ -25,6 +26,7 @@ public class GraphNode {
     private final int maxRetries;
     private final FallbackProvider fallbackProvider;
     private final ResourceRequirement resourceRequirement;
+    private final Map<ResourceType, Integer> resourceRequirements;
     private final NodePriority priority;
 
     private volatile boolean skipped = false;
@@ -49,6 +51,16 @@ public class GraphNode {
         this.maxRetries = builder.maxRetries >= 0 ? builder.maxRetries : 2;
         this.fallbackProvider = builder.fallbackProvider;
         this.resourceRequirement = builder.resourceRequirement != null ? builder.resourceRequirement : ResourceRequirement.none();
+        Map<ResourceType, Integer> requirements = new EnumMap<>(ResourceType.class);
+        requirements.put(ResourceType.AGENT, 1);
+        if (builder.resourceRequirements != null) {
+            builder.resourceRequirements.forEach((type, permits) -> {
+                if (type != null && permits != null && permits > 0) requirements.put(type, permits);
+            });
+        } else if (this.resourceRequirement.permits() > 0) {
+            requirements.put(this.resourceRequirement.resourceType(), this.resourceRequirement.permits());
+        }
+        this.resourceRequirements = Map.copyOf(requirements);
         this.priority = builder.priority != null ? builder.priority : NodePriority.NORMAL;
     }
 
@@ -118,6 +130,10 @@ public class GraphNode {
         return resourceRequirement;
     }
 
+    public Map<ResourceType, Integer> getResourceRequirements() {
+        return resourceRequirements;
+    }
+
     public NodePriority getPriority() {
         return priority;
     }
@@ -178,6 +194,7 @@ public class GraphNode {
         private int maxRetries = 2;
         private FallbackProvider fallbackProvider;
         private ResourceRequirement resourceRequirement = ResourceRequirement.none();
+        private Map<ResourceType, Integer> resourceRequirements;
         private NodePriority priority = NodePriority.NORMAL;
 
         public Builder nodeId(String nodeId) {
@@ -239,6 +256,11 @@ public class GraphNode {
 
         public Builder resourceRequirement(ResourceRequirement resourceRequirement) {
             this.resourceRequirement = resourceRequirement;
+            return this;
+        }
+
+        public Builder resourceRequirements(Map<ResourceType, Integer> resourceRequirements) {
+            this.resourceRequirements = resourceRequirements;
             return this;
         }
 

@@ -4,6 +4,8 @@ package com.financial.copilot.agent.core.dag.runtime.resource;
  * <h1>物理/逻辑受限资源类型枚举</h1>
  */
 public enum ResourceType {
+    /** 智能体节点总并发配额 (默认8) */
+    AGENT,
     /** 大模型推理调用配额 (默认4) */
     LLM,
     /** 数值计算与密集量化分析单元 (默认10) */
