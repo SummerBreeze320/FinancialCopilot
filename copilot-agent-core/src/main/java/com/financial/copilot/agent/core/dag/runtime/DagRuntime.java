@@ -98,6 +98,9 @@ public class DagRuntime {
         DagRunContext context = new DagRunContext(request, graph);
 
         if (graph.getNodes().isEmpty()) {
+            context.events.publishGraphInitialized(request.runId(), graph.getRevision(), List.of());
+            context.events.publishRunCompleted(request.runId(), "SUCCEEDED", 0L);
+            context.events.complete();
             return new GraphRunHandle(request.runId(), context.events.flux(),
                     CompletableFuture.completedFuture(context.result()), context.cancellation::cancel);
         }
@@ -105,15 +108,30 @@ public class DagRuntime {
         DagRuntime isolated = new DagRuntime(nodeExecutor, context.artifacts, resourceManager,
                 checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request);
         CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
+        context.events.publishGraphInitialized(request.runId(), graph.getRevision(), graph.getNodes().values().stream()
+                .map(node -> new com.financial.copilot.agent.core.dag.event.NodeEventBus.NodeDescriptor(
+                        node.getNodeId(), node.getName(), node.getTaskType(), List.copyOf(graph.getUpstream(node.getNodeId()))))
+                .toList());
         isolated.executeGraph(request.runId(), graph, context.artifacts, context.cancellation, event -> {
             context.statuses.put(event.nodeId(), event.status());
+            context.events.publishDagEvent(request.runId(), graph, event);
         }).whenComplete((ignored, error) -> {
             isolated.virtualThreadExecutor.shutdown();
             if (error != null) {
+                if (error instanceof CancellationException || error.getCause() instanceof CancellationException) {
+                    context.events.emit(com.financial.copilot.common.event.ResearchStreamEvent.runCancelled(request.runId(), error.getMessage()));
+                } else {
+                    context.events.emit(com.financial.copilot.common.event.ResearchStreamEvent.runFailed(request.runId(), error.getMessage()));
+                }
+                context.events.complete();
                 completion.completeExceptionally(error);
             } else {
                 context.statuses.keySet().retainAll(graph.getNodes().keySet());
-                completion.complete(context.result());
+                GraphRunResult result = context.result();
+                context.events.publishRunCompleted(request.runId(), "SUCCEEDED",
+                        java.time.Duration.between(result.startedAt(), result.completedAt()).toMillis());
+                context.events.complete();
+                completion.complete(result);
             }
         });
         return new GraphRunHandle(request.runId(), context.events.flux(), completion, context.cancellation::cancel);

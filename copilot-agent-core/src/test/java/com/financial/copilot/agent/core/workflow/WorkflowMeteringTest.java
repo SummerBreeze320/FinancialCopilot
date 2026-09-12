@@ -1,53 +1,36 @@
 package com.financial.copilot.agent.core.workflow;
 
 import com.financial.copilot.agent.core.agents.*;
-import com.financial.copilot.agent.core.pipeline.*;
-import com.financial.copilot.agent.core.memory.*;
+import com.financial.copilot.agent.core.dag.artifact.*;
+import com.financial.copilot.agent.core.dag.artifact.payload.*;
+import com.financial.copilot.agent.core.dag.planner.GraphPlanner;
+import com.financial.copilot.agent.core.dag.runtime.*;
 import com.financial.copilot.agent.core.llm.dto.LlmResponse;
-import com.financial.copilot.domain.fund.port.FundDataPort;
 import org.junit.jupiter.api.Test;
-import org.springframework.context.ApplicationEventPublisher;
-import reactor.core.publisher.Sinks;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
 import java.util.function.Consumer;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class WorkflowMeteringTest {
     @Test
-    void cancellationAfterContentStillDrainsUsageAndComparisonReceivesMeter() throws Exception {
-        var decomposer = mock(TaskDecomposer.class);
-        var comparator = mock(ComparatorAgent.class);
-        var synthesizer = mock(ReportSynthesizer.class);
-        var publisher = mock(ApplicationEventPublisher.class);
-        var settled = new CountDownLatch(1);
-        var started = new CountDownLatch(1);
-        var completed = new CountDownLatch(1);
-        Consumer<LlmResponse> meter = usage -> settled.countDown();
-        when(decomposer.decompose(anyString(), anyBoolean(), same(meter))).thenReturn(ExecutionPlan.builder()
-                .steps(List.of(SubTask.builder().taskType("COMPARISON").build(),
-                        SubTask.builder().taskType("SYNTHESIS").build())).build());
-        when(comparator.compareFunds(anyString(), anyString(), same(meter))).thenReturn("facts");
-        Sinks.Many<String> upstream = Sinks.many().unicast().onBackpressureBuffer();
-        when(synthesizer.synthesizeStream(anyString(), anyString(), anyBoolean(), same(meter)))
-                .thenReturn(upstream.asFlux().doOnSubscribe(s -> started.countDown())
-                        .doOnComplete(() -> meter.accept(LlmResponse.builder().build())));
-        doAnswer(inv -> { completed.countDown(); return null; }).when(publisher).publishEvent(any(org.springframework.context.ApplicationEvent.class));
-        var workflow = new FinancialResearchWorkflow(decomposer, mock(ScreenerAgent.class), mock(AnalyzerAgent.class),
-                comparator, synthesizer, mock(FundDataPort.class), mock(ShortTermMemoryService.class),
-                mock(LongTermMemoryService.class), mock(MemoryRefinementTask.class), publisher);
-        var content = new CountDownLatch(1);
-        var subscription = workflow.executePipelineStream("session", "prompt", false, null, meter)
-                .subscribe(event -> { if ("CONTENT".equals(event.getType())) content.countDown(); });
-        assertTrue(started.await(5, TimeUnit.SECONDS));
-        upstream.tryEmitNext("partial report");
-        assertTrue(content.await(5, TimeUnit.SECONDS));
-        subscription.dispose();
-        assertEquals(Sinks.EmitResult.OK, upstream.tryEmitComplete());
-        assertTrue(settled.await(5, TimeUnit.SECONDS));
-        assertTrue(completed.await(5, TimeUnit.SECONDS));
-        verify(comparator).compareFunds(anyString(), anyString(), same(meter));
+    void nodeContextReceivesOriginalMeter() throws Exception {
+        ScreenerAgent screener = mock(ScreenerAgent.class);
+        AnalyzerAgent analyzer = mock(AnalyzerAgent.class);
+        ComparatorAgent comparator = mock(ComparatorAgent.class);
+        ReportSynthesizer synthesizer = mock(ReportSynthesizer.class);
+        when(screener.execute(any(), any(), any())).thenAnswer(i -> Artifact.of("p", ArtifactType.FUND_POOL, "step-1-screening", FundPool.ofCodes(List.of("a", "b"), "")));
+        when(analyzer.execute(any(), any(), any())).thenAnswer(i -> Artifact.of("a", ArtifactType.FUND_RESEARCH, "step-2-analysis", FundResearchResult.ofBatch(List.of(), List.of("a", "b"))));
+        when(comparator.execute(any(), any(), any())).thenAnswer(i -> Artifact.of("c", ArtifactType.COMPARISON_REPORT, "step-3-comparison", ComparisonReport.of("a", "b", "", List.of())));
+        when(synthesizer.execute(any(), any(), any())).thenAnswer(i -> Artifact.of("r", ArtifactType.FINAL_REPORT, "step-4-synthesis", FinalSynthesisReport.of("", "report")));
+        FinancialResearchWorkflow workflow = new FinancialResearchWorkflow(screener, analyzer, comparator, synthesizer,
+                null, null, null, new GraphPlanner(), null, null, null, ReplanPolicy.never(), null);
+        Consumer<LlmResponse> meter = ignored -> {};
+
+        workflow.run(new GraphRunRequest("run", 7L, "s", "分析基金", false, null, meter, RunMode.SYNC))
+                .completion().get();
+
+        verify(comparator).execute(any(), any(), argThat(context -> context.request().usageConsumer() == meter));
+        verify(synthesizer).execute(any(), any(), argThat(context -> context.request().usageConsumer() == meter));
     }
 }

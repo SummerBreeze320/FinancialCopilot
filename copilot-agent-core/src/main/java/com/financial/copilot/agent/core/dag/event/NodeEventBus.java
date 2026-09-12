@@ -8,6 +8,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
 import java.util.List;
+import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
+import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.dag.model.NodeStatus;
+import com.financial.copilot.agent.core.dag.model.patch.GraphPatch;
+import com.financial.copilot.agent.core.dag.runtime.DagEvent;
 import java.util.Objects;
 
 /**
@@ -30,7 +36,7 @@ public class NodeEventBus {
 
     public NodeEventBus(CancellationToken cancellationToken) {
         this.cancellationToken = Objects.requireNonNull(cancellationToken, "cancellationToken cannot be null");
-        this.sink = Sinks.many().multicast().onBackpressureBuffer(256);
+        this.sink = Sinks.many().replay().limit(256);
     }
 
     /**
@@ -72,6 +78,26 @@ public class NodeEventBus {
 
     public void publishRunCompleted(String runId, String status, Long durationMs) {
         emit(ResearchStreamEvent.runCompleted(runId, status, durationMs));
+    }
+
+    public void publishDagEvent(String runId, ExecutionGraph graph, DagEvent event) {
+        GraphNode node = graph.getNode(event.nodeId());
+        String name = node == null ? event.nodeId() : node.getName();
+        String taskType = node == null ? "" : node.getTaskType();
+        if (event.payload() instanceof GraphPatch patch) {
+            publishGraphUpdated(runId, graph.getRevision(), patch);
+            return;
+        }
+        if (event.status() == NodeStatus.READY) {
+            emit(ResearchStreamEvent.nodeReady(runId, event.nodeId(), name, taskType));
+        } else if (event.status() == NodeStatus.RUNNING) {
+            publishNodeStarted(runId, event.nodeId(), name, taskType);
+        } else if (event.status() == NodeStatus.SUCCEEDED || event.status() == NodeStatus.SKIPPED) {
+            List<String> ids = event.payload() instanceof Artifact<?> artifact ? List.of(artifact.id()) : List.of();
+            publishNodeCompleted(runId, event.nodeId(), event.status().name(), event.message(), ids);
+        } else if (event.status() == NodeStatus.FAILED || event.status() == NodeStatus.TIMEOUT) {
+            emit(ResearchStreamEvent.nodeFailed(runId, event.nodeId(), event.status().name(), event.message()));
+        }
     }
 
     public void complete() {

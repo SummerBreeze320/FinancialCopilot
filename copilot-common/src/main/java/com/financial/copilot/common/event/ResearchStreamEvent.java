@@ -108,6 +108,24 @@ public class ResearchStreamEvent {
                 .build();
     }
 
+    public static ResearchStreamEvent nodeReady(String runId, String nodeId, String nodeName, String taskType) {
+        return ResearchStreamEvent.builder().type("node_ready").runId(runId).nodeId(nodeId)
+                .nodeName(nodeName).taskType(taskType).status("READY").build();
+    }
+
+    public static ResearchStreamEvent nodeFailed(String runId, String nodeId, String status, String summary) {
+        return ResearchStreamEvent.builder().type("node_failed").runId(runId).nodeId(nodeId)
+                .status(status).summary(summary).build();
+    }
+
+    public static ResearchStreamEvent runFailed(String runId, String summary) {
+        return ResearchStreamEvent.builder().type("run_failed").runId(runId).status("FAILED").summary(summary).build();
+    }
+
+    public static ResearchStreamEvent runCancelled(String runId, String summary) {
+        return ResearchStreamEvent.builder().type("run_cancelled").runId(runId).status("CANCELLED").summary(summary).build();
+    }
+
     public static ResearchStreamEvent nodeCompleted(String runId, String nodeId, String status, String summary, List<String> artifactIds) {
         return ResearchStreamEvent.builder()
                 .type("node_completed")
