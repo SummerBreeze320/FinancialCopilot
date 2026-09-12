@@ -633,14 +633,19 @@ public class DagRuntime {
                 finalStatus == NodeStatus.SUCCEEDED ? "Node succeeded" : "Node failed: " + (error != null ? error.getMessage() : ""),
                 result));
 
-        // 1. 动态图反馈演进：允许 Planner 根据中间产物动态增删节点/边
-        if (rePlanAdvisor != null && finalStatus == NodeStatus.SUCCEEDED) {
-            Set<String> newlyAddedNodes = rePlanAdvisor.onNodeCompleted(graph, completedNodeId, result);
-            if (newlyAddedNodes != null) {
-                for (String newNodeId : newlyAddedNodes) {
-                    statusMap.put(newNodeId, new AtomicReference<>(NodeStatus.PENDING));
-                    activeOrPendingNodes.incrementAndGet();
+        // 1. 动态图反馈演进：通过 ReplanPolicy 条件门禁判定，绝不无脑每个节点都调 LLM！
+        if (rePlanAdvisor != null && replanPolicy.shouldReplan(graph, completedNodeId, result, finalStatus)) {
+            GraphPatch patch = rePlanAdvisor.planPatch(graph, completedNodeId, result);
+            if (patch != null && !patch.operations().isEmpty()) {
+                int newRev = graph.applyPatch(patch);
+                // 注册 patch 中新增的节点到状态机
+                for (GraphOperation op : patch.operations()) {
+                    if (op.op() == PatchOp.ADD_NODE) {
+                        statusMap.put(op.nodeId(), new AtomicReference<>(NodeStatus.PENDING));
+                        activeOrPendingNodes.incrementAndGet();
+                    }
                 }
+                eventPublisher.accept(new DagEvent(completedNodeId, NodeStatus.RUNNING, "Graph patched to rev " + newRev, patch));
             }
         }
 
@@ -733,6 +738,60 @@ public class ConcurrencyLimiter {
         } finally {
             dataPortSemaphore.release();
         }
+    }
+}
+```
+
+### 5.3 动态改图触发策略 (ReplanPolicy)
+
+> **核心原则**：**绝不每个节点执行完都盲目唤醒 Planner 调 LLM！**  
+> 95% 的投研节点（如标准净值序列抓取、公式计算）产出正常，每个节点盲目调大模型 Re-plan 会造成严重的成本浪费与延迟劣化。  
+> 只有发生以下 **实质性异常或新事实** 时，才激活 Planner ReAct 生成 `GraphPatch`：
+> 1. **节点失败**：核心或依赖节点执行异常，需自愈改道；
+> 2. **数据不足**：标的初筛列表为空（count=0），或 `evidenceIncomplete=true`；
+> 3. **发现新实体**：体检发现重仓股暴雷或基金经理突发变更；
+> 4. **反思假定矛盾**：实际算出的指标与 Planner 初始假定背离；
+> 5. **用户追加指令**：会话中用户插话调整研究侧重点。
+
+```java
+package com.financial.copilot.agent.core.dag.runtime;
+
+import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
+import com.financial.copilot.agent.core.dag.model.NodeStatus;
+
+import java.util.List;
+
+/**
+ * <h1>动态改图触发策略接口</h1>
+ */
+@FunctionalInterface
+public interface ReplanPolicy {
+
+    /**
+     * 判断当前节点产物是否需要激活 Planner 生成 GraphPatch
+     */
+    boolean shouldReplan(
+        ExecutionGraph graph,
+        String completedNodeId,
+        Artifact<?> result,
+        NodeStatus status
+    );
+
+    /**
+     * 默认规则型启发式策略 (零成本、纳秒级判定，不调 LLM)
+     */
+    static ReplanPolicy heuristic() {
+        return (graph, nodeId, result, status) -> {
+            // 1. 节点失败
+            if (status == NodeStatus.FAILED) return true;
+            if (result == null) return false;
+            // 2. 产物明确标记为部分缺失/降级
+            if (result.metadata() != null && result.metadata().partial()) return true;
+            // 3. 初筛标的池为空 (无法进行后续分析)
+            if (result.payload() instanceof List<?> list && list.isEmpty()) return true;
+            return false;
+        };
     }
 }
 ```

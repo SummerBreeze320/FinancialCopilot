@@ -184,9 +184,10 @@
 
 ---
 
-### Task 7: Dynamic Re-planning Checkpoint & ReAct Planner Integration (★★★☆☆)
+### Task 7: ReplanPolicy & Dynamic GraphPatch Integration (★★★☆☆)
 
 **Files:**
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/ReplanPolicy.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/RePlanAdvisor.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/planner/tool/MetricRAGTool.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/planner/tool/SkillRegistryTool.java`
@@ -195,16 +196,20 @@
 
 **Interfaces:**
 - Produces:
-  - `RePlanAdvisor`: inspects completed node artifacts and issues delta mutations (`KEEP`, `ADD_NODE`, `MODIFY_NODE`, `PRUNE`).
-  - `GraphPlanner`: uses `MetricRAGTool` and `SkillRegistryTool` to generate structured `ExecutionGraph`.
+  - `ReplanPolicy`: evaluates whether a completed node requires re-planning (Fast-Path: bypass LLM; Adaptive-Path: trigger ReAct Planner)
+  - `RePlanAdvisor`: inspects completed node artifacts and generates `GraphPatch` (delta mutations: `ADD_NODE`, `ADD_EDGE`, `SKIP_NODE`)
+  - `GraphPlanner`: uses `MetricRAGTool` and `SkillRegistryTool` to construct `ExecutionGraph` and `GraphPatch`
 
-- [ ] **Step 1: Write unit tests for dynamic graph mutation mid-flight (adding a node after node 1 completes)**
+- [ ] **Step 1: Write unit tests verifying conditional replan triggering and GraphPatch application**
+  - Test normal node output passes directly without invoking RePlanAdvisor (zero overhead).
+  - Test partial/empty candidate output triggers RePlanAdvisor and generates `GraphPatch`.
+  - Test `GraphPatch` modifies graph from Revision 1 -> 2 mid-flight, and newly added node executes automatically.
 - [ ] **Step 2: Run test to confirm it fails**
-- [ ] **Step 3: Implement `RePlanAdvisor`, planner tools, and dynamic graph updating**
+- [ ] **Step 3: Implement `ReplanPolicy`, `RePlanAdvisor`, planner tools, and `GraphPatch` application**
 - [ ] **Step 4: Run tests and ensure they pass**
   - Verify with `mvn test -pl copilot-agent-core -Dtest=DynamicReplanTest`
 - [ ] **Step 5: Commit changes**
-  - `git commit -m "feat(planner): add dynamic re-planning advisor and tools"`
+  - `git commit -m "feat(planner): add ReplanPolicy, GraphPatch generation, and dynamic planner tools"`
 
 ---
 
