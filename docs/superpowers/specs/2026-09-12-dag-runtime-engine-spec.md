@@ -1009,6 +1009,130 @@ public class CancellationToken {
 
 ---
 
+### 5.5 状态快照持久化与断点续跑 (Checkpoint & Resume Protocol)
+
+> **核心原则**：**已成功的节点产物永不重复计算，崩溃或中断后精准原地复活！**  
+> 一次完整的深度金融投研通常涉及 10~15 个异构节点：
+> * 宏观周期与流动性定调 (LLM + RAG)；
+> * 全市场万只基金初筛与分时重仓股穿透 (DPU 大吞吐 SQL)；
+> * 多维夏普比率、最大回撤、卡玛比率与风格漂移测算 (数学内核计算)；
+> * 基金经理历史能力圈与踩雷排查 (长期记忆 + 新闻舆情)；
+> * 深度综合投研研报合成 (长上下文多模态 LLM)。
+>
+> 整体执行耗时在 30s~90s，消耗数万 Token 与大量 DPU 算力。
+> 若执行到第 8 个节点时后端 Pod 发生重启、OOM、网络闪断，或用户主动关闭网页稍后点击“恢复执行”：
+> * **无 Checkpoint**：只能从零全部重跑，白白浪费已付出的昂贵 Token、DPU 计算和时间；
+> * **有 Checkpoint**：A、B、C 等已成功的节点**绝对不跑**，直接从 `ArtifactStore` 热加载强类型产物，瞬间恢复下游就绪节点执行！
+
+#### 5.5.1 Checkpoint 触发与状态流转
+
+节点成功后，自动触发产物持久化与图状态快照：
+
+```text
+    Node Succeeded (节点执行成功)
+               │
+               ▼
+    ArtifactStore.persist(nodeId, artifact)
+    (将强类型产物落库/缓存至 Redis)
+               │
+               ▼
+    DagCheckpointStore.saveCheckpoint(checkpoint)
+    (记录 RunId, Revision, 节点状态清单, 产物 ID 映射)
+               │
+               ▼
+    DependencyResolver 推进就绪队列
+```
+
+#### 5.5.2 断点续跑恢复协议 (Resume Protocol)
+
+当系统重启或接收到 `dagRuntime.resume(runId)` 时：
+
+```text
+           dagRuntime.resume(runId)
+                      │
+                      ▼
+        DagCheckpointStore.load(runId)
+                      │
+        ┌─────────────┴────────────────────────┐
+        ▼                                      ▼
+[Checkpoint 存在]                     [Checkpoint 不存在]
+        │                                      │
+        ▼                                      ▼
+1. 还原 ExecutionGraph 拓扑结构          报错或退化为全量新运行
+2. 批量将状态为 SUCCEEDED 的节点
+   置为 SUCCEEDED (A✓, B✓, C✓)
+3. 从 ArtifactStore 预热已存产物
+4. 将中断前处于 RUNNING 的孤儿节点 (如 D)
+   重置为 READY 重新派发 (保证幂等)
+5. 遍历 PENDING 节点检查前驱依赖:
+   若其所有前驱在 Checkpoint 中已 SUCCEEDED
+   -> 立即标记为 READY 并压入 ReadyQueue!
+        │
+        ▼
+   虚拟线程无缝续跑剩余节点 (0 重复开销)
+```
+
+#### 5.5.3 核心数据结构与存储契约
+
+```java
+package com.financial.copilot.agent.core.dag.runtime.checkpoint;
+
+import com.financial.copilot.agent.core.dag.model.NodeStatus;
+
+import java.time.Instant;
+import java.util.Map;
+
+/**
+ * <h1>DAG 执行状态持久化快照</h1>
+ */
+public record DagCheckpoint(
+    String runId,
+    String sessionId,
+    int revision,
+    Map<String, NodeStatus> nodeStatuses,
+    Map<String, String> artifactIds, // nodeId -> artifactId
+    Map<String, Object> serializedPayloads, // 便于跨进程恢复的核心产物反序列化快照
+    Instant checkpointTime
+) {
+    public boolean isNodeCompleted(String nodeId) {
+        NodeStatus status = nodeStatuses.get(nodeId);
+        return status == NodeStatus.SUCCEEDED || status == NodeStatus.SKIPPED;
+    }
+}
+```
+
+```java
+package com.financial.copilot.agent.core.dag.runtime.checkpoint;
+
+import java.util.Optional;
+
+/**
+ * <h1>DAG 快照存储适配端口</h1>
+ */
+public interface DagCheckpointStore {
+
+    /**
+     * 保存/更新运行快照
+     */
+    void saveCheckpoint(DagCheckpoint checkpoint);
+
+    /**
+     * 加载指定运行的最新有效快照
+     */
+    Optional<DagCheckpoint> loadCheckpoint(String runId);
+
+    /**
+     * 清除快照（在工作流最终 SUCCEEDED/CANCELLED 后按需归档或清理）
+     */
+    void clearCheckpoint(String runId);
+}
+```
+
+* **`InMemoryDagCheckpointStore`**：单机开发与单元测试原生零依赖实现；
+* **`RedisDagCheckpointStore`**：生产环境高可用实现，基于工程现存的 `StringRedisTemplate` 存储 JSON 快照，配置 24 小时滑动过期（TTL），天然支持 Pod 漂移与分布式集群断点恢复。
+
+---
+
 ## 6. 工具增强型规划器 (Tool-Augmented ReAct GraphPlanner)
 
 ### 6.1 Planner 工具集定义

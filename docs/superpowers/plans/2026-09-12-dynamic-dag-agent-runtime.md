@@ -121,6 +121,10 @@
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/NodeExecutor.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/DependencyResolver.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/PriorityReadyQueue.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/checkpoint/DagCheckpoint.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/checkpoint/DagCheckpointStore.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/checkpoint/InMemoryDagCheckpointStore.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/checkpoint/RedisDagCheckpointStore.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/DagRuntime.java`
 - Test: `copilot-agent-core/src/test/java/com/financial/copilot/agent/core/dag/runtime/DagRuntimeTest.java`
 
@@ -128,8 +132,10 @@
 - Consumes: `ExecutionGraph`, `GraphNode`, `NodeStatus`, `ArtifactStore`, `ResourceManager`
 - Produces:
   - `CancellationToken`: Tree-structured hierarchical token (`createChild(scopeId)`, `bindCurrentThread(): AutoCloseable`, `cancel(reason)`, `isCancelled()`, `throwIfCancelled()`, `onCancel(callback)`).
+  - `DagCheckpoint` & `DagCheckpointStore`: Atomic state snapshotting on every `NodeSucceeded`, persisting `runId`, `revision`, `nodeStatuses`, and `artifactIds`.
   - `DagRuntime.executeGraph(graph, cancellationToken, eventConsumer): CompletableFuture<Void>`
-  - Event-driven node completion: `onNodeCompleted` -> checks `graph.getDownstream()` -> if all `upstream` in terminal success/skip, pushes to `PriorityReadyQueue`.
+  - `DagRuntime.resume(runId, cancellationToken, eventConsumer): CompletableFuture<Void>` (re-hydrates graph from checkpoint, fast-forwards SUCCEEDED nodes without re-execution, enqueues READY dependents).
+  - Event-driven node completion: `onNodeCompleted` -> persists artifact -> writes checkpoint -> checks `graph.getDownstream()` -> if all `upstream` in terminal success/skip, pushes to `PriorityReadyQueue`.
   - Resource gate: `ResourceManager.tryAcquire()` -> if success dispatches on virtual threads; if quota full waits in `PriorityReadyQueue` until permit freed.
   - Structured Cancellation: When `runToken.cancel()` triggers, recursively cascades to all child tokens (Node -> Agent -> Tool), interrupts all bound virtual threads, executes I/O abort callbacks, immediately reclaims held permits in `ResourceManager`, and marks unexecuted/running nodes as `CANCELLED`.
   - Child Isolation: A child token's individual cancellation (e.g. single node timeout) does not leak to parent or siblings unless policy is `FAIL_FAST`.
@@ -141,6 +147,7 @@
   - Tree Cancellation test: Trigger root `runToken.cancel()` mid-run; verify recursive child cancellation, virtual thread interruption, permits released, pending nodes aborted.
   - Child Cancellation Isolation test: Child node timeout cancels node and interrupts its agent/tool without cancelling parent run or sibling nodes.
   - FailurePolicy tests: `CONTINUE` passes degraded artifact; `OPTIONAL` skips gracefully; `FAIL_FAST` fails graph.
+  - Checkpoint & Resume test: Run A -> B -> C -> D; simulate failure at D; invoke `dagRuntime.resume(runId)`; verify A, B, C are NOT executed again, their artifacts are loaded from store, D executes and pipeline finishes.
 - [ ] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=DagRuntimeTest`
 - [ ] **Step 3: Implement `CancellationToken`, `DagEvent`, `NodeExecutor`, `DependencyResolver`, `PriorityReadyQueue`, and `DagRuntime`**
