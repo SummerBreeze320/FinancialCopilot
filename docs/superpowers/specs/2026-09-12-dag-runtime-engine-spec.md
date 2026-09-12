@@ -419,6 +419,72 @@ public class DagRuntime {
 }
 ```
 
+### 5.2 资源感知并发限流器 (Resource-Aware ConcurrencyLimiter)
+
+> **核心原则**：**Virtual Thread ≠ 无限并发！**  
+> 投研工作流绝大多数任务为 I/O-bound（LLM HTTP、AkShare/Wind 数据源、向量数据库、PostgreSQL、远程组件）。虽然 Java 21 虚拟线程极其轻量（可创建数十万个），但下游物理资源均有硬性容量瓶颈：
+> 1. 大模型 API：具备 RPM / TPM 限额，瞬时超额将触发 HTTP 429；
+> 2. 数据库与数据源：HikariCP 连接池容量有限，外部数据端口有防爬并发限制。
+
+因此，**Graph 允许 100 个 Ready Node，但绝不能无脑无界并行打爆下游**。调度器内嵌基于 `Semaphore` 的 `ConcurrencyLimiter`：
+* 当虚拟线程获取不到许可证（Permit）在 `Semaphore.acquire()` 阻塞时，JVM 自动将该虚拟线程从 Carrier 平台线程上卸载（Unmount），**完全不浪费 OS 线程资源**；
+* 许可证一旦释放，JVM 自动唤醒并在可用平台线程上恢复调度。
+
+```java
+package com.financial.copilot.agent.core.dag.runtime;
+
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.Callable;
+
+/**
+ * <h1>DAG 运行时资源感知限流器</h1>
+ */
+public class ConcurrencyLimiter {
+
+    /** 业务 Agent 最大并发数 (默认 8) */
+    private final Semaphore agentSemaphore;
+
+    /** 大模型推理 API 最大并发数 (默认 4) */
+    private final Semaphore llmSemaphore;
+
+    /** 金融数据端口/数据库拉取最大并发数 (默认 10) */
+    private final Semaphore dataPortSemaphore;
+
+    public ConcurrencyLimiter(int maxAgent, int maxLlm, int maxDataPort) {
+        this.agentSemaphore = new Semaphore(maxAgent);
+        this.llmSemaphore = new Semaphore(maxLlm);
+        this.dataPortSemaphore = new Semaphore(maxDataPort);
+    }
+
+    public <T> T runWithAgentPermit(Callable<T> task) throws Exception {
+        agentSemaphore.acquire();
+        try {
+            return task.call();
+        } finally {
+            agentSemaphore.release();
+        }
+    }
+
+    public <T> T runWithLlmPermit(Callable<T> task) throws Exception {
+        llmSemaphore.acquire();
+        try {
+            return task.call();
+        } finally {
+            llmSemaphore.release();
+        }
+    }
+
+    public <T> T runWithDataPortPermit(Callable<T> task) throws Exception {
+        dataPortSemaphore.acquire();
+        try {
+            return task.call();
+        } finally {
+            dataPortSemaphore.release();
+        }
+    }
+}
+```
+
 ---
 
 ## 6. 工具增强型规划器 (Tool-Augmented ReAct GraphPlanner)
