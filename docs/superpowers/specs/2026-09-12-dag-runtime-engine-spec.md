@@ -586,33 +586,142 @@ Planner 不再直接单次 Prompt 生成计划，而是通过 ReAct 循环使用
 
 ---
 
-## 7. 实施计划与里程碑
+---
+
+## 7. 响应式节点级流式协议规范 (Node-Level Reactive SSE Protocol)
+
+> **核心原则**：**彻底摒弃单线递增的 `currentStep / totalSteps`！**  
+> 在并行与动态演进的 DAG 中，`3 / 10` 等进度计数在数学上毫无意义且产生严重歧义。
+> SSE 必须全面升级为**“节点生命周期与图变更事件流 (Node Lifecycle & Graph Revision Events)”**。
+
+前端基于此协议可直接在画板上渲染真正的动态拓扑图（如 React Flow / AntV X6）：
+```text
+       ┌── 基金初筛 ✓ (1.2s)
+Query ─┼── 宏观分析 ⏳ (运行中)
+       └── 市场情绪 ✓ (0.8s)
+              │
+              ▼
+          综合研报合成
+```
+
+### 7.1 事件类型与 JSON 契约
+
+#### 1. 图初始化事件 (`graph_initialized`)
+流水线启动时推送，包含初始拓扑结构：
+```json
+{
+  "type": "graph_initialized",
+  "runId": "run_9a8b7c",
+  "revision": 1,
+  "nodes": [
+    {"nodeId": "fund_screen_1", "name": "医药基金初筛", "taskType": "SCREENING", "parentIds": []},
+    {"nodeId": "macro_analysis_1", "name": "宏观流动性定调", "taskType": "MACRO", "parentIds": []},
+    {"nodeId": "synthesis_1", "name": "投研报告合成", "taskType": "SYNTHESIS", "parentIds": ["fund_screen_1", "macro_analysis_1"]}
+  ]
+}
+```
+
+#### 2. 节点启动事件 (`node_started`)
+任何节点依赖就绪被虚拟线程激活时推送：
+```json
+{
+  "type": "node_started",
+  "runId": "run_9a8b7c",
+  "nodeId": "fund_screen_1",
+  "taskType": "SCREENING",
+  "name": "医药基金初筛",
+  "parentIds": [],
+  "status": "RUNNING",
+  "timestamp": 1757651234567
+}
+```
+
+#### 3. 节点完成事件 (`node_completed`)
+节点完成执行并生成产物时推送：
+```json
+{
+  "type": "node_completed",
+  "runId": "run_9a8b7c",
+  "nodeId": "fund_screen_1",
+  "status": "SUCCEEDED",
+  "durationMs": 1240,
+  "artifactIds": ["art_fund_pool_001"],
+  "summary": "初筛命中 5 只医药主题偏股混合基金",
+  "components": [
+    {"componentType": "COMPARISON_RADAR", "title": "初筛标的多维雷达", "spec": {}}
+  ]
+}
+```
+
+#### 4. 图动态演进事件 (`graph_updated`)
+Planner 在 Re-plan Checkpoint 增删节点或变轨时推送，通知前端热更新画布：
+```json
+{
+  "type": "graph_updated",
+  "runId": "run_9a8b7c",
+  "revision": 2,
+  "reason": "初筛命中为0，动态插入放宽门槛重试节点",
+  "addedNodes": [
+    {"nodeId": "fund_screen_retry", "name": "放宽条件重试初筛", "parentIds": ["fund_screen_1"]}
+  ],
+  "removedNodes": [],
+  "updatedEdges": [
+    {"from": "fund_screen_retry", "to": "synthesis_1"}
+  ]
+}
+```
+
+#### 5. 研报生成打字机增量 (`content_chunk`)
+终端节点合成正文时的流式 Token：
+```json
+{
+  "type": "content_chunk",
+  "runId": "run_9a8b7c",
+  "nodeId": "synthesis_1",
+  "delta": "综合上述量化数据与宏观定调，建议配置..."
+}
+```
+
+#### 6. 全图执行结束事件 (`run_completed`)
+```json
+{
+  "type": "run_completed",
+  "runId": "run_9a8b7c",
+  "status": "SUCCEEDED",
+  "totalDurationMs": 5680
+}
+```
+
+---
+
+## 8. 实施计划与里程碑
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ Milestone 1: 原生图内核与标准产物层 (Core Engine & Artifact)              │
 │ - 实现 ExecutionGraph, GraphNode, NodeStatus, Artifact<T>, ArtifactStore│
-│ - 实现 DagRuntime (Java 21 Virtual Threads 依赖驱动，无屏障调度)           │
-│ - 全套单元测试覆盖（菱形依赖、成环检测、并发就绪、Fail-Soft 容错）          │
+│ - 实现 ConcurrencyLimiter (基于 Semaphore 的虚拟线程资源配额保护)         │
+│ - 实现 DagRuntime (基于 NodeCompletionEvent 的事件驱动图执行模型)         │
+│ - 全套单元测试覆盖（菱形依赖、成环检测、并发就绪、Fail-Soft 容错、限流）     │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ Milestone 2: 工作流集成与黑板适配器 (Workflow Integration)                │
+│ Milestone 2: 节点级响应式 SSE 事件与适配器 (Reactive Event & Adapter)    │
+│ - 实现 NodeEventBus，输出 graph_initialized, node_started, node_completed│
 │ - 实现 LegacyPlanAdapter：现存 ExecutionPlan 平滑转换为 ExecutionGraph    │
-│ - 实现 BlackboardAdapter：现有 Agent 无需重构，透明映射到 ArtifactStore    │
 │ - 替换 FinancialResearchWorkflow 内的线性循环，升级为并发 DagRuntime     │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ Milestone 3: SSE 流式并发协议与多卡片渲染 (Reactive SSE Protocol)         │
-│ - 扩展 ResearchStreamEvent 携带 stepId, waveIndex, parentIds, status    │
-│ - 验证前端并发分支树的实时流式推进                                       │
+│ Milestone 3: 四层解耦与 Agent 局部 ReAct (Four-Tier Agent Integration)   │
+│ - 统一 Agent 契约：输入强类型 Artifact，输出强类型 Artifact             │
+│ - 实现 AnalyzerAgent / ScreenerAgent 局部自省与组件生成能力              │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ Milestone 4: Tool-Augmented Planner & 动态 Re-plan 闭环                  │
 │ - 装配 Metric RAG 与 SkillRegistry 给 TaskDecomposer                    │
-│ - 实现 RePlanAdvisor，打通中间产物驱动图动态演进的完整自治闭环            │
+│ - 实现 RePlanAdvisor，打通中间产物驱动 graph_updated 动态演进自治闭环     │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 8. 验证与验收标准
+## 9. 验证与验收标准
 
 1. **并发性验证**：当执行多赛道/多标的初筛时（如“半导体 + 新能源”），两个任务的启动时间戳完全重合，总耗时从 $T_1 + T_2$ 骤降至 $\max(T_1, T_2)$；
 2. **木桶效应消除验证**：针对长短任务依赖（A=1s -> D, B=5s -> E），D 节点必须在第 1s 准时启动，绝不等待 B 节点；
