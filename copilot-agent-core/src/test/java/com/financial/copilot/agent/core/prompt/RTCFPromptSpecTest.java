@@ -47,35 +47,6 @@ class RTCFPromptSpecTest {
     }
 
     @Test
-    @DisplayName("测试 FundComparatorPrompt 生成规范")
-    void testFundComparatorPrompt() {
-        RTCFPromptSpec spec = FundComparatorPrompt.buildSpec("005827", "收益率 15%", "161005", "收益率 18%", "重点关注回撤");
-        String sys = spec.renderSystemPrompt();
-        String user = spec.renderUserPrompt();
-
-        assertTrue(sys.contains("FundComparatorAgent"));
-        assertTrue(sys.contains("Tool-as-Truth"));
-        assertTrue(user.contains("### [TARGET A (005827) FACTUAL DATA]"));
-        assertTrue(user.contains("### [TARGET B (161005) FACTUAL DATA]"));
-        assertTrue(user.contains("### [OPERATIONAL SKILL RULES]"));
-        assertTrue(user.contains("重点关注回撤"));
-    }
-
-    @Test
-    @DisplayName("测试 ReportSynthesizerPrompt 生成规范")
-    void testReportSynthesizerPrompt() {
-        RTCFPromptSpec spec = ReportSynthesizerPrompt.buildSpec("选出最好的成长型基金", "平衡型", "历史持有中欧医疗", "对标结论...", null);
-        String sys = spec.renderSystemPrompt();
-        String user = spec.renderUserPrompt();
-
-        assertTrue(sys.contains("首席投资总监"));
-        assertTrue(user.contains("### [USER RESEARCH GOAL]"));
-        assertTrue(user.contains("### [INVESTOR PROFILE & CONSTRAINTS]"));
-        assertTrue(user.contains("### [HISTORICAL MEMORY & PRIOR DECISIONS]"));
-        assertTrue(user.contains("### [PIPELINE FACTUAL CONTEXT]"));
-    }
-
-    @Test
     @DisplayName("测试 MemoryRefinementPrompt 生成规范")
     void testMemoryRefinementPrompt() {
         RTCFPromptSpec spec = MemoryRefinementPrompt.buildSpec("User: 我要看易方达蓝筹\nAgent: 005827近三年年化12%");
@@ -87,19 +58,4 @@ class RTCFPromptSpecTest {
         assertTrue(user.contains("易方达蓝筹"));
     }
 
-    @Test
-    @DisplayName("测试 FundScreenerPrompt 生成规范与 Context Caching 对齐")
-    void testFundScreenerPrompt() {
-        RTCFPromptSpec spec = FundScreenerPrompt.buildSpec("帮我选近三年收益靠前的医药基金", "必须剔除规模过小基金");
-        String sys = spec.renderSystemPrompt();
-        String user = spec.renderUserPrompt();
-
-        assertTrue(sys.contains("FundScreenerAgent"));
-        assertTrue(sys.contains("严格 JSON 契约"));
-        assertTrue(user.contains("### [USER SCREENING REQUIREMENT]"));
-        assertTrue(user.contains("帮我选近三年收益靠前的医药基金"));
-        assertTrue(user.contains("### [OPERATIONAL SCREENING SKILLS]"));
-        assertTrue(user.contains("必须剔除规模过小基金"));
-        assertTrue(user.contains("\"fundType\""));
-    }
 }

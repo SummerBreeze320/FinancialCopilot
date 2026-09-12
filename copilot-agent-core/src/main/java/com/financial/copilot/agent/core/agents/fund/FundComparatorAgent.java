@@ -1,341 +1,82 @@
 package com.financial.copilot.agent.core.agents.fund;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.core.context.ObservationSanitizer;
-import com.financial.copilot.agent.core.dag.artifact.Artifact;
-import com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata;
-import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
-import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
-import com.financial.copilot.agent.core.dag.artifact.EvidenceContract;
+import com.financial.copilot.agent.core.agentscope.AgentScopeAgentFactory;
+import com.financial.copilot.agent.core.dag.artifact.*;
 import com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
-import com.financial.copilot.agent.core.llm.dto.LlmRequest;
-import com.financial.copilot.agent.core.llm.dto.LlmResponse;
-import com.financial.copilot.agent.core.llm.service.LlmService;
-import com.financial.copilot.agent.core.prompt.FundComparatorPrompt;
-import com.financial.copilot.agent.core.skill.SkillMatcher;
-import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
-import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
-import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
+import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
+import com.financial.copilot.agent.core.dag.runtime.NodeInput;
+import com.financial.copilot.agent.tools.fund.*;
 import com.financial.copilot.agent.tools.graph.FinancialGraphTool;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.agentscope.core.tool.*;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Consumer;
+import java.util.*;
 
-/**
- * <h1>公募基金横向深度对标与对比专员 Agent (Fund Comparator Agent)</h1>
- * <p>
- * 职责：负责在两只公募基金之间执行深度对称数据拉取，包括两者的量化业绩指标、前十大重仓持仓结构以及季度研报策略。
- * 结合资深基金对标 Prompt，输出包含对标表格、持仓差异与投资哲学异同的专业对标分析 Markdown 报告。
- * </p>
- *
- * @author FinancialCopilot
- */
-@Slf4j
+/** AgentScope ReAct role for fund comparison and deep dives. */
 @Component
 public class FundComparatorAgent {
+    private static final String SYSTEM_PROMPT = """
+            你是基金对标 ReAct Agent。自主调用 compare_metrics、compare_holdings、compare_reports、shared_holdings，
+            观察真实结果后生成 Markdown 对标结论。至少调用 compare_metrics；双标的必须对称比较，禁止模型心算。
+            """;
+    private final AgentScopeAgentFactory factory; private final FundQuantAnalysisTool quant;
+    private final FundHoldingsQueryTool holdings; private final FundReportRetrieverTool reports;
+    private final FinancialGraphTool graph; private final ObjectMapper mapper;
 
-    /**
-     * 公募基金量化分析工具
-     */
-    private final FundQuantAnalysisTool quantTool;
-
-    /**
-     * 公募基金重仓持股查询工具
-     */
-    private final FundHoldingsQueryTool holdingsTool;
-
-    /**
-     * 公募基金季报与定性观点检索工具
-     */
-    private final FundReportRetrieverTool reportTool;
-
-    /**
-     * 大模型统一服务接口（用于生成深度横向归因分析）
-     */
-    private final LlmService clientService;
-
-    private final ObservationSanitizer sanitizer;
-    private final SkillMatcher skillMatcher;
-    private final FinancialGraphTool graphTool;
-
-    /**
-     * 构造函数，强制注入底层数据工具与大模型服务
-     */
-    public FundComparatorAgent(FundQuantAnalysisTool quantTool,
-                               FundHoldingsQueryTool holdingsTool,
-                               FundReportRetrieverTool reportTool,
-                               LlmService clientService) {
-        this(quantTool, holdingsTool, reportTool, clientService,
-                new ObservationSanitizer(new ObjectMapper()),
-                null, null);
+    public FundComparatorAgent(AgentScopeAgentFactory factory, FundQuantAnalysisTool quant,
+                               FundHoldingsQueryTool holdings, FundReportRetrieverTool reports,
+                               FinancialGraphTool graph, ObjectMapper mapper) {
+        this.factory=factory; this.quant=quant; this.holdings=holdings; this.reports=reports; this.graph=graph; this.mapper=mapper;
     }
 
-    public FundComparatorAgent(FundQuantAnalysisTool quantTool,
-                               FundHoldingsQueryTool holdingsTool,
-                               FundReportRetrieverTool reportTool,
-                               LlmService clientService,
-                               ObservationSanitizer sanitizer,
-                               SkillMatcher skillMatcher) {
-        this(quantTool, holdingsTool, reportTool, clientService, sanitizer, skillMatcher, null);
+    public Artifact<ComparisonReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
+        List<String> codes = codes(input, node);
+        Toolkit toolkit = new Toolkit(); toolkit.registerTool(new ComparisonTools(quant, holdings, reports, graph));
+        var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
+                "FundComparatorAgent", "基金横向对标", SYSTEM_PROMPT, toolkit, 8),
+                "用户目标=" + context.request().prompt() + "\n对标代码=" + codes, context);
+        run.requireLastText("compare_metrics");
+        String codeA = codes.getFirst(); String codeB = codes.size() > 1 ? codes.get(1) : codeA;
+        List<String> shared = parseShared(run.observations().containsKey("shared_holdings")
+                ? run.requireLastText("shared_holdings") : "{}");
+        ComparisonReport payload = ComparisonReport.of(codeA, codeA.equals(codeB) ? "" : codeB,
+                run.reply().getTextContent(), shared);
+        return new Artifact<>("art-comp-" + UUID.randomUUID().toString().substring(0,8),
+                ArtifactType.COMPARISON_REPORT, node.getNodeId(), payload,
+                ArtifactMetadata.standard("FundComparatorAgent"), EvidenceContract.sufficient(
+                "AgentScope 对标工具已执行", codes.stream().map(code -> "fund://" + code).toList()));
     }
 
-    @Autowired
-    public FundComparatorAgent(FundQuantAnalysisTool quantTool,
-                               FundHoldingsQueryTool holdingsTool,
-                               FundReportRetrieverTool reportTool,
-                               LlmService clientService,
-                               @Autowired(required = false) ObservationSanitizer sanitizer,
-                               @Autowired(required = false) SkillMatcher skillMatcher,
-                               @Autowired(required = false) FinancialGraphTool graphTool) {
-        this.quantTool = quantTool;
-        this.holdingsTool = holdingsTool;
-        this.reportTool = reportTool;
-        this.clientService = clientService;
-        this.sanitizer = sanitizer != null ? sanitizer : new ObservationSanitizer(new ObjectMapper());
-        this.skillMatcher = skillMatcher;
-        this.graphTool = graphTool;
+    private List<String> codes(NodeInput input, GraphNode node) {
+        if (node.getParams().get("targetCode") != null) return List.of(String.valueOf(node.getParams().get("targetCode")));
+        List<String> found = input.artifacts().values().stream().map(Artifact::payload)
+                .filter(FundResearchResult.class::isInstance).map(FundResearchResult.class::cast)
+                .flatMap(result -> result.topCandidates().stream()).distinct().limit(2).toList();
+        if (found.isEmpty()) throw new IllegalStateException("FundComparatorAgent requires candidate codes");
+        return found;
     }
 
-    /**
-     * 采集双标的对称数据上下文，并生成深度横向对标分析
-     *
-     * @param codeA 标的A基金代码
-     * @param codeB 标的B基金代码
-     * @return 对称事实与归因分析 Markdown 文本
-     */
-    public String compareFunds(String codeA, String codeB) {
-        return compareFunds(codeA, codeB, null, null);
-    }
-
-    /**
-     * 带 Token 计量回调的横向深度对标
-     *
-     * @param codeA         标的A基金代码
-     * @param codeB         标的B基金代码
-     * @param usageConsumer Token 计量回调
-     * @return 对标分析 Markdown
-     */
-    public String compareFunds(String codeA, String codeB, Consumer<LlmResponse> usageConsumer) {
-        return compareFunds(codeA, codeB, usageConsumer, null);
-    }
-
-    /**
-     * 带 Token 计量回调与用户意图上下文的横向深度对标（支持动态 Skill 挂载）
-     *
-     * @param codeA         标的A基金代码
-     * @param codeB         标的B基金代码
-     * @param usageConsumer Token 计量回调
-     * @param userQuery     用户原始提问或意图
-     * @return 对标分析 Markdown
-     */
-    public String compareFunds(String codeA, String codeB, Consumer<LlmResponse> usageConsumer, String userQuery) {
-        if (codeA != null && (codeB == null || codeB.isBlank() || codeA.equals(codeB))) {
-            log.info("[FUND-COMPARATOR] 执行单一最优标的穿透式深度剖析: code={}", codeA);
-            String metricsA = quantTool.getFundMetrics(codeA, null, null);
-            String holdingsA = holdingsTool.getTopHoldings(codeA, null);
-            String reportA = reportTool.getLatestQuarterlyReportView(codeA);
-
-            String cleanDataA = sanitizer.sanitizeFundMetrics(metricsA) + "\n" +
-                    sanitizer.sanitizeHoldings(holdingsA) + "\n" +
-                    "- 季报定性展望: " + sanitizer.sanitizeReportView(reportA, 800);
-
-            String factualFacts = """
-                === 单一最优标的深度剖析事实输入 (Tool-as-Truth) ===
-                【核心标的 (基金代码: %s)】:
-                %s
-                """.formatted(codeA, cleanDataA);
-
-            String queryForSkill = (userQuery != null && !userQuery.isBlank()) ? userQuery : codeA;
-            String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("COMPARISON", queryForSkill) : "";
-            try {
-                var spec = FundComparatorPrompt.buildSpec(codeA, cleanDataA, codeA, cleanDataA, skillRules, "单标的深度剖析，无跨标的重合持仓");
-                LlmRequest request = spec.toLlmRequest();
-                request.setUsageConsumer(usageConsumer);
-                String comparisonAnalysis = clientService.chat(request);
-                return factualFacts + "\n\n=== 最优标的深度归因与研报剖析 ===\n" + comparisonAnalysis;
-            } catch (Exception e) {
-                if (usageConsumer != null) {
-                    if (e instanceof RuntimeException runtime) throw runtime;
-                    throw new IllegalStateException("Metered single analysis failed", e);
-                }
-                log.warn("[FUND-COMPARATOR] 调用 LLM 深度分析失败，使用客观事实兜底: error={}", e.getMessage());
-                return factualFacts;
-            }
-        }
-
-        log.info("[FUND-COMPARATOR] 正在对标采集两只基金数据事实并执行深度归因: codeA={}, codeB={}", codeA, codeB);
-
-        // 1. 底层权威工具事实采集
-        String metricsA = quantTool.getFundMetrics(codeA, null, null);
-        String metricsB = quantTool.getFundMetrics(codeB, null, null);
-
-        String holdingsA = holdingsTool.getTopHoldings(codeA, null);
-        String holdingsB = holdingsTool.getTopHoldings(codeB, null);
-
-        String reportA = reportTool.getLatestQuarterlyReportView(codeA);
-        String reportB = reportTool.getLatestQuarterlyReportView(codeB);
-
-        // 2. 知识图谱持仓重合度分析 (Neo4j)
-        String graphOverlapFact = "";
-        if (graphTool != null) {
-            try {
-                String rawOverlap = graphTool.getSharedHoldings(codeA, codeB);
-                graphOverlapFact = sanitizer.sanitizeGraphOverlap(rawOverlap);
-            } catch (Exception e) {
-                log.warn("[FUND-COMPARATOR] 图谱持仓重合分析调用异常: {}", e.getMessage());
-            }
-        }
-
-        // 3. Context Engineering: Observation 净化与事实槽提纯
-        String cleanDataA = sanitizer.sanitizeFundMetrics(metricsA) + "\n" +
-                sanitizer.sanitizeHoldings(holdingsA) + "\n" +
-                "- 季报定性展望: " + sanitizer.sanitizeReportView(reportA, 800);
-
-        String cleanDataB = sanitizer.sanitizeFundMetrics(metricsB) + "\n" +
-                sanitizer.sanitizeHoldings(holdingsB) + "\n" +
-                "- 季报定性展望: " + sanitizer.sanitizeReportView(reportB, 800);
-
-        String factualFacts = """
-            === 双基金标的横向对标事实输入 (Tool-as-Truth) ===
-            【标的 A (基金代码: %s)】:
-            %s
-
-            ----------------------------------------
-            【标的 B (基金代码: %s)】:
-            %s
-            %s
-            """.formatted(codeA, cleanDataA, codeB, cleanDataB,
-                (graphOverlapFact == null || graphOverlapFact.isBlank()) ? "" : "\n----------------------------------------\n【知识图谱持仓重合度穿透】:\n" + graphOverlapFact);
-
-        // 4. 按需匹配并动态注入基金对标 Skill 规范
-        String queryForSkill = (userQuery != null && !userQuery.isBlank()) ? userQuery : (codeA + " " + codeB);
-        String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("COMPARISON", queryForSkill) : "";
-
+    private List<String> parseShared(String json) {
         try {
-            var spec = FundComparatorPrompt.buildSpec(codeA, cleanDataA, codeB, cleanDataB, skillRules, graphOverlapFact);
-            LlmRequest request = spec.toLlmRequest();
-            request.setUsageConsumer(usageConsumer);
-            String comparisonAnalysis = clientService.chat(request);
-            return factualFacts + "\n\n=== 智能对标深度归因 ===\n" + comparisonAnalysis;
-        } catch (Exception e) {
-            if (usageConsumer != null) {
-                if (e instanceof RuntimeException runtime) throw runtime;
-                throw new IllegalStateException("Metered comparison failed", e);
-            }
-            log.warn("[FUND-COMPARATOR] 调用 LLM 深度对比失败，使用客观事实兜底: error={}", e.getMessage());
-            return factualFacts;
-        }
+            var array = mapper.readTree(json).path("sharedStockCodes");
+            List<String> result = new ArrayList<>(); array.forEach(item -> result.add(item.asText())); return result;
+        } catch (Exception ignored) { return List.of(); }
     }
 
-    /**
-     * 强类型 DAG 节点横向深度对标执行入口
-     *
-     * @param node          当前 DAG 节点
-     * @param store         产物存储总线
-     * @param usageConsumer Token 计量回调
-     * @return 强类型横向对标报告产物
-     */
-    public Artifact<ComparisonReport> compareArtifact(
-            GraphNode node,
-            ArtifactStore store,
-            Consumer<LlmResponse> usageConsumer
-    ) {
-        String nodeId = node != null ? node.getNodeId() : "comparison";
-
-        // 1. 从上游提取候选对标标的
-        String codeA = "003095";
-        String codeB = "005827";
-        if (store != null) {
-            Optional<Artifact<FundResearchResult>> resOpt = store.findFirstByType(ArtifactType.FUND_RESEARCH);
-            if (resOpt.isPresent() && resOpt.get().payload() instanceof FundResearchResult research) {
-                List<String> candidates = research.topCandidates();
-                if (candidates != null && candidates.size() >= 2) {
-                    codeA = candidates.get(0);
-                    codeB = candidates.get(1);
-                } else if (candidates != null && candidates.size() == 1) {
-                    codeA = candidates.get(0);
-                    codeB = candidates.get(0);
-                } else if (research.evaluatedFunds() != null && research.evaluatedFunds().size() >= 2) {
-                    codeA = String.valueOf(research.evaluatedFunds().get(0).get("fundCode"));
-                    codeB = String.valueOf(research.evaluatedFunds().get(1).get("fundCode"));
-                }
-            }
-        }
-        if (node != null && node.getParams().containsKey("targetCode")) {
-            codeA = String.valueOf(node.getParams().get("targetCode"));
-            codeB = codeA;
-        }
-
-        boolean isSingle = (codeB == null || codeB.isBlank() || codeA.equals(codeB));
-
-        // 提取全局用户原始指令以支持精准 Skill 匹配
-        String userQuery = null;
-        if (store != null && store.getGlobalContext("userPrompt") instanceof String prompt) {
-            userQuery = prompt;
-        } else if (node != null && node.getParams() != null && node.getParams().get("query") instanceof String q) {
-            userQuery = q;
-        }
-
-        // 2. 执行对标分析或单标的深度剖析
-        String comparisonAnalysis = compareFunds(codeA, isSingle ? null : codeB, usageConsumer, userQuery);
-
-        // 3. 提取知识图谱重合持仓 (仅双标的对标时采集)
-        List<String> sharedHoldings = List.of();
-        if (graphTool != null && !isSingle) {
-            try {
-                String rawOverlap = graphTool.getSharedHoldings(codeA, codeB);
-                if (rawOverlap != null && rawOverlap.contains("sharedStockCodes")) {
-                    var jsonNode = new ObjectMapper().readTree(rawOverlap);
-                    var arr = jsonNode.get("sharedStockCodes");
-                    if (arr != null && arr.isArray()) {
-                        List<String> list = new ArrayList<>();
-                        for (var elem : arr) {
-                            list.add(elem.asText());
-                        }
-                        sharedHoldings = list;
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("[FUND-COMPARATOR] 解析图谱重合持仓列表失败: {}", e.getMessage());
-            }
-        }
-
-        String artifactId = "art-comp-" + UUID.randomUUID().toString().substring(0, 8);
-        ArtifactMetadata metadata = ArtifactMetadata.standard("FundComparatorAgent");
-        List<String> evidenceUris = isSingle ? List.of("fund://" + codeA) : List.of("fund://" + codeA, "fund://" + codeB);
-        EvidenceContract contract = EvidenceContract.sufficient(
-                isSingle ? "完成基金 " + codeA + " 单标的深度穿透剖析" : "完成基金 " + codeA + " 与 " + codeB + " 横向深度对标",
-                evidenceUris
-        );
-
-        ComparisonReport report = ComparisonReport.of(codeA, isSingle ? "" : codeB, comparisonAnalysis, sharedHoldings);
-
-        return new Artifact<>(
-                artifactId,
-                ArtifactType.COMPARISON_REPORT,
-                nodeId,
-                report,
-                metadata,
-                contract
-        );
-    }
-
-    /**
-     * 强类型 DAG 节点横向深度对标执行入口（无计量）
-     *
-     * @param node  当前 DAG 节点
-     * @param store 产物存储总线
-     * @return 强类型横向对标报告产物
-     */
-    public Artifact<ComparisonReport> compareArtifact(GraphNode node, ArtifactStore store) {
-        return compareArtifact(node, store, null);
+    static final class ComparisonTools {
+        private final FundQuantAnalysisTool q; private final FundHoldingsQueryTool h;
+        private final FundReportRetrieverTool r; private final FinancialGraphTool g;
+        ComparisonTools(FundQuantAnalysisTool q, FundHoldingsQueryTool h, FundReportRetrieverTool r, FinancialGraphTool g){this.q=q;this.h=h;this.r=r;this.g=g;}
+        @Tool(name="compare_metrics", description="对称查询两只基金量化指标；单标的时两个代码相同", readOnly=true)
+        public String metrics(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+q.getFundMetrics(a,null,null)+"\nB="+q.getFundMetrics(b,null,null);}
+        @Tool(name="compare_holdings", description="对称查询两只基金持仓", readOnly=true)
+        public String holdings(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+h.getTopHoldings(a,null)+"\nB="+h.getTopHoldings(b,null);}
+        @Tool(name="compare_reports", description="对称查询两只基金季报", readOnly=true)
+        public String reports(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+r.getLatestQuarterlyReportView(a)+"\nB="+r.getLatestQuarterlyReportView(b);}
+        @Tool(name="shared_holdings", description="查询两只基金的重合持仓", readOnly=true)
+        public String shared(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return g==null?"{}":g.getSharedHoldings(a,b);}
     }
 }

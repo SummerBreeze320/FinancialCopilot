@@ -1,48 +1,32 @@
 package com.financial.copilot.agent.core.agents.stock;
 
+import com.financial.copilot.agent.core.agentscope.AgentScopeAgentFactory;
+import com.financial.copilot.agent.core.dag.artifact.*;
+import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
+import com.financial.copilot.agent.core.dag.runtime.NodeInput;
 import com.financial.copilot.agent.tools.stock.StockQuantAnalysisTool;
-import lombok.extern.slf4j.Slf4j;
+import io.agentscope.core.tool.*;
 import org.springframework.stereotype.Component;
 
-/**
- * <h1>股票个股全景深度体检与分析专员 Agent (Stock Analyzer Agent)</h1>
- * <p>
- * 职责：作为股票领域的单标的事实采集专员，挂载股票量化指标工具 {@link StockQuantAnalysisTool}，
- * 组装出全面、客观、真实的单只股票基本面事实上下文（估值、ROE、分红率、Beta系数等），为报告合成提供客观事实。
- * </p>
- *
- * @author FinancialCopilot
- */
-@Slf4j
+import java.util.UUID;
+
+/** AgentScope ReAct role for stock quantitative analysis. */
 @Component
 public class StockAnalyzerAgent {
-
-    private final StockQuantAnalysisTool stockQuantAnalysisTool;
-
-    /**
-     * 构造函数，注入股票量化分析工具
-     *
-     * @param stockQuantAnalysisTool 股票量化工具
-     */
-    public StockAnalyzerAgent(StockQuantAnalysisTool stockQuantAnalysisTool) {
-        this.stockQuantAnalysisTool = stockQuantAnalysisTool;
+    private final AgentScopeAgentFactory factory; private final StockQuantAnalysisTool quant;
+    public StockAnalyzerAgent(AgentScopeAgentFactory factory, StockQuantAnalysisTool quant){this.factory=factory;this.quant=quant;}
+    public Artifact<String> execute(GraphNode node, NodeInput input, NodeExecutionContext context){
+        Toolkit toolkit=new Toolkit(); toolkit.registerTool(new Tools(quant));
+        var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("StockAnalyzerAgent","股票量化分析",
+                "你是股票分析 ReAct Agent。自主选择目标代码并调用 stock_metrics，观察结果后给出事实分析。至少调用一次工具。",toolkit,6),
+                context.request().prompt()+"\n输入="+input.asMap()+"\n节点参数="+node.getParams(),context);
+        run.requireLastText("stock_metrics");
+        return new Artifact<>("art-stock-analysis-"+ UUID.randomUUID().toString().substring(0,8),node.getOutputType(),
+                node.getNodeId(),run.reply().getTextContent(),ArtifactMetadata.standard("StockAnalyzerAgent"),
+                EvidenceContract.sufficient("股票量化工具已执行",java.util.List.of("stock-metrics://result")));
     }
-
-    /**
-     * 采集并组织单只股票的全维度体检数据上下文
-     *
-     * @param stockCode 股票代码（例如 "600519.SH"）
-     * @return 格式化后的个股全景体检数据事实 Markdown 报告
-     */
-    public String analyzeStock(String stockCode) {
-        log.info("[STOCK-ANALYZER] 正在进行个股全景数据采集与基本面分析: stockCode={}", stockCode);
-        String metricsJson = stockQuantAnalysisTool.getStockMetrics(stockCode);
-
-        return """
-            === 上市公司个股全景体检数据事实 (Tool-as-Truth) ===
-            【股票代码】: %s
-            【核心估值与财务特征】:
-            %s
-            """.formatted(stockCode, metricsJson);
-    }
+    static final class Tools{private final StockQuantAnalysisTool tool;Tools(StockQuantAnalysisTool tool){this.tool=tool;}
+        @Tool(name="stock_metrics",description="查询股票估值和财务量化指标",readOnly=true)
+        public String metrics(@ToolParam(name="stockCode",description="股票代码")String code){return tool.getStockMetrics(code);}}
 }

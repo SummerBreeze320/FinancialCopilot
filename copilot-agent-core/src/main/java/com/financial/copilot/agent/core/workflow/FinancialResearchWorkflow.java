@@ -21,35 +21,28 @@ import java.util.function.Consumer;
 /** Sole application entry for planning and executing financial research graphs. */
 @Service
 public class FinancialResearchWorkflow {
-    private final ScreenerAgent screener;
-    private final AnalyzerAgent analyzer;
-    private final ComparatorAgent comparator;
-    private final ReportSynthesizer synthesizer;
+    private final AgentNodeRouter agentRouter;
     private final ShortTermMemoryService shortMemory;
     private final LongTermMemoryService longMemory;
     private final ApplicationEventPublisher eventPublisher;
-    private final GraphPlanner planner;
+    private final GraphPlannerAgent planner;
     private final DagRuntime runtime;
     private final GraphRunRegistry registry;
     private final DagCheckpointStore checkpointStore;
 
     @Autowired
     public FinancialResearchWorkflow(
-            ScreenerAgent screener, AnalyzerAgent analyzer, ComparatorAgent comparator,
-            ReportSynthesizer synthesizer,
+            AgentNodeRouter agentRouter,
             @Autowired(required = false) ShortTermMemoryService shortMemory,
             @Autowired(required = false) LongTermMemoryService longMemory,
             @Autowired(required = false) ApplicationEventPublisher eventPublisher,
-            GraphPlanner planner,
+            GraphPlannerAgent planner,
             @Autowired(required = false) ResourceManager resources,
             @Autowired(required = false) DagCheckpointStore checkpointStore,
             @Autowired(required = false) NodeQualityGate qualityGate,
             @Autowired(required = false) ReplanPolicy replanPolicy,
             @Autowired(required = false) GraphRunRegistry registry) {
-        this.screener = screener;
-        this.analyzer = analyzer;
-        this.comparator = comparator;
-        this.synthesizer = synthesizer;
+        this.agentRouter = agentRouter;
         this.shortMemory = shortMemory;
         this.longMemory = longMemory;
         this.eventPublisher = eventPublisher;
@@ -100,17 +93,7 @@ public class FinancialResearchWorkflow {
     }
 
     private Artifact<?> dispatch(GraphNode node, NodeInput input, NodeExecutionContext context) {
-        return switch (node.getTaskType()) {
-            case "SCREENING" -> screener.execute(node, input, context);
-            case "BATCH_ANALYSIS" -> analyzer.execute(node, input, context);
-            case "COMPARISON", "DEEP_DIVE" -> comparator.execute(node, input, context);
-            case "SYNTHESIS" -> synthesizer.execute(node, input, context);
-            case "MACRO" -> Artifact.of("art-" + node.getNodeId(), ArtifactType.MACRO_FACTS,
-                    node.getNodeId(), Map.of("prompt", context.request().prompt(), "status", "available"));
-            case "DATA_RAW" -> Artifact.of("art-" + node.getNodeId(), ArtifactType.DOCUMENT_EVIDENCE,
-                    node.getNodeId(), node.getParams());
-            default -> Artifact.of("art-" + node.getNodeId(), node.getOutputType(), node.getNodeId(), node.getParams());
-        };
+        return agentRouter.execute(node, input, context);
     }
 
     private void recordCompletion(GraphRunRequest request, GraphRunResult result) {

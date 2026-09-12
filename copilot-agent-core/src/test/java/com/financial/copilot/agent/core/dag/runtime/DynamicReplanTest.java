@@ -12,7 +12,6 @@ import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.model.patch.GraphOperation;
 import com.financial.copilot.agent.core.dag.model.patch.GraphPatch;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
-import com.financial.copilot.agent.core.dag.planner.GraphPlanner;
 import com.financial.copilot.agent.core.dag.planner.tool.MetricRAGTool;
 import com.financial.copilot.agent.core.dag.planner.tool.SkillRegistryTool;
 import com.financial.copilot.agent.core.dag.runtime.checkpoint.InMemoryDagCheckpointStore;
@@ -280,7 +279,12 @@ class DynamicReplanTest {
 
         ArtifactStore store = new ArtifactStore();
         List<String> executedNodeTypes = new CopyOnWriteArrayList<>();
-        GraphPlanner planner = new GraphPlanner();
+        RePlanAdvisor planner = (current, completed, artifact) -> {
+            FundResearchResult research = (FundResearchResult) artifact.payload();
+            return new GraphPatch(current.getRevision(), List.of(GraphOperation.updateNode("step-3-comparison",
+                    Map.of("taskType", "DEEP_DIVE", "name", "单一最优标的穿透式深度剖析",
+                            "targetCode", research.topCandidates().getFirst()))), "single candidate");
+        };
 
         NodeExecutor executor = (node, s, t) -> {
             executedNodeTypes.add(node.getTaskType());

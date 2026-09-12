@@ -319,11 +319,6 @@ public class DefaultLlmService implements LlmService {
     }
 
     private String generateMockResponse(String systemPrompt, String userMessage) {
-        if (systemPrompt != null) {
-            if (systemPrompt.contains("ScreenerAgent")) {
-                return "{\"fundType\": \"偏股混合型\", \"limit\": 10}";
-            }
-        }
         return "【投研研报】基于平台量化与客观研报数据，标的在全周期内收益风险比优异，风格稳定，配置建议积极。";
     }
 }
