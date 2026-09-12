@@ -39,10 +39,17 @@ import com.financial.copilot.agent.core.dag.adapter.BlackboardAdapter;
 import com.financial.copilot.agent.core.dag.adapter.LegacyPlanAdapter;
 import com.financial.copilot.agent.core.dag.artifact.Artifact;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
+import com.financial.copilot.agent.core.dag.guard.DefaultNodeQualityGate;
+import com.financial.copilot.agent.core.dag.guard.NodeQualityGate;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.dag.planner.GraphPlanner;
 import com.financial.copilot.agent.core.dag.runtime.DagRuntime;
+import com.financial.copilot.agent.core.dag.runtime.ReplanPolicy;
+import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpointStore;
+import com.financial.copilot.agent.core.dag.runtime.checkpoint.RedisDagCheckpointStore;
 import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
+import com.financial.copilot.agent.core.dag.runtime.resource.ResourceManager;
 import com.financial.copilot.agent.core.dag.event.NodeEventBus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -95,7 +102,26 @@ public class FinancialResearchWorkflow {
     }
 
     /**
-     * 全参构造函数，由 Spring 容器自动装配组件与 DagRuntime
+     * 11 参构造函数，向后兼容显式注入 DagRuntime
+     */
+    public FinancialResearchWorkflow(TaskDecomposer taskDecomposer,
+                                 ScreenerAgent screenerAgent,
+                                 AnalyzerAgent analyzerAgent,
+                                 ComparatorAgent comparatorAgent,
+                                 ReportSynthesizer reportSynthesizer,
+                                 FundDataPort fundDataPort,
+                                 ShortTermMemoryService shortTermMemoryService,
+                                 LongTermMemoryService longTermMemoryService,
+                                 MemoryRefinementTask memoryRefinementTask,
+                                 ApplicationEventPublisher eventPublisher,
+                                 DagRuntime dagRuntime) {
+        this(taskDecomposer, screenerAgent, analyzerAgent, comparatorAgent, reportSynthesizer,
+                fundDataPort, shortTermMemoryService, longTermMemoryService, memoryRefinementTask,
+                eventPublisher, dagRuntime, null, null, null, null, null);
+    }
+
+    /**
+     * 全参构造函数，由 Spring 容器自动装配组件与 DagRuntime 核心调度要素
      */
     @Autowired
     public FinancialResearchWorkflow(TaskDecomposer taskDecomposer,
@@ -108,7 +134,12 @@ public class FinancialResearchWorkflow {
                                  LongTermMemoryService longTermMemoryService,
                                  MemoryRefinementTask memoryRefinementTask,
                                  ApplicationEventPublisher eventPublisher,
-                                 @Autowired(required = false) DagRuntime dagRuntime) {
+                                 @Autowired(required = false) DagRuntime dagRuntime,
+                                 @Autowired(required = false) ResourceManager resourceManager,
+                                 @Autowired(required = false) DagCheckpointStore checkpointStore,
+                                 @Autowired(required = false) NodeQualityGate qualityGate,
+                                 @Autowired(required = false) ReplanPolicy replanPolicy,
+                                 @Autowired(required = false) GraphPlanner graphPlanner) {
         this.taskDecomposer = taskDecomposer;
         this.screenerAgent = screenerAgent;
         this.analyzerAgent = analyzerAgent;
@@ -119,7 +150,15 @@ public class FinancialResearchWorkflow {
         this.longTermMemoryService = longTermMemoryService;
         this.memoryRefinementTask = memoryRefinementTask;
         this.eventPublisher = eventPublisher;
-        this.dagRuntime = dagRuntime != null ? dagRuntime : new DagRuntime(this::executeDagNode);
+        this.dagRuntime = dagRuntime != null ? dagRuntime : new DagRuntime(
+                this::executeDagNode,
+                new ArtifactStore(),
+                resourceManager != null ? resourceManager : ResourceManager.defaultManager(),
+                checkpointStore != null ? checkpointStore : new RedisDagCheckpointStore(),
+                qualityGate != null ? qualityGate : new DefaultNodeQualityGate(),
+                replanPolicy != null ? replanPolicy : ReplanPolicy.heuristic(),
+                graphPlanner
+        );
     }
 
     public DagRuntime getDagRuntime() {

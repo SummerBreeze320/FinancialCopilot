@@ -6,6 +6,7 @@ import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
 import com.financial.copilot.agent.core.dag.artifact.EvidenceContract;
 import com.financial.copilot.agent.core.pipeline.ResearchBlackboard;
+import com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport;
 import com.financial.copilot.domain.fund.entity.FundInfo;
 import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
 
@@ -172,7 +173,9 @@ public class BlackboardAdapter {
                 }
             }
             case FINAL_REPORT -> {
-                if (artifact.payload() != null) {
+                if (artifact.payload() instanceof FinalSynthesisReport rep) {
+                    blackboard.put(ResearchBlackboard.KEY_FINAL_REPORT, rep.markdownReport());
+                } else if (artifact.payload() != null) {
                     blackboard.put(ResearchBlackboard.KEY_FINAL_REPORT, artifact.payload().toString());
                 }
             }
