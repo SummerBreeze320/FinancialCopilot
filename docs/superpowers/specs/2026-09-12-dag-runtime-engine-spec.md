@@ -238,10 +238,80 @@ public class ExecutionGraph {
                 .orElse(-1) + 1;
     }
 
+    /**
+     * 原子应用增量差分补丁 (GraphPatch)
+     */
+    public synchronized int applyPatch(GraphPatch patch) {
+        if (this.revision != patch.baseRevision()) {
+            throw new ConcurrentModificationException("Graph revision mismatch! Current: " + revision + ", Patch base: " + patch.baseRevision());
+        }
+        for (GraphOperation op : patch.operations()) {
+            switch (op.op()) {
+                case ADD_NODE -> addNode(op.node());
+                case REMOVE_NODE -> removeNode(op.nodeId());
+                case ADD_EDGE -> addEdge(op.from(), op.to());
+                case REMOVE_EDGE -> removeEdge(op.from(), op.to());
+                case UPDATE_NODE -> updateNodeParams(op.nodeId(), op.params());
+                case SKIP_NODE -> markNodeSkipped(op.nodeId());
+                case RETRY_NODE -> markNodeForRetry(op.nodeId());
+            }
+        }
+        if (hasCycle()) {
+            throw new IllegalStateException("Applying patch created a circular dependency cycle!");
+        }
+        return ++this.revision;
+    }
+
+    public int getRevision() { return revision; }
     public Map<String, GraphNode> getNodes() { return Collections.unmodifiableMap(nodes); }
     public Set<String> getUpstream(String nodeId) { return Collections.unmodifiableSet(upstream.getOrDefault(nodeId, Set.of())); }
     public Set<String> getDownstream(String nodeId) { return Collections.unmodifiableSet(downstream.getOrDefault(nodeId, Set.of())); }
     public String getGraphId() { return graphId; }
+}
+
+/**
+ * <h1>DAG 增量差分补丁模型 (Graph Patch)</h1>
+ * Planner 在节点完成后只输出精准的增量操作，禁止整图覆写！
+ */
+public record GraphPatch(
+    int baseRevision,
+    List<GraphOperation> operations
+) {
+    public static GraphPatch of(int baseRevision, GraphOperation... ops) {
+        return new GraphPatch(baseRevision, List.of(ops));
+    }
+}
+
+public record GraphOperation(
+    PatchOp op,
+    GraphNode node,
+    String nodeId,
+    String from,
+    String to,
+    Map<String, Object> params
+) {
+    public static GraphOperation addNode(GraphNode node) {
+        return new GraphOperation(PatchOp.ADD_NODE, node, node.getNodeId(), null, null, null);
+    }
+    public static GraphOperation addEdge(String from, String to) {
+        return new GraphOperation(PatchOp.ADD_EDGE, null, null, from, to, null);
+    }
+    public static GraphOperation skipNode(String nodeId) {
+        return new GraphOperation(PatchOp.SKIP_NODE, null, nodeId, null, null, null);
+    }
+    public static GraphOperation updateNode(String nodeId, Map<String, Object> params) {
+        return new GraphOperation(PatchOp.UPDATE_NODE, null, nodeId, null, null, params);
+    }
+}
+
+public enum PatchOp {
+    ADD_NODE,
+    REMOVE_NODE,
+    ADD_EDGE,
+    REMOVE_EDGE,
+    UPDATE_NODE,
+    SKIP_NODE,
+    RETRY_NODE
 }
 ```
 

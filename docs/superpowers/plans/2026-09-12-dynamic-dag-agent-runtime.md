@@ -18,12 +18,15 @@
 
 ---
 
-### Task 1: Core Graph Models & Lifecycle State Machine (★★★★★)
+### Task 1: Core Graph Models, GraphPatch & Lifecycle State Machine (★★★★★)
 
 **Files:**
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/model/NodeStatus.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/model/FailurePolicy.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/model/GraphNode.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/model/patch/PatchOp.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/model/patch/GraphOperation.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/model/patch/GraphPatch.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/model/ExecutionGraph.java`
 - Test: `copilot-agent-core/src/test/java/com/financial/copilot/agent/core/dag/model/ExecutionGraphTest.java`
 
@@ -31,21 +34,21 @@
 - Produces:
   - `NodeStatus`: `PENDING`, `READY`, `RUNNING`, `SUCCEEDED`, `FAILED`, `SKIPPED`, `CANCELLED`, `TIMEOUT`
   - `FailurePolicy`: `FAIL_FAST`, `CONTINUE`, `RETRY`, `FALLBACK`, `OPTIONAL`
-  - `ExecutionGraph`: `addNode(GraphNode)`, `addEdge(from, to)`, `removeNode(nodeId)`, `hasCycle(): boolean`, `getRootNodeIds(): Set<String>`, `calculateTopologicalWave(nodeId): int`
+  - `PatchOp`: `ADD_NODE`, `REMOVE_NODE`, `ADD_EDGE`, `REMOVE_EDGE`, `UPDATE_NODE`, `SKIP_NODE`, `RETRY_NODE`
+  - `GraphPatch`: `baseRevision`, `List<GraphOperation>`
+  - `ExecutionGraph`: `addNode`, `addEdge`, `removeNode`, `applyPatch(GraphPatch): int`, `hasCycle(): boolean`, `calculateTopologicalWave(nodeId): int`
 
-- [ ] **Step 1: Write the failing unit tests for `ExecutionGraph`**
+- [ ] **Step 1: Write the failing unit tests for `ExecutionGraph` and `GraphPatch`**
   - Test cycle detection (A -> B -> A throws IllegalStateException).
-  - Test topological wave computation (root = 0, child = parent + 1, diamond = max(parents) + 1).
-  - Test dynamic node addition and removal (edges cascade cleanly).
+  - Test topological wave computation.
+  - Test `applyPatch`: optimistic locking via `baseRevision` and atomic operations (`ADD_NODE`, `ADD_EDGE`, `SKIP_NODE`).
 - [ ] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=ExecutionGraphTest`
-- [ ] **Step 3: Implement `NodeStatus`, `FailurePolicy`, `GraphNode`, and `ExecutionGraph`**
-  - Thread-safe `ConcurrentHashMap` for `nodes`, `upstream`, and `downstream`.
-  - Kahn's algorithm for `hasCycle()`.
+- [ ] **Step 3: Implement `NodeStatus`, `FailurePolicy`, `GraphNode`, `GraphPatch`, and `ExecutionGraph`**
 - [ ] **Step 4: Run tests to ensure they pass**
   - Verify with `mvn test -pl copilot-agent-core -Dtest=ExecutionGraphTest`
 - [ ] **Step 5: Commit changes**
-  - `git commit -m "feat(dag): add ExecutionGraph, GraphNode, NodeStatus, and FailurePolicy"`
+  - `git commit -m "feat(dag): add ExecutionGraph, GraphNode, NodeStatus, and GraphPatch"`
 
 ---
 
