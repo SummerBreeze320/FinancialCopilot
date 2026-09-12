@@ -837,6 +837,176 @@ public interface ReplanPolicy {
 }
 ```
 
+### 5.4 结构化并发与树状级联取消 (Structured Concurrency & Hierarchical CancellationToken)
+
+> **核心原则**：**父任务生命周期严格约束子任务，禁止任何孤儿线程与资源泄漏！**  
+> 在生产环境中，用户随时可能关闭网页标签页、断开 SSE 连接或点击“停止生成”。  
+> 如果没有结构化取消机制，后台将继续发生：
+> * 多个虚拟线程仍在消耗高昂的大模型流式 Token；
+> * DPU 仍在执行沉重的 SQL 与分时数据聚合；
+> * 向量库持续承接无效并发检索。
+>
+> 结构化并发 (Structured Concurrency) 保证：**当一个逻辑单元（Run / Node）终止时，它所衍生出的所有并发子任务（Agent / Tool / Thread）必须在离开作用域前全部被收敛或取消。**
+
+#### 5.4.1 四级树状取消作用域 (Four-Tier Hierarchical Scope)
+
+系统引入树状结构 **`CancellationToken`**，贯穿 `Run -> Node -> Agent -> Tool` 四层调用栈：
+
+```text
+       HTTP / SSE Disconnect (客户端断连)
+                     │
+                     ▼
+       Flux.doOnCancel(() -> runToken.cancel("Client Disconnected"))
+                     │
+                     ▼
+       ┌───────────────────────────────────────────────┐
+       │ RunCancellationToken (Root Scope)             │
+       └───────────────────────┬───────────────────────┘
+                               │ createChild("node_1")
+                               ▼
+       ┌───────────────────────────────────────────────┐
+       │ NodeCancellationToken (Node Scope)            │
+       │ - 超时控制: nodeTimeoutTimer.cancel()          │
+       └───────────────────────┬───────────────────────┘
+                               │ createChild("agent_screener")
+                               ▼
+       ┌───────────────────────────────────────────────┐
+       │ AgentCancellationToken (Agent Scope)          │
+       │ - ReAct 循环前置检查: throwIfCancelled()       │
+       └───────────────────────┬───────────────────────┘
+                               │ createChild("tool_dpu_sql")
+                               ▼
+       ┌───────────────────────────────────────────────┐
+       │ ToolCancellationToken (Atomic Tool Scope)     │
+       │ - 物理中止: OkHttp Call.cancel()              │
+       │ - 物理中止: JDBC Statement.cancel()           │
+       │ - 物理中止: Vector Search Future.cancel()     │
+       └───────────────────────────────────────────────┘
+```
+
+#### 5.4.2 级联取消与局部隔离规则
+1. **自顶向下级联传播**：父 Token 取消时（如用户断开连接），自动递归触发其下属**所有**子 Token 的 `cancel()`，所有正在运行的虚拟线程收到中断信号 `Thread.interrupt()`，所有注册的回调即刻执行；
+2. **自底向上局部隔离**：子 Token 单独取消时（例如某个单项 Tool 发生 HTTP 超时，或单个 Node 达到 `timeoutSeconds`），**默认不扩散至父级和兄弟节点**，仅终止该子任务本身并标记该节点为 `TIMEOUT` / `FAILED`。只有当该节点的 `FailurePolicy == FAIL_FAST` 时，才由 Runtime 主动上浮升级为 Run 级取消；
+3. **资源即刻回收保障**：无论因为何种原因取消，挂载在 Token 上的 `ResourceManager` 资源回退钩子保证持有的 `Semaphore` 许可被 100% 归还，绝不产生虚位死锁。
+
+#### 5.4.3 CancellationToken 核心实现契约
+
+```java
+package com.financial.copilot.agent.core.dag.runtime.context;
+
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * <h1>结构化并发树状取消令牌</h1>
+ * <p>支持父子级联传播、虚拟线程中断绑定、底层物理 I/O 资源中止回调与无泄漏清理。</p>
+ */
+public class CancellationToken {
+    private final String scopeId;
+    private final CancellationToken parent;
+    private final Set<CancellationToken> children = ConcurrentHashMap.newKeySet();
+    private final AtomicBoolean cancelled = new AtomicBoolean(false);
+    private final List<Runnable> callbacks = new CopyOnWriteArrayList<>();
+    private final Set<Thread> boundThreads = ConcurrentHashMap.newKeySet();
+    private volatile String reason;
+
+    public CancellationToken(String scopeId) {
+        this(scopeId, null);
+    }
+
+    private CancellationToken(String scopeId, CancellationToken parent) {
+        this.scopeId = scopeId;
+        this.parent = parent;
+    }
+
+    /**
+     * 创建受当前生命周期约束的子令牌
+     */
+    public CancellationToken createChild(String childScopeId) {
+        CancellationToken child = new CancellationToken(childScopeId, this);
+        if (this.cancelled.get()) {
+            child.cancel(this.reason);
+        } else {
+            children.add(child);
+            child.onCancel(() -> children.remove(child));
+        }
+        return child;
+    }
+
+    /**
+     * 绑定当前执行虚拟线程，在取消发生时自动 interrupt
+     */
+    public AutoCloseable bindCurrentThread() {
+        Thread t = Thread.currentThread();
+        boundThreads.add(t);
+        if (cancelled.get()) {
+            t.interrupt();
+        }
+        return () -> boundThreads.remove(t);
+    }
+
+    public boolean isCancelled() {
+        return cancelled.get();
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public String getScopeId() {
+        return scopeId;
+    }
+
+    public void throwIfCancelled() throws CancellationException {
+        if (isCancelled()) {
+            throw new CancellationException("Scope [" + scopeId + "] cancelled: " + reason);
+        }
+    }
+
+    public void onCancel(Runnable callback) {
+        if (cancelled.get()) {
+            try {
+                callback.run();
+            } catch (Exception ignored) {}
+        } else {
+            callbacks.add(callback);
+        }
+    }
+
+    public void cancel(String reason) {
+        if (cancelled.compareAndSet(false, true)) {
+            this.reason = reason;
+
+            // 1. 中断绑定的工作线程
+            for (Thread t : boundThreads) {
+                try {
+                    t.interrupt();
+                } catch (Exception ignored) {}
+            }
+            boundThreads.clear();
+
+            // 2. 执行自身注册的回调 (如释放 Semaphore、取消 Http 连接)
+            for (Runnable callback : callbacks) {
+                try {
+                    callback.run();
+                } catch (Exception ignored) {}
+            }
+            callbacks.clear();
+
+            // 3. 向下树状级联触发全部子作用域
+            for (CancellationToken child : children) {
+                child.cancel(reason);
+            }
+            children.clear();
+        }
+    }
+}
+```
+
 ---
 
 ## 6. 工具增强型规划器 (Tool-Augmented ReAct GraphPlanner)

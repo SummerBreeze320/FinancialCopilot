@@ -116,6 +116,7 @@
 ### Task 4: Dependency-Driven DAG Execution Engine (★★★★★)
 
 **Files:**
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/context/CancellationToken.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/DagEvent.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/NodeExecutor.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/DependencyResolver.java`
@@ -126,25 +127,30 @@
 **Interfaces:**
 - Consumes: `ExecutionGraph`, `GraphNode`, `NodeStatus`, `ArtifactStore`, `ResourceManager`
 - Produces:
-  - `DagRuntime.executeGraph(graph, eventConsumer): CompletableFuture<Void>`
+  - `CancellationToken`: Tree-structured hierarchical token (`createChild(scopeId)`, `bindCurrentThread(): AutoCloseable`, `cancel(reason)`, `isCancelled()`, `throwIfCancelled()`, `onCancel(callback)`).
+  - `DagRuntime.executeGraph(graph, cancellationToken, eventConsumer): CompletableFuture<Void>`
   - Event-driven node completion: `onNodeCompleted` -> checks `graph.getDownstream()` -> if all `upstream` in terminal success/skip, pushes to `PriorityReadyQueue`.
   - Resource gate: `ResourceManager.tryAcquire()` -> if success dispatches on virtual threads; if quota full waits in `PriorityReadyQueue` until permit freed.
+  - Structured Cancellation: When `runToken.cancel()` triggers, recursively cascades to all child tokens (Node -> Agent -> Tool), interrupts all bound virtual threads, executes I/O abort callbacks, immediately reclaims held permits in `ResourceManager`, and marks unexecuted/running nodes as `CANCELLED`.
+  - Child Isolation: A child token's individual cancellation (e.g. single node timeout) does not leak to parent or siblings unless policy is `FAIL_FAST`.
   - Zero runtime wavefront barrier: Downstream starts the instant its own dependencies succeed and resource permit is available.
 
-- [ ] **Step 1: Write unit tests for diamond dependency, priority scheduling, straggler non-blocking, and failure policies**
+- [ ] **Step 1: Write unit tests for diamond dependency, priority scheduling, failure policies, and tree-structured cancellation propagation**
   - Diamond DAG: A -> [B (slow 500ms), C (fast 50ms)] -> D (depends on C only!). Verify D runs at 50ms without waiting for B.
   - Priority test: When LLM quota is 1, HIGH priority node runs before NORMAL priority node.
+  - Tree Cancellation test: Trigger root `runToken.cancel()` mid-run; verify recursive child cancellation, virtual thread interruption, permits released, pending nodes aborted.
+  - Child Cancellation Isolation test: Child node timeout cancels node and interrupts its agent/tool without cancelling parent run or sibling nodes.
   - FailurePolicy tests: `CONTINUE` passes degraded artifact; `OPTIONAL` skips gracefully; `FAIL_FAST` fails graph.
 - [ ] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=DagRuntimeTest`
-- [ ] **Step 3: Implement `DagEvent`, `NodeExecutor`, `DependencyResolver`, `PriorityReadyQueue`, and `DagRuntime`**
+- [ ] **Step 3: Implement `CancellationToken`, `DagEvent`, `NodeExecutor`, `DependencyResolver`, `PriorityReadyQueue`, and `DagRuntime`**
   - Native virtual thread pool: `Executors.newVirtualThreadPerTaskExecutor()`.
   - Atomic CAS state transitions (`AtomicReference<NodeStatus>`).
   - Active node countdown for completion.
 - [ ] **Step 4: Run tests and ensure they pass**
   - Verify with `mvn test -pl copilot-agent-core -Dtest=DagRuntimeTest`
 - [ ] **Step 5: Commit changes**
-  - `git commit -m "feat(dag): implement event-driven DagRuntime with PriorityReadyQueue and ResourceManager"`
+  - `git commit -m "feat(dag): implement event-driven DagRuntime with PriorityReadyQueue, CancellationToken, and ResourceManager"`
 
 ---
 
@@ -158,14 +164,14 @@
 **Interfaces:**
 - Produces:
   - `ResearchStreamEvent`: enhanced with node lifecycle event payloads (`graph_initialized`, `node_started`, `node_completed`, `graph_updated`, `content_chunk`, `run_completed`).
-  - `NodeEventBus`: adapts `DagEvent` into reactive `Flux<ResearchStreamEvent>`.
+  - `NodeEventBus`: adapts `DagEvent` into reactive `Flux<ResearchStreamEvent>`, hooks client disconnect via `flux.doOnCancel(() -> token.cancel("SSE Client Disconnected"))`.
 
-- [ ] **Step 1: Write unit tests for event streaming and serialization**
+- [ ] **Step 1: Write unit tests for event streaming, serialization, and cancel-hook**
 - [ ] **Step 2: Run test to confirm it fails**
 - [ ] **Step 3: Extend `ResearchStreamEvent` and implement `NodeEventBus`**
-- [ ] **Step 4: Run tests and verify reactive SSE Flux emissions**
+- [ ] **Step 4: Run tests and verify reactive SSE Flux emissions and disconnect cancellation**
 - [ ] **Step 5: Commit changes**
-  - `git commit -m "feat(dag): add node-level SSE streaming events and NodeEventBus"`
+  - `git commit -m "feat(dag): add node-level SSE streaming events, NodeEventBus, and client disconnect cancellation"`
 
 ---
 
