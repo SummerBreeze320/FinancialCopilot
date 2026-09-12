@@ -18,7 +18,7 @@ import java.util.List;
  * <h1>用户投资画像与风险偏好领域实体 (User Investment Profile / Persona)</h1>
  * <p>
  * 职责：构建投资者的数字画像（C1~C5 评级、回撤容忍度、目标收益率、板块偏好与策略风格）。
- * <b>关键作用</b>：作为客观事实上下文注入投研黑板 {@code ResearchBlackboard}，
+ * <b>关键作用</b>：作为客观事实上下文注入每次运行的图执行上下文，
  * 驱动首席投资官主编 Agent ({@code ReportSynthesizer}) 自动产出与用户资金属性深度匹配的适格资产配置方案（千人千面）。
  * </p>
  *

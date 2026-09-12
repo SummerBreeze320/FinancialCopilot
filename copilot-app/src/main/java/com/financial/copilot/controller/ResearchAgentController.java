@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  * <h1>金融多资产智能投研 Agent REST / SSE 控制器</h1>
  * <p>
  * 提供多端交互接入端点：
- * 1. 阶段式复合流水线 SSE 流式输出接口（包含执行计划、步骤通知、Markdown 研报增量与完结信号）；
+ * 1. 动态执行图 SSE 流式输出接口（包含图、节点、补丁、Markdown 增量与完结事件）；
  * 2. 同步阻塞式研报生成接口（适合批处理或一次性拉取）；
  * 3. 结构化工作流触发执行接口（返回生成研报、会话唯一标识及阶段执行指标）；
  * 4. 会话记忆诊断与语义提纯事实查询接口（观测短期对话缓存与后台异步提纯的长期记忆）；
@@ -197,7 +197,7 @@ public class ResearchAgentController {
     }
 
     /**
-     * 阶段式复合流水线 SSE 流式交互接口
+     * 动态执行图 SSE 流式交互接口
      *
      * @param prompt         用户自然语言诉求
      * @param sessionId      会话唯一 ID (可选)

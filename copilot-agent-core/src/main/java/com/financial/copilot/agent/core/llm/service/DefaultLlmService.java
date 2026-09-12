@@ -320,34 +320,6 @@ public class DefaultLlmService implements LlmService {
 
     private String generateMockResponse(String systemPrompt, String userMessage) {
         if (systemPrompt != null) {
-            if (systemPrompt.contains("TaskDecomposer") || systemPrompt.contains("复合投研规划")) {
-                if (userMessage.contains("然后") || userMessage.contains("再") || userMessage.contains("最后") || userMessage.contains("分析前")) {
-                    return """
-                            {
-                              "isComplex": true,
-                              "assetCategory": "FUND",
-                              "summary": "医药基金初筛 -> 经理分析 -> Top2横向对标 -> 投资建议研报",
-                              "steps": [
-                                {"stepId": 1, "taskType": "SCREENING", "description": "筛选过去三年表现稳定的医药基金", "dependencies": []},
-                                {"stepId": 2, "taskType": "BATCH_ANALYSIS", "description": "分析候选标的前5名基金经理任职能力", "dependencies": [1]},
-                                {"stepId": 3, "taskType": "COMPARISON", "description": "对标对比最优秀的两个标的", "dependencies": [2]},
-                                {"stepId": 4, "taskType": "SYNTHESIS", "description": "生成综合配置与投资建议研报", "dependencies": [3]}
-                              ]
-                            }
-                            """;
-                } else {
-                    return """
-                            {
-                              "isComplex": false,
-                              "assetCategory": "FUND",
-                              "summary": "执行标准公募基金量化分析",
-                              "steps": [
-                                {"stepId": 1, "taskType": "SINGLE_ANALYSIS", "description": "分析目标基金多维指标与重仓风格", "dependencies": []}
-                              ]
-                            }
-                            """;
-                }
-            }
             if (systemPrompt.contains("ScreenerAgent")) {
                 return "{\"fundType\": \"偏股混合型\", \"limit\": 10}";
             }

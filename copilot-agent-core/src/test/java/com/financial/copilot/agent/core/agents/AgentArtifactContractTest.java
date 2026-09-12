@@ -6,7 +6,6 @@ import com.financial.copilot.agent.core.agents.fund.FundComparatorAgent;
 import com.financial.copilot.agent.core.agents.fund.FundScreenerAgent;
 import com.financial.copilot.agent.core.agents.stock.StockAnalyzerAgent;
 import com.financial.copilot.agent.core.agents.stock.StockScreenerAgent;
-import com.financial.copilot.agent.core.dag.adapter.BlackboardAdapter;
 import com.financial.copilot.agent.core.dag.artifact.Artifact;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
@@ -18,7 +17,6 @@ import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.llm.service.LlmService;
-import com.financial.copilot.agent.core.pipeline.ResearchBlackboard;
 import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
@@ -181,38 +179,4 @@ class AgentArtifactContractTest {
         assertTrue(reportArtifact.evidenceContract().evidenceUris().contains("fund://003095"));
     }
 
-    @Test
-    @DisplayName("测试 BlackboardAdapter 双向读写与强类型 Record 状态无损同步")
-    void testBlackboardAdapterDualWrite() {
-        ResearchBlackboard blackboard = new ResearchBlackboard();
-
-        // 1. FUND_POOL 同步
-        FundPool pool = FundPool.of(List.of(FundInfo.builder().fundCode("003095").fundName("中欧医疗").build()), "初筛命中");
-        Artifact<FundPool> poolArt = Artifact.of("a1", ArtifactType.FUND_POOL, "node-1", pool);
-        BlackboardAdapter.applyArtifactToBlackboard(poolArt, blackboard);
-        assertEquals(1, blackboard.getCandidateFunds().size());
-        assertEquals("003095", blackboard.getCandidateFunds().get(0).getFundCode());
-
-        // 2. FUND_RESEARCH 同步
-        FundResearchResult research = FundResearchResult.ofBatch(
-                List.of(Map.of("fundCode", "003095", "score", new BigDecimal("92.0"))),
-                List.of("003095")
-        );
-        Artifact<FundResearchResult> resArt = Artifact.of("a2", ArtifactType.FUND_RESEARCH, "node-2", research);
-        BlackboardAdapter.applyArtifactToBlackboard(resArt, blackboard);
-        assertEquals(List.of("003095"), blackboard.getTopCandidates());
-        assertNotNull(blackboard.get(ResearchBlackboard.KEY_MANAGER_RATINGS, List.class));
-
-        // 3. COMPARISON_REPORT 同步
-        ComparisonReport comp = ComparisonReport.of("003095", "005827", "对标归因事实", List.of());
-        Artifact<ComparisonReport> compArt = Artifact.of("a3", ArtifactType.COMPARISON_REPORT, "node-3", comp);
-        BlackboardAdapter.applyArtifactToBlackboard(compArt, blackboard);
-        assertEquals("对标归因事实", blackboard.getRaw(ResearchBlackboard.KEY_COMPARISON_FACTS));
-
-        // 4. FINAL_REPORT 同步
-        FinalSynthesisReport finalReport = FinalSynthesisReport.of("投资建议摘要", "# 完整研报全文");
-        Artifact<FinalSynthesisReport> finalArt = Artifact.of("a4", ArtifactType.FINAL_REPORT, "node-4", finalReport);
-        BlackboardAdapter.applyArtifactToBlackboard(finalArt, blackboard);
-        assertEquals("# 完整研报全文", blackboard.getFinalReport());
-    }
 }

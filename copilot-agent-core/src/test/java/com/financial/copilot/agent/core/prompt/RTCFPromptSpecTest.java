@@ -47,18 +47,6 @@ class RTCFPromptSpecTest {
     }
 
     @Test
-    @DisplayName("测试 TaskDecomposerPrompt 生成规范")
-    void testTaskDecomposerPrompt() {
-        RTCFPromptSpec spec = TaskDecomposerPrompt.buildSpec("筛选医药基金并对比前两名");
-        String sys = spec.renderSystemPrompt();
-        String user = spec.renderUserPrompt();
-
-        assertTrue(sys.contains("资深金融智能投研规划专家"));
-        assertTrue(user.contains("筛选医药基金并对比前两名"));
-        assertTrue(user.contains("\"assetCategory\": \"FUND\""));
-    }
-
-    @Test
     @DisplayName("测试 FundComparatorPrompt 生成规范")
     void testFundComparatorPrompt() {
         RTCFPromptSpec spec = FundComparatorPrompt.buildSpec("005827", "收益率 15%", "161005", "收益率 18%", "重点关注回撤");

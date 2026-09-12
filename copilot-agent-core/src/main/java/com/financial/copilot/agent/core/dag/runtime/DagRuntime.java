@@ -113,7 +113,9 @@ public class DagRuntime {
                         node.getNodeId(), node.getName(), node.getTaskType(), List.copyOf(graph.getUpstream(node.getNodeId()))))
                 .toList());
         isolated.executeGraph(request.runId(), graph, context.artifacts, context.cancellation, event -> {
-            context.statuses.put(event.nodeId(), event.status());
+            if (!(event.payload() instanceof GraphPatch)) {
+                context.statuses.put(event.nodeId(), event.status());
+            }
             context.events.publishDagEvent(request.runId(), graph, event);
         }).whenComplete((ignored, error) -> {
             isolated.virtualThreadExecutor.shutdown();
@@ -391,11 +393,16 @@ public class DagRuntime {
                     }
                 }
             } catch (TimeoutException e) {
-                statusMap.get(nodeId).set(NodeStatus.TIMEOUT);
-                publisher.accept(new DagEvent(nodeId, NodeStatus.TIMEOUT, "Node timed out"));
-                saveRunCheckpoint(runId, graph, currentStore, statusMap);
-                if (activeOrPendingNodes.decrementAndGet() == 0) {
-                    graphFuture.complete(null);
+                FailurePolicy policy = node.getFailurePolicy() != null
+                        ? node.getFailurePolicy() : FailurePolicy.CONTINUE;
+                if (policy == FailurePolicy.CONTINUE) {
+                    statusMap.get(nodeId).set(NodeStatus.TIMEOUT);
+                    saveRunCheckpoint(runId, graph, currentStore, statusMap);
+                    onNodeCompleted(nodeId, NodeStatus.TIMEOUT, null, e, runId, graph,
+                            currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
+                } else {
+                    handleNodeFailure(node, e, runId, graph, currentStore, statusMap,
+                            activeOrPendingNodes, graphFuture, parentToken, publisher);
                 }
             } catch (Exception e) {
                 if (!nodeToken.isCancelled() && !parentToken.isCancelled() && !graphFuture.isDone()) {

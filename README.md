@@ -2,7 +2,7 @@
 
 > **基于 AgentScope Java 2.x + Spring Boot 3.3.x + Lombok + MyBatis-Plus + PostgreSQL 16 (PGVector) 的专业金融智能投研协同平台**
 
-[![Java Version](https://img.shields.io/badge/Java-17%20%2F%2021-orange.svg)](https://www.oracle.com/java/)
+[![Java Version](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.3-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![MyBatis-Plus](https://img.shields.io/badge/MyBatis--Plus-3.5.7-blue.svg)](https://baomidou.com/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -31,29 +31,37 @@ financial-copilot/
 ├── copilot-math-core/    // 原生纯 Java 高精度金融计算引擎 (TDD 完备单测，夏普/回撤/卡玛)
 ├── copilot-data-engine/  // 持久层：Lombok + MyBatis-Plus 3.5.7 + PGVector 向量检索 (<=> 操作符)
 ├── copilot-agent-tools/  // AgentScope 工具箱 (FundQuantAnalysisTool, FundHoldingsQueryTool, ...)
-├── copilot-agent-core/   // 核心多 Agent 编排 (TaskDecomposer, ResearchBlackboard, FinancialResearchWorkflow)
-├── copilot-app/          // Spring Boot 启动入口、REST 控制器与阶段式 SSE 流式端点
+├── copilot-agent-core/   // 动态图规划与执行 (GraphPlanner, DagRuntime, FinancialResearchWorkflow)
+├── copilot-app/          // Spring Boot 启动入口、REST 控制器与图事件 SSE 端点
 └── docker/postgres/      // PostgreSQL 16 + PGVector 数据库 Docker 编排配置
 ```
 
-### 2. 复合投研流水线架构 (Composite Pipeline)
+### 2. 统一动态执行图架构
 
 ```mermaid
-graph LR
-    Query[用户复杂投研指令] --> Decomposer[TaskDecomposer 规划解构器]
-    Decomposer --> Plan[生成 4 阶段拓扑 ExecutionPlan]
-    
-    subgraph Pipeline [流水线执行与黑板上下文]
-        Step1[Step 1: SCREENING 医药基金初筛] -->|写入 candidateFunds| BB[(ResearchBlackboard 投研黑板)]
-        BB -->|读取标的池| Step2[Step 2: 并发体检与综合评分]
-        Step2 -->|写入 managerRatings & topCandidates| BB
-        BB -->|读取决赛双强| Step3[Step 3: COMPARISON 对称量化与季报RAG对标]
-        Step3 -->|写入 comparisonFacts| BB
-        BB -->|汇总全部事实| Step4[Step 4: SYNTHESIS 研报主编流式合成]
+flowchart LR
+    Query[用户投研指令] --> Entry[FinancialResearchWorkflow.run]
+    Entry --> Planner[GraphPlanner 有界规划]
+    Planner --> Graph[ExecutionGraph]
+
+    subgraph Runtime [DagRuntime 单次运行隔离]
+        Graph --> Ready[依赖就绪与优先级队列]
+        Ready --> Agents[专业 Agent 并发执行]
+        Agents --> Artifacts[(ArtifactStore)]
+        Artifacts --> Bindings[显式 InputBinding]
+        Bindings --> Ready
+        Agents --> Patch[GraphPatch 动态补数、跳过或重试]
+        Patch --> Graph
     end
 
-    Step4 --> SSE["/api/v1/research/chat/pipeline/stream (SSE)"]
+    Runtime --> Result[GraphRunResult]
+    Runtime --> Events[统一图生命周期事件]
+    Result --> Sync[同步 REST]
+    Events --> SSE[SSE]
+    Runtime --> Checkpoint[(按用户与 runId 持久化检查点)]
 ```
+
+同步、结构化和 SSE 接口都构造 `GraphRunRequest`，只通过 `FinancialResearchWorkflow.run(...)` 进入执行系统。每次运行拥有独立的图、就绪队列、产物、状态、取消令牌和事件流；检查点支持按登录用户查询、取消和恢复。
 
 ---
 
@@ -61,7 +69,7 @@ graph LR
 
 | 组件 | 选用技术 | 说明 |
 | :--- | :--- | :--- |
-| **编程语言** | Java 17 LTS / Java 21 LTS | 核心库使用标准 Java，支持并发 Fan-Out / Fan-In 评估 |
+| **编程语言** | Java 21 LTS | 使用虚拟线程执行并发 Fan-Out / Fan-In 评估 |
 | **基础框架** | Spring Boot 3.3.3 + WebFlux | 响应式流式打字机交互，原生 SSE 协议支持 |
 | **多智能体框架** | AgentScope Java 2.0.0 | Supervisor-Specialist 多专家协同拓扑与工具调用 |
 | **代码简化** | Lombok 1.18.34 | 全面消除 Getter/Setter/Builder 模板代码 |
@@ -93,7 +101,7 @@ python sync_sample_funds.py
 ```bash
 mvn -s maven-settings.xml clean test
 ```
-父工程及 7 个子模块将执行编译与单元测试，覆盖复合任务解构、长链路流水线执行、金融数学精度验证及控制器。项目提供 HTTPS Maven 镜像配置，避免继承机器上的旧 HTTP 镜像；依赖齐备后可以加 `-o` 离线运行。
+父工程及 7 个子模块将执行编译与单元测试，覆盖动态图规划、依赖调度、并发隔离、检查点恢复、金融数学精度及控制器。项目提供 HTTPS Maven 镜像配置，避免继承机器上的旧 HTTP 镜像；依赖齐备后可以加 `-o` 离线运行。
 
 完整启动与记忆存储验证需要 PostgreSQL 和 Redis，显式执行：
 
@@ -116,24 +124,27 @@ mvn spring-boot:run -pl copilot-app
 
 ## 📡 API 端点概览
 
-### 1. 阶段式复合投研 SSE 流式接口 (推荐)
+### 1. 动态执行图 SSE 流式接口（推荐）
 - **URL**: `GET /api/v1/research/chat/pipeline/stream?prompt={prompt}`
 - **响应格式**: `text/event-stream`
 - **事件类型**:
-  - `PLAN`: 推送整体解构任务总步数与概要说明
-  - `STEP_START`: 当前阶段开始执行
-  - `STEP_COMPLETE`: 当前阶段完成并输出阶段摘要
-  - `CONTENT`: 最终投研研报打字机流式增量文本切片
-  - `DONE`: 流水线执行完毕
+  - `graph_initialized`: 返回初始图、真实版本号和节点依赖
+  - `node_ready` / `node_started` / `node_completed`: 节点生命周期
+  - `graph_updated`: 动态图补丁及新版本号
+  - `content_chunk`: 最终研报增量文本
+  - `node_failed` / `run_failed` / `run_cancelled`: 失败和取消状态
+  - `run_completed`: 本次运行完成及耗时
 
-### 2. 纯打字机流式接口 (简易前端适配)
-- **URL**: `GET /api/v1/research/chat/stream?prompt={prompt}`
-- **响应格式**: `text/event-stream` (直接推送 Markdown 内容流)
-
-### 3. 同步投研研报生成接口
+### 2. 同步投研研报生成接口
 - **URL**: `POST /api/v1/research/chat`
 - **请求体**: `{"prompt": "帮我分析张坤的投资能力"}`
 - **响应**: `ApiResult<String>` 包含完整结构化 Markdown 报告
+
+### 3. 运行控制接口
+
+- `GET /api/v1/research/runs/{runId}`：查询当前用户拥有的检查点和节点状态
+- `POST /api/v1/research/runs/{runId}/cancel`：取消当前用户正在执行的运行
+- `POST /api/v1/research/runs/{runId}/resume`：从当前用户的持久化检查点恢复
 
 ### 4. 平台健康检查与能力清单
 - **URL**: `GET /api/v1/research/health`

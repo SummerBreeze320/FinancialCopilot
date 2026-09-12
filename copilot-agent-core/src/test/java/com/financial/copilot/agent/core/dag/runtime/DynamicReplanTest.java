@@ -66,6 +66,7 @@ class DynamicReplanTest {
         GraphRunResult result = runtime.run(request, graph).completion().get(2, TimeUnit.SECONDS);
 
         assertThat(result.nodeStatuses()).doesNotContainKey("removed");
+        assertThat(result.nodeStatuses()).containsEntry("root", com.financial.copilot.agent.core.dag.model.NodeStatus.SUCCEEDED);
         assertThat(result.nodeStatuses()).containsEntry("skipped", com.financial.copilot.agent.core.dag.model.NodeStatus.SKIPPED);
         assertThat(result.nodeStatuses()).containsEntry("added", com.financial.copilot.agent.core.dag.model.NodeStatus.SUCCEEDED);
     }

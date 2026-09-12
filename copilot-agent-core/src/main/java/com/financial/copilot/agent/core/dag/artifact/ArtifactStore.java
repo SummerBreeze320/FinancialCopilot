@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <h1>多模态强类型投研产物总线 (Artifact Store)</h1>
- * 替代传统弱类型黑板，提供线程安全的强类型产物存取、上游依赖快速聚合与全局上下文隔离。
+ * 提供线程安全的强类型产物存取、上游依赖快速聚合与单次运行上下文隔离。
  */
 public class ArtifactStore {
 

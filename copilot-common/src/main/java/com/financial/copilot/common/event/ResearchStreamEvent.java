@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * <h1>投研流式交互事件消息体 (ResearchStreamEvent)</h1>
- * 用于 Spring WebFlux SSE 实时推送各阶段状态、DAG 拓扑生命周期与打字机输出。
+ * 用于 Spring WebFlux SSE 实时推送执行图生命周期与研报增量输出。
  */
 @Data
 @Builder
@@ -18,21 +18,16 @@ import java.util.List;
 public class ResearchStreamEvent {
 
     /**
-     * 事件类型:
-     * 传统: PLAN, STEP_START, STEP_COMPLETE, CONTENT, DONE, ERROR
-     * DAG增强: graph_initialized, node_started, node_completed, graph_updated, content_chunk, run_completed
+     * 事件类型: graph_initialized、node_ready、node_started、node_completed、graph_updated、
+     * content_chunk、node_failed、run_failed、run_cancelled、run_completed。
      */
     private String type;
 
-    // --- 传统字段保持 100% 向下兼容 ---
-    private Integer stepIndex;
-    private Integer totalSteps;
     private String taskType;
     private String title;
     private String summary;
     private String chunk;
 
-    // --- DAG 节点级流式拓扑增强字段 ---
     private String runId;
     private String nodeId;
     private String nodeName;
@@ -45,49 +40,6 @@ public class ResearchStreamEvent {
     private Object payload;
     private Object patch;
 
-    // 传统工厂方法
-    public static ResearchStreamEvent plan(int totalSteps, String summary) {
-        return ResearchStreamEvent.builder()
-                .type("PLAN")
-                .totalSteps(totalSteps)
-                .summary(summary)
-                .build();
-    }
-
-    public static ResearchStreamEvent stepStart(int stepIndex, int totalSteps, String taskType, String title) {
-        return ResearchStreamEvent.builder()
-                .type("STEP_START")
-                .stepIndex(stepIndex)
-                .totalSteps(totalSteps)
-                .taskType(taskType)
-                .title(title)
-                .build();
-    }
-
-    public static ResearchStreamEvent stepComplete(int stepIndex, int totalSteps, String taskType, String summary) {
-        return ResearchStreamEvent.builder()
-                .type("STEP_COMPLETE")
-                .stepIndex(stepIndex)
-                .totalSteps(totalSteps)
-                .taskType(taskType)
-                .summary(summary)
-                .build();
-    }
-
-    public static ResearchStreamEvent content(String chunk) {
-        return ResearchStreamEvent.builder()
-                .type("CONTENT")
-                .chunk(chunk)
-                .build();
-    }
-
-    public static ResearchStreamEvent done() {
-        return ResearchStreamEvent.builder()
-                .type("DONE")
-                .build();
-    }
-
-    // --- DAG 增强工厂方法 ---
     public static ResearchStreamEvent graphInitialized(String runId, int revision, Object nodes) {
         return ResearchStreamEvent.builder()
                 .type("graph_initialized")

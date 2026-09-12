@@ -81,7 +81,7 @@ public class WalletBillingService {
      * @param latencyMs        响应耗时
      * @return 扣费结算结果
      */
-    @Transactional
+    @Transactional("jdbcTransactionManager")
     public TokenDeductionResult deductTokenPoints(Long userId, String sessionId, String taskType,
                                                   String provider, String model,
                                                   int promptTokens, int completionTokens,
@@ -177,7 +177,7 @@ public class WalletBillingService {
      * @param thirdPartyTradeNo 第三方流水号
      * @return 已完成订单实体
      */
-    @Transactional
+    @Transactional("jdbcTransactionManager")
     public RechargeOrder payCallback(String orderNo, String thirdPartyTradeNo, BigDecimal paidAmount) {
         if (thirdPartyTradeNo == null || thirdPartyTradeNo.isBlank() || thirdPartyTradeNo.length() > 100) {
             throw new IllegalArgumentException("Invalid payment trade number");
@@ -287,7 +287,7 @@ public class WalletBillingService {
      * @param userId     用户 ID
      * @param giftPoints 赠送算力点数 (例如 10,000 点)
      */
-    @Transactional
+    @Transactional("jdbcTransactionManager")
     public void grantInitialTrialPoints(Long userId, long giftPoints) {
         if (userId == null || giftPoints <= 0) return;
         billingPort.getOrCreateWallet(userId, null);

@@ -97,7 +97,10 @@ public class DependencyResolver {
         }
         for (String upId : upstreams) {
             NodeStatus s = statusProvider.apply(upId);
-            if (s != NodeStatus.SUCCEEDED && s != NodeStatus.SKIPPED) {
+            GraphNode upstream = graph.getNode(upId);
+            boolean continuedTimeout = s == NodeStatus.TIMEOUT && upstream != null
+                    && upstream.getFailurePolicy() == com.financial.copilot.agent.core.dag.model.FailurePolicy.CONTINUE;
+            if (s != NodeStatus.SUCCEEDED && s != NodeStatus.SKIPPED && !continuedTimeout) {
                 return false;
             }
         }

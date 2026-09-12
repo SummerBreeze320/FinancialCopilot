@@ -12,16 +12,10 @@ import com.financial.copilot.agent.core.dag.runtime.resource.ResourceManager;
 import com.financial.copilot.agent.core.event.WorkflowFinishedEvent;
 import com.financial.copilot.agent.core.llm.dto.LlmResponse;
 import com.financial.copilot.agent.core.memory.*;
-import com.financial.copilot.common.event.ResearchStreamEvent;
-import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /** Sole application entry for planning and executing financial research graphs. */
@@ -139,46 +133,4 @@ public class FinancialResearchWorkflow {
                 .findFirst().orElse("");
     }
 
-    // Temporary HTTP compatibility wrappers; controllers are migrated to run() in the next change.
-    public String execute(String prompt) { return execute(null, prompt, false, null); }
-    public String execute(String prompt, boolean thinking) { return execute(null, prompt, thinking, null); }
-    public String execute(String prompt, boolean thinking, UserInvestmentProfile profile) { return execute(null, prompt, thinking, profile); }
-    public String execute(String sessionId, String prompt, boolean thinking, UserInvestmentProfile profile) {
-        return executeWithResult(sessionId, prompt, thinking, profile, null).getReport();
-    }
-    public WorkflowExecutionResult executeWithResult(String sessionId, String prompt, boolean thinking,
-                                                     UserInvestmentProfile profile, Consumer<LlmResponse> usage) {
-        String actualSession = sessionId == null ? UUID.randomUUID().toString() : sessionId;
-        Long userId = profile != null && profile.getUserId() != null ? profile.getUserId() : 0L;
-        long started = System.nanoTime();
-        try {
-            GraphRunResult result = run(new GraphRunRequest(UUID.randomUUID().toString(), userId, actualSession,
-                    prompt, thinking, profile, usage, RunMode.SYNC)).completion().get(5, TimeUnit.MINUTES);
-            return WorkflowExecutionResult.builder().sessionId(actualSession).runId(result.runId()).report(report(result))
-                    .graphRevision(result.graph().getRevision())
-                    .durationMs(Duration.ofNanos(System.nanoTime() - started).toMillis()).build();
-        } catch (Exception e) {
-            throw new IllegalStateException("Graph research failed", e);
-        }
-    }
-    public Flux<ResearchStreamEvent> executePipelineStream(String prompt) { return executePipelineStream(null, prompt, false, null, null); }
-    public Flux<ResearchStreamEvent> executePipelineStream(String prompt, boolean thinking) { return executePipelineStream(null, prompt, thinking, null, null); }
-    public Flux<ResearchStreamEvent> executePipelineStream(String prompt, boolean thinking, UserInvestmentProfile profile) { return executePipelineStream(null, prompt, thinking, profile, null); }
-    public Flux<ResearchStreamEvent> executePipelineStream(String sessionId, String prompt, boolean thinking, UserInvestmentProfile profile) { return executePipelineStream(sessionId, prompt, thinking, profile, null); }
-    public Flux<ResearchStreamEvent> executePipelineStream(String sessionId, String prompt, boolean thinking,
-                                                           UserInvestmentProfile profile, Consumer<LlmResponse> usage) {
-        String actualSession = sessionId == null ? UUID.randomUUID().toString() : sessionId;
-        Long userId = profile != null && profile.getUserId() != null ? profile.getUserId() : 0L;
-        return run(new GraphRunRequest(UUID.randomUUID().toString(), userId, actualSession, prompt, thinking,
-                profile, usage, RunMode.STREAM)).events();
-    }
-
-    @lombok.Data @lombok.Builder @lombok.NoArgsConstructor @lombok.AllArgsConstructor
-    public static class WorkflowExecutionResult {
-        private String sessionId;
-        private String runId;
-        private String report;
-        private int graphRevision;
-        private long durationMs;
-    }
 }

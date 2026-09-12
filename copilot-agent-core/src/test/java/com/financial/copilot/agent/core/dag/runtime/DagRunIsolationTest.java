@@ -51,6 +51,27 @@ class DagRunIsolationTest {
         assertEquals(NodeStatus.TIMEOUT, result.nodeStatuses().get("slow"));
     }
 
+    @Test
+    void continuePolicyTimeoutDoesNotStrandDownstreamNodes() throws Exception {
+        DagRuntime runtime = new DagRuntime((node, store, token) -> {
+            if ("slow".equals(node.getNodeId())) {
+                Thread.sleep(5_000);
+            }
+            return Artifact.of("art-" + node.getNodeId(), ArtifactType.GENERAL,
+                    node.getNodeId(), node.getNodeId());
+        });
+        ExecutionGraph graph = graph("slow", Duration.ofMillis(30));
+        graph.addNode(GraphNode.builder().nodeId("report").taskType("SYNTHESIS")
+                .failurePolicy(FailurePolicy.FAIL_FAST).timeout(Duration.ofSeconds(1)).build());
+        graph.addEdge("slow", "report");
+
+        GraphRunResult result = runtime.run(request("timeout-chain"), graph)
+                .completion().get(2, TimeUnit.SECONDS);
+
+        assertEquals(NodeStatus.TIMEOUT, result.nodeStatuses().get("slow"));
+        assertEquals(NodeStatus.SUCCEEDED, result.nodeStatuses().get("report"));
+    }
+
     private static GraphRunRequest request(String runId) {
         return new GraphRunRequest(runId, 7L, "session", "prompt", false, null, null, RunMode.SYNC);
     }
