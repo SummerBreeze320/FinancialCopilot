@@ -35,58 +35,6 @@ public class TaskDecomposer {
     private final LlmService llmService;
     private final ObjectMapper objectMapper;
 
-    private static final String DECOMPOSER_PROMPT = """
-        你是一个资深金融智能投研规划专家。你的任务是分析用户的自然语言指令，判断其资产大类与任务复杂度，并输出规范的 JSON 格式执行计划 (ExecutionPlan)。
-        
-        支持的资产大类 (assetCategory):
-        - FUND: 公募基金产品及基金经理 (首期深度实施)
-        - STOCK: 股票上市公司标的 (规划中)
-        - FUTURES: 大宗期货及衍生品 (规划中)
-        - WEALTH_MANAGEMENT: 银行理财及信托 (规划中)
-        
-        支持的子任务类型 (taskType):
-        1. SCREENING: 标的初筛，根据板块、年限、最大回撤、夏普等条件过滤候选标的。
-        2. BATCH_ANALYSIS: 对前 N 名标的或基金经理进行多维量化体检与综合评分。
-        3. COMPARISON: 对比前序选出的最终标的 (如 Top 2) 的定量指标与季报定性投资策略展望。
-        4. SYNTHESIS: 综合汇总前序所有事实数据，生成包含资产配置比例、风险收益比及合规提示的最终投资建议报告。
-        
-        【输出格式要求】:
-        必须且仅输出合法的 JSON 字符串，格式如下：
-        {
-          "assetCategory": "FUND",
-          "isComplex": true,
-          "summary": "简述任务流水线规划概要",
-          "steps": [
-            {
-              "stepId": 1,
-              "taskType": "SCREENING",
-              "description": "按板块与稳定性指标初筛公募基金",
-              "dependencies": []
-            },
-            {
-              "stepId": 2,
-              "taskType": "BATCH_ANALYSIS",
-              "description": "分析初筛候选池前 5 名基金经理的能力表现",
-              "dependencies": [1]
-            },
-            {
-              "stepId": 3,
-              "taskType": "COMPARISON",
-              "description": "对比综合评分最优的两强基金标的",
-              "dependencies": [2]
-            },
-            {
-              "stepId": 4,
-              "taskType": "SYNTHESIS",
-              "description": "综合生成资产配置与投资建议研报",
-              "dependencies": [3]
-            }
-          ]
-        }
-        
-        如果是简单单意图请求（如仅筛选、仅查询单只基金或仅对比指定的两只基金），isComplex 为 false，steps 数组只包含 1 个步骤。
-        """;
-
     public TaskDecomposer(LlmService llmService, ObjectMapper objectMapper) {
         this.llmService = llmService;
         this.objectMapper = objectMapper;

@@ -98,4 +98,20 @@ class RTCFPromptSpecTest {
         assertTrue(user.contains("### [SESSION RAW LOGS & MESSAGES]"));
         assertTrue(user.contains("易方达蓝筹"));
     }
+
+    @Test
+    @DisplayName("测试 FundScreenerPrompt 生成规范与 Context Caching 对齐")
+    void testFundScreenerPrompt() {
+        RTCFPromptSpec spec = FundScreenerPrompt.buildSpec("帮我选近三年收益靠前的医药基金", "必须剔除规模过小基金");
+        String sys = spec.renderSystemPrompt();
+        String user = spec.renderUserPrompt();
+
+        assertTrue(sys.contains("FundScreenerAgent"));
+        assertTrue(sys.contains("严格 JSON 契约"));
+        assertTrue(user.contains("### [USER SCREENING REQUIREMENT]"));
+        assertTrue(user.contains("帮我选近三年收益靠前的医药基金"));
+        assertTrue(user.contains("### [OPERATIONAL SCREENING SKILLS]"));
+        assertTrue(user.contains("必须剔除规模过小基金"));
+        assertTrue(user.contains("\"fundType\""));
+    }
 }
