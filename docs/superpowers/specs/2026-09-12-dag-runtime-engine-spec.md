@@ -379,10 +379,15 @@ public record Artifact<T>(
     String type,                   // 产物类型枚举标识 (FUND_POOL, MACRO_FACTS, etc.)
     String producerNodeId,         // 生产该产物的节点 ID (如 "fund_screen_1")
     T payload,                     // 强类型业务载荷实体
-    ArtifactMetadata metadata      // 标准化元数据 (时间戳、信源、置信度、证据链)
+    ArtifactMetadata metadata,     // 标准化元数据 (时间戳、信源、置信度、证据链)
+    EvidenceContract evidenceContract // 严密的金融证据契约 (结论、引证URI、缺失项、置信度)
 ) {
     public static <T> Artifact<T> of(String id, String type, String producerNodeId, T payload, ArtifactMetadata metadata) {
-        return new Artifact<>(id, type, producerNodeId, payload, metadata);
+        return new Artifact<>(id, type, producerNodeId, payload, metadata, EvidenceContract.empty());
+    }
+
+    public static <T> Artifact<T> of(String id, String type, String producerNodeId, T payload, ArtifactMetadata metadata, EvidenceContract contract) {
+        return new Artifact<>(id, type, producerNodeId, payload, metadata, contract);
     }
 }
 
@@ -455,6 +460,75 @@ public class ArtifactStore {
         return result;
     }
 }
+```
+
+---
+
+### 4.2 强类型金融证据契约与驱动图演进的反思 (Evidence Contract & Graph-Driving Reflection)
+
+> **核心原则**：**Agent 绝不能仅返回一段轻飘飘的结论，必须提供可机器检验的证据链；Reflection 绝不只是给 LLM 一段文字建议，而是真正驱动 Graph 演进！**  
+> 在严肃的金融机构研究中，任何投资建议如果缺乏可追溯的证据支撑（或存在关键证据缺失），就属于严重的事实幻觉与合规风险。
+
+#### 4.2.1 证据契约数据模型 (EvidenceContract)
+
+```java
+package com.financial.copilot.agent.core.dag.artifact;
+
+import java.util.List;
+
+/**
+ * <h1>金融研报证据契约 (Evidence Contract)</h1>
+ * 明确约束结论来源、已引用事实、核心假设、缺失数据与置信度。
+ */
+public record EvidenceContract(
+    String conclusion,              // 投研核心结论 (如 "易方达蓝筹精选在震荡市超额 Alpha 显著优于中证主要消费指数")
+    List<String> evidenceUris,      // 支撑该结论的强类型产物或指标 URI (如 "artifact://metric/sharpe", "artifact://fund_screen_1/pool")
+    List<String> assumptions,       // 核心前提与假设 (如 "基于近三年业绩，假设基金经理风格无根本性漂移")
+    List<String> missingEvidence,   // 显式声明的缺失证据项 (如 "缺少 2026Q2 换手率及前十大重仓股完整持仓明细")
+    double confidence               // 结论置信度打分 (0.0 ~ 1.0)
+) {
+    public static EvidenceContract empty() {
+        return new EvidenceContract("", List.of(), List.of(), List.of(), 1.0);
+    }
+
+    public boolean isSufficient() {
+        return missingEvidence.isEmpty() && confidence >= 0.75;
+    }
+}
+```
+
+#### 4.2.2 Reflection 驱动图动态补数机制 (Graph-Driving Reflection Flow)
+
+传统的 Agent Reflection 往往只是由大模型自己自言自语说一段反思文字，无法对系统调度产生实质影响。  
+在我们的 DAG 引擎中，**Reflection 结果直接与 `ReplanPolicy` 挂钩，成为触发动态改图与精准补数的决定性输入**：
+
+```text
+        Node Completed (产出带有 EvidenceContract 的 Artifact)
+                               │
+                               ▼
+                      [Reflection Engine]
+           校验声明的 requiredEvidence 与 missingEvidence
+                               │
+                ┌──────────────┴──────────────┐
+                ▼                             ▼
+      [证据充分且置信度高]            [缺少关键证据 missingEvidence != empty]
+       isSufficient = true          isSufficient = false (或 confidence < 0.75)
+                │                             │
+                ▼                             ▼
+        直接推进 downstream 节点       触发 ReplanPolicy = true
+                                              │
+                                              ▼
+                                     GraphPlanner ReAct
+                                     (激活 Metric RAG / Skill Registry)
+                                              │
+                                              ▼
+                                     生成 GraphPatch:
+                                     - ADD_NODE: 补数/下钻节点 (如 "fetch_missing_turnover")
+                                     - ADD_EDGE: 接入后续综合分析
+                                              │
+                                              ▼
+                                     ExecutionGraph 动态插桩
+                                     无缝调度补数任务！
 ```
 
 ---

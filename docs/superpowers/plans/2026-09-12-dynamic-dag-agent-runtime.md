@@ -57,6 +57,7 @@
 **Files:**
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/ArtifactType.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/ArtifactMetadata.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/EvidenceContract.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/Artifact.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/ArtifactStore.java`
 - Create domain payloads in: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/payload/` (`FundPool`, `MacroResearchResult`, `FundResearchResult`, `ComparisonReport`, `DocumentEvidence`)
@@ -64,7 +65,8 @@
 
 **Interfaces:**
 - Produces:
-  - `Artifact<T>(id, type, producerNodeId, payload, metadata)`
+  - `EvidenceContract(conclusion, evidenceUris, assumptions, missingEvidence, confidence)`
+  - `Artifact<T>(id, type, producerNodeId, payload, metadata, evidenceContract)`
   - `ArtifactMetadata(createdAt, schemaVersion, evidenceIds, confidence, partial, source)`
   - Standardized payloads: `FundPool`, `FundResearchResult`, `MacroResearchResult`, `ComparisonReport`, `DocumentEvidence`
   - `ArtifactStore`: `store(nodeId, artifact)`, `get(nodeId): Artifact<T>`, `getAllUpstream(upstreamIds): Map<String, Artifact<?>>`, `putGlobalContext(key, val)`
@@ -73,6 +75,7 @@
   - Test storing and strongly typed retrieval of `Artifact<FundPool>` and `Artifact<FundResearchResult>`.
   - Test resolving upstream artifacts for a node with multiple dependencies.
   - Test auditing metadata (`evidenceIds`, `confidence`, `partial=true`).
+  - Test EvidenceContract sufficiency verification (`isSufficient()`, missing evidence tracking).
 - [ ] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=ArtifactStoreTest`
 - [ ] **Step 3: Implement `Artifact`, `ArtifactMetadata`, domain payloads, and `ArtifactStore`**
@@ -219,7 +222,7 @@
 
 **Interfaces:**
 - Produces:
-  - `ReplanPolicy`: evaluates whether a completed node requires re-planning (Fast-Path: bypass LLM; Adaptive-Path: trigger ReAct Planner)
+  - `ReplanPolicy`: evaluates whether a completed node requires re-planning (Fast-Path: bypass LLM; Adaptive-Path: trigger ReAct Planner; Evidence-Driven: inspects `EvidenceContract`, if `!contract.isSufficient()` or `missingEvidence` is present, triggers Planner to dynamically patch data-supplementation nodes into graph)
   - `RePlanAdvisor`: inspects completed node artifacts and generates `GraphPatch` (delta mutations: `ADD_NODE`, `ADD_EDGE`, `SKIP_NODE`)
   - `GraphPlanner`: uses `MetricRAGTool` and `SkillRegistryTool` to construct `ExecutionGraph` and `GraphPatch`
 
