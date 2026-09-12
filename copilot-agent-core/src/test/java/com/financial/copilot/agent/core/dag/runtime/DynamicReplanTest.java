@@ -38,6 +38,39 @@ import static org.junit.jupiter.api.Assertions.*;
 class DynamicReplanTest {
 
     @Test
+    void removeAndSkipPatchOperationsUpdateRunCompletion() throws Exception {
+        ExecutionGraph graph = new ExecutionGraph("lifecycle-patch");
+        GraphNode root = GraphNode.builder().nodeId("root").build();
+        GraphNode removed = GraphNode.builder().nodeId("removed").build();
+        GraphNode skipped = GraphNode.builder().nodeId("skipped").build();
+        graph.addNode(root);
+        graph.addNode(removed);
+        graph.addNode(skipped);
+        graph.addEdge("root", "removed");
+        graph.addEdge("root", "skipped");
+
+        RePlanAdvisor advisor = (g, nodeId, artifact) -> "root".equals(nodeId)
+                ? GraphPatch.of(g.getRevision(),
+                    GraphOperation.removeNode("removed"),
+                    GraphOperation.skipNode("skipped"),
+                    GraphOperation.addNode(GraphNode.builder().nodeId("added").build()))
+                : null;
+        DagRuntime runtime = new DagRuntime(
+                (node, store, token) -> Artifact.of("art-" + node.getNodeId(), ArtifactType.GENERAL,
+                        node.getNodeId(), node.getNodeId()),
+                new ArtifactStore(), ResourceManager.defaultManager(), new InMemoryDagCheckpointStore(),
+                new DefaultNodeQualityGate(), (g, n, a, s) -> "root".equals(n), advisor);
+
+        GraphRunRequest request = new GraphRunRequest("patch-run", 1L, "session", "prompt", false,
+                null, ignored -> {}, RunMode.SYNC);
+        GraphRunResult result = runtime.run(request, graph).completion().get(2, TimeUnit.SECONDS);
+
+        assertThat(result.nodeStatuses()).doesNotContainKey("removed");
+        assertThat(result.nodeStatuses()).containsEntry("skipped", com.financial.copilot.agent.core.dag.model.NodeStatus.SKIPPED);
+        assertThat(result.nodeStatuses()).containsEntry("added", com.financial.copilot.agent.core.dag.model.NodeStatus.SUCCEEDED);
+    }
+
+    @Test
     @DisplayName("测试正常产物零开销快速路径（不触发 RePlanAdvisor，版本号不变更）")
     void testNormalNodePassesWithoutReplan() throws Exception {
         ExecutionGraph graph = new ExecutionGraph("static-graph");

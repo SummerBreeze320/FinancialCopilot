@@ -22,4 +22,9 @@ public interface NodeExecutor {
      * @throws Exception 执行异常
      */
     Artifact<?> execute(GraphNode node, ArtifactStore artifactStore, CancellationToken cancellationToken) throws Exception;
+
+    /** New explicit-input contract used by the unified graph runtime. */
+    default Artifact<?> execute(GraphNode node, NodeInput input, NodeExecutionContext context) throws Exception {
+        return execute(node, context.artifacts(), context.cancellationToken());
+    }
 }

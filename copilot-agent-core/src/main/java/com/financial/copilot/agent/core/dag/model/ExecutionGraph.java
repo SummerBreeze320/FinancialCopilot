@@ -7,6 +7,7 @@ import com.financial.copilot.agent.core.dag.model.patch.PatchOp;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.function.Predicate;
 
 /**
  * <h1>DAG 拓扑执行图模型</h1>
@@ -159,58 +160,177 @@ public class ExecutionGraph {
      * 原子应用增量差分补丁 (GraphPatch)
      */
     public synchronized int applyPatch(GraphPatch patch) {
+        return applyPatch(patch, id -> true);
+    }
+
+    /** Applies a patch using copy-validate-swap so a failed operation cannot partly mutate the graph. */
+    public synchronized int applyPatch(GraphPatch patch, Predicate<String> mutableNode) {
         Objects.requireNonNull(patch, "patch cannot be null");
+        Objects.requireNonNull(mutableNode, "mutableNode cannot be null");
         if (this.revision != patch.baseRevision()) {
             throw new ConcurrentModificationException(
                     "Graph revision mismatch! Current: " + this.revision + ", Patch base: " + patch.baseRevision()
             );
         }
 
+        Map<String, GraphNode> nextNodes = new HashMap<>();
+        nodes.forEach((id, node) -> nextNodes.put(id, copyNode(node)));
+        Map<String, Set<String>> nextUpstream = copyAdjacency(upstream);
+        Map<String, Set<String>> nextDownstream = copyAdjacency(downstream);
+
         for (GraphOperation op : patch.operations()) {
+            Objects.requireNonNull(op, "patch operation cannot be null");
             switch (op.op()) {
                 case ADD_NODE -> {
-                    if (op.node() != null) {
-                        addNode(op.node());
-                    }
+                    if (op.node() == null) throw new IllegalArgumentException("ADD_NODE requires node");
+                    String id = op.node().getNodeId();
+                    if (nextNodes.containsKey(id)) throw new IllegalStateException("Duplicate node: " + id);
+                    nextNodes.put(id, copyNode(op.node()));
+                    nextUpstream.put(id, new HashSet<>());
+                    nextDownstream.put(id, new HashSet<>());
                 }
                 case REMOVE_NODE -> {
-                    if (op.nodeId() != null) {
-                        removeNode(op.nodeId());
-                    }
+                    requireMutable(op.nodeId(), mutableNode);
+                    requireNode(nextNodes, op.nodeId());
+                    removeNode(nextNodes, nextUpstream, nextDownstream, op.nodeId());
                 }
                 case ADD_EDGE -> {
-                    if (op.from() != null && op.to() != null) {
-                        addEdge(op.from(), op.to());
-                    }
+                    requireMutable(op.from(), mutableNode);
+                    requireMutable(op.to(), mutableNode);
+                    requireNode(nextNodes, op.from());
+                    requireNode(nextNodes, op.to());
+                    nextDownstream.get(op.from()).add(op.to());
+                    nextUpstream.get(op.to()).add(op.from());
                 }
                 case REMOVE_EDGE -> {
-                    if (op.from() != null && op.to() != null) {
-                        removeEdge(op.from(), op.to());
-                    }
+                    requireMutable(op.from(), mutableNode);
+                    requireMutable(op.to(), mutableNode);
+                    requireNode(nextNodes, op.from());
+                    requireNode(nextNodes, op.to());
+                    nextDownstream.get(op.from()).remove(op.to());
+                    nextUpstream.get(op.to()).remove(op.from());
                 }
                 case UPDATE_NODE -> {
-                    if (op.nodeId() != null && op.params() != null) {
-                        updateNodeParams(op.nodeId(), op.params());
-                    }
+                    requireMutable(op.nodeId(), mutableNode);
+                    requireNode(nextNodes, op.nodeId());
+                    nextNodes.get(op.nodeId()).updateParams(op.params());
                 }
                 case SKIP_NODE -> {
-                    if (op.nodeId() != null) {
-                        markNodeSkipped(op.nodeId());
-                    }
+                    requireMutable(op.nodeId(), mutableNode);
+                    requireNode(nextNodes, op.nodeId());
+                    nextNodes.get(op.nodeId()).markSkipped();
                 }
                 case RETRY_NODE -> {
-                    if (op.nodeId() != null) {
-                        markNodeForRetry(op.nodeId());
-                    }
+                    requireMutable(op.nodeId(), mutableNode);
+                    requireNode(nextNodes, op.nodeId());
+                    nextNodes.get(op.nodeId()).incrementRetryCount();
                 }
             }
         }
 
-        if (hasCycle()) {
+        validateBindings(nextNodes);
+        if (hasCycle(nextNodes, nextUpstream, nextDownstream)) {
             throw new IllegalStateException("Applying patch created a circular dependency cycle!");
         }
 
+        nodes.clear();
+        nodes.putAll(nextNodes);
+        replaceAdjacency(upstream, nextUpstream);
+        replaceAdjacency(downstream, nextDownstream);
         return ++this.revision;
+    }
+
+    public synchronized ExecutionGraph copy() {
+        ExecutionGraph copy = new ExecutionGraph(graphId);
+        nodes.forEach((id, node) -> copy.nodes.put(id, copyNode(node)));
+        replaceAdjacency(copy.upstream, copyAdjacency(upstream));
+        replaceAdjacency(copy.downstream, copyAdjacency(downstream));
+        copy.revision = revision;
+        return copy;
+    }
+
+    private static GraphNode copyNode(GraphNode node) {
+        GraphNode copy = GraphNode.builder()
+                .nodeId(node.getNodeId()).taskType(node.getTaskType()).name(node.getName())
+                .requiredInputs(node.getRequiredInputs()).inputBindings(node.getInputBindings())
+                .outputType(node.getOutputType()).params(node.getParams()).timeout(node.getTimeout())
+                .failurePolicy(node.getFailurePolicy()).maxRetries(node.getMaxRetries())
+                .fallbackProvider(node.getFallbackProvider()).resourceRequirement(node.getResourceRequirement())
+                .resourceRequirements(node.getResourceRequirements()).priority(node.getPriority()).build();
+        if (node.isSkipped()) copy.markSkipped();
+        for (int i = 0; i < node.getRetryCount(); i++) copy.incrementRetryCount();
+        return copy;
+    }
+
+    private static Map<String, Set<String>> copyAdjacency(Map<String, Set<String>> source) {
+        Map<String, Set<String>> copy = new HashMap<>();
+        source.forEach((id, edges) -> copy.put(id, new HashSet<>(edges)));
+        return copy;
+    }
+
+    private static void replaceAdjacency(Map<String, Set<String>> target, Map<String, Set<String>> source) {
+        target.clear();
+        source.forEach((id, edges) -> {
+            Set<String> concurrent = ConcurrentHashMap.newKeySet();
+            concurrent.addAll(edges);
+            target.put(id, concurrent);
+        });
+    }
+
+    private static void requireMutable(String nodeId, Predicate<String> mutableNode) {
+        if (nodeId == null || !mutableNode.test(nodeId)) {
+            throw new IllegalStateException("Node is not mutable: " + nodeId);
+        }
+    }
+
+    private static void requireNode(Map<String, GraphNode> graphNodes, String nodeId) {
+        if (nodeId == null || !graphNodes.containsKey(nodeId)) {
+            throw new IllegalStateException("Unknown node: " + nodeId);
+        }
+    }
+
+    private static void removeNode(Map<String, GraphNode> graphNodes,
+                                   Map<String, Set<String>> graphUpstream,
+                                   Map<String, Set<String>> graphDownstream,
+                                   String nodeId) {
+        graphNodes.remove(nodeId);
+        graphUpstream.remove(nodeId);
+        graphDownstream.remove(nodeId);
+        graphUpstream.values().forEach(edges -> edges.remove(nodeId));
+        graphDownstream.values().forEach(edges -> edges.remove(nodeId));
+    }
+
+    private static void validateBindings(Map<String, GraphNode> graphNodes) {
+        for (GraphNode node : graphNodes.values()) {
+            Set<String> names = new HashSet<>();
+            for (InputBinding binding : node.getInputBindings()) {
+                if (!names.add(binding.name())) throw new IllegalStateException("Duplicate input binding: " + binding.name());
+                GraphNode producer = graphNodes.get(binding.producerNodeId());
+                if (producer == null) throw new IllegalStateException("Unknown binding producer: " + binding.producerNodeId());
+                if (producer.getOutputType() != binding.expectedType()) {
+                    throw new IllegalStateException("Binding type does not match producer " + binding.producerNodeId());
+                }
+            }
+        }
+    }
+
+    private static boolean hasCycle(Map<String, GraphNode> graphNodes,
+                                    Map<String, Set<String>> graphUpstream,
+                                    Map<String, Set<String>> graphDownstream) {
+        Map<String, Integer> inDegree = new HashMap<>();
+        graphNodes.keySet().forEach(id -> inDegree.put(id, graphUpstream.getOrDefault(id, Set.of()).size()));
+        Queue<String> queue = new ArrayDeque<>();
+        inDegree.forEach((id, degree) -> { if (degree == 0) queue.offer(id); });
+        int visited = 0;
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            visited++;
+            for (String next : graphDownstream.getOrDefault(current, Set.of())) {
+                int degree = inDegree.computeIfPresent(next, (id, old) -> old - 1);
+                if (degree == 0) queue.offer(next);
+            }
+        }
+        return visited != graphNodes.size();
     }
 
     public String getGraphId() {

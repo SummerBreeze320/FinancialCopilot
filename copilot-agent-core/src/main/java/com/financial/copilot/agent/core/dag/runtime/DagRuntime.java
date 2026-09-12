@@ -50,6 +50,7 @@ public class DagRuntime {
     private final PriorityReadyQueue readyQueue = new PriorityReadyQueue();
     private final ReplanPolicy replanPolicy;
     private final RePlanAdvisor rePlanAdvisor;
+    private final GraphRunRequest runRequest;
 
     public DagRuntime(NodeExecutor nodeExecutor) {
         this(nodeExecutor, new ArtifactStore(), ResourceManager.defaultManager(), new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate(), ReplanPolicy.heuristic(), null);
@@ -74,6 +75,12 @@ public class DagRuntime {
             ReplanPolicy replanPolicy,
             RePlanAdvisor rePlanAdvisor
     ) {
+        this(nodeExecutor, artifactStore, resourceManager, checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, null);
+    }
+
+    private DagRuntime(NodeExecutor nodeExecutor, ArtifactStore artifactStore, ResourceManager resourceManager,
+                       DagCheckpointStore checkpointStore, NodeQualityGate qualityGate, ReplanPolicy replanPolicy,
+                       RePlanAdvisor rePlanAdvisor, GraphRunRequest runRequest) {
         this.nodeExecutor = Objects.requireNonNull(nodeExecutor, "nodeExecutor cannot be null");
         this.artifactStore = artifactStore != null ? artifactStore : new ArtifactStore();
         this.resourceManager = resourceManager != null ? resourceManager : ResourceManager.defaultManager();
@@ -81,6 +88,7 @@ public class DagRuntime {
         this.qualityGate = qualityGate != null ? qualityGate : new DefaultNodeQualityGate();
         this.replanPolicy = replanPolicy != null ? replanPolicy : ReplanPolicy.heuristic();
         this.rePlanAdvisor = rePlanAdvisor;
+        this.runRequest = runRequest;
     }
 
     public GraphRunHandle run(GraphRunRequest request, ExecutionGraph graph) {
@@ -94,7 +102,7 @@ public class DagRuntime {
         }
 
         DagRuntime isolated = new DagRuntime(nodeExecutor, context.artifacts, resourceManager,
-                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor);
+                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request);
         CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
         isolated.executeGraph(request.runId(), graph, context.artifacts, context.cancellation, event -> {
             context.statuses.put(event.nodeId(), event.status());
@@ -103,6 +111,7 @@ public class DagRuntime {
             if (error != null) {
                 completion.completeExceptionally(error);
             } else {
+                context.statuses.keySet().retainAll(graph.getNodes().keySet());
                 completion.complete(context.result());
             }
         });
@@ -316,7 +325,8 @@ public class DagRuntime {
                                             CancellationToken token) throws Exception {
         Future<Artifact<?>> future = virtualThreadExecutor.submit(() -> {
             try (AutoCloseable ignored = token.bindCurrentThread()) {
-                return nodeExecutor.execute(node, store, token);
+                NodeInput input = DependencyResolver.resolve(node, store);
+                return nodeExecutor.execute(node, input, new NodeExecutionContext(runRequest, store, token));
             }
         });
         try {
@@ -448,20 +458,17 @@ public class DagRuntime {
             try {
                 GraphPatch patch = rePlanAdvisor.planPatch(graph, completedNodeId, result);
                 if (patch != null && !patch.operations().isEmpty()) {
-                    int newRev = graph.applyPatch(patch);
+                    validatePatchLifecycle(patch, statusMap);
+                    int newRev = graph.applyPatch(patch, id -> {
+                        AtomicReference<NodeStatus> reference = statusMap.get(id);
+                        if (reference == null) return true;
+                        NodeStatus status = reference.get();
+                        return status == NodeStatus.PENDING || status == NodeStatus.READY
+                                || status == NodeStatus.FAILED || status == NodeStatus.TIMEOUT;
+                    });
                     log.info("Applied GraphPatch to graph {} (new revision={}), operations count={}", graph.getGraphId(), newRev, patch.operations().size());
 
-                    for (GraphOperation op : patch.operations()) {
-                        if (op.op() == PatchOp.ADD_NODE && op.node() != null) {
-                            String newNodeId = op.node().getNodeId();
-                            statusMap.put(newNodeId, new AtomicReference<>(NodeStatus.PENDING));
-                            activeOrPendingNodes.incrementAndGet();
-
-                            if (DependencyResolver.isReady(newNodeId, graph, id -> statusMap.get(id) != null ? statusMap.get(id).get() : null)) {
-                                enqueueReadyNode(newNodeId, graph, statusMap, publisher);
-                            }
-                        }
-                    }
+                    reconcilePatch(patch, graph, statusMap, activeOrPendingNodes, publisher);
                     publisher.accept(new DagEvent(completedNodeId, NodeStatus.RUNNING, "Graph patched to rev " + newRev, patch));
                 }
             } catch (Exception patchEx) {
@@ -485,6 +492,59 @@ public class DagRuntime {
         if (activeOrPendingNodes.decrementAndGet() == 0) {
             graphFuture.complete(null);
         }
+    }
+
+    private void validatePatchLifecycle(GraphPatch patch, Map<String, AtomicReference<NodeStatus>> statuses) {
+        for (GraphOperation op : patch.operations()) {
+            if (op.op() == PatchOp.ADD_NODE || op.op() == PatchOp.ADD_EDGE || op.op() == PatchOp.REMOVE_EDGE) continue;
+            AtomicReference<NodeStatus> reference = statuses.get(op.nodeId());
+            if (reference == null) continue;
+            NodeStatus status = reference.get();
+            if (op.op() == PatchOp.RETRY_NODE) {
+                if (status != NodeStatus.FAILED && status != NodeStatus.TIMEOUT) {
+                    throw new IllegalStateException("Only FAILED or TIMEOUT nodes can be retried: " + op.nodeId());
+                }
+            } else if (status != NodeStatus.PENDING && status != NodeStatus.READY) {
+                throw new IllegalStateException("Node is not mutable: " + op.nodeId());
+            }
+        }
+    }
+
+    private void reconcilePatch(GraphPatch patch, ExecutionGraph graph,
+                                Map<String, AtomicReference<NodeStatus>> statuses,
+                                AtomicInteger activeOrPendingNodes, Consumer<DagEvent> publisher) {
+        for (GraphOperation op : patch.operations()) {
+            switch (op.op()) {
+                case ADD_NODE -> {
+                    statuses.put(op.nodeId(), new AtomicReference<>(NodeStatus.PENDING));
+                    activeOrPendingNodes.incrementAndGet();
+                }
+                case REMOVE_NODE -> {
+                    if (statuses.remove(op.nodeId()) != null) activeOrPendingNodes.decrementAndGet();
+                }
+                case SKIP_NODE -> {
+                    AtomicReference<NodeStatus> status = statuses.get(op.nodeId());
+                    if (status != null) {
+                        status.set(NodeStatus.SKIPPED);
+                        activeOrPendingNodes.decrementAndGet();
+                        publisher.accept(new DagEvent(op.nodeId(), NodeStatus.SKIPPED, "Node skipped by graph patch"));
+                    }
+                }
+                case RETRY_NODE -> {
+                    AtomicReference<NodeStatus> status = statuses.get(op.nodeId());
+                    if (status != null) {
+                        status.set(NodeStatus.PENDING);
+                        activeOrPendingNodes.incrementAndGet();
+                    }
+                }
+                default -> { }
+            }
+        }
+        graph.getNodes().keySet().stream()
+                .filter(id -> statuses.get(id) != null && statuses.get(id).get() == NodeStatus.PENDING)
+                .filter(id -> DependencyResolver.isReady(id, graph,
+                        key -> statuses.get(key) != null ? statuses.get(key).get() : null))
+                .forEach(id -> enqueueReadyNode(id, graph, statuses, publisher));
     }
 
     private synchronized void drainReadyQueue(

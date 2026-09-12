@@ -16,6 +16,37 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ExecutionGraphTest {
 
+    @Test
+    void failedPatchLeavesGraphAndRevisionUnchanged() {
+        ExecutionGraph graph = new ExecutionGraph("atomic");
+        graph.addNode(createSimpleNode("A", "A"));
+        graph.addNode(createSimpleNode("B", "B"));
+        graph.addEdge("A", "B");
+        ExecutionGraph before = graph.copy();
+
+        GraphPatch cyclic = GraphPatch.of(0,
+                GraphOperation.updateNode("A", Map.of("changed", true)),
+                GraphOperation.addEdge("B", "A"));
+
+        assertThatThrownBy(() -> graph.applyPatch(cyclic, id -> "A".equals(id) || "B".equals(id)))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(graph.getRevision()).isEqualTo(before.getRevision());
+        assertThat(graph.getNode("A").getParams()).isEqualTo(before.getNode("A").getParams());
+        assertThat(graph.getDownstream("A")).isEqualTo(before.getDownstream("A"));
+        assertThat(graph.getDownstream("B")).isEqualTo(before.getDownstream("B"));
+    }
+
+    @Test
+    void patchRejectsMutationOfRunningOrTerminalNode() {
+        ExecutionGraph graph = new ExecutionGraph("lifecycle");
+        graph.addNode(createSimpleNode("A", "A"));
+
+        assertThatThrownBy(() -> graph.applyPatch(
+                GraphPatch.of(0, GraphOperation.removeNode("A")), id -> false))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("not mutable");
+    }
+
     private GraphNode createSimpleNode(String nodeId, String name) {
         return GraphNode.builder()
                 .nodeId(nodeId)

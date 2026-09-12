@@ -19,6 +19,7 @@ public class GraphNode {
     private final String taskType;
     private final String name;
     private final Set<ArtifactType> requiredInputs;
+    private final List<InputBinding> inputBindings;
     private final ArtifactType outputType;
     private final Map<String, Object> params;
     private final Duration timeout;
@@ -37,6 +38,7 @@ public class GraphNode {
         this.taskType = builder.taskType != null ? builder.taskType : "GENERAL";
         this.name = builder.name != null ? builder.name : builder.nodeId;
         this.requiredInputs = builder.requiredInputs != null ? Set.copyOf(builder.requiredInputs) : Set.of();
+        this.inputBindings = builder.inputBindings != null ? List.copyOf(builder.inputBindings) : List.of();
         this.outputType = builder.outputType != null ? builder.outputType : ArtifactType.GENERAL;
         this.params = new ConcurrentHashMap<>();
         if (builder.params != null) {
@@ -94,6 +96,10 @@ public class GraphNode {
 
     public Set<ArtifactType> getRequiredInputs() {
         return requiredInputs;
+    }
+
+    public List<InputBinding> getInputBindings() {
+        return inputBindings;
     }
 
     public ArtifactType getOutputType() {
@@ -187,6 +193,7 @@ public class GraphNode {
         private String taskType;
         private String name;
         private Set<ArtifactType> requiredInputs = new HashSet<>();
+        private List<InputBinding> inputBindings = new ArrayList<>();
         private ArtifactType outputType = ArtifactType.GENERAL;
         private Map<String, Object> params = new HashMap<>();
         private Duration timeout = Duration.ofMinutes(2);
@@ -214,6 +221,11 @@ public class GraphNode {
 
         public Builder requiredInputs(Set<ArtifactType> requiredInputs) {
             this.requiredInputs = requiredInputs;
+            return this;
+        }
+
+        public Builder inputBindings(List<InputBinding> inputBindings) {
+            this.inputBindings = inputBindings != null ? new ArrayList<>(inputBindings) : new ArrayList<>();
             return this;
         }
 
