@@ -60,12 +60,24 @@ public class GraphNode {
         return nodeId;
     }
 
+    /**
+     * 获取节点任务类型，优先读取参数中动态更新的任务类型（支持自适应降级变轨）
+     *
+     * @return 节点实际生效的任务类型
+     */
     public String getTaskType() {
-        return taskType;
+        Object custom = params.get("taskType");
+        return (custom instanceof String s && !s.isBlank()) ? s : taskType;
     }
 
+    /**
+     * 获取节点名称，优先读取参数中动态更新的展示名称
+     *
+     * @return 节点实际生效的名称
+     */
     public String getName() {
-        return name;
+        Object custom = params.get("name");
+        return (custom instanceof String s && !s.isBlank()) ? s : name;
     }
 
     public Set<ArtifactType> getRequiredInputs() {

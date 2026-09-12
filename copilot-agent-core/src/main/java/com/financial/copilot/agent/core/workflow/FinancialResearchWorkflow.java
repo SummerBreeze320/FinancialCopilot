@@ -551,7 +551,7 @@ public class FinancialResearchWorkflow {
         switch (taskType) {
             case "SCREENING" -> artifact = screenerAgent.screenArtifact(node, userPrompt);
             case "BATCH_ANALYSIS" -> artifact = analyzerAgent.analyzeArtifact(node, store, userPrompt);
-            case "COMPARISON" -> artifact = comparatorAgent.compareArtifact(node, store, usageConsumer);
+            case "COMPARISON", "DEEP_DIVE" -> artifact = comparatorAgent.compareArtifact(node, store, usageConsumer);
             case "SYNTHESIS" -> {
                 if (sessionId != null) {
                     shortTermMemoryService.pruneIfNeeded(sessionId);

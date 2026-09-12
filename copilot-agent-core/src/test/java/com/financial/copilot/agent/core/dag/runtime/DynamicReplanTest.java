@@ -11,6 +11,8 @@ import com.financial.copilot.agent.core.dag.model.FailurePolicy;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.model.patch.GraphOperation;
 import com.financial.copilot.agent.core.dag.model.patch.GraphPatch;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
+import com.financial.copilot.agent.core.dag.planner.GraphPlanner;
 import com.financial.copilot.agent.core.dag.planner.tool.MetricRAGTool;
 import com.financial.copilot.agent.core.dag.planner.tool.SkillRegistryTool;
 import com.financial.copilot.agent.core.dag.runtime.checkpoint.InMemoryDagCheckpointStore;
@@ -220,5 +222,63 @@ class DynamicReplanTest {
         assertThat(skills).isNotEmpty();
         assertTrue(skills.stream().anyMatch(s -> "fund-screener".equals(s.skillName())));
         assertTrue(skills.stream().anyMatch(s -> "report-synthesizer".equals(s.skillName())));
+    }
+
+    @Test
+    @DisplayName("测试体检仅剩单标的时自适应触发动态降级补丁并无缝执行单标的深度剖析")
+    void testSingleCandidateDowngradesComparisonNodeToDeepDive() throws Exception {
+        ExecutionGraph graph = new ExecutionGraph("downgrade-graph");
+        GraphNode analysisNode = GraphNode.builder()
+                .nodeId("step-2-analysis")
+                .name("候选标的量化体检")
+                .taskType("BATCH_ANALYSIS")
+                .failurePolicy(FailurePolicy.FAIL_FAST)
+                .build();
+        GraphNode compNode = GraphNode.builder()
+                .nodeId("step-3-comparison")
+                .name("决赛圈标的深度横向对标")
+                .taskType("COMPARISON")
+                .failurePolicy(FailurePolicy.FAIL_FAST)
+                .build();
+        graph.addNode(analysisNode);
+        graph.addNode(compNode);
+        graph.addEdge("step-2-analysis", "step-3-comparison");
+
+        ArtifactStore store = new ArtifactStore();
+        List<String> executedNodeTypes = new CopyOnWriteArrayList<>();
+        GraphPlanner planner = new GraphPlanner();
+
+        NodeExecutor executor = (node, s, t) -> {
+            executedNodeTypes.add(node.getTaskType());
+            if ("step-2-analysis".equals(node.getNodeId())) {
+                FundResearchResult singleResult = FundResearchResult.ofBatch(
+                        List.of(Map.of("fundCode", "003095")),
+                        List.of("003095")
+                );
+                return Artifact.of("art-analysis", ArtifactType.FUND_RESEARCH, node.getNodeId(), singleResult, ArtifactMetadata.standard("TEST"));
+            } else if ("step-3-comparison".equals(node.getNodeId())) {
+                // 验证节点在执行时已动态生效为 DEEP_DIVE
+                assertEquals("DEEP_DIVE", node.getTaskType());
+                assertEquals("003095", node.getParams().get("targetCode"));
+                return Artifact.of("art-deepdive", ArtifactType.COMPARISON_REPORT, node.getNodeId(), "003095深度剖析", ArtifactMetadata.standard("TEST"));
+            }
+            throw new IllegalArgumentException("Unknown: " + node.getNodeId());
+        };
+
+        DagRuntime runtime = new DagRuntime(
+                executor,
+                store,
+                ResourceManager.defaultManager(),
+                new InMemoryDagCheckpointStore(),
+                new DefaultNodeQualityGate(),
+                ReplanPolicy.heuristic(),
+                planner
+        );
+
+        runtime.executeGraph(graph, new CancellationToken("run-downgrade"), e -> {}).get(3, TimeUnit.SECONDS);
+
+        assertEquals(1, graph.getRevision(), "图版本号应因自适应降级递增为 1");
+        assertThat(executedNodeTypes).containsExactly("BATCH_ANALYSIS", "DEEP_DIVE");
+        assertEquals("DEEP_DIVE", graph.getNode("step-3-comparison").getTaskType());
     }
 }

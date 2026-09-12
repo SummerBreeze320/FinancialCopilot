@@ -142,6 +142,39 @@ public class FundComparatorAgent {
      * @return 对标分析 Markdown
      */
     public String compareFunds(String codeA, String codeB, Consumer<LlmResponse> usageConsumer) {
+        if (codeA != null && (codeB == null || codeB.isBlank() || codeA.equals(codeB))) {
+            log.info("[FUND-COMPARATOR] 执行单一最优标的穿透式深度剖析: code={}", codeA);
+            String metricsA = quantTool.getFundMetrics(codeA, null, null);
+            String holdingsA = holdingsTool.getTopHoldings(codeA, null);
+            String reportA = reportTool.getLatestQuarterlyReportView(codeA);
+
+            String cleanDataA = sanitizer.sanitizeFundMetrics(metricsA) + "\n" +
+                    sanitizer.sanitizeHoldings(holdingsA) + "\n" +
+                    "- 季报定性展望: " + sanitizer.sanitizeReportView(reportA, 800);
+
+            String factualFacts = """
+                === 单一最优标的深度剖析事实输入 (Tool-as-Truth) ===
+                【核心标的 (基金代码: %s)】:
+                %s
+                """.formatted(codeA, cleanDataA);
+
+            String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("COMPARISON", codeA) : "";
+            try {
+                var spec = FundComparatorPrompt.buildSpec(codeA, cleanDataA, codeA, cleanDataA, skillRules, "单标的深度剖析，无跨标的重合持仓");
+                LlmRequest request = spec.toLlmRequest();
+                request.setUsageConsumer(usageConsumer);
+                String comparisonAnalysis = clientService.chat(request);
+                return factualFacts + "\n\n=== 最优标的深度归因与研报剖析 ===\n" + comparisonAnalysis;
+            } catch (Exception e) {
+                if (usageConsumer != null) {
+                    if (e instanceof RuntimeException runtime) throw runtime;
+                    throw new IllegalStateException("Metered single analysis failed", e);
+                }
+                log.warn("[FUND-COMPARATOR] 调用 LLM 深度分析失败，使用客观事实兜底: error={}", e.getMessage());
+                return factualFacts;
+            }
+        }
+
         log.info("[FUND-COMPARATOR] 正在对标采集两只基金数据事实并执行深度归因: codeA={}, codeB={}", codeA, codeB);
 
         // 1. 底层权威工具事实采集
@@ -232,19 +265,26 @@ public class FundComparatorAgent {
                     codeB = candidates.get(1);
                 } else if (candidates != null && candidates.size() == 1) {
                     codeA = candidates.get(0);
+                    codeB = candidates.get(0);
                 } else if (research.evaluatedFunds() != null && research.evaluatedFunds().size() >= 2) {
                     codeA = String.valueOf(research.evaluatedFunds().get(0).get("fundCode"));
                     codeB = String.valueOf(research.evaluatedFunds().get(1).get("fundCode"));
                 }
             }
         }
+        if (node != null && node.getParams().containsKey("targetCode")) {
+            codeA = String.valueOf(node.getParams().get("targetCode"));
+            codeB = codeA;
+        }
 
-        // 2. 执行对标分析
-        String comparisonAnalysis = compareFunds(codeA, codeB, usageConsumer);
+        boolean isSingle = (codeB == null || codeB.isBlank() || codeA.equals(codeB));
 
-        // 3. 提取知识图谱重合持仓
+        // 2. 执行对标分析或单标的深度剖析
+        String comparisonAnalysis = compareFunds(codeA, isSingle ? null : codeB, usageConsumer);
+
+        // 3. 提取知识图谱重合持仓 (仅双标的对标时采集)
         List<String> sharedHoldings = List.of();
-        if (graphTool != null) {
+        if (graphTool != null && !isSingle) {
             try {
                 String rawOverlap = graphTool.getSharedHoldings(codeA, codeB);
                 if (rawOverlap != null && rawOverlap.contains("sharedStockCodes")) {
@@ -265,11 +305,13 @@ public class FundComparatorAgent {
 
         String artifactId = "art-comp-" + UUID.randomUUID().toString().substring(0, 8);
         ArtifactMetadata metadata = ArtifactMetadata.standard("FundComparatorAgent");
-        List<String> evidenceUris = List.of("fund://" + codeA, "fund://" + codeB);
+        List<String> evidenceUris = isSingle ? List.of("fund://" + codeA) : List.of("fund://" + codeA, "fund://" + codeB);
         EvidenceContract contract = EvidenceContract.sufficient(
-                "完成基金 " + codeA + " 与 " + codeB + " 横向深度对标", evidenceUris);
+                isSingle ? "完成基金 " + codeA + " 单标的深度穿透剖析" : "完成基金 " + codeA + " 与 " + codeB + " 横向深度对标",
+                evidenceUris
+        );
 
-        ComparisonReport report = ComparisonReport.of(codeA, codeB, comparisonAnalysis, sharedHoldings);
+        ComparisonReport report = ComparisonReport.of(codeA, isSingle ? "" : codeB, comparisonAnalysis, sharedHoldings);
 
         return new Artifact<>(
                 artifactId,
