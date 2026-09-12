@@ -37,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
@@ -129,7 +130,7 @@ class FinancialResearchWorkflowTest {
         ShortTermMemoryService mockShortTermMemoryService = Mockito.mock(ShortTermMemoryService.class);
         mockLongTermMemoryService = Mockito.mock(LongTermMemoryService.class);
         MemoryRefinementTask mockMemoryRefinementTask = Mockito.mock(MemoryRefinementTask.class);
-        org.springframework.context.ApplicationEventPublisher mockEventPublisher = Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+        ApplicationEventPublisher mockEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
 
         workflow = new FinancialResearchWorkflow(
                 taskDecomposer, screenerAgent, analyzerAgent, comparatorAgent, reportSynthesizer, mockDataPort,

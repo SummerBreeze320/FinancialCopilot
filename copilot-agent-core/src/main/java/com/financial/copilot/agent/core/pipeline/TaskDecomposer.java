@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.core.llm.dto.LlmRequest;
 import com.financial.copilot.agent.core.llm.dto.LlmResponse;
+import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
 import com.financial.copilot.agent.core.llm.service.LlmService;
+import com.financial.copilot.agent.core.prompt.RTCFPromptSpec;
+import com.financial.copilot.agent.core.prompt.TaskDecomposerPrompt;
 import com.financial.copilot.common.enums.AssetCategory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * <h1>复合投研任务解构器 (Task Decomposer)</h1>
@@ -106,14 +110,41 @@ public class TaskDecomposer {
      * @return 结构化的任务执行计划
      */
     public ExecutionPlan decompose(String userQuery, boolean enableThinking) {
+        return decompose(userQuery, enableThinking, null, null);
+    }
+
+    /**
+     * 将用户提问解构为多步执行计划（带 Token 计量消费回调）
+     *
+     * @param userQuery      用户原始诉求
+     * @param enableThinking 是否开启深度思考
+     * @param usageConsumer  Token 计量消费回调
+     * @return 结构化的任务执行计划
+     */
+    public ExecutionPlan decompose(String userQuery, boolean enableThinking, Consumer<LlmResponse> usageConsumer) {
+        return decompose(userQuery, enableThinking, null, usageConsumer);
+    }
+
+    /**
+     * 将用户提问解构为多步执行计划
+     *
+     * @param userQuery       用户原始诉求
+     * @param enableThinking  是否开启深度思考
+     * @param historicalFacts 历史记忆事实
+     * @param usageConsumer   Token 计量消费回调
+     * @return 结构化执行计划
+     */
+    public ExecutionPlan decompose(String userQuery, boolean enableThinking, List<String> historicalFacts, Consumer<LlmResponse> usageConsumer) {
         if (userQuery == null || userQuery.isBlank()) {
             return fallbackSingleTask(AssetCategory.FUND, "SCREENING", "默认展示优质公募基金标的");
         }
 
         try {
-            String llmResponse = llmService.chat(
-                    DECOMPOSER_PROMPT, userQuery, enableThinking
-            );
+            RTCFPromptSpec spec = TaskDecomposerPrompt.buildSpec(userQuery, historicalFacts);
+            LlmRequest request = spec.toLlmRequest(
+                    LlmSettingsDTO.builder().enableThinking(enableThinking).build());
+            request.setUsageConsumer(usageConsumer);
+            String llmResponse = llmService.chat(request);
             ExecutionPlan plan = parseJsonPlan(llmResponse, userQuery);
             if (plan != null && !plan.getSteps().isEmpty()) {
                 log.info("[TaskDecomposer] 成功解构任务: category={}, isComplex={}, steps={}, summary={}",
@@ -121,6 +152,10 @@ public class TaskDecomposer {
                 return plan;
             }
         } catch (Exception e) {
+            if (usageConsumer != null) {
+                if (e instanceof RuntimeException runtime) throw runtime;
+                throw new IllegalStateException("Metered LLM call failed", e);
+            }
             log.warn("[TaskDecomposer] 模型解构异常，启用智能规则解构器: {}", e.getMessage());
         }
 

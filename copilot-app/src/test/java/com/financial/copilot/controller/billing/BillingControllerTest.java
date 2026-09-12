@@ -21,6 +21,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
+import com.financial.copilot.agent.core.security.UserPrincipal;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.web.server.ResponseStatusException;
+
 /**
  * <h1>商业化计量计费 REST 控制器单元测试 (Billing Controller Test)</h1>
  *
@@ -30,6 +36,8 @@ class BillingControllerTest {
 
     private WalletBillingService mockBillingService;
     private BillingController controller;
+    private final Authentication auth = new UsernamePasswordAuthenticationToken(
+            UserPrincipal.builder().userId(1L).build(), null, List.of());
 
     @BeforeEach
     void setUp() {
@@ -49,7 +57,8 @@ class BillingControllerTest {
                 .build();
         when(mockBillingService.getWallet(1L)).thenReturn(walletDTO);
 
-        ApiResult<WalletDTO> result = controller.getWallet(1L).block();
+        ApiResult<WalletDTO> result = controller.getWallet(1L)
+                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth)).block();
         assertNotNull(result);
         assertEquals(200, result.getCode());
         assertEquals(86400L, result.getData().getBalancePoints());
@@ -75,7 +84,7 @@ class BillingControllerTest {
     void testCreateOrder() {
         RechargeOrderCreateDTO req = RechargeOrderCreateDTO.builder()
                 .packageId(2L)
-                .payChannel("WECHAT")
+                .payChannel("ALIPAY")
                 .build();
 
         RechargeOrder order = RechargeOrder.builder()
@@ -85,34 +94,25 @@ class BillingControllerTest {
                 .orderStatus("PENDING")
                 .build();
 
-        when(mockBillingService.createOrder(1L, 2L, "WECHAT")).thenReturn(order);
+        when(mockBillingService.createOrder(1L, 2L, "ALIPAY")).thenReturn(order);
 
-        ApiResult<RechargeOrder> result = controller.createOrder(req, 1L).block();
+        ApiResult<RechargeOrder> result = controller.createOrder(req, 1L)
+                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth)).block();
         assertNotNull(result);
         assertEquals(200, result.getCode());
         assertEquals("ORD20260910001", result.getData().getOrderNo());
     }
 
     @Test
-    @DisplayName("验证支付回调处理端点")
+    @DisplayName("验证旧支付回调端点已废弃提示")
     void testPayCallback() {
         Map<String, String> payload = Map.of(
                 "orderNo", "ORD20260910001",
                 "thirdPartyTradeNo", "WX-PAY-8888"
         );
-
-        RechargeOrder paidOrder = RechargeOrder.builder()
-                .orderNo("ORD20260910001")
-                .orderStatus("PAID")
-                .thirdPartyTradeNo("WX-PAY-8888")
-                .build();
-
-        when(mockBillingService.payCallback("ORD20260910001", "WX-PAY-8888")).thenReturn(paidOrder);
-
-        ApiResult<RechargeOrder> result = controller.payCallback(payload);
-        assertNotNull(result);
-        assertEquals(200, result.getCode());
-        assertEquals("PAID", result.getData().getOrderStatus());
+        assertThrows(ResponseStatusException.class, () -> {
+            controller.payCallback(payload);
+        });
     }
 
     @Test
@@ -125,11 +125,13 @@ class BillingControllerTest {
         when(mockBillingService.listPricing())
                 .thenReturn(List.of(ModelPricing.builder().modelName("deepseek-chat").build()));
 
-        ApiResult<Map<String, Object>> ledgerResult = controller.getLedger(1L, 1, 10, null, null).block();
+        ApiResult<Map<String, Object>> ledgerResult = controller.getLedger(1L, 1, 10, null, null)
+                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth)).block();
         assertNotNull(ledgerResult);
         assertEquals(200, ledgerResult.getCode());
 
-        ApiResult<List<UsageTrendPointDTO>> trendResult = controller.getUsageTrend(1L, 7).block();
+        ApiResult<List<UsageTrendPointDTO>> trendResult = controller.getUsageTrend(1L, 7)
+                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth)).block();
         assertNotNull(trendResult);
         assertEquals(200, trendResult.getCode());
         assertEquals(1, trendResult.getData().size());

@@ -1,13 +1,34 @@
 package com.financial.copilot.agent.core.agents;
 
+import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
+import com.financial.copilot.agent.core.dag.artifact.EvidenceContract;
+import com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport;
+import com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
+import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.llm.dto.LlmRequest;
+import com.financial.copilot.agent.core.llm.dto.LlmResponse;
+import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
 import com.financial.copilot.agent.core.llm.service.LlmService;
+import com.financial.copilot.agent.core.pipeline.ResearchBlackboard;
+import com.financial.copilot.agent.core.prompt.ReportSynthesizerPrompt;
+import com.financial.copilot.agent.core.skill.SkillMatcher;
+import com.financial.copilot.domain.fund.entity.FundInfo;
+import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
-import com.financial.copilot.agent.core.llm.dto.*;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
-import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
 
 /**
  * <h1>投研报告生成主编 Agent (Report Synthesizer)</h1>
@@ -29,7 +50,10 @@ public class ReportSynthesizer {
      */
     private final LlmService clientService;
 
-    private final com.financial.copilot.agent.core.skill.SkillMatcher skillMatcher;
+    /**
+     * Skill 技能动态匹配器
+     */
+    private final SkillMatcher skillMatcher;
 
     /**
      * 构造函数，注入大模型统一服务
@@ -40,7 +64,7 @@ public class ReportSynthesizer {
         this(clientService, null);
     }
 
-    public ReportSynthesizer(LlmService clientService, com.financial.copilot.agent.core.skill.SkillMatcher skillMatcher) {
+    public ReportSynthesizer(LlmService clientService, SkillMatcher skillMatcher) {
         this.clientService = clientService;
         this.skillMatcher = skillMatcher;
     }
@@ -83,7 +107,7 @@ public class ReportSynthesizer {
         String userProfileText = formatUserProfile(profile);
         String memoryContext = formatMemoryContext(refinedFacts, pastEntries);
 
-        var spec = com.financial.copilot.agent.core.prompt.ReportSynthesizerPrompt.buildSpec(
+        var spec = ReportSynthesizerPrompt.buildSpec(
                 userGoal, userProfileText, memoryContext, factualContext, skillRules);
         LlmRequest request = spec.toLlmRequest(LlmSettingsDTO.builder().enableThinking(enableThinking).build());
         request.setUsageConsumer(usageConsumer);
@@ -128,7 +152,7 @@ public class ReportSynthesizer {
         String userProfileText = formatUserProfile(profile);
         String memoryContext = formatMemoryContext(refinedFacts, pastEntries);
 
-        var spec = com.financial.copilot.agent.core.prompt.ReportSynthesizerPrompt.buildSpec(
+        var spec = ReportSynthesizerPrompt.buildSpec(
                 userGoal, userProfileText, memoryContext, factualContext, skillRules);
         LlmRequest request = spec.toLlmRequest(LlmSettingsDTO.builder().enableThinking(enableThinking).build());
         request.setUsageConsumer(usageConsumer);
@@ -187,9 +211,9 @@ public class ReportSynthesizer {
      * @param usageConsumer   Token 计量回调
      * @return 强类型最终研报产物
      */
-    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport> synthesizeArtifact(
-            com.financial.copilot.agent.core.dag.model.GraphNode node,
-            com.financial.copilot.agent.core.dag.artifact.ArtifactStore store,
+    public Artifact<FinalSynthesisReport> synthesizeArtifact(
+            GraphNode node,
+            ArtifactStore store,
             String userGoal,
             boolean enableThinking,
             UserInvestmentProfile profile,
@@ -206,32 +230,32 @@ public class ReportSynthesizer {
         String markdownReport = synthesize(factualContext, userGoal, enableThinking, profile, refinedFacts, pastEntries, usageConsumer);
 
         // 3. 构造强类型终审报告与可审计证据契约
-        String artifactId = "art-report-" + java.util.UUID.randomUUID().toString().substring(0, 8);
-        var metadata = com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata.standard("ReportSynthesizer");
+        String artifactId = "art-report-" + UUID.randomUUID().toString().substring(0, 8);
+        ArtifactMetadata metadata = ArtifactMetadata.standard("ReportSynthesizer");
 
-        List<String> evidenceUris = new java.util.ArrayList<>();
+        List<String> evidenceUris = new ArrayList<>();
         if (store != null) {
-            for (var art : store.getAllArtifacts().values()) {
+            for (Artifact<?> art : store.getAllArtifacts().values()) {
                 if (art.evidenceContract() != null && art.evidenceContract().evidenceUris() != null) {
                     evidenceUris.addAll(art.evidenceContract().evidenceUris());
                 }
             }
         }
 
-        var contract = com.financial.copilot.agent.core.dag.artifact.EvidenceContract.sufficient(
+        EvidenceContract contract = EvidenceContract.sufficient(
                 "全流程研报终审合成完毕", evidenceUris.stream().distinct().toList());
 
-        var reportPayload = com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport.of(
+        FinalSynthesisReport reportPayload = FinalSynthesisReport.of(
                 "专业基金投资配置研报",
                 "全流程投研流水线合成建议",
                 markdownReport,
-                java.util.Map.of("权益类公募基金", 0.60, "固收稳健类资产", 0.40),
+                Map.of("权益类公募基金", 0.60, "固收稳健类资产", 0.40),
                 evidenceUris.stream().filter(u -> u.startsWith("fund://")).map(u -> u.replace("fund://", "")).distinct().toList()
         );
 
-        return new com.financial.copilot.agent.core.dag.artifact.Artifact<>(
+        return new Artifact<>(
                 artifactId,
-                com.financial.copilot.agent.core.dag.artifact.ArtifactType.FINAL_REPORT,
+                ArtifactType.FINAL_REPORT,
                 nodeId,
                 reportPayload,
                 metadata,
@@ -239,41 +263,55 @@ public class ReportSynthesizer {
         );
     }
 
-    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport> synthesizeArtifact(
-            com.financial.copilot.agent.core.dag.model.GraphNode node,
-            com.financial.copilot.agent.core.dag.artifact.ArtifactStore store,
+    /**
+     * 强类型 DAG 终审合成节点执行入口（极速简洁版）
+     *
+     * @param node     当前 DAG 节点
+     * @param store    产物存储总线
+     * @param userGoal 用户原始诉求
+     * @return 强类型最终研报产物
+     */
+    public Artifact<FinalSynthesisReport> synthesizeArtifact(
+            GraphNode node,
+            ArtifactStore store,
             String userGoal
     ) {
         return synthesizeArtifact(node, store, userGoal, false, null, null, null, null);
     }
 
-    private String buildFactualContextFromStore(com.financial.copilot.agent.core.dag.artifact.ArtifactStore store) {
+    /**
+     * 从产物存储总线提炼各上游节点产生的事实上下文
+     *
+     * @param store 产物总线
+     * @return 事实上下文文本
+     */
+    private String buildFactualContextFromStore(ArtifactStore store) {
         if (store == null) return "暂无上游事实数据";
         StringBuilder sb = new StringBuilder();
         sb.append("=== 流水线全景事实总览 (ArtifactStore) ===\n\n");
 
-        // 1. 初筛产物
-        var poolOpt = store.findFirstByType(com.financial.copilot.agent.core.dag.artifact.ArtifactType.FUND_POOL);
-        if (poolOpt.isPresent() && poolOpt.get().payload() instanceof com.financial.copilot.agent.core.dag.artifact.payload.FundPool pool) {
+        // 1. 初筛产物 (FundPool)
+        Optional<Artifact<FundPool>> poolOpt = store.findFirstByType(ArtifactType.FUND_POOL);
+        if (poolOpt.isPresent() && poolOpt.get().payload() instanceof FundPool pool) {
             sb.append("【阶段 1 筛选命中候选标的池 (共 ").append(pool.totalCount()).append(" 只)】:\n");
             if (pool.funds() != null && !pool.funds().isEmpty()) {
-                for (var f : pool.funds()) {
+                for (FundInfo f : pool.funds()) {
                     sb.append("- ").append(f.getFundCode()).append(" ").append(f.getFundName()).append("\n");
                 }
             } else if (pool.fundCodes() != null) {
-                for (var c : pool.fundCodes()) {
+                for (String c : pool.fundCodes()) {
                     sb.append("- ").append(c).append("\n");
                 }
             }
             sb.append("\n");
         }
 
-        // 2. 深度分析产物
-        var researchOpt = store.findFirstByType(com.financial.copilot.agent.core.dag.artifact.ArtifactType.FUND_RESEARCH);
-        if (researchOpt.isPresent() && researchOpt.get().payload() instanceof com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult res) {
+        // 2. 深度分析产物 (FundResearchResult)
+        Optional<Artifact<FundResearchResult>> researchOpt = store.findFirstByType(ArtifactType.FUND_RESEARCH);
+        if (researchOpt.isPresent() && researchOpt.get().payload() instanceof FundResearchResult res) {
             sb.append("【阶段 2 基金经理综合能力量化评分排名】:\n");
             if (res.evaluatedFunds() != null) {
-                for (var item : res.evaluatedFunds()) {
+                for (Map<String, Object> item : res.evaluatedFunds()) {
                     sb.append("- 标的: ").append(item.get("fundCode"))
                       .append(", 综合得分: ").append(item.get("score"))
                       .append("\n");
@@ -285,9 +323,9 @@ public class ReportSynthesizer {
             sb.append("\n");
         }
 
-        // 3. 对标产物
-        var compOpt = store.findFirstByType(com.financial.copilot.agent.core.dag.artifact.ArtifactType.COMPARISON_REPORT);
-        if (compOpt.isPresent() && compOpt.get().payload() instanceof com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport comp) {
+        // 3. 对标产物 (ComparisonReport)
+        Optional<Artifact<ComparisonReport>> compOpt = store.findFirstByType(ArtifactType.COMPARISON_REPORT);
+        if (compOpt.isPresent() && compOpt.get().payload() instanceof ComparisonReport comp) {
             sb.append("【阶段 3 决赛圈最优标的横向对标与归因事实】:\n");
             sb.append(comp.comparisonAnalysis()).append("\n");
             if (comp.sharedHoldings() != null && !comp.sharedHoldings().isEmpty()) {
@@ -296,18 +334,18 @@ public class ReportSynthesizer {
             sb.append("\n");
         }
 
-        // 如果 store 中没有这些 typed payload，但有 Blackboard
+        // 4. 兜底回退：如果 store 中尚未沉淀 typed record，但包含 ResearchBlackboard
         if (sb.length() <= 45) {
             Object bb = store.getGlobalContext("blackboard");
-            if (bb instanceof com.financial.copilot.agent.core.pipeline.ResearchBlackboard blackboard) {
+            if (bb instanceof ResearchBlackboard blackboard) {
                 if (blackboard.getCandidateFunds() != null && !blackboard.getCandidateFunds().isEmpty()) {
                     sb.append("【候选标的池】: ").append(blackboard.getCandidateFunds().size()).append(" 只\n");
                 }
                 if (blackboard.getTopCandidates() != null) {
                     sb.append("【决赛标的】: ").append(blackboard.getTopCandidates()).append("\n");
                 }
-                if (blackboard.getRaw(com.financial.copilot.agent.core.pipeline.ResearchBlackboard.KEY_COMPARISON_FACTS) != null) {
-                    sb.append("【对标事实】: ").append(blackboard.getRaw(com.financial.copilot.agent.core.pipeline.ResearchBlackboard.KEY_COMPARISON_FACTS)).append("\n");
+                if (blackboard.getRaw(ResearchBlackboard.KEY_COMPARISON_FACTS) != null) {
+                    sb.append("【对标事实】: ").append(blackboard.getRaw(ResearchBlackboard.KEY_COMPARISON_FACTS)).append("\n");
                 }
             }
         }

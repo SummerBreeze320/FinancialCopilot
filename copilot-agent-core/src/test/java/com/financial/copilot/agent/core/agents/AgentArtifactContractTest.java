@@ -8,8 +8,10 @@ import com.financial.copilot.agent.core.agents.stock.StockAnalyzerAgent;
 import com.financial.copilot.agent.core.agents.stock.StockScreenerAgent;
 import com.financial.copilot.agent.core.dag.adapter.BlackboardAdapter;
 import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
+import com.financial.copilot.agent.core.dag.artifact.EvidenceContract;
 import com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport;
 import com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
@@ -164,8 +166,8 @@ class AgentArtifactContractTest {
         ComparisonReport compReport = ComparisonReport.of("003095", "005827", "对标分析详情", List.of("600276.SH"));
         store.store(compNode.getNodeId(), Artifact.of(
                 "art-comp-1", ArtifactType.COMPARISON_REPORT, compNode.getNodeId(), compReport,
-                com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata.standard("comp"),
-                com.financial.copilot.agent.core.dag.artifact.EvidenceContract.sufficient("对标完成", List.of("fund://003095", "fund://005827"))
+                ArtifactMetadata.standard("comp"),
+                EvidenceContract.sufficient("对标完成", List.of("fund://003095", "fund://005827"))
         ));
 
         GraphNode synNode = GraphNode.builder().nodeId("step-4-synthesis").taskType("SYNTHESIS").build();

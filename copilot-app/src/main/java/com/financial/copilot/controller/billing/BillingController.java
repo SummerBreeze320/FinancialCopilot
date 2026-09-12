@@ -10,7 +10,9 @@ import com.financial.copilot.domain.billing.entity.ModelPricing;
 import com.financial.copilot.domain.billing.entity.RechargeOrder;
 import com.financial.copilot.domain.billing.entity.RechargePackage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -91,11 +93,7 @@ public class BillingController {
      */
     @PostMapping("/order/pay-callback")
     public ApiResult<RechargeOrder> payCallback(@RequestBody Map<String, String> callbackPayload) {
-        String orderNo = callbackPayload.get("orderNo");
-        String tradeNo = callbackPayload.get("thirdPartyTradeNo");
-        log.info("[HTTP-BILLING] 收到支付成功异步回调通知: orderNo={}, tradeNo={}", orderNo, tradeNo);
-        RechargeOrder order = billingService.payCallback(orderNo, tradeNo);
-        return ApiResult.success(order);
+        throw new ResponseStatusException(HttpStatus.GONE, "请使用支付宝签名通知接口");
     }
 
     /**
@@ -153,9 +151,6 @@ public class BillingController {
      * 辅助解析有效用户 ID
      */
     private Mono<Long> resolveUserId(Long paramUserId) {
-        if (paramUserId != null) {
-            return Mono.just(paramUserId);
-        }
-        return SecurityUtils.getCurrentUserId().defaultIfEmpty(1L);
+        return SecurityUtils.requireCurrentUserId(paramUserId);
     }
 }

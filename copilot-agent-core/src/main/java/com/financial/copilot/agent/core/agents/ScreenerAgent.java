@@ -2,6 +2,9 @@ package com.financial.copilot.agent.core.agents;
 
 import com.financial.copilot.agent.core.agents.fund.FundScreenerAgent;
 import com.financial.copilot.agent.core.agents.stock.StockScreenerAgent;
+import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
+import com.financial.copilot.agent.core.dag.model.GraphNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -63,10 +66,7 @@ public class ScreenerAgent {
      * @param userPrompt 用户原始指令
      * @return 强类型标的池产物
      */
-    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.FundPool> screenArtifact(
-            com.financial.copilot.agent.core.dag.model.GraphNode node,
-            String userPrompt
-    ) {
+    public Artifact<FundPool> screenArtifact(GraphNode node, String userPrompt) {
         return fundScreenerAgent.screenArtifact(node, userPrompt);
     }
 

@@ -9,13 +9,18 @@ import com.financial.copilot.agent.core.llm.provider.LlmProviderMetadata;
 import com.financial.copilot.agent.core.llm.provider.LlmProviderRegistry;
 import com.financial.copilot.agent.core.llm.provider.LlmProviderType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * <h1>多厂商通用大模型调用服务实现类 (Default Universal LLM Service)</h1>
@@ -51,6 +56,7 @@ public class DefaultLlmService implements LlmService {
 
     @Override
     public String chat(LlmRequest request) {
+        long startedAt = System.currentTimeMillis();
         LlmSettingsDTO resolvedSettings = resolveSettings(request.getSettings());
         String effectiveModel = resolvedSettings.resolveEffectiveModel();
 
@@ -77,8 +83,13 @@ public class DefaultLlmService implements LlmService {
                     .block();
 
             JsonNode root = objectMapper.readTree(responseBody);
+            reportUsage(request, resolvedSettings, root, startedAt);
             return root.path("choices").get(0).path("message").path("content").asText();
         } catch (Exception e) {
+            if (request.getUsageConsumer() != null) {
+                if (e instanceof RuntimeException runtime) throw runtime;
+                throw new IllegalStateException("Metered LLM call failed", e);
+            }
             log.error("[LLM] 大模型同步推理请求失败: provider={}, model={}, error={}",
                     resolvedSettings.getProvider(), effectiveModel, e.getMessage());
             return generateMockResponse(request.getSystemPrompt(), request.getUserPrompt());
@@ -109,17 +120,38 @@ public class DefaultLlmService implements LlmService {
 
         Map<String, Object> payload = buildPayload(request, resolvedSettings, true);
 
+        return Flux.defer(() -> {
+        long startedAt = System.currentTimeMillis();
+        AtomicBoolean usageReceived = new AtomicBoolean();
         return webClient.post()
                 .uri("/chat/completions")
                 .bodyValue(payload)
                 .retrieve()
-                .bodyToFlux(String.class)
-                .map(this::extractContentFromStreamChunk)
+                .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {})
+                .mapNotNull(ServerSentEvent::data)
+                .takeUntil("[DONE]"::equals)
+                .filter(chunk -> !"[DONE]".equals(chunk))
+                .publishOn(Schedulers.boundedElastic())
+                .map(chunk -> {
+                    try {
+                        JsonNode root = objectMapper.readTree(chunk);
+                        if (root.hasNonNull("usage") && usageReceived.compareAndSet(false, true)) {
+                            reportUsage(request, resolvedSettings, root, startedAt);
+                        }
+                        return root.path("choices").path(0).path("delta").path("content").asText("");
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Invalid LLM stream response", e);
+                    }
+                })
                 .filter(chunk -> !chunk.isEmpty())
+                .concatWith(Flux.defer(() -> request.getUsageConsumer() != null && !usageReceived.get()
+                        ? Flux.error(new IllegalStateException("Provider did not return token usage")) : Flux.empty()))
                 .onErrorResume(e -> {
+                    if (request.getUsageConsumer() != null) return Flux.error(e);
                     log.error("[LLM-STREAM] 流式推送异常，降级输出: error={}", e.getMessage());
                     return Flux.just(generateMockResponse(request.getSystemPrompt(), request.getUserPrompt()));
                 });
+        });
     }
 
     @Override
@@ -231,6 +263,7 @@ public class DefaultLlmService implements LlmService {
                 Map.of("role", "user", "content", request.getUserPrompt() != null ? request.getUserPrompt() : "")
         ));
         payload.put("stream", stream);
+        if (stream && request.getUsageConsumer() != null) payload.put("stream_options", Map.of("include_usage", true));
 
         // 推理模型严格遵循官方规范：避免传递温度和 top_p 参数以防 400 Bad Request
         if (!isReasoning) {
@@ -251,6 +284,22 @@ public class DefaultLlmService implements LlmService {
         }
 
         return payload;
+    }
+
+    private void reportUsage(LlmRequest request, LlmSettingsDTO settings, JsonNode response, long startedAt) {
+        if (request.getUsageConsumer() == null) return;
+        JsonNode usage = response.path("usage");
+        if (!usage.path("prompt_tokens").isIntegralNumber() || !usage.path("completion_tokens").isIntegralNumber()
+                || !usage.path("prompt_tokens").canConvertToInt() || !usage.path("completion_tokens").canConvertToInt()) {
+            throw new IllegalStateException("Provider did not return token usage");
+        }
+        int prompt = usage.get("prompt_tokens").intValue();
+        int completion = usage.get("completion_tokens").intValue();
+        if (prompt < 0 || completion < 0) throw new IllegalStateException("Invalid token usage");
+        request.getUsageConsumer().accept(LlmResponse.builder().provider(settings.getProvider())
+                .model(response.path("model").asText(settings.resolveEffectiveModel()))
+                .promptTokens(prompt).completionTokens(completion).totalTokens(Math.addExact(prompt, completion))
+                .latencyMs(System.currentTimeMillis() - startedAt).build());
     }
 
     private String extractContentFromStreamChunk(String chunk) {

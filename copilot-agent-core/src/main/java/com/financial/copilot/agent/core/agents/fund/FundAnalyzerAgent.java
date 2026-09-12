@@ -1,10 +1,31 @@
 package com.financial.copilot.agent.core.agents.fund;
 
+import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
+import com.financial.copilot.agent.core.dag.artifact.EvidenceContract;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
+import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
+import com.financial.copilot.domain.fund.entity.FundInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
 
 /**
  * <h1>公募基金全景体检与深度分析专员 Agent (Fund Analyzer)</h1>
@@ -90,9 +111,9 @@ public class FundAnalyzerAgent {
      * @param userPrompt 用户原始指令
      * @return 强类型基金经理体检与评分矩阵产物
      */
-    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult> analyzeArtifact(
-            com.financial.copilot.agent.core.dag.model.GraphNode node,
-            com.financial.copilot.agent.core.dag.artifact.ArtifactStore store,
+    public Artifact<FundResearchResult> analyzeArtifact(
+            GraphNode node,
+            ArtifactStore store,
             String userPrompt
     ) {
         String nodeId = node != null ? node.getNodeId() : "analysis";
@@ -104,57 +125,56 @@ public class FundAnalyzerAgent {
         }
 
         // 1. 从 ArtifactStore 检索上游初筛产物
-        java.util.List<String> targetCodes = new java.util.ArrayList<>();
-        java.util.Optional<com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.FundPool>> poolOpt =
-                store != null ? store.findFirstByType(com.financial.copilot.agent.core.dag.artifact.ArtifactType.FUND_POOL) : java.util.Optional.empty();
+        List<String> targetCodes = new ArrayList<>();
+        Optional<Artifact<FundPool>> poolOpt =
+                store != null ? store.findFirstByType(ArtifactType.FUND_POOL) : Optional.empty();
         if (poolOpt.isPresent() && poolOpt.get().payload() != null) {
-            com.financial.copilot.agent.core.dag.artifact.payload.FundPool pool = poolOpt.get().payload();
+            FundPool pool = poolOpt.get().payload();
             if (pool.funds() != null && !pool.funds().isEmpty()) {
-                targetCodes = pool.funds().stream().map(com.financial.copilot.domain.fund.entity.FundInfo::getFundCode).limit(topN).toList();
+                targetCodes = pool.funds().stream().map(FundInfo::getFundCode).limit(topN).toList();
             } else if (pool.fundCodes() != null && !pool.fundCodes().isEmpty()) {
                 targetCodes = pool.fundCodes().stream().limit(topN).toList();
             }
         }
 
         if (targetCodes.isEmpty()) {
-            targetCodes = java.util.List.of("003095", "005827", "161005", "001875", "000961");
+            targetCodes = List.of("003095", "005827", "161005", "001875", "000961");
         }
 
-        java.util.List<java.util.Map<String, Object>> evaluatedList = new java.util.concurrent.CopyOnWriteArrayList<>();
-        try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
-            java.util.List<java.util.concurrent.CompletableFuture<Void>> futures = targetCodes.stream().map(code -> java.util.concurrent.CompletableFuture.runAsync(() -> {
+        List<Map<String, Object>> evaluatedList = new CopyOnWriteArrayList<>();
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<CompletableFuture<Void>> futures = targetCodes.stream().map(code -> CompletableFuture.runAsync(() -> {
                 String metricsJson = quantTool.getFundMetrics(code, null, null);
-                java.util.Map<String, Object> record = new java.util.HashMap<>();
+                Map<String, Object> record = new HashMap<>();
                 record.put("fundCode", code);
                 record.put("metricsJson", metricsJson);
                 double score = 75.0 + Math.abs(code.hashCode() % 200) / 10.0;
-                record.put("score", java.math.BigDecimal.valueOf(score).setScale(2, java.math.RoundingMode.HALF_UP));
+                record.put("score", BigDecimal.valueOf(score).setScale(2, RoundingMode.HALF_UP));
                 evaluatedList.add(record);
             }, executor)).toList();
 
-            java.util.concurrent.CompletableFuture.allOf(futures.toArray(new java.util.concurrent.CompletableFuture[0])).join();
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         }
 
         evaluatedList.sort((a, b) -> {
-            java.math.BigDecimal sa = (java.math.BigDecimal) a.get("score");
-            java.math.BigDecimal sb = (java.math.BigDecimal) b.get("score");
+            BigDecimal sa = (BigDecimal) a.get("score");
+            BigDecimal sb = (BigDecimal) b.get("score");
             return sb.compareTo(sa);
         });
 
-        java.util.List<String> topCandidates = evaluatedList.stream()
+        List<String> topCandidates = evaluatedList.stream()
                 .limit(selectBest)
                 .map(r -> (String) r.get("fundCode"))
                 .toList();
 
         log.info("[FUND-ANALYZER] 完成前 {} 名经理多维体检，选拔最优 {} 名标的: {}", targetCodes.size(), selectBest, topCandidates);
 
-        String artifactId = "art-analysis-" + java.util.UUID.randomUUID().toString().substring(0, 8);
-        com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata metadata = com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata.standard("FundQuantAnalysisTool");
-        java.util.List<String> evidenceUris = topCandidates.stream().map(c -> "fund://" + c).toList();
-        com.financial.copilot.agent.core.dag.artifact.EvidenceContract contract = com.financial.copilot.agent.core.dag.artifact.EvidenceContract.sufficient("完成标的多维量化体检", evidenceUris);
+        String artifactId = "art-analysis-" + UUID.randomUUID().toString().substring(0, 8);
+        ArtifactMetadata metadata = ArtifactMetadata.standard("FundQuantAnalysisTool");
+        List<String> evidenceUris = topCandidates.stream().map(c -> "fund://" + c).toList();
+        EvidenceContract contract = EvidenceContract.sufficient("完成标的多维量化体检", evidenceUris);
 
-        com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult result =
-                com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult.ofBatch(evaluatedList, topCandidates);
-        return new com.financial.copilot.agent.core.dag.artifact.Artifact<>(artifactId, com.financial.copilot.agent.core.dag.artifact.ArtifactType.FUND_RESEARCH, nodeId, result, metadata, contract);
+        FundResearchResult result = FundResearchResult.ofBatch(evaluatedList, topCandidates);
+        return new Artifact<>(artifactId, ArtifactType.FUND_RESEARCH, nodeId, result, metadata, contract);
     }
 }

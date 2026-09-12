@@ -15,6 +15,10 @@ import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpointStor
 import com.financial.copilot.agent.core.dag.runtime.checkpoint.InMemoryDagCheckpointStore;
 import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
 import com.financial.copilot.agent.core.dag.runtime.resource.ResourceManager;
+import com.financial.copilot.agent.core.dag.model.patch.GraphOperation;
+import com.financial.copilot.agent.core.dag.model.patch.GraphPatch;
+import com.financial.copilot.agent.core.dag.model.patch.PatchOp;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -389,13 +393,13 @@ public class DagRuntime {
         // 动态改图与自适应变轨 (RePlanAdvisor)
         if (rePlanAdvisor != null && replanPolicy != null && replanPolicy.shouldReplan(graph, completedNodeId, result, finalStatus)) {
             try {
-                com.financial.copilot.agent.core.dag.model.patch.GraphPatch patch = rePlanAdvisor.planPatch(graph, completedNodeId, result);
+                GraphPatch patch = rePlanAdvisor.planPatch(graph, completedNodeId, result);
                 if (patch != null && !patch.operations().isEmpty()) {
                     int newRev = graph.applyPatch(patch);
                     log.info("Applied GraphPatch to graph {} (new revision={}), operations count={}", graph.getGraphId(), newRev, patch.operations().size());
 
-                    for (com.financial.copilot.agent.core.dag.model.patch.GraphOperation op : patch.operations()) {
-                        if (op.op() == com.financial.copilot.agent.core.dag.model.patch.PatchOp.ADD_NODE && op.node() != null) {
+                    for (GraphOperation op : patch.operations()) {
+                        if (op.op() == PatchOp.ADD_NODE && op.node() != null) {
                             String newNodeId = op.node().getNodeId();
                             statusMap.put(newNodeId, new AtomicReference<>(NodeStatus.PENDING));
                             activeOrPendingNodes.incrementAndGet();

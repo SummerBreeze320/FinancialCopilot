@@ -1,11 +1,33 @@
 package com.financial.copilot.agent.core.agents.fund;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financial.copilot.agent.core.context.ObservationSanitizer;
+import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
+import com.financial.copilot.agent.core.dag.artifact.EvidenceContract;
+import com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
+import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.llm.dto.LlmRequest;
+import com.financial.copilot.agent.core.llm.dto.LlmResponse;
 import com.financial.copilot.agent.core.llm.service.LlmService;
+import com.financial.copilot.agent.core.prompt.FundComparatorPrompt;
+import com.financial.copilot.agent.core.skill.SkillMatcher;
 import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
+import com.financial.copilot.agent.tools.graph.FinancialGraphTool;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * <h1>公募基金横向深度对标与对比专员 Agent (Fund Comparator Agent)</h1>
@@ -58,9 +80,9 @@ public class FundComparatorAgent {
         严格基于输入事实数据，严禁编造任何未披露数据。
         """;
 
-    private final com.financial.copilot.agent.core.context.ObservationSanitizer sanitizer;
-    private final com.financial.copilot.agent.core.skill.SkillMatcher skillMatcher;
-    private final com.financial.copilot.agent.tools.graph.FinancialGraphTool graphTool;
+    private final ObservationSanitizer sanitizer;
+    private final SkillMatcher skillMatcher;
+    private final FinancialGraphTool graphTool;
 
     /**
      * 构造函数，强制注入底层数据工具与大模型服务
@@ -70,7 +92,7 @@ public class FundComparatorAgent {
                                FundReportRetrieverTool reportTool,
                                LlmService clientService) {
         this(quantTool, holdingsTool, reportTool, clientService,
-                new com.financial.copilot.agent.core.context.ObservationSanitizer(new com.fasterxml.jackson.databind.ObjectMapper()),
+                new ObservationSanitizer(new ObjectMapper()),
                 null, null);
     }
 
@@ -78,24 +100,24 @@ public class FundComparatorAgent {
                                FundHoldingsQueryTool holdingsTool,
                                FundReportRetrieverTool reportTool,
                                LlmService clientService,
-                               com.financial.copilot.agent.core.context.ObservationSanitizer sanitizer,
-                               com.financial.copilot.agent.core.skill.SkillMatcher skillMatcher) {
+                               ObservationSanitizer sanitizer,
+                               SkillMatcher skillMatcher) {
         this(quantTool, holdingsTool, reportTool, clientService, sanitizer, skillMatcher, null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     public FundComparatorAgent(FundQuantAnalysisTool quantTool,
                                FundHoldingsQueryTool holdingsTool,
                                FundReportRetrieverTool reportTool,
                                LlmService clientService,
-                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.financial.copilot.agent.core.context.ObservationSanitizer sanitizer,
-                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.financial.copilot.agent.core.skill.SkillMatcher skillMatcher,
-                               @org.springframework.beans.factory.annotation.Autowired(required = false) com.financial.copilot.agent.tools.graph.FinancialGraphTool graphTool) {
+                               @Autowired(required = false) ObservationSanitizer sanitizer,
+                               @Autowired(required = false) SkillMatcher skillMatcher,
+                               @Autowired(required = false) FinancialGraphTool graphTool) {
         this.quantTool = quantTool;
         this.holdingsTool = holdingsTool;
         this.reportTool = reportTool;
         this.clientService = clientService;
-        this.sanitizer = sanitizer != null ? sanitizer : new com.financial.copilot.agent.core.context.ObservationSanitizer(new com.fasterxml.jackson.databind.ObjectMapper());
+        this.sanitizer = sanitizer != null ? sanitizer : new ObservationSanitizer(new ObjectMapper());
         this.skillMatcher = skillMatcher;
         this.graphTool = graphTool;
     }
@@ -111,8 +133,15 @@ public class FundComparatorAgent {
         return compareFunds(codeA, codeB, null);
     }
 
-    public String compareFunds(String codeA, String codeB,
-            java.util.function.Consumer<com.financial.copilot.agent.core.llm.dto.LlmResponse> usageConsumer) {
+    /**
+     * 带 Token 计量回调的横向深度对标
+     *
+     * @param codeA         标的A基金代码
+     * @param codeB         标的B基金代码
+     * @param usageConsumer Token 计量回调
+     * @return 对标分析 Markdown
+     */
+    public String compareFunds(String codeA, String codeB, Consumer<LlmResponse> usageConsumer) {
         log.info("[FUND-COMPARATOR] 正在对标采集两只基金数据事实并执行深度归因: codeA={}, codeB={}", codeA, codeB);
 
         // 1. 底层权威工具事实采集
@@ -161,9 +190,8 @@ public class FundComparatorAgent {
         String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("COMPARISON", codeA + " " + codeB) : "";
 
         try {
-            var spec = com.financial.copilot.agent.core.prompt.FundComparatorPrompt.buildSpec(
-                    codeA, cleanDataA, codeB, cleanDataB, skillRules, graphOverlapFact);
-            var request = spec.toLlmRequest();
+            var spec = FundComparatorPrompt.buildSpec(codeA, cleanDataA, codeB, cleanDataB, skillRules, graphOverlapFact);
+            LlmRequest request = spec.toLlmRequest();
             request.setUsageConsumer(usageConsumer);
             String comparisonAnalysis = clientService.chat(request);
             return factualFacts + "\n\n=== 智能对标深度归因 ===\n" + comparisonAnalysis;
@@ -185,10 +213,10 @@ public class FundComparatorAgent {
      * @param usageConsumer Token 计量回调
      * @return 强类型横向对标报告产物
      */
-    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport> compareArtifact(
-            com.financial.copilot.agent.core.dag.model.GraphNode node,
-            com.financial.copilot.agent.core.dag.artifact.ArtifactStore store,
-            java.util.function.Consumer<com.financial.copilot.agent.core.llm.dto.LlmResponse> usageConsumer
+    public Artifact<ComparisonReport> compareArtifact(
+            GraphNode node,
+            ArtifactStore store,
+            Consumer<LlmResponse> usageConsumer
     ) {
         String nodeId = node != null ? node.getNodeId() : "comparison";
 
@@ -196,9 +224,9 @@ public class FundComparatorAgent {
         String codeA = "003095";
         String codeB = "005827";
         if (store != null) {
-            var resOpt = store.findFirstByType(com.financial.copilot.agent.core.dag.artifact.ArtifactType.FUND_RESEARCH);
-            if (resOpt.isPresent() && resOpt.get().payload() instanceof com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult research) {
-                java.util.List<String> candidates = research.topCandidates();
+            Optional<Artifact<FundResearchResult>> resOpt = store.findFirstByType(ArtifactType.FUND_RESEARCH);
+            if (resOpt.isPresent() && resOpt.get().payload() instanceof FundResearchResult research) {
+                List<String> candidates = research.topCandidates();
                 if (candidates != null && candidates.size() >= 2) {
                     codeA = candidates.get(0);
                     codeB = candidates.get(1);
@@ -215,15 +243,15 @@ public class FundComparatorAgent {
         String comparisonAnalysis = compareFunds(codeA, codeB, usageConsumer);
 
         // 3. 提取知识图谱重合持仓
-        java.util.List<String> sharedHoldings = java.util.List.of();
+        List<String> sharedHoldings = List.of();
         if (graphTool != null) {
             try {
                 String rawOverlap = graphTool.getSharedHoldings(codeA, codeB);
                 if (rawOverlap != null && rawOverlap.contains("sharedStockCodes")) {
-                    var jsonNode = new com.fasterxml.jackson.databind.ObjectMapper().readTree(rawOverlap);
+                    var jsonNode = new ObjectMapper().readTree(rawOverlap);
                     var arr = jsonNode.get("sharedStockCodes");
                     if (arr != null && arr.isArray()) {
-                        java.util.List<String> list = new java.util.ArrayList<>();
+                        List<String> list = new ArrayList<>();
                         for (var elem : arr) {
                             list.add(elem.asText());
                         }
@@ -235,18 +263,17 @@ public class FundComparatorAgent {
             }
         }
 
-        String artifactId = "art-comp-" + java.util.UUID.randomUUID().toString().substring(0, 8);
-        var metadata = com.financial.copilot.agent.core.dag.artifact.ArtifactMetadata.standard("FundComparatorAgent");
-        java.util.List<String> evidenceUris = java.util.List.of("fund://" + codeA, "fund://" + codeB);
-        var contract = com.financial.copilot.agent.core.dag.artifact.EvidenceContract.sufficient(
+        String artifactId = "art-comp-" + UUID.randomUUID().toString().substring(0, 8);
+        ArtifactMetadata metadata = ArtifactMetadata.standard("FundComparatorAgent");
+        List<String> evidenceUris = List.of("fund://" + codeA, "fund://" + codeB);
+        EvidenceContract contract = EvidenceContract.sufficient(
                 "完成基金 " + codeA + " 与 " + codeB + " 横向深度对标", evidenceUris);
 
-        var report = com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport.of(
-                codeA, codeB, comparisonAnalysis, sharedHoldings);
+        ComparisonReport report = ComparisonReport.of(codeA, codeB, comparisonAnalysis, sharedHoldings);
 
-        return new com.financial.copilot.agent.core.dag.artifact.Artifact<>(
+        return new Artifact<>(
                 artifactId,
-                com.financial.copilot.agent.core.dag.artifact.ArtifactType.COMPARISON_REPORT,
+                ArtifactType.COMPARISON_REPORT,
                 nodeId,
                 report,
                 metadata,
@@ -254,10 +281,14 @@ public class FundComparatorAgent {
         );
     }
 
-    public com.financial.copilot.agent.core.dag.artifact.Artifact<com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport> compareArtifact(
-            com.financial.copilot.agent.core.dag.model.GraphNode node,
-            com.financial.copilot.agent.core.dag.artifact.ArtifactStore store
-    ) {
+    /**
+     * 强类型 DAG 节点横向深度对标执行入口（无计量）
+     *
+     * @param node  当前 DAG 节点
+     * @param store 产物存储总线
+     * @return 强类型横向对标报告产物
+     */
+    public Artifact<ComparisonReport> compareArtifact(GraphNode node, ArtifactStore store) {
         return compareArtifact(node, store, null);
     }
 }
