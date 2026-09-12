@@ -18,7 +18,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "com.financial.copilot.data.fund.mapper",
         "com.financial.copilot.data.stock.mapper",
         "com.financial.copilot.data.billing.mapper",
-        "com.financial.copilot.data.user.mapper"
+        "com.financial.copilot.data.user.mapper",
+        "com.financial.copilot.agent.core.memory"
 })
 public class FinancialCopilotApplication {
 

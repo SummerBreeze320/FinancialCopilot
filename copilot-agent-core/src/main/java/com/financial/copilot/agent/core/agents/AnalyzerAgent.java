@@ -2,6 +2,10 @@ package com.financial.copilot.agent.core.agents;
 
 import com.financial.copilot.agent.core.agents.fund.FundAnalyzerAgent;
 import com.financial.copilot.agent.core.agents.stock.StockAnalyzerAgent;
+import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
+import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
+import com.financial.copilot.agent.core.dag.model.GraphNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -72,5 +76,21 @@ public class AnalyzerAgent {
             return analyzeStock(assetCode);
         }
         return analyzeFund(assetCode);
+    }
+
+    /**
+     * 强类型 DAG 节点体检与多维量化评估入口
+     *
+     * @param node       当前 DAG 节点
+     * @param store      产物存储总线
+     * @param userPrompt 用户原始指令
+     * @return 强类型基金经理体检与评分矩阵产物
+     */
+    public Artifact<FundResearchResult> analyzeArtifact(
+            GraphNode node,
+            ArtifactStore store,
+            String userPrompt
+    ) {
+        return fundAnalyzerAgent.analyzeArtifact(node, store, userPrompt);
     }
 }

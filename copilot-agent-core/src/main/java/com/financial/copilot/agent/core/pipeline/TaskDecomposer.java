@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.core.llm.dto.LlmRequest;
 import com.financial.copilot.agent.core.llm.dto.LlmResponse;
+import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
 import com.financial.copilot.agent.core.llm.service.LlmService;
+import com.financial.copilot.agent.core.prompt.RTCFPromptSpec;
+import com.financial.copilot.agent.core.prompt.TaskDecomposerPrompt;
 import com.financial.copilot.common.enums.AssetCategory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * <h1>复合投研任务解构器 (Task Decomposer)</h1>
@@ -30,58 +34,6 @@ public class TaskDecomposer {
 
     private final LlmService llmService;
     private final ObjectMapper objectMapper;
-
-    private static final String DECOMPOSER_PROMPT = """
-        你是一个资深金融智能投研规划专家。你的任务是分析用户的自然语言指令，判断其资产大类与任务复杂度，并输出规范的 JSON 格式执行计划 (ExecutionPlan)。
-        
-        支持的资产大类 (assetCategory):
-        - FUND: 公募基金产品及基金经理 (首期深度实施)
-        - STOCK: 股票上市公司标的 (规划中)
-        - FUTURES: 大宗期货及衍生品 (规划中)
-        - WEALTH_MANAGEMENT: 银行理财及信托 (规划中)
-        
-        支持的子任务类型 (taskType):
-        1. SCREENING: 标的初筛，根据板块、年限、最大回撤、夏普等条件过滤候选标的。
-        2. BATCH_ANALYSIS: 对前 N 名标的或基金经理进行多维量化体检与综合评分。
-        3. COMPARISON: 对比前序选出的最终标的 (如 Top 2) 的定量指标与季报定性投资策略展望。
-        4. SYNTHESIS: 综合汇总前序所有事实数据，生成包含资产配置比例、风险收益比及合规提示的最终投资建议报告。
-        
-        【输出格式要求】:
-        必须且仅输出合法的 JSON 字符串，格式如下：
-        {
-          "assetCategory": "FUND",
-          "isComplex": true,
-          "summary": "简述任务流水线规划概要",
-          "steps": [
-            {
-              "stepId": 1,
-              "taskType": "SCREENING",
-              "description": "按板块与稳定性指标初筛公募基金",
-              "dependencies": []
-            },
-            {
-              "stepId": 2,
-              "taskType": "BATCH_ANALYSIS",
-              "description": "分析初筛候选池前 5 名基金经理的能力表现",
-              "dependencies": [1]
-            },
-            {
-              "stepId": 3,
-              "taskType": "COMPARISON",
-              "description": "对比综合评分最优的两强基金标的",
-              "dependencies": [2]
-            },
-            {
-              "stepId": 4,
-              "taskType": "SYNTHESIS",
-              "description": "综合生成资产配置与投资建议研报",
-              "dependencies": [3]
-            }
-          ]
-        }
-        
-        如果是简单单意图请求（如仅筛选、仅查询单只基金或仅对比指定的两只基金），isComplex 为 false，steps 数组只包含 1 个步骤。
-        """;
 
     public TaskDecomposer(LlmService llmService, ObjectMapper objectMapper) {
         this.llmService = llmService;
@@ -106,14 +58,41 @@ public class TaskDecomposer {
      * @return 结构化的任务执行计划
      */
     public ExecutionPlan decompose(String userQuery, boolean enableThinking) {
+        return decompose(userQuery, enableThinking, null, null);
+    }
+
+    /**
+     * 将用户提问解构为多步执行计划（带 Token 计量消费回调）
+     *
+     * @param userQuery      用户原始诉求
+     * @param enableThinking 是否开启深度思考
+     * @param usageConsumer  Token 计量消费回调
+     * @return 结构化的任务执行计划
+     */
+    public ExecutionPlan decompose(String userQuery, boolean enableThinking, Consumer<LlmResponse> usageConsumer) {
+        return decompose(userQuery, enableThinking, null, usageConsumer);
+    }
+
+    /**
+     * 将用户提问解构为多步执行计划
+     *
+     * @param userQuery       用户原始诉求
+     * @param enableThinking  是否开启深度思考
+     * @param historicalFacts 历史记忆事实
+     * @param usageConsumer   Token 计量消费回调
+     * @return 结构化执行计划
+     */
+    public ExecutionPlan decompose(String userQuery, boolean enableThinking, List<String> historicalFacts, Consumer<LlmResponse> usageConsumer) {
         if (userQuery == null || userQuery.isBlank()) {
             return fallbackSingleTask(AssetCategory.FUND, "SCREENING", "默认展示优质公募基金标的");
         }
 
         try {
-            String llmResponse = llmService.chat(
-                    DECOMPOSER_PROMPT, userQuery, enableThinking
-            );
+            RTCFPromptSpec spec = TaskDecomposerPrompt.buildSpec(userQuery, historicalFacts);
+            LlmRequest request = spec.toLlmRequest(
+                    LlmSettingsDTO.builder().enableThinking(enableThinking).build());
+            request.setUsageConsumer(usageConsumer);
+            String llmResponse = llmService.chat(request);
             ExecutionPlan plan = parseJsonPlan(llmResponse, userQuery);
             if (plan != null && !plan.getSteps().isEmpty()) {
                 log.info("[TaskDecomposer] 成功解构任务: category={}, isComplex={}, steps={}, summary={}",
@@ -121,6 +100,10 @@ public class TaskDecomposer {
                 return plan;
             }
         } catch (Exception e) {
+            if (usageConsumer != null) {
+                if (e instanceof RuntimeException runtime) throw runtime;
+                throw new IllegalStateException("Metered LLM call failed", e);
+            }
             log.warn("[TaskDecomposer] 模型解构异常，启用智能规则解构器: {}", e.getMessage());
         }
 

@@ -1,8 +1,15 @@
 package com.financial.copilot.agent.core.agents;
 
 import com.financial.copilot.agent.core.agents.fund.FundComparatorAgent;
+import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
+import com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport;
+import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.llm.dto.LlmResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.util.function.Consumer;
 
 /**
  * <h1>金融横向对标与对比专员统一门面 (Unified Comparator Agent Facade)</h1>
@@ -55,5 +62,44 @@ public class ComparatorAgent {
         log.info("[COMPARATOR-FACADE] 启动金融横向对标: codeA={}, codeB={}", codeA, codeB);
         // 当前默认派发至基金对比，未来可无缝分流股票对标
         return compareFunds(codeA, codeB);
+    }
+
+    /**
+     * 带 Token 计量回调的双基金对比接口
+     *
+     * @param codeA         标的A基金代码
+     * @param codeB         标的B基金代码
+     * @param usageConsumer Token 计量回调
+     * @return 对标分析文本
+     */
+    public String compareFunds(String codeA, String codeB, Consumer<LlmResponse> usageConsumer) {
+        return fundComparatorAgent.compareFunds(codeA, codeB, usageConsumer);
+    }
+
+    /**
+     * 强类型 DAG 节点横向深度对标执行门面入口
+     *
+     * @param node  当前 DAG 节点
+     * @param store 产物存储总线
+     * @return 强类型横向对标报告产物
+     */
+    public Artifact<ComparisonReport> compareArtifact(GraphNode node, ArtifactStore store) {
+        return compareArtifact(node, store, null);
+    }
+
+    /**
+     * 强类型 DAG 节点横向深度对标执行门面入口（带计量）
+     *
+     * @param node          当前 DAG 节点
+     * @param store         产物存储总线
+     * @param usageConsumer Token 计量回调
+     * @return 强类型横向对标报告产物
+     */
+    public Artifact<ComparisonReport> compareArtifact(
+            GraphNode node,
+            ArtifactStore store,
+            Consumer<LlmResponse> usageConsumer
+    ) {
+        return fundComparatorAgent.compareArtifact(node, store, usageConsumer);
     }
 }

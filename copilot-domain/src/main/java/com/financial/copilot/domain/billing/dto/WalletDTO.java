@@ -1,5 +1,6 @@
 package com.financial.copilot.domain.billing.dto;
 
+import com.financial.copilot.domain.billing.entity.UserWallet;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -64,7 +65,7 @@ public class WalletDTO implements Serializable {
      * @param wallet 钱包领域实体
      * @return 展示传输对象
      */
-    public static WalletDTO fromEntity(com.financial.copilot.domain.billing.entity.UserWallet wallet) {
+    public static WalletDTO fromEntity(UserWallet wallet) {
         if (wallet == null) {
             return WalletDTO.builder()
                     .balancePoints(0L)

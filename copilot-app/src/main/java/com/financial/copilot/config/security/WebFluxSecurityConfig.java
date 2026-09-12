@@ -65,6 +65,7 @@ public class WebFluxSecurityConfig {
                         .accessDeniedHandler(new HttpStatusServerAccessDeniedHandler(HttpStatus.FORBIDDEN))
                 )
                 .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers(HttpMethod.POST, "/api/v1/billing/alipay/notify").permitAll()
                         // 放行预检跨域请求
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
                         // 放行认证鉴权路由

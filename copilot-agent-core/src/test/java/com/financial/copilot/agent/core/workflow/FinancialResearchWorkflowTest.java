@@ -22,6 +22,9 @@ import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
 import com.financial.copilot.agent.tools.stock.StockQuantAnalysisTool;
 import com.financial.copilot.agent.tools.stock.StockScreeningTool;
+import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
+import com.financial.copilot.agent.core.memory.LongTermMemoryService;
+import com.financial.copilot.agent.core.memory.MemoryRefinementTask;
 import com.financial.copilot.common.event.ResearchStreamEvent;
 import com.financial.copilot.common.fund.dto.FundMetricsDTO;
 import com.financial.copilot.data.fund.mapper.FundReportVectorMapper;
@@ -34,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
@@ -57,6 +61,7 @@ class FinancialResearchWorkflowTest {
     private FinancialResearchWorkflow workflow;
     private FundDataPort mockDataPort;
     private StockDataPort mockStockPort;
+    private LongTermMemoryService mockLongTermMemoryService;
 
     @BeforeEach
     void setUp() {
@@ -122,8 +127,14 @@ class FinancialResearchWorkflowTest {
         ReportSynthesizer reportSynthesizer = new ReportSynthesizer(llmService);
         TaskDecomposer taskDecomposer = new TaskDecomposer(llmService, objectMapper);
 
+        ShortTermMemoryService mockShortTermMemoryService = Mockito.mock(ShortTermMemoryService.class);
+        mockLongTermMemoryService = Mockito.mock(LongTermMemoryService.class);
+        MemoryRefinementTask mockMemoryRefinementTask = Mockito.mock(MemoryRefinementTask.class);
+        ApplicationEventPublisher mockEventPublisher = Mockito.mock(ApplicationEventPublisher.class);
+
         workflow = new FinancialResearchWorkflow(
-                taskDecomposer, screenerAgent, analyzerAgent, comparatorAgent, reportSynthesizer, mockDataPort
+                taskDecomposer, screenerAgent, analyzerAgent, comparatorAgent, reportSynthesizer, mockDataPort,
+                mockShortTermMemoryService, mockLongTermMemoryService, mockMemoryRefinementTask, mockEventPublisher
         );
     }
 
@@ -193,5 +204,37 @@ class FinancialResearchWorkflowTest {
         assertNotNull(events);
         assertFalse(events.isEmpty());
         assertTrue(events.stream().anyMatch(e -> "PLAN".equals(e.getType())));
+    }
+
+    @Test
+    @DisplayName("验证跨会话提纯事实自动召回并注入 TaskDecomposer 与 ReportSynthesizer")
+    void testCrossSessionRefinedFactsRecallAndInjection() {
+        String sessionKey = "9001:new-session-789";
+        String prompt = "帮我推荐几只医药基金，关注回撤控制";
+
+        UserInvestmentProfile profile = UserInvestmentProfile.builder()
+                .userId(9001L)
+                .riskToleranceLevel(RiskToleranceLevel.C4)
+                .build();
+
+        List<String> mockHistoricalFacts = List.of(
+                "用户偏好过去三年收益靠前且最大回撤控制在15%以内的医药主题基金",
+                "用户已建仓 001875 (前海开源国家健康)，需避免重叠配置"
+        );
+
+        Mockito.when(mockLongTermMemoryService.retrieveRelevantFacts(
+                Mockito.eq(sessionKey), Mockito.eq(prompt), Mockito.eq(5)))
+                .thenReturn(mockHistoricalFacts);
+
+        FinancialResearchWorkflow.WorkflowExecutionResult result = workflow.executeWithResult(
+                sessionKey, prompt, false, profile, null);
+
+        assertNotNull(result);
+        assertNotNull(result.getReport());
+        assertFalse(result.getReport().isBlank());
+
+        // 验证确实调用了长期记忆跨会话事实召回
+        Mockito.verify(mockLongTermMemoryService, Mockito.atLeastOnce()).retrieveRelevantFacts(
+                Mockito.eq(sessionKey), Mockito.eq(prompt), Mockito.eq(5));
     }
 }

@@ -42,6 +42,12 @@
             <artifactId>pgvector</artifactId>
         </dependency>
 
+        <!-- Spring Data Neo4j (SDN) 驱动与客户端 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-neo4j</artifactId>
+        </dependency>
+
         <!-- 测试支持 (JUnit 5 + Mockito) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

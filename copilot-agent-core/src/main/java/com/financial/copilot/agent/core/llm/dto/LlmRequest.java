@@ -1,11 +1,13 @@
 package com.financial.copilot.agent.core.llm.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.function.Consumer;
 
 /**
  * <h1>统一大模型调用请求传输对象 (LLM Invocation Request)</h1>
@@ -35,6 +37,12 @@ public class LlmRequest implements Serializable {
      * 动态模型与性能覆盖设置（若为 null 则使用全局默认设置）
      */
     private LlmSettingsDTO settings;
+
+    /**
+     * 服务端 Token 计量回调 (不参与序列化)
+     */
+    @JsonIgnore
+    private transient Consumer<LlmResponse> usageConsumer;
 
     /**
      * 便捷构建基础请求

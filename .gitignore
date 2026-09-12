@@ -78,3 +78,6 @@ Thumbs.db
 # Agent Plugins
 .agents/plugins/
 
+temp.md
+.m2/
+docker/postgres/data/

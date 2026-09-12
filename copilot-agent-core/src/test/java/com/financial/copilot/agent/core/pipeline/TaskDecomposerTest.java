@@ -10,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -69,7 +71,7 @@ class TaskDecomposerTest {
         SubTask step4 = plan.getSteps().get(3);
         assertEquals(4, step4.getStepIndex());
         assertEquals("SYNTHESIS", step4.getTaskType());
-        assertTrue(step4.getDependsOn().containsAll(java.util.List.of(1, 2, 3)));
+        assertTrue(step4.getDependsOn().containsAll(List.of(1, 2, 3)));
     }
 
     /**
