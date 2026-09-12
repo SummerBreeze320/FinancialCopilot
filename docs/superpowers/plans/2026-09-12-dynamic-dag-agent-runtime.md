@@ -49,32 +49,34 @@
 
 ---
 
-### Task 2: Multi-Modal Typed Artifact Model & Storage (★★★★☆)
+### Task 2: Typed Artifact Contract & Storage (★★★★☆)
 
 **Files:**
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/ArtifactType.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/ArtifactMetadata.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/Artifact.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/ArtifactStore.java`
+- Create domain payloads in: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/artifact/payload/` (`FundPool`, `MacroResearchResult`, `FundResearchResult`, `ComparisonReport`, `DocumentEvidence`)
 - Test: `copilot-agent-core/src/test/java/com/financial/copilot/agent/core/dag/artifact/ArtifactStoreTest.java`
 
 **Interfaces:**
 - Produces:
-  - `ArtifactType`: `FUND_POOL`, `STOCK_POOL`, `MACRO_FACTS`, `METRICS_MATRIX`, `COMPARISON_REPORT`, `ALLOCATION_ADVICE`, `FINAL_SYNTHESIS_REPORT`, `GENERIC`
-  - `Artifact<T>` record: `artifactId`, `producerNodeId`, `type`, `text`, `structuredData`, `components`, `references`, `evidences`, `metadata`
+  - `Artifact<T>(id, type, producerNodeId, payload, metadata)`
+  - `ArtifactMetadata(createdAt, schemaVersion, evidenceIds, confidence, partial, source)`
+  - Standardized payloads: `FundPool`, `FundResearchResult`, `MacroResearchResult`, `ComparisonReport`, `DocumentEvidence`
   - `ArtifactStore`: `store(nodeId, artifact)`, `get(nodeId): Artifact<T>`, `getAllUpstream(upstreamIds): Map<String, Artifact<?>>`, `putGlobalContext(key, val)`
 
-- [ ] **Step 1: Write the failing unit tests for `ArtifactStore`**
-  - Test storing and typed retrieval of artifacts.
+- [ ] **Step 1: Write the failing unit tests for `ArtifactStore` and typed contracts**
+  - Test storing and strongly typed retrieval of `Artifact<FundPool>` and `Artifact<FundResearchResult>`.
   - Test resolving upstream artifacts for a node with multiple dependencies.
-  - Test degradation flags (`evidenceIncomplete=true`).
+  - Test auditing metadata (`evidenceIds`, `confidence`, `partial=true`).
 - [ ] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=ArtifactStoreTest`
-- [ ] **Step 3: Implement `ArtifactType`, `ArtifactMetadata`, `Artifact`, and `ArtifactStore`**
+- [ ] **Step 3: Implement `Artifact`, `ArtifactMetadata`, domain payloads, and `ArtifactStore`**
 - [ ] **Step 4: Run tests and ensure they pass**
   - Verify with `mvn test -pl copilot-agent-core -Dtest=ArtifactStoreTest`
 - [ ] **Step 5: Commit changes**
-  - `git commit -m "feat(dag): add multi-modal Artifact and ArtifactStore"`
+  - `git commit -m "feat(dag): add Typed Artifact Contract, ArtifactMetadata, and ArtifactStore"`
 
 ---
 

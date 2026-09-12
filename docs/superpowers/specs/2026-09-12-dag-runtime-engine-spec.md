@@ -287,64 +287,64 @@ public class GraphNode {
 
 ---
 
-## 4. 多模态强类型投研产物标准 (Artifact Model)
+## 4. 多模态强类型投研产物标准 (Typed Artifact Contract)
 
-彻底替代传统 `Map<String, Object>` 黑板，建立涵盖**观点、数据、组件、引用与证据**的规范：
+彻底替代传统弱类型 `Map<String, Object>` 黑板，统一管理 `workspace`、`component`、`reference`、`component_data_read` 与 `tool result`：
 
 ```java
 package com.financial.copilot.agent.core.dag.artifact;
 
+import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
 /**
- * <h1>多模态标准化投研产物</h1>
+ * <h1>强类型投研产物契约 (Typed Artifact Contract)</h1>
+ *
+ * @param <T> 领域主载荷类型 (如 FundPool, FundResearchResult, MacroResearchResult 等)
  */
 public record Artifact<T>(
-    String artifactId,
-    String producerNodeId,
-    ArtifactType type,
-    String text,                                // 自然语言分析与核心观点
-    T structuredData,                           // 强类型领域实体对象 (如 FundPool, MetricsMatrix)
-    List<ArtifactComponent> components,         // 前端富交互组件渲染规格 (图表、卡片)
-    List<ArtifactReference> references,         // 信源引用 (Wind、公告、财报等溯源)
-    List<ArtifactEvidence> evidences,           // 支撑观点的量化事实锚点
-    ArtifactMetadata metadata                   // 执行耗时、Token 开销、置信度、降级状态等
+    String id,                     // 产物全局唯一 ID (如 "art_fund_pool_001")
+    String type,                   // 产物类型枚举标识 (FUND_POOL, MACRO_FACTS, etc.)
+    String producerNodeId,         // 生产该产物的节点 ID (如 "fund_screen_1")
+    T payload,                     // 强类型业务载荷实体
+    ArtifactMetadata metadata      // 标准化元数据 (时间戳、信源、置信度、证据链)
 ) {
-    public static <T> Artifact<T> of(String producerNodeId, ArtifactType type, T structuredData, String text) {
-        return new Artifact<>(
-            "art_" + UUID.randomUUID().toString().substring(0, 8),
-            producerNodeId,
-            type,
-            text,
-            structuredData,
-            List.of(),
-            List.of(),
-            List.of(),
-            ArtifactMetadata.now()
-        );
+    public static <T> Artifact<T> of(String id, String type, String producerNodeId, T payload, ArtifactMetadata metadata) {
+        return new Artifact<>(id, type, producerNodeId, payload, metadata);
     }
 }
 
 /**
- * <h1>产物执行元数据与降级标识</h1>
+ * <h1>产物审计与合规元数据 (Artifact Metadata)</h1>
+ * 回答四个关键问题：结论来自什么数据？数据是否完整？置信度多少？由哪个 Agent/信源产生？
  */
 public record ArtifactMetadata(
-    long timestamp,
-    long durationMs,
-    boolean degraded,              // 是否降级产物 (例如走保底数据)
-    boolean evidenceIncomplete,    // 信源/证据链是否缺失 (如舆情接口超时)
-    String degradationReason       // 降级原因说明
+    Instant createdAt,             // 产生时间戳
+    String schemaVersion,          // 契约结构版本号 (如 "1.0")
+    List<String> evidenceIds,      // 支撑该结论的证据 ID 列表 (溯源到季报/公告/行情)
+    Double confidence,             // 置信度打分 (0.0 ~ 1.0)
+    boolean partial,               // 数据是否为部分降级结果 (true 表示数据不完整)
+    String source                  // 物理信源渠道 (如 "Wind.API", "EastMoney.Crawler", "Internal.DB")
 ) {
-    public static ArtifactMetadata now() {
-        return new ArtifactMetadata(System.currentTimeMillis(), 0L, false, false, null);
+    public static ArtifactMetadata standard(String source) {
+        return new ArtifactMetadata(Instant.now(), "1.0", List.of(), 1.0, false, source);
     }
 
-    public static ArtifactMetadata incomplete(String reason) {
-        return new ArtifactMetadata(System.currentTimeMillis(), 0L, true, true, reason);
+    public static ArtifactMetadata partial(String source, List<String> evidenceIds, String reason) {
+        return new ArtifactMetadata(Instant.now(), "1.0", evidenceIds, 0.7, true, source);
     }
 }
 ```
+
+### 4.1 核心领域产物载荷 (Domain Artifact Payloads)
+
+系统内置标准化投研业务载荷，坚决杜绝各 Agent 自行定义零散输出格式：
+1. `Artifact<FundPool>`（初筛标的池）：包含命中基金清单、初筛命中理由与规模门槛；
+2. `Artifact<MacroResearchResult>`（宏观流动性观点）：包含利率走势、货币政策定调、基准指数涨跌；
+3. `Artifact<FundResearchResult>`（单基金/经理多维体检）：包含超额收益分解、回撤天数、评级得分矩阵；
+4. `Artifact<ComparisonReport>`（决赛圈横向对标）：包含多标的对比雷达图、季报观点异同、综合打擂台胜出者；
+5. `Artifact<DocumentEvidence>`（研报与公告证据点）：从招募说明书或财报中提纯的原文章节与事实锚点；
+6. `Artifact<FinalSynthesisReport>`（终审投研研报）：Markdown 全文、核心资产配置权重与免责声明。
 ```
 
 ### 产物总线 (ArtifactStore)
