@@ -1,5 +1,6 @@
 package com.financial.copilot.agent.core.dag.artifact;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 /**
@@ -31,6 +32,7 @@ public record EvidenceContract(
         return new EvidenceContract(conclusion, evidenceUris, List.of(), List.of(), 1.0);
     }
 
+    @JsonIgnore
     public boolean isSufficient() {
         return missingEvidence.isEmpty() && confidence >= 0.75;
     }

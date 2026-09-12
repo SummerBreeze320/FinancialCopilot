@@ -341,6 +341,11 @@ public class ExecutionGraph {
         return revision;
     }
 
+    synchronized void restoreRevision(int revision) {
+        if (revision < 0) throw new IllegalArgumentException("revision cannot be negative");
+        this.revision = revision;
+    }
+
     public Map<String, GraphNode> getNodes() {
         return Collections.unmodifiableMap(nodes);
     }

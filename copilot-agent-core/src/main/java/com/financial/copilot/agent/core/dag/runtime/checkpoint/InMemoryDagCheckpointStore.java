@@ -11,25 +11,26 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryDagCheckpointStore implements DagCheckpointStore {
 
-    private final Map<String, DagCheckpoint> store = new ConcurrentHashMap<>();
+    private record Key(Long userId, String runId) {}
+    private final Map<Key, DagCheckpoint> store = new ConcurrentHashMap<>();
 
     @Override
     public void saveCheckpoint(DagCheckpoint checkpoint) {
         if (checkpoint != null && checkpoint.runId() != null) {
-            store.put(checkpoint.runId(), checkpoint);
+            store.put(new Key(checkpoint.userId(), checkpoint.runId()), checkpoint);
         }
     }
 
     @Override
-    public Optional<DagCheckpoint> loadCheckpoint(String runId) {
+    public Optional<DagCheckpoint> load(Long userId, String runId) {
         if (runId == null) return Optional.empty();
-        return Optional.ofNullable(store.get(runId));
+        return Optional.ofNullable(store.get(new Key(userId, runId)));
     }
 
     @Override
-    public void clearCheckpoint(String runId) {
+    public void clear(Long userId, String runId) {
         if (runId != null) {
-            store.remove(runId);
+            store.remove(new Key(userId, runId));
         }
     }
 }

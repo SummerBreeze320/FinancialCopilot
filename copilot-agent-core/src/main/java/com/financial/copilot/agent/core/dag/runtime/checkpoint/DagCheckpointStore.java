@@ -15,10 +15,18 @@ public interface DagCheckpointStore {
     /**
      * 加载指定运行的最新有效快照
      */
-    Optional<DagCheckpoint> loadCheckpoint(String runId);
+    Optional<DagCheckpoint> load(Long userId, String runId);
+
+    default Optional<DagCheckpoint> loadCheckpoint(String runId) {
+        return load(null, runId);
+    }
 
     /**
      * 清除快照（工作流最终成功或中止后按需清理）
      */
-    void clearCheckpoint(String runId);
+    void clear(Long userId, String runId);
+
+    default void clearCheckpoint(String runId) {
+        clear(null, runId);
+    }
 }

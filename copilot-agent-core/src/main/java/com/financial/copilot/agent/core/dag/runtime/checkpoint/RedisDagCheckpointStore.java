@@ -25,11 +25,11 @@ public class RedisDagCheckpointStore implements DagCheckpointStore {
 
     public RedisDagCheckpointStore(StringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
         this.redisTemplate = redisTemplate;
-        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
+        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper().findAndRegisterModules();
     }
 
     public RedisDagCheckpointStore() {
-        this(null, new ObjectMapper());
+        this(null, new ObjectMapper().findAndRegisterModules());
     }
 
     @Override
@@ -42,7 +42,7 @@ public class RedisDagCheckpointStore implements DagCheckpointStore {
 
         try {
             String json = objectMapper.writeValueAsString(checkpoint);
-            redisTemplate.opsForValue().set(KEY_PREFIX + checkpoint.runId(), json, DEFAULT_TTL);
+            redisTemplate.opsForValue().set(key(checkpoint.userId(), checkpoint.runId()), json, DEFAULT_TTL);
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize DagCheckpoint for runId={}", checkpoint.runId(), e);
             fallbackStore.saveCheckpoint(checkpoint);
@@ -53,14 +53,14 @@ public class RedisDagCheckpointStore implements DagCheckpointStore {
     }
 
     @Override
-    public Optional<DagCheckpoint> loadCheckpoint(String runId) {
+    public Optional<DagCheckpoint> load(Long userId, String runId) {
         if (runId == null) return Optional.empty();
         if (redisTemplate == null) {
-            return fallbackStore.loadCheckpoint(runId);
+            return fallbackStore.load(userId, runId);
         }
 
         try {
-            String json = redisTemplate.opsForValue().get(KEY_PREFIX + runId);
+            String json = redisTemplate.opsForValue().get(key(userId, runId));
             if (json != null && !json.isBlank()) {
                 DagCheckpoint cp = objectMapper.readValue(json, DagCheckpoint.class);
                 return Optional.ofNullable(cp);
@@ -68,19 +68,23 @@ public class RedisDagCheckpointStore implements DagCheckpointStore {
         } catch (Exception e) {
             log.warn("Failed to read DagCheckpoint from Redis for runId={}, falling back to in-memory", runId, e);
         }
-        return fallbackStore.loadCheckpoint(runId);
+        return fallbackStore.load(userId, runId);
     }
 
     @Override
-    public void clearCheckpoint(String runId) {
+    public void clear(Long userId, String runId) {
         if (runId == null) return;
-        fallbackStore.clearCheckpoint(runId);
+        fallbackStore.clear(userId, runId);
         if (redisTemplate != null) {
             try {
-                redisTemplate.delete(KEY_PREFIX + runId);
+                redisTemplate.delete(key(userId, runId));
             } catch (Exception e) {
                 log.warn("Failed to delete DagCheckpoint in Redis for runId={}", runId, e);
             }
         }
+    }
+
+    private String key(Long userId, String runId) {
+        return KEY_PREFIX + (userId == null ? "anonymous" : userId) + ":" + runId;
     }
 }

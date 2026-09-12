@@ -7,6 +7,7 @@ import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
 import com.financial.copilot.agent.core.dag.guard.DefaultNodeQualityGate;
 import com.financial.copilot.agent.core.dag.guard.NodeQualityGate;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
+import com.financial.copilot.agent.core.dag.model.ExecutionGraphSnapshot;
 import com.financial.copilot.agent.core.dag.model.FailurePolicy;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.model.NodeStatus;
@@ -235,6 +236,75 @@ public class DagRuntime {
         drainReadyQueue(runId, graph, this.artifactStore, statusMap, activeOrPendingNodes, graphFuture, cancellationToken, publisher);
 
         return graphFuture;
+    }
+
+    /** Restores an owned run from durable state in a fresh runtime instance. */
+    public GraphRunHandle resume(Long userId, String runId,
+                                 Consumer<com.financial.copilot.agent.core.llm.dto.LlmResponse> usageConsumer) {
+        Optional<DagCheckpoint> checkpoint = checkpointStore.load(userId, runId);
+        if (checkpoint.isEmpty() || checkpoint.get().graph() == null) {
+            CompletableFuture<GraphRunResult> missing = CompletableFuture.failedFuture(
+                    new NoSuchElementException("No checkpoint for owned run: " + runId));
+            return new GraphRunHandle(runId, reactor.core.publisher.Flux.empty(), missing, ignored -> {});
+        }
+        DagCheckpoint saved = checkpoint.get();
+        ExecutionGraph graph = saved.graph().restore();
+        GraphRunRequest request = new GraphRunRequest(runId, userId, saved.sessionId(), "", false,
+                null, usageConsumer, RunMode.SYNC);
+        DagRunContext context = new DagRunContext(request, graph);
+        saved.artifacts().forEach(context.artifacts::store);
+        saved.nodeStatuses().forEach((id, status) -> context.statuses.put(id, normalizeRestoredStatus(status)));
+
+        DagRuntime isolated = new DagRuntime(nodeExecutor, context.artifacts, resourceManager,
+                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request);
+        CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
+        isolated.resumeFromCheckpoint(saved, graph, context.artifacts, context.cancellation, event -> {
+            context.statuses.put(event.nodeId(), event.status());
+        }).whenComplete((ignored, error) -> {
+            isolated.virtualThreadExecutor.shutdown();
+            if (error != null) completion.completeExceptionally(error);
+            else completion.complete(context.result());
+        });
+        return new GraphRunHandle(runId, context.events.flux(), completion, context.cancellation::cancel);
+    }
+
+    private CompletableFuture<Void> resumeFromCheckpoint(
+            DagCheckpoint checkpoint, ExecutionGraph graph, ArtifactStore store,
+            CancellationToken token, Consumer<DagEvent> publisher) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        Map<String, AtomicReference<NodeStatus>> statuses = new ConcurrentHashMap<>();
+        AtomicInteger active = new AtomicInteger();
+        token.onCancel(() -> future.completeExceptionally(
+                new CancellationException("Resume cancelled: " + token.getReason())));
+
+        for (String nodeId : graph.getNodes().keySet()) {
+            NodeStatus restored = normalizeRestoredStatus(checkpoint.nodeStatuses().get(nodeId));
+            statuses.put(nodeId, new AtomicReference<>(restored));
+            if (restored == NodeStatus.SUCCEEDED || restored == NodeStatus.SKIPPED) {
+                publisher.accept(new DagEvent(nodeId, restored, "Restored from checkpoint"));
+            } else {
+                statuses.get(nodeId).set(NodeStatus.PENDING);
+                active.incrementAndGet();
+            }
+        }
+        if (active.get() == 0) {
+            future.complete(null);
+            return future;
+        }
+        for (String nodeId : graph.getNodes().keySet()) {
+            if (statuses.get(nodeId).get() == NodeStatus.PENDING
+                    && DependencyResolver.isReady(nodeId, graph,
+                    id -> statuses.get(id) == null ? null : statuses.get(id).get())) {
+                enqueueReadyNode(nodeId, graph, statuses, publisher);
+            }
+        }
+        drainReadyQueue(checkpoint.runId(), graph, store, statuses, active, future, token, publisher);
+        return future;
+    }
+
+    private static NodeStatus normalizeRestoredStatus(NodeStatus status) {
+        if (status == NodeStatus.SUCCEEDED || status == NodeStatus.SKIPPED) return status;
+        return NodeStatus.PENDING;
     }
 
     private void enqueueReadyNode(
@@ -580,16 +650,13 @@ public class DagRuntime {
             Map<String, NodeStatus> snapshot = new HashMap<>();
             statusMap.forEach((k, v) -> snapshot.put(k, v.get()));
 
-            Map<String, String> artMap = new HashMap<>();
-            currentStore.getAllArtifacts().forEach((k, v) -> artMap.put(k, v.id()));
-
             DagCheckpoint cp = new DagCheckpoint(
                     runId,
-                    graph.getGraphId(),
-                    graph.getRevision(),
+                    runRequest != null ? runRequest.userId() : null,
+                    runRequest != null ? runRequest.sessionId() : graph.getGraphId(),
+                    ExecutionGraphSnapshot.from(graph),
                     snapshot,
-                    artMap,
-                    Map.of(),
+                    currentStore.getAllArtifacts(),
                     Instant.now()
             );
             checkpointStore.saveCheckpoint(cp);
