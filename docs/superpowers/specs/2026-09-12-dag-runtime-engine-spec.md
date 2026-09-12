@@ -330,91 +330,172 @@ public class ArtifactStore {
 
 ## 5. 依赖驱动运行时调度器 (DagRuntime)
 
-### 5.1 纯原生 Java 21 虚拟线程执行器
-* **无物理屏障**：每个节点直接通过 `CompletableFuture` 或依赖计数器监听直接父节点完成事件；
-* **原生虚拟线程**：统一采用 `Executors.newVirtualThreadPerTaskExecutor()`，消灭 OS 线程池切换开销；
-* **原子状态跃迁**：基于 `ConcurrentHashMap` 与 `AtomicReference` 维护 `NodeStatus`。
+### 5.1 事件驱动图执行模型 (Event-Driven DAG Execution Engine)
+
+> **重大架构决议**：**彻底弃用静态不可变的 `CompletableFuture.allOf(...)` 递归链条！**  
+> 静态 `allOf(...)` 仅适合不可变的批处理图。在支持 Planner 动态 Re-plan（A 完成后动态插入 D、B 完成后动态剪枝 E）的高级 Agent 系统中，静态 Future 链条无法在运行时安全动态插桩与变轨。
+> 
+> **取而代之的是纯粹的 `NodeCompletionEvent` 事件驱动模式**：
+> 1. 初始将所有入度为 0 的根节点标记为 `READY` 并派发；
+> 2. 节点完成触发 `onNodeCompleted`；
+> 3. 触发 Planner 的动态 Re-plan Checkpoint（支持即时 `graph.addNode / removeNode`）；
+> 4. `DependencyResolver` 遍历当前完成节点的所有直接下游 `downstream`；
+> 5. 若下游节点的所有 `upstream` 前驱已全部就绪（`SUCCEEDED` / `SKIPPED`），CAS 原子跃迁为 `READY` 并立即派发到虚拟线程执行；
+> 6. 与系统 SSE、Agent Event 体系完全原生契合。
 
 ```java
 package com.financial.copilot.agent.core.dag.runtime;
 
-import java.util.concurrent.*;
+import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
+import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
+import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.dag.model.NodeStatus;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+
+/**
+ * <h1>基于事件驱动的 DAG 运行时引擎 (Event-Driven DAG Runtime)</h1>
+ */
 public class DagRuntime {
 
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     private final NodeExecutor nodeExecutor;
     private final ArtifactStore artifactStore;
-    private final RePlanAdvisor rePlanAdvisor; // 动态 Re-plan 顾问
+    private final ConcurrencyLimiter concurrencyLimiter;
+    private final RePlanAdvisor rePlanAdvisor;
 
     public CompletableFuture<Void> executeGraph(
             ExecutionGraph graph,
             Consumer<DagEvent> eventPublisher
     ) {
-        Map<String, CompletableFuture<Void>> futures = new ConcurrentHashMap<>();
-        Map<String, NodeStatus> statusMap = new ConcurrentHashMap<>();
-        
-        // 标记所有节点初始为 PENDING
-        graph.getNodes().keySet().forEach(id -> statusMap.put(id, NodeStatus.PENDING));
+        CompletableFuture<Void> graphCompletionFuture = new CompletableFuture<>();
+        Map<String, AtomicReference<NodeStatus>> statusMap = new ConcurrentHashMap<>();
+        AtomicInteger activeOrPendingNodes = new AtomicInteger(0);
 
-        // 提交初始入度为 0 的节点 (READY)
-        for (GraphNode node : graph.getNodes().values()) {
-            wireNodeExecution(node.getNodeId(), graph, futures, statusMap, eventPublisher);
+        // 1. 初始化所有节点状态为 PENDING
+        for (String nodeId : graph.getNodes().keySet()) {
+            statusMap.put(nodeId, new AtomicReference<>(NodeStatus.PENDING));
+            activeOrPendingNodes.incrementAndGet();
         }
 
-        return CompletableFuture.allOf(futures.values().toArray(new CompletableFuture[0]));
+        // 2. 启动入度为 0 的根节点
+        Set<String> rootNodes = graph.getRootNodeIds();
+        for (String rootId : rootNodes) {
+            transitionAndDispatch(rootId, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
+        }
+
+        return graphCompletionFuture;
     }
 
-    private void wireNodeExecution(
+    /**
+     * 原子状态跃迁并派发执行
+     */
+    private void transitionAndDispatch(
             String nodeId,
             ExecutionGraph graph,
-            Map<String, CompletableFuture<Void>> futures,
-            Map<String, NodeStatus> statusMap,
+            Map<String, AtomicReference<NodeStatus>> statusMap,
+            AtomicInteger activeOrPendingNodes,
+            CompletableFuture<Void> graphCompletionFuture,
             Consumer<DagEvent> eventPublisher
     ) {
-        futures.computeIfAbsent(nodeId, id -> {
-            Set<String> parentIds = graph.getUpstream(id);
-            
-            CompletableFuture<Void> parentsReady;
-            if (parentIds.isEmpty()) {
-                parentsReady = CompletableFuture.completedFuture(null);
-            } else {
-                CompletableFuture<?>[] parentFutures = parentIds.stream()
-                        .map(pId -> wireNodeExecution(pId, graph, futures, statusMap, eventPublisher))
-                        .toArray(CompletableFuture[]::new);
-                parentsReady = CompletableFuture.allOf(parentFutures);
+        AtomicReference<NodeStatus> statusRef = statusMap.computeIfAbsent(
+                nodeId, k -> new AtomicReference<>(NodeStatus.PENDING));
+
+        // CAS 防止重复派发
+        if (!statusRef.compareAndSet(NodeStatus.PENDING, NodeStatus.READY)) {
+            return;
+        }
+
+        eventPublisher.accept(new DagEvent(nodeId, NodeStatus.READY, "Node is ready"));
+
+        // 提交至虚拟线程池执行
+        virtualThreadExecutor.submit(() -> {
+            GraphNode node = graph.getNodes().get(nodeId);
+            if (node == null) {
+                onNodeCompleted(nodeId, NodeStatus.FAILED, null, null, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
+                return;
             }
 
-            // 核心：直接父节点一就绪，立即在新虚拟线程激活当前节点！
-            return parentsReady.thenRunAsync(() -> {
-                GraphNode node = graph.getNodes().get(id);
-                if (node == null) return;
+            statusRef.set(NodeStatus.RUNNING);
+            eventPublisher.accept(new DagEvent(nodeId, NodeStatus.RUNNING, "Node started"));
 
-                statusMap.put(id, NodeStatus.RUNNING);
-                eventPublisher.accept(new DagEvent(id, NodeStatus.RUNNING, "Node started"));
-
-                try {
-                    // 执行业务逻辑
-                    Artifact<?> result = nodeExecutor.execute(node, artifactStore);
-                    artifactStore.store(id, result);
-                    statusMap.put(id, NodeStatus.SUCCEEDED);
-                    eventPublisher.accept(new DagEvent(id, NodeStatus.SUCCEEDED, "Node succeeded", result));
-
-                    // 触发动态 Re-plan 评估 (局部反馈闭环)
-                    if (rePlanAdvisor != null) {
-                        rePlanAdvisor.onNodeCompleted(graph, node, result, this);
-                    }
-                } catch (Exception e) {
-                    if (node.isFailSoft()) {
-                        statusMap.put(id, NodeStatus.FAILED);
-                        eventPublisher.accept(new DagEvent(id, NodeStatus.FAILED, "Node failed softly: " + e.getMessage()));
-                    } else {
-                        statusMap.put(id, NodeStatus.FAILED);
-                        throw new CompletionException(e);
-                    }
+            try {
+                // 结合 ConcurrencyLimiter 保护下游物理资源配额
+                Artifact<?> result = concurrencyLimiter.runWithAgentPermit(
+                        () -> nodeExecutor.execute(node, artifactStore)
+                );
+                artifactStore.store(nodeId, result);
+                onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, result, null, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
+            } catch (Exception e) {
+                if (node.isFailSoft()) {
+                    onNodeCompleted(nodeId, NodeStatus.FAILED, null, e, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
+                } else {
+                    statusRef.set(NodeStatus.FAILED);
+                    graphCompletionFuture.completeExceptionally(e);
                 }
-            }, virtualThreadExecutor);
+            }
         });
+    }
+
+    /**
+     * 核心：节点执行完成事件处理函数 (Node Completion Event Handler)
+     */
+    private void onNodeCompleted(
+            String completedNodeId,
+            NodeStatus finalStatus,
+            Artifact<?> result,
+            Throwable error,
+            ExecutionGraph graph,
+            Map<String, AtomicReference<NodeStatus>> statusMap,
+            AtomicInteger activeOrPendingNodes,
+            CompletableFuture<Void> graphCompletionFuture,
+            Consumer<DagEvent> eventPublisher
+    ) {
+        statusMap.get(completedNodeId).set(finalStatus);
+        eventPublisher.accept(new DagEvent(completedNodeId, finalStatus, 
+                finalStatus == NodeStatus.SUCCEEDED ? "Node succeeded" : "Node failed: " + (error != null ? error.getMessage() : ""),
+                result));
+
+        // 1. 动态图反馈演进：允许 Planner 根据中间产物动态增删节点/边
+        if (rePlanAdvisor != null && finalStatus == NodeStatus.SUCCEEDED) {
+            Set<String> newlyAddedNodes = rePlanAdvisor.onNodeCompleted(graph, completedNodeId, result);
+            if (newlyAddedNodes != null) {
+                for (String newNodeId : newlyAddedNodes) {
+                    statusMap.put(newNodeId, new AtomicReference<>(NodeStatus.PENDING));
+                    activeOrPendingNodes.incrementAndGet();
+                }
+            }
+        }
+
+        // 2. 依赖裁决：检查该节点的所有下游后继节点
+        Set<String> downstreams = graph.getDownstream(completedNodeId);
+        for (String childId : downstreams) {
+            AtomicReference<NodeStatus> childStatus = statusMap.get(childId);
+            if (childStatus != null && childStatus.get() == NodeStatus.PENDING) {
+                Set<String> childUpstreams = graph.getUpstream(childId);
+                
+                boolean allUpstreamDone = childUpstreams.stream().allMatch(upId -> {
+                    NodeStatus s = statusMap.get(upId) != null ? statusMap.get(upId).get() : null;
+                    return s == NodeStatus.SUCCEEDED || s == NodeStatus.SKIPPED;
+                });
+
+                if (allUpstreamDone) {
+                    // 所有依赖满足，下游节点立即就绪启动！
+                    transitionAndDispatch(childId, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
+                }
+            }
+        }
+
+        // 3. 图完成判定
+        if (activeOrPendingNodes.decrementAndGet() == 0) {
+            graphCompletionFuture.complete(null);
+        }
     }
 }
 ```
