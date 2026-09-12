@@ -116,6 +116,8 @@ public interface BillingPort {
      */
     Optional<RechargeOrder> getOrderByNo(String orderNo);
 
+    Optional<RechargeOrder> getOrderByNoForUpdate(String orderNo);
+
     /**
      * 更新订单状态与支付信息
      *

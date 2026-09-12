@@ -1,18 +1,15 @@
-1. 既然钱包什么的功能都实现了  帮我设计一个标准的 用户注册、登录、实名认证、个人资料、用户肖像（偏好）  以及rbac（可以用spring security）
-2. 是不是没有做过 prompt Engineering（把背景、限制和示例全部堆进一条 Prompt，模型不一定更稳定。重复信息会增加输入成本，互相冲突的要求还会让输出偏离任务。Prompt 应该写清任务、必要背景、约束和输出格式，其余资料按需进入上下文。一个合格的 Prompt，通常要交代四件事：Role、Task、Context、Format。）
-3. context Engineering（Context Engineering 至少管这么几块。
+# 架构改进事项与落地状态
 
-System Prompt 是 API 消息里的高优先级指令。.cursor/rules、.claude/rules、AGENTS.md 等文件是宿主程序读取的规则来源，宿主会按自己的加载规则把其中一部分转换成模型上下文；它们和 API 角色意义上的 System Prompt 不是同一个概念。Cursor 早期使用的 .cursorrules 已属于旧版形式，新项目应使用 .cursor/rules。
-
-User Prompt 是用户输入的业务数据和指令。看起来简单，但真实项目里经常会混着自然语言、业务字段、历史状态、附件内容，处理不好就会把上下文搞脏。
-
-Memory 这块分短期和长期。短期记忆一般是 Session 内的滑动窗口，长期记忆不一定就是向量库——文件、KV、关系库、图数据库、向量检索层都可以。关键问题是：记录什么、什么时候写入、怎么更新、怎么遗忘、召回之后怎么进入当前上下文。
-
-RAG & Tools 也算。RAG 负责检索外部文档把相关内容塞进上下文，Tools 负责把工具描述、参数格式、调用结果挂载进去。RAG 其实可以看成 Context Engineering 的一种具体实现——它回答的是“检索什么、怎么检索、结果怎么放进上下文”这几个问题。
-
-JSON Schema、Function Calling 的参数结构和返回约束会限制当前调用，因此也属于上下文的一部分。工具调用后的 Observation 则要区分：保留原文、写入摘要，还是在后续轮次清理；若不提前设计，解析和回放阶段会留下大量难以处理的结果。
-
-摘要压缩、历史剔除和 Context Caching 都属于 Token 管理手段。它们需要在信息保留与调用成本之间取舍。）
-4. Agent skills（Skill 是可被 Agent 发现、按需读取的任务说明。接口返回格式、日志字段、慢 SQL 的排查路径、Review 的关注顺序，都可以写进 SKILL.md。
-
-Skill 本身不提供工具能力。它解决的是“这类任务该按什么规则做”，由宿主在任务命中时把对应说明交给 Agent。）
+- [x] 1. 用户注册、登录、实名认证、个人资料、用户肖像（偏好） 以及 RBAC（Spring Security WebFlux）已全部落地。
+- [x] 2. Prompt Engineering：确立 RTCF 模型（Role 角色定位、Task 任务目标、Context 事实槽、Format 输出契约）。消灭混合堆砌，前缀静态化对齐 Context Caching，完成 TaskDecomposer、FundComparator、ReportSynthesizer、MemoryRefinement 标准化重构。
+- [x] 3. Context Engineering：
+  - System Prompt 与 User Prompt 边界解耦，静态前缀保证缓存命中；
+  - 结构化构建器 `StructuredUserPromptBuilder` 实现分槽隔离（Goal / Profile / Skills / Memory / Observations / Constraints）；
+  - `ObservationSanitizer` 工具观察值净化治理（清洗 raw JSON，Token 降低 50%~70%，消除幻觉与长括号干扰）；
+  - `ContextReducer` 滚动摘要压缩（Rolling Summary）治理短期记忆，避免暴力丢弃；
+  - `ContextBudgetManager` 全局 Token 配额预算与自适应截断。
+- [x] 4. Agent Skills 体系：
+  - 规范以 Markdown/YAML 格式定义 `SKILL.md`（存放于 `classpath:skills/{skill_name}/SKILL.md`）；
+  - `SkillRegistry` 自动扫描发现并多维索引；
+  - `SkillMatcher` 依据子任务类型与用户 Query 意图按需动态匹配注入，未命中零 Token 占用；
+  - 内置首批三大行业技能：`fund-comparison`（两强横向对标四步审计法）、`asset-allocation`（C1-C5 适格投资者核心-卫星配置规范）、`quant-screening`（量化初筛硬性准入与极值风控剔除）。

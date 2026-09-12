@@ -8,6 +8,7 @@ import com.financial.copilot.domain.billing.entity.*;
 import com.financial.copilot.domain.billing.port.BillingPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -44,7 +45,7 @@ public class WalletBillingService {
      * @param minThresholdPoints 最低起步门槛点数（默认通常为 100 点）
      */
     public void checkBalance(Long userId, long minThresholdPoints) {
-        Long uid = userId != null ? userId : 1L;
+        Long uid = Objects.requireNonNull(userId, "userId");
         UserWallet wallet = billingPort.getOrCreateWallet(uid, null);
         if (!wallet.hasSufficientBalance(minThresholdPoints)) {
             log.warn("[WALLET-PRECHECK] 拦截调用：用户算力余额不足: userId={}, balance={}, required={}",
@@ -63,10 +64,7 @@ public class WalletBillingService {
      */
     public long calculatePoints(String model, int promptTokens, int completionTokens) {
         ModelPricing pricing = billingPort.getPricing(model)
-                .orElseGet(() -> ModelPricing.builder()
-                        .inputPricePerK(new BigDecimal("10.0"))
-                        .outputPricePerK(new BigDecimal("20.0"))
-                        .build());
+                .orElseThrow(() -> new IllegalStateException("模型未配置有效定价: " + model));
         return pricing.calculatePoints(promptTokens, completionTokens);
     }
 
@@ -83,15 +81,20 @@ public class WalletBillingService {
      * @param latencyMs        响应耗时
      * @return 扣费结算结果
      */
+    @Transactional
     public TokenDeductionResult deductTokenPoints(Long userId, String sessionId, String taskType,
                                                   String provider, String model,
                                                   int promptTokens, int completionTokens,
                                                   long latencyMs) {
-        Long uid = userId != null ? userId : 1L;
-        int total = promptTokens + completionTokens;
+        Long uid = Objects.requireNonNull(userId, "userId");
+        if (promptTokens < 0 || completionTokens < 0) throw new IllegalArgumentException("Negative token usage");
+        int total = Math.addExact(promptTokens, completionTokens);
         long pointsToDeduct = calculatePoints(model, promptTokens, completionTokens);
 
         boolean deductSuccess = billingPort.deductPoints(uid, pointsToDeduct);
+        if (!deductSuccess) {
+            throw new WalletInsufficientException(uid, billingPort.getOrCreateWallet(uid, null).getBalancePoints(), pointsToDeduct);
+        }
 
         // 记账流水入库
         TokenUsageLedger ledger = TokenUsageLedger.builder()
@@ -141,12 +144,14 @@ public class WalletBillingService {
      * @return 待支付订单实体
      */
     public RechargeOrder createOrder(Long userId, Long packageId, String payChannel) {
-        Long uid = userId != null ? userId : 1L;
+        if (payChannel != null && !"ALIPAY".equalsIgnoreCase(payChannel)) {
+            throw new IllegalArgumentException("仅支持支付宝充值");
+        }
+        Long uid = Objects.requireNonNull(userId, "userId");
         RechargePackage pkg = billingPort.getPackageById(packageId)
                 .orElseThrow(() -> new IllegalArgumentException("指定的充值规格套餐不存在: packageId=" + packageId));
 
-        String orderNo = "ORD" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
-                + String.format("%04d", new Random().nextInt(10000));
+        String orderNo = "ORD" + UUID.randomUUID().toString().replace("-", "");
 
         RechargeOrder order = RechargeOrder.builder()
                 .orderNo(orderNo)
@@ -154,7 +159,7 @@ public class WalletBillingService {
                 .packageId(pkg.getId())
                 .payAmountCny(pkg.getPriceCny())
                 .targetPoints(pkg.getTotalPoints())
-                .payChannel(payChannel != null ? payChannel.toUpperCase() : "WECHAT")
+                .payChannel("ALIPAY")
                 .orderStatus("PENDING")
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -172,17 +177,30 @@ public class WalletBillingService {
      * @param thirdPartyTradeNo 第三方流水号
      * @return 已完成订单实体
      */
-    public RechargeOrder payCallback(String orderNo, String thirdPartyTradeNo) {
-        RechargeOrder order = billingPort.getOrderByNo(orderNo)
+    @Transactional
+    public RechargeOrder payCallback(String orderNo, String thirdPartyTradeNo, BigDecimal paidAmount) {
+        if (thirdPartyTradeNo == null || thirdPartyTradeNo.isBlank() || thirdPartyTradeNo.length() > 100) {
+            throw new IllegalArgumentException("Invalid payment trade number");
+        }
+        RechargeOrder order = billingPort.getOrderByNoForUpdate(orderNo)
                 .orElseThrow(() -> new IllegalArgumentException("未找到待处理的充值订单: orderNo=" + orderNo));
 
+        if (!"ALIPAY".equals(order.getPayChannel()) || paidAmount == null
+                || order.getPayAmountCny().compareTo(paidAmount) != 0) {
+            throw new IllegalArgumentException("Payment channel or amount mismatch");
+        }
+
         if ("PAID".equalsIgnoreCase(order.getOrderStatus())) {
+            if (!thirdPartyTradeNo.equals(order.getThirdPartyTradeNo())) {
+                throw new IllegalArgumentException("Conflicting payment trade number");
+            }
             log.info("[WALLET-CALLBACK] 订单已处于支付成功状态，幂等放行: orderNo={}", orderNo);
             return order;
         }
 
+        if (!"PENDING".equals(order.getOrderStatus())) throw new IllegalArgumentException("Order is not payable");
         order.setOrderStatus("PAID");
-        order.setThirdPartyTradeNo(thirdPartyTradeNo != null ? thirdPartyTradeNo : "MOCK-" + System.currentTimeMillis());
+        order.setThirdPartyTradeNo(thirdPartyTradeNo);
         order.setPaidAt(LocalDateTime.now());
 
         // 原子给用户钱包增加可用算力点
@@ -201,7 +219,7 @@ public class WalletBillingService {
      * @return 钱包传输对象
      */
     public WalletDTO getWallet(Long userId) {
-        Long uid = userId != null ? userId : 1L;
+        Long uid = Objects.requireNonNull(userId, "userId");
         UserWallet wallet = billingPort.getOrCreateWallet(uid, null);
         return WalletDTO.fromEntity(wallet);
     }
@@ -235,7 +253,7 @@ public class WalletBillingService {
      * @return 分页结果映射 (total, list, page, size)
      */
     public Map<String, Object> getLedger(Long userId, int page, int size, String model, String taskType) {
-        Long uid = userId != null ? userId : 1L;
+        Long uid = Objects.requireNonNull(userId, "userId");
         int currentPage = Math.max(1, page);
         int pageSize = Math.max(1, Math.min(size, 100));
         int offset = (currentPage - 1) * pageSize;
@@ -259,7 +277,7 @@ public class WalletBillingService {
      * @return 时序走势点集合
      */
     public List<UsageTrendPointDTO> getUsageTrend(Long userId, int days) {
-        Long uid = userId != null ? userId : 1L;
+        Long uid = Objects.requireNonNull(userId, "userId");
         return billingPort.getUsageTrend(uid, days);
     }
 
@@ -269,6 +287,7 @@ public class WalletBillingService {
      * @param userId     用户 ID
      * @param giftPoints 赠送算力点数 (例如 10,000 点)
      */
+    @Transactional
     public void grantInitialTrialPoints(Long userId, long giftPoints) {
         if (userId == null || giftPoints <= 0) return;
         billingPort.getOrCreateWallet(userId, null);

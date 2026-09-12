@@ -9,6 +9,21 @@ spring:
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/memory-schema.sql,classpath:db/billing-schema.sql
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:123456}
+      database: ${REDIS_DATABASE:0}
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    authentication:
+      username: ${NEO4J_USER:neo4j}
+      password: ${NEO4J_PASSWORD:123456}
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.financial.copilot.data.*.po
@@ -18,6 +33,14 @@ mybatis-plus:
 
 # 金融智能投研核心配置 (copilot)
 copilot:
+  alipay:
+    enabled: ${ALIPAY_ENABLED:false}
+    sandbox: ${ALIPAY_SANDBOX:true}
+    app-id: ${ALIPAY_APP_ID:}
+    seller-id: ${ALIPAY_SELLER_ID:}
+    private-key: ${ALIPAY_PRIVATE_KEY:}
+    public-key: ${ALIPAY_PUBLIC_KEY:}
+    notify-url: ${ALIPAY_NOTIFY_URL:}
   jwt:
     secret: ${JWT_SECRET:FinancialCopilotSecretKeyForJwtAuthentication2026SecureKeyWithAtLeast256BitsLong!}
     access-token-expiration-ms: 7200000

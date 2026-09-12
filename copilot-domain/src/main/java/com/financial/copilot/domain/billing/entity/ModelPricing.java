@@ -68,6 +68,8 @@ public class ModelPricing implements Serializable {
      * @return 最终扣减点数（向上取整，最低扣 1 点）
      */
     public long calculatePoints(int promptTokens, int completionTokens) {
+        if (promptTokens < 0 || completionTokens < 0) throw new IllegalArgumentException("Negative token usage");
+        if (promptTokens == 0 && completionTokens == 0) return 0;
         BigDecimal promptCost = (inputPricePerK != null ? inputPricePerK : BigDecimal.ZERO)
                 .multiply(BigDecimal.valueOf(promptTokens))
                 .divide(BigDecimal.valueOf(1000), 4, RoundingMode.HALF_UP);

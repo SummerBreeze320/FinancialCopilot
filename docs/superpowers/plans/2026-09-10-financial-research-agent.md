@@ -71,48 +71,48 @@ financial-copilot/
 ## 阶段实施任务清单
 
 ### Task 1: 依赖库升级与持久层标准化（Lombok + MyBatis-Plus 引入）
-- [ ] 在根目录 `pom.xml` 中引入 `mybatis-plus-spring-boot3-starter` (3.5.7) 管理，移除原有 Spring Data JPA 依赖。
-- [ ] 确保子模块 `copilot-common`, `copilot-domain`, `copilot-data-engine` 正确应用 Lombok (`@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`)。
-- [ ] 改造 `copilot-data-engine`：将原有 JPA Entity 改造为标准的 MyBatis-Plus PO (`FundInfoPO`, `FundManagerPO`, `FundNavHistoryPO`, `FundReportVectorPO`)，使用 `@TableName` 和 `@TableId`。
-- [ ] 编写对应的 Mapper 接口继承 `BaseMapper<PO>`：`FundInfoMapper`, `FundNavHistoryMapper`, `FundReportVectorMapper`。
-- [ ] 在 `FundReportVectorMapper` 中使用 MyBatis 注解 `@Select` 实现 PGVector `<=>` 余弦相似度召回。
-- [ ] 重构 `DatabaseFundDataAdapter`，通过 MyBatis-Plus `LambdaQueryWrapper` 与 Mapper 实现 `FundDataPort`。
-- [ ] 运行 `mvn test-compile` 验证持久层编译与测试通过。
+- [x] 在根目录 `pom.xml` 中引入 `mybatis-plus-spring-boot3-starter` (3.5.7) 管理，移除原有 Spring Data JPA 依赖。
+- [x] 确保子模块 `copilot-common`, `copilot-domain`, `copilot-data-engine` 正确应用 Lombok (`@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`)。
+- [x] 改造 `copilot-data-engine`：将原有 JPA Entity 改造为标准的 MyBatis-Plus PO (`FundInfoPO`, `FundManagerPO`, `FundNavHistoryPO`, `FundReportVectorPO`)，使用 `@TableName` 和 `@TableId`。
+- [x] 编写对应的 Mapper 接口继承 `BaseMapper<PO>`：`FundInfoMapper`, `FundNavHistoryMapper`, `FundReportVectorMapper`。
+- [x] 在 `FundReportVectorMapper` 中使用 MyBatis 注解 `@Select` 实现 PGVector `<=>` 余弦相似度召回。
+- [x] 重构 `DatabaseFundDataAdapter`，通过 MyBatis-Plus `LambdaQueryWrapper` 与 Mapper 实现 `FundDataPort`。
+- [x] 运行 `mvn test-compile` 验证持久层编译与测试通过。
 
 ### Task 2: 架构抽象与基金领域命名空间隔离
-- [ ] 在 `copilot-common` 中创建通用包：
+- [x] 在 `copilot-common` 中创建通用包：
   - 定义 `com.financial.copilot.common.enums.AssetCategory` (`FUND`, `STOCK`, `FUTURES`, `WEALTH_MANAGEMENT`)。
   - 定义 `com.financial.copilot.common.model.AssetProfile`。
-- [ ] 在 `copilot-domain` 中创建策略注册抽象：
+- [x] 在 `copilot-domain` 中创建策略注册抽象：
   - 定义 `com.financial.copilot.domain.core.strategy.AssetDomainStrategy` 接口。
   - 定义 `com.financial.copilot.domain.core.registry.AssetDomainRegistry` 注册中心。
-- [ ] 将所有现有基金相关代码整齐划归至 `fund` 专属包路径：
+- [x] 将所有现有基金相关代码整齐划归至 `fund` 专属包路径：
   - `copilot-domain/src/.../domain/fund/`
   - `copilot-agent-tools/src/.../tools/fund/`
-- [ ] 编译并验证底座结构清晰、基金特征鲜明。
+- [x] 编译并验证底座结构清晰、基金特征鲜明。
 
 ### Task 3: 复合投研任务解构器与投研黑板（copilot-agent-core）
-- [ ] 在 `copilot-agent-core` 的 `pipeline` 包下定义数据结构：
+- [x] 在 `copilot-agent-core` 的 `pipeline` 包下定义数据结构：
   - `ExecutionPlan`：包含 `isComplex`, `summary`, `List<SubTask> steps`。
   - `SubTask`：包含 `stepIndex`, `taskType` (`SCREENING`, `BATCH_ANALYSIS`, `COMPARISON`, `SYNTHESIS`), `description`, `dependsOn`, `params`, `outputKey`。
   - `ResearchBlackboard`：基于并发安全 Map 的状态上下文，支持存放 `candidateFunds`, `managerRatings`, `topCandidates`, `comparisonFacts`, `finalReport`。
-- [ ] 编写 `TaskDecomposer`：
+- [x] 编写 `TaskDecomposer`：
   - 针对用户自然语言输入（如“帮我筛选过去三年表现稳定的医药基金，然后分析前 5 名基金经理的能力，再比较其中最优秀的两个，最后生成投资建议”），通过 DeepSeek 智能识别是否为复合任务。
   - 复合任务生成有序的 4 步 Plan，单意图任务退化为 1 步 Plan。
-- [ ] 编写针对 `TaskDecomposer` 的单元测试，验证单意图与复合意图解析正确性。
+- [x] 编写针对 `TaskDecomposer` 的单元测试，验证单意图与复合意图解析正确性。
 
 ### Task 4: 复合流水线编排与并发评估引擎（Fan-Out / Fan-In）
-- [ ] 在 `copilot-agent-core` 中重构 `FinancialResearchWorkflow`：
+- [x] 在 `copilot-agent-core` 中重构 `FinancialResearchWorkflow`：
   - 接入 `TaskDecomposer` 获得 `ExecutionPlan`。
   - 按照步骤顺序推进，前一步输出注入 `ResearchBlackboard`，作为后一步输入。
   - 对于阶段 2（批量经理评估）：基于 Java 21 虚拟线程实现 Fan-Out 并发拉取并计算量化指标，排序后 Fan-In 筛选最优标的。
   - 对于阶段 3（横向对标）：自动读取 Blackboard 中的 Top 2 标的，调用定量对比和季报 RAG 语义检索，形成事实对照表。
   - 对于阶段 4（报告合成）：由 `ReportSynthesizer` 汇集 Blackboard 中所有事实，产出结构化投资建议报告。
-- [ ] 编写复合流水线端到端单测，验证黑板上下文完整流转。
+- [x] 编写复合流水线端到端单测，验证黑板上下文完整流转。
 
 ### Task 5: 阶段式 SSE 消息协议与流式输出（copilot-app）
-- [ ] 在 `copilot-common` 定义流式事件消息体 `ResearchStreamEvent`（支持 `PLAN`, `STEP_START`, `STEP_COMPLETE`, `CONTENT`, `DONE`）。
-- [ ] 升级 `ResearchAgentController.java` 中的 `/api/v1/research/chat/stream` 端点：
+- [x] 在 `copilot-common` 定义流式事件消息体 `ResearchStreamEvent`（支持 `PLAN`, `STEP_START`, `STEP_COMPLETE`, `CONTENT`, `DONE`）。
+- [x] 升级 `ResearchAgentController.java` 中的 `/api/v1/research/chat/stream` 端点：
   - 以 `MediaType.TEXT_EVENT_STREAM_VALUE` 实时推送执行进度。
   - 用户界面可直观感知投研思考链路（“步骤 1/4 初筛中... -> 步骤 2/4 经理评估中... -> 步骤 3/4 季报对标中... -> 步骤 4/4 报告打字机流式呈现”）。
-- [ ] 模拟真实复合输入场景进行完整验证并输出演示。
+- [x] 模拟真实复合输入场景进行完整验证并输出演示。

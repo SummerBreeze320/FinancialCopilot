@@ -13,6 +13,15 @@ import org.apache.ibatis.annotations.Update;
  */
 @Mapper
 public interface UserWalletMapper extends BaseMapper<UserWalletPO> {
+    @org.apache.ibatis.annotations.Insert("INSERT INTO sys_user_wallet " +
+            "(user_id, tenant_id, balance_points, frozen_points, total_recharged_points, total_consumed_points, wallet_status, version, updated_at) " +
+            "VALUES (#{userId}, #{tenantId}, 0, 0, 0, 0, 'NORMAL', 0, NOW()) ON CONFLICT (user_id) DO NOTHING")
+    int createIfAbsent(@Param("userId") Long userId, @Param("tenantId") String tenantId);
+
+    @Update("UPDATE sys_user_wallet SET balance_points = balance_points - #{points}, " +
+            "total_consumed_points = total_consumed_points + #{points}, version = version + 1, updated_at = NOW() " +
+            "WHERE user_id = #{userId} AND wallet_status = 'NORMAL' AND balance_points - frozen_points >= #{points}")
+    int deductAvailable(@Param("userId") Long userId, @Param("points") long points);
 
     /**
      * 基于版本号乐观锁与余额校验的原子扣减 (防止超扣与并发脏写)

@@ -22,14 +22,11 @@ public class HttpClientConfig {
     @Bean
     public WebClient webClient() {
         TcpClient tcpClient = TcpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
-                .responseTimeout(Duration.ofSeconds(5));
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000);
         HttpClient httpClient = HttpClient.from(tcpClient);
         return WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .filter(ExchangeFilterFunctions.logRequest())
-                .filter(ExchangeFilterFunctions.logResponse())
                 .build();
     }
 }

@@ -11,4 +11,6 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface RechargeOrderMapper extends BaseMapper<RechargeOrderPO> {
+    @org.apache.ibatis.annotations.Select("SELECT * FROM sys_recharge_order WHERE order_no = #{orderNo} FOR UPDATE")
+    RechargeOrderPO selectForUpdate(@org.apache.ibatis.annotations.Param("orderNo") String orderNo);
 }

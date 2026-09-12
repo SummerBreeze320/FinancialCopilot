@@ -27,6 +27,17 @@ import static org.mockito.Mockito.*;
  * @author FinancialCopilot
  */
 class WalletBillingServiceTest {
+    @Test
+    void failedDeductionDoesNotWriteSuccessfulLedger() {
+        BillingPort port = mock(BillingPort.class);
+        when(port.getPricing(anyString())).thenReturn(Optional.of(ModelPricing.builder()
+                .inputPricePerK(BigDecimal.TEN).outputPricePerK(BigDecimal.TEN).build()));
+        when(port.getOrCreateWallet(1L, null)).thenReturn(UserWallet.builder()
+                .userId(1L).balancePoints(0L).walletStatus("NORMAL").build());
+        assertThrows(WalletInsufficientException.class, () -> new WalletBillingService(port)
+                .deductTokenPoints(1L, "session", "TEST", "DEEPSEEK", "deepseek-chat", 100, 100, 1));
+        verify(port, never()).recordUsageLedger(any());
+    }
 
     private BillingPort mockBillingPort;
     private WalletBillingService billingService;
@@ -134,9 +145,9 @@ class WalletBillingServiceTest {
         verify(mockBillingPort, times(1)).saveOrder(any(RechargeOrder.class));
 
         // 2. 模拟支付回调
-        when(mockBillingPort.getOrderByNo(order.getOrderNo())).thenReturn(Optional.of(order));
+        when(mockBillingPort.getOrderByNoForUpdate(order.getOrderNo())).thenReturn(Optional.of(order));
 
-        RechargeOrder paidOrder = billingService.payCallback(order.getOrderNo(), "ALIPAY-TRADE-9999");
+        RechargeOrder paidOrder = billingService.payCallback(order.getOrderNo(), "ALIPAY-TRADE-9999", order.getPayAmountCny());
         assertEquals("PAID", paidOrder.getOrderStatus());
         assertEquals("ALIPAY-TRADE-9999", paidOrder.getThirdPartyTradeNo());
         assertNotNull(paidOrder.getPaidAt());

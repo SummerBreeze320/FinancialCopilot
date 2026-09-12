@@ -79,3 +79,5 @@ Thumbs.db
 .agents/plugins/
 
 temp.md
+.m2/
+docker/postgres/data/
