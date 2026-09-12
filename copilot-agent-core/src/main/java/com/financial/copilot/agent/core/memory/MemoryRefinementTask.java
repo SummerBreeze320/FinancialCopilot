@@ -1,23 +1,28 @@
 package com.financial.copilot.agent.core.memory;
 
+import com.financial.copilot.agent.core.event.WorkflowFinishedEvent;
 import com.financial.copilot.agent.core.llm.service.LlmService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.financial.copilot.agent.core.prompt.MemoryRefinementPrompt;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+
 import java.util.List;
-import com.financial.copilot.agent.core.event.WorkflowFinishedEvent;
-import org.springframework.context.event.EventListener;
 import java.util.stream.Collectors;
 
 /**
- * Async task that refines short‑term memory using the LLM and persists the extracted facts
- * into long‑term memory.
+ * <h1>短期记忆语义提纯异步任务 (Memory Refinement Task)</h1>
+ * <p>
+ * 监听工作流完结事件 {@link WorkflowFinishedEvent}，调用大模型对当前会话的短期交互历史
+ * 进行事实提取与噪音过滤，将高价值事实持久化至长期记忆库。
+ * </p>
+ *
+ * @author FinancialCopilot
  */
+@Slf4j
 @Component
 public class MemoryRefinementTask {
-
-    private static final Logger log = LoggerFactory.getLogger(MemoryRefinementTask.class);
 
     private final ShortTermMemoryService shortTermMemoryService;
     private final LongTermMemoryService longTermMemoryService;
@@ -53,7 +58,7 @@ public class MemoryRefinementTask {
                 return;
             }
             String joined = String.join("\n", context);
-            var spec = com.financial.copilot.agent.core.prompt.MemoryRefinementPrompt.buildSpec(joined);
+            var spec = MemoryRefinementPrompt.buildSpec(joined);
             String llmResponse = llmService.chat(spec.toLlmRequest());
             List<String> facts = llmResponse.lines()
                     .map(String::trim)
