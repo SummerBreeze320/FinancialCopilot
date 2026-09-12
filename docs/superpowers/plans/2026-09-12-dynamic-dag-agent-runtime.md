@@ -38,16 +38,16 @@
   - `GraphPatch`: `baseRevision`, `List<GraphOperation>`
   - `ExecutionGraph`: `addNode`, `addEdge`, `removeNode`, `applyPatch(GraphPatch): int`, `hasCycle(): boolean`, `calculateTopologicalWave(nodeId): int`
 
-- [ ] **Step 1: Write the failing unit tests for `ExecutionGraph` and `GraphPatch`**
+- [x] **Step 1: Write the failing unit tests for `ExecutionGraph` and `GraphPatch`**
   - Test cycle detection (A -> B -> A throws IllegalStateException).
   - Test topological wave computation.
   - Test `applyPatch`: optimistic locking via `baseRevision` and atomic operations (`ADD_NODE`, `ADD_EDGE`, `SKIP_NODE`).
-- [ ] **Step 2: Run test to confirm it fails**
+- [x] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=ExecutionGraphTest`
-- [ ] **Step 3: Implement `NodeStatus`, `FailurePolicy`, `GraphNode`, `GraphPatch`, and `ExecutionGraph`**
-- [ ] **Step 4: Run tests to ensure they pass**
+- [x] **Step 3: Implement `NodeStatus`, `FailurePolicy`, `GraphNode`, `GraphPatch`, and `ExecutionGraph`**
+- [x] **Step 4: Run tests to ensure they pass**
   - Verify with `mvn test -pl copilot-agent-core -Dtest=ExecutionGraphTest`
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   - `git commit -m "feat(dag): add ExecutionGraph, GraphNode, NodeStatus, and GraphPatch"`
 
 ---
@@ -71,17 +71,17 @@
   - Standardized payloads: `FundPool`, `FundResearchResult`, `MacroResearchResult`, `ComparisonReport`, `DocumentEvidence`
   - `ArtifactStore`: `store(nodeId, artifact)`, `get(nodeId): Artifact<T>`, `getAllUpstream(upstreamIds): Map<String, Artifact<?>>`, `putGlobalContext(key, val)`
 
-- [ ] **Step 1: Write the failing unit tests for `ArtifactStore` and typed contracts**
+- [x] **Step 1: Write the failing unit tests for `ArtifactStore` and typed contracts**
   - Test storing and strongly typed retrieval of `Artifact<FundPool>` and `Artifact<FundResearchResult>`.
   - Test resolving upstream artifacts for a node with multiple dependencies.
   - Test auditing metadata (`evidenceIds`, `confidence`, `partial=true`).
   - Test EvidenceContract sufficiency verification (`isSufficient()`, missing evidence tracking).
-- [ ] **Step 2: Run test to confirm it fails**
+- [x] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=ArtifactStoreTest`
-- [ ] **Step 3: Implement `Artifact`, `ArtifactMetadata`, domain payloads, and `ArtifactStore`**
-- [ ] **Step 4: Run tests and ensure they pass**
+- [x] **Step 3: Implement `Artifact`, `ArtifactMetadata`, domain payloads, and `ArtifactStore`**
+- [x] **Step 4: Run tests and ensure they pass**
   - Verify with `mvn test -pl copilot-agent-core -Dtest=ArtifactStoreTest`
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   - `git commit -m "feat(dag): add Typed Artifact Contract, ArtifactMetadata, and ArtifactStore"`
 
 ---
@@ -103,15 +103,15 @@
   - `ResourceManager`: `tryAcquire(req)`, `acquire(req)`, `release(req)`
   - Default quotas: LLM=4, DPU=10, RAG=20, MCP=10, Component=8
 
-- [ ] **Step 1: Write unit tests verifying quota limits and semaphore unmounting**
+- [x] **Step 1: Write unit tests verifying quota limits and semaphore unmounting**
   - Test concurrent executions capping at declared quota per resource type.
   - Test release permits wakes up blocked/waiting requests.
-- [ ] **Step 2: Run test to confirm it fails**
+- [x] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=ResourceManagerTest`
-- [ ] **Step 3: Implement `ResourceType`, `NodePriority`, `ResourceRequirement`, and `ResourceManager`**
-- [ ] **Step 4: Run tests and ensure they pass**
+- [x] **Step 3: Implement `ResourceType`, `NodePriority`, `ResourceRequirement`, and `ResourceManager`**
+- [x] **Step 4: Run tests and ensure they pass**
   - Verify with `mvn test -pl copilot-agent-core -Dtest=ResourceManagerTest`
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   - `git commit -m "feat(dag): add declarative ResourceManager with multi-resource quotas"`
 
 ---
@@ -147,7 +147,7 @@
   - Child Isolation: A child token's individual cancellation (e.g. single node timeout) does not leak to parent or siblings unless policy is `FAIL_FAST`.
   - Zero runtime wavefront barrier: Downstream starts the instant its own dependencies succeed and resource permit is available.
 
-- [ ] **Step 1: Write unit tests for diamond dependency, priority scheduling, failure policies, and tree-structured cancellation propagation**
+- [x] **Step 1: Write unit tests for diamond dependency, priority scheduling, failure policies, and tree-structured cancellation propagation**
   - Diamond DAG: A -> [B (slow 500ms), C (fast 50ms)] -> D (depends on C only!). Verify D runs at 50ms without waiting for B.
   - Priority test: When LLM quota is 1, HIGH priority node runs before NORMAL priority node.
   - Tree Cancellation test: Trigger root `runToken.cancel()` mid-run; verify recursive child cancellation, virtual thread interruption, permits released, pending nodes aborted.
@@ -155,15 +155,15 @@
   - FailurePolicy tests: `CONTINUE` passes degraded artifact; `OPTIONAL` skips gracefully; `FAIL_FAST` fails graph.
   - NodeQualityGate test: Verify tri-state routing (`PASS` releases downstream, `NEED_MORE_DATA` blocks downstream and requests graph patch, `INVALID` invokes retry/fallback).
   - Checkpoint & Resume test: Run A -> B -> C -> D; simulate failure at D; invoke `dagRuntime.resume(runId)`; verify A, B, C are NOT executed again, their artifacts are loaded from store, D executes and pipeline finishes.
-- [ ] **Step 2: Run test to confirm it fails**
+- [x] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=DagRuntimeTest`
-- [ ] **Step 3: Implement `CancellationToken`, `DagEvent`, `NodeExecutor`, `DependencyResolver`, `PriorityReadyQueue`, and `DagRuntime`**
+- [x] **Step 3: Implement `CancellationToken`, `DagEvent`, `NodeExecutor`, `DependencyResolver`, `PriorityReadyQueue`, and `DagRuntime`**
   - Native virtual thread pool: `Executors.newVirtualThreadPerTaskExecutor()`.
   - Atomic CAS state transitions (`AtomicReference<NodeStatus>`).
   - Active node countdown for completion.
-- [ ] **Step 4: Run tests and ensure they pass**
+- [x] **Step 4: Run tests and ensure they pass**
   - Verify with `mvn test -pl copilot-agent-core -Dtest=DagRuntimeTest`
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   - `git commit -m "feat(dag): implement event-driven DagRuntime with PriorityReadyQueue, CancellationToken, and ResourceManager"`
 
 ---
@@ -180,11 +180,11 @@
   - `ResearchStreamEvent`: enhanced with node lifecycle event payloads (`graph_initialized`, `node_started`, `node_completed`, `graph_updated`, `content_chunk`, `run_completed`).
   - `NodeEventBus`: adapts `DagEvent` into reactive `Flux<ResearchStreamEvent>`, hooks client disconnect via `flux.doOnCancel(() -> token.cancel("SSE Client Disconnected"))`.
 
-- [ ] **Step 1: Write unit tests for event streaming, serialization, and cancel-hook**
-- [ ] **Step 2: Run test to confirm it fails**
-- [ ] **Step 3: Extend `ResearchStreamEvent` and implement `NodeEventBus`**
-- [ ] **Step 4: Run tests and verify reactive SSE Flux emissions and disconnect cancellation**
-- [ ] **Step 5: Commit changes**
+- [x] **Step 1: Write unit tests for event streaming, serialization, and cancel-hook**
+- [x] **Step 2: Run test to confirm it fails**
+- [x] **Step 3: Extend `ResearchStreamEvent` and implement `NodeEventBus`**
+- [x] **Step 4: Run tests and verify reactive SSE Flux emissions and disconnect cancellation**
+- [x] **Step 5: Commit changes**
   - `git commit -m "feat(dag): add node-level SSE streaming events, NodeEventBus, and client disconnect cancellation"`
 
 ---
@@ -204,12 +204,12 @@
   - Replaces linear `for (SubTask step : plan.getSteps())` with `dagRuntime.executeGraph(...)`.
   - Supports both synchronous `execute(...)` and reactive `executePipelineStream(...)`.
 
-- [ ] **Step 1: Write regression and integration tests verifying 4-step workflow runs via DagRuntime**
-- [ ] **Step 2: Implement `LegacyPlanAdapter` and `BlackboardAdapter`**
-- [ ] **Step 3: Refactor `FinancialResearchWorkflow` to delegate execution to `DagRuntime`**
-- [ ] **Step 4: Run all existing 57+ tests in `copilot-agent-core` to verify 100% backward compatibility**
+- [x] **Step 1: Write regression and integration tests verifying 4-step workflow runs via DagRuntime**
+- [x] **Step 2: Implement `LegacyPlanAdapter` and `BlackboardAdapter`**
+- [x] **Step 3: Refactor `FinancialResearchWorkflow` to delegate execution to `DagRuntime`**
+- [x] **Step 4: Run all existing 57+ tests in `copilot-agent-core` to verify 100% backward compatibility**
   - Run `mvn test -pl copilot-agent-core`
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   - `git commit -m "refactor(workflow): integrate DagRuntime into FinancialResearchWorkflow"`
 
 ---
@@ -230,15 +230,15 @@
   - `RePlanAdvisor`: inspects completed node artifacts and generates `GraphPatch` (delta mutations: `ADD_NODE`, `ADD_EDGE`, `SKIP_NODE`)
   - `GraphPlanner`: uses `MetricRAGTool` and `SkillRegistryTool` to construct `ExecutionGraph` and `GraphPatch`
 
-- [ ] **Step 1: Write unit tests verifying conditional replan triggering and GraphPatch application**
+- [x] **Step 1: Write unit tests verifying conditional replan triggering and GraphPatch application**
   - Test normal node output passes directly without invoking RePlanAdvisor (zero overhead).
   - Test partial/empty candidate output triggers RePlanAdvisor and generates `GraphPatch`.
   - Test `GraphPatch` modifies graph from Revision 1 -> 2 mid-flight, and newly added node executes automatically.
-- [ ] **Step 2: Run test to confirm it fails**
-- [ ] **Step 3: Implement `ReplanPolicy`, `RePlanAdvisor`, planner tools, and `GraphPatch` application**
-- [ ] **Step 4: Run tests and ensure they pass**
+- [x] **Step 2: Run test to confirm it fails**
+- [x] **Step 3: Implement `ReplanPolicy`, `RePlanAdvisor`, planner tools, and `GraphPatch` application**
+- [x] **Step 4: Run tests and ensure they pass**
   - Verify with `mvn test -pl copilot-agent-core -Dtest=DynamicReplanTest`
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
   - `git commit -m "feat(planner): add ReplanPolicy, GraphPatch generation, and dynamic planner tools"`
 
 ---
@@ -249,8 +249,8 @@
 - Test: `copilot-app/src/test/java/com/financial/copilot/controller/ResearchAgentControllerTest.java`
 - Test: Full repository build across all 8 modules
 
-- [ ] **Step 1: Run full Maven test suite across all 8 modules**
+- [x] **Step 1: Run full Maven test suite across all 8 modules**
   - Run `mvn clean test`
-- [ ] **Step 2: Verify zero regression in billing, user isolation, and agent tests**
-- [ ] **Step 3: Commit final integration state**
+- [x] **Step 2: Verify zero regression in billing, user isolation, and agent tests**
+- [x] **Step 3: Commit final integration state**
   - `git commit -m "test(dag): verify full test suite passes on Java 21 with dynamic DAG runtime"`
