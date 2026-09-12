@@ -225,12 +225,29 @@ public class ExecutionGraph {
 }
 ```
 
-#### GraphNode 节点契约：
+#### GraphNode 节点契约与失败策略 (FailurePolicy)：
+
 ```java
 package com.financial.copilot.agent.core.dag.model;
 
 import java.time.Duration;
 import java.util.*;
+
+/**
+ * <h1>节点级失败策略枚举</h1>
+ */
+public enum FailurePolicy {
+    /** 强硬失败：当前节点失败则整个图或下游关键依赖链立即终止报错 (如核心标的初筛) */
+    FAIL_FAST,
+    /** 忽略失败继续流转：下游放行，产物标记 evidenceIncomplete=true，报告中注明 (如宏观新闻舆情) */
+    CONTINUE,
+    /** 指数退避重试：在当前节点内部重试 N 次 (默认配合 maxRetries=2) */
+    RETRY,
+    /** 降级保底数据：失败时注入预置 Fallback 数据，下游无缝继续 (如历史行情走备用源) */
+    FALLBACK,
+    /** 可选分支：若失败则整条支路静默标记为 SKIPPED，不阻断汇聚节点 (如可选估值模型) */
+    OPTIONAL
+}
 
 public class GraphNode {
     private final String nodeId;
@@ -240,7 +257,9 @@ public class GraphNode {
     private final ArtifactType outputType;     // 声明输出产物类型
     private final Map<String, Object> params;  // 结构化参数
     private final Duration timeout;            // 单步超时控制
-    private final boolean failSoft;            // 是否容错（失败时不阻断其他分支）
+    private final FailurePolicy failurePolicy; // 节点级失败容错策略 (默认 CONTINUE)
+    private final int maxRetries;              // 最大重试次数 (配合 RETRY 策略，默认 2)
+    private final FallbackProvider fallbackProvider; // 降级数据提供者 (配合 FALLBACK 策略)
 
     // Builder, Getters...
 }
@@ -270,7 +289,7 @@ public record Artifact<T>(
     List<ArtifactComponent> components,         // 前端富交互组件渲染规格 (图表、卡片)
     List<ArtifactReference> references,         // 信源引用 (Wind、公告、财报等溯源)
     List<ArtifactEvidence> evidences,           // 支撑观点的量化事实锚点
-    ArtifactMetadata metadata                   // 执行耗时、Token 开销、置信度等
+    ArtifactMetadata metadata                   // 执行耗时、Token 开销、置信度、降级状态等
 ) {
     public static <T> Artifact<T> of(String producerNodeId, ArtifactType type, T structuredData, String text) {
         return new Artifact<>(
@@ -286,6 +305,26 @@ public record Artifact<T>(
         );
     }
 }
+
+/**
+ * <h1>产物执行元数据与降级标识</h1>
+ */
+public record ArtifactMetadata(
+    long timestamp,
+    long durationMs,
+    boolean degraded,              // 是否降级产物 (例如走保底数据)
+    boolean evidenceIncomplete,    // 信源/证据链是否缺失 (如舆情接口超时)
+    String degradationReason       // 降级原因说明
+) {
+    public static ArtifactMetadata now() {
+        return new ArtifactMetadata(System.currentTimeMillis(), 0L, false, false, null);
+    }
+
+    public static ArtifactMetadata incomplete(String reason) {
+        return new ArtifactMetadata(System.currentTimeMillis(), 0L, true, true, reason);
+    }
+}
+```
 ```
 
 ### 产物总线 (ArtifactStore)
@@ -433,14 +472,56 @@ public class DagRuntime {
                 artifactStore.store(nodeId, result);
                 onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, result, null, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
             } catch (Exception e) {
-                if (node.isFailSoft()) {
-                    onNodeCompleted(nodeId, NodeStatus.FAILED, null, e, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
-                } else {
-                    statusRef.set(NodeStatus.FAILED);
-                    graphCompletionFuture.completeExceptionally(e);
-                }
+                handleNodeFailure(node, e, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
             }
         });
+    }
+
+    /**
+     * 节点失败策略处理器 (基于 FailurePolicy 状态跃迁)
+     */
+    private void handleNodeFailure(
+            GraphNode node,
+            Exception e,
+            ExecutionGraph graph,
+            Map<String, AtomicReference<NodeStatus>> statusMap,
+            AtomicInteger activeOrPendingNodes,
+            CompletableFuture<Void> graphCompletionFuture,
+            Consumer<DagEvent> eventPublisher
+    ) {
+        FailurePolicy policy = node.getFailurePolicy() != null ? node.getFailurePolicy() : FailurePolicy.CONTINUE;
+        String nodeId = node.getNodeId();
+
+        switch (policy) {
+            case RETRY -> {
+                // 结合重试计数器，重试未超限则重新提交，超限退化为 FAIL_FAST 或 CONTINUE
+                log.warn("Node {} failed, scheduling retry: {}", nodeId, e.getMessage());
+                transitionAndDispatch(nodeId, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
+            }
+            case FALLBACK -> {
+                Artifact<?> fallback = node.getFallbackProvider() != null 
+                        ? node.getFallbackProvider().provideFallback(node, e)
+                        : Artifact.incomplete(nodeId, node.getOutputType(), "Fallback: " + e.getMessage());
+                artifactStore.store(nodeId, fallback);
+                onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, fallback, null, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
+            }
+            case OPTIONAL -> {
+                // 可选分支静默跳过，下游汇聚节点不等待该分支
+                onNodeCompleted(nodeId, NodeStatus.SKIPPED, null, e, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
+            }
+            case CONTINUE -> {
+                // 标记 evidenceIncomplete=true 注入占位产物，允许下游继续合成并做出说明
+                Artifact<?> degraded = Artifact.incomplete(nodeId, node.getOutputType(), e.getMessage());
+                artifactStore.store(nodeId, degraded);
+                onNodeCompleted(nodeId, NodeStatus.SUCCEEDED, degraded, null, graph, statusMap, activeOrPendingNodes, graphCompletionFuture, eventPublisher);
+            }
+            case FAIL_FAST -> {
+                // 核心主链路失败，整图异常中断
+                statusMap.get(nodeId).set(NodeStatus.FAILED);
+                eventPublisher.accept(new DagEvent(nodeId, NodeStatus.FAILED, "Critical node failed fast: " + e.getMessage()));
+                graphCompletionFuture.completeExceptionally(e);
+            }
+        }
     }
 
     /**
