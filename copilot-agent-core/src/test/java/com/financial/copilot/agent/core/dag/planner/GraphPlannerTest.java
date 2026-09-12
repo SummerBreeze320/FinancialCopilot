@@ -18,6 +18,9 @@ import com.financial.copilot.agent.core.dag.planner.tool.SkillRegistryTool;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import com.financial.copilot.agent.core.llm.service.LlmService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,31 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author FinancialCopilot
  */
 class GraphPlannerTest {
+
+    @Test
+    void plannerBuildsIndependentThemeAndMacroBranchesBeforeJoin() {
+        GraphPlanner planner = new GraphPlanner();
+
+        ExecutionGraph graph = planner.plan(new GraphPlanningRequest(
+                "比较半导体和新能源基金，结合宏观环境给出配置", "session", null, ignored -> {}, false));
+
+        assertThat(graph.getRootNodeIds()).hasSizeGreaterThanOrEqualTo(3);
+        assertThat(graph.getNodes().values()).anyMatch(node -> "SYNTHESIS".equals(node.getTaskType()));
+    }
+
+    @Test
+    void plannerStopsAfterFourInvalidModelActionsAndFallsBack() {
+        LlmService model = Mockito.mock(LlmService.class);
+        Mockito.when(model.chat(Mockito.any(com.financial.copilot.agent.core.llm.dto.LlmRequest.class)))
+                .thenReturn("not-json");
+        GraphPlanner planner = new GraphPlanner(new MetricRAGTool(), new SkillRegistryTool(),
+                new CapabilityRegistryTool(), new MarketMemoryTool(), model, new ObjectMapper());
+
+        ExecutionGraph graph = planner.plan(new GraphPlanningRequest("分析基金", "session", null, ignored -> {}, false));
+
+        Mockito.verify(model, Mockito.times(4)).chat(Mockito.any(com.financial.copilot.agent.core.llm.dto.LlmRequest.class));
+        assertThat(graph.getNodes()).isNotEmpty();
+    }
 
     @Test
     @DisplayName("测试根据自然语言指令生成标准四步执行图拓扑")

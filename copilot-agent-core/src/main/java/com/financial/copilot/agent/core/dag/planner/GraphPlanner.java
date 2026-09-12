@@ -10,6 +10,7 @@ import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.model.patch.GraphOperation;
 import com.financial.copilot.agent.core.dag.model.patch.GraphPatch;
 import com.financial.copilot.agent.core.dag.planner.tool.CapabilityRegistryTool;
+import com.financial.copilot.agent.core.dag.planner.tool.FinancialDocumentSearchTool;
 import com.financial.copilot.agent.core.dag.planner.tool.MarketMemoryTool;
 import com.financial.copilot.agent.core.dag.planner.tool.MetricRAGTool;
 import com.financial.copilot.agent.core.dag.planner.tool.SkillRegistryTool;
@@ -17,6 +18,9 @@ import com.financial.copilot.agent.core.dag.runtime.RePlanAdvisor;
 import com.financial.copilot.agent.core.dag.runtime.resource.NodePriority;
 import com.financial.copilot.agent.core.dag.runtime.resource.ResourceRequirement;
 import com.financial.copilot.common.enums.AssetCategory;
+import com.financial.copilot.agent.core.llm.dto.LlmRequest;
+import com.financial.copilot.agent.core.llm.service.LlmService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -51,6 +55,10 @@ public class GraphPlanner implements RePlanAdvisor {
     private final SkillRegistryTool skillRegistryTool;
     private final CapabilityRegistryTool capabilityRegistryTool;
     private final MarketMemoryTool marketMemoryTool;
+    private final LlmService llmService;
+    private final ObjectMapper objectMapper;
+    private final DeterministicGraphPlanner fallbackPlanner;
+    private final FinancialDocumentSearchTool documentSearchTool = new FinancialDocumentSearchTool();
 
     public GraphPlanner() {
         this(null, null, null, null);
@@ -60,17 +68,83 @@ public class GraphPlanner implements RePlanAdvisor {
         this(metricRAGTool, skillRegistryTool, null, null);
     }
 
-    @Autowired
     public GraphPlanner(
             @Autowired(required = false) MetricRAGTool metricRAGTool,
             @Autowired(required = false) SkillRegistryTool skillRegistryTool,
             @Autowired(required = false) CapabilityRegistryTool capabilityRegistryTool,
             @Autowired(required = false) MarketMemoryTool marketMemoryTool
     ) {
+        this(metricRAGTool, skillRegistryTool, capabilityRegistryTool, marketMemoryTool, null, new ObjectMapper());
+    }
+
+    @Autowired
+    public GraphPlanner(
+            @Autowired(required = false) MetricRAGTool metricRAGTool,
+            @Autowired(required = false) SkillRegistryTool skillRegistryTool,
+            @Autowired(required = false) CapabilityRegistryTool capabilityRegistryTool,
+            @Autowired(required = false) MarketMemoryTool marketMemoryTool,
+            @Autowired(required = false) LlmService llmService,
+            @Autowired(required = false) ObjectMapper objectMapper
+    ) {
         this.metricRAGTool = metricRAGTool != null ? metricRAGTool : new MetricRAGTool();
         this.skillRegistryTool = skillRegistryTool != null ? skillRegistryTool : new SkillRegistryTool();
         this.capabilityRegistryTool = capabilityRegistryTool != null ? capabilityRegistryTool : new CapabilityRegistryTool();
         this.marketMemoryTool = marketMemoryTool != null ? marketMemoryTool : new MarketMemoryTool();
+        this.llmService = llmService;
+        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
+        this.fallbackPlanner = new DeterministicGraphPlanner(this.metricRAGTool, this.capabilityRegistryTool, this.marketMemoryTool);
+    }
+
+    /** Sole initial planning entry. Model planning is finite and falls back to a deterministic graph. */
+    public ExecutionGraph plan(GraphPlanningRequest request) {
+        if (llmService == null) return fallbackPlanner.plan(request);
+        List<PlannerObservation> observations = new ArrayList<>();
+        for (int round = 0; round < 4; round++) {
+            try {
+                String observationJson = objectMapper.writeValueAsString(observations);
+                LlmRequest llmRequest = LlmRequest.builder()
+                        .systemPrompt("Return one JSON PlannerAction. Allowed actions: USE_METRIC_RAG, USE_SKILL_REGISTRY, "
+                                + "USE_CAPABILITY_REGISTRY, SEARCH_DOCUMENTS, READ_MEMORY, FINISH_GRAPH.")
+                        .userPrompt("request=" + request.prompt() + "\nobservations=" + observationJson)
+                        .usageConsumer(request.usageConsumer() != null ? request.usageConsumer() : ignored -> {})
+                        .build();
+                PlannerAction action = objectMapper.readValue(stripFence(llmService.chat(llmRequest)), PlannerAction.class);
+                if (action == null || action.action() == null) throw new IllegalArgumentException("Missing planner action");
+                if (action.action() == PlannerAction.Action.FINISH_GRAPH) {
+                    ExecutionGraph graph = action.plan().restore();
+                    if (graph.getNodes().isEmpty() || graph.hasCycle()) throw new IllegalStateException("Invalid planned graph");
+                    return graph;
+                }
+                observations.add(observe(action, request));
+            } catch (Exception invalidAction) {
+                observations.add(new PlannerObservation("INVALID", invalidAction.getMessage()));
+            }
+        }
+        return fallbackPlanner.plan(request);
+    }
+
+    private PlannerObservation observe(PlannerAction action, GraphPlanningRequest request) {
+        String query = action.query() == null ? request.prompt() : action.query();
+        Object result = switch (action.action()) {
+            case USE_METRIC_RAG -> metricRAGTool.searchMetrics(query);
+            case USE_SKILL_REGISTRY -> skillRegistryTool.listSkills();
+            case USE_CAPABILITY_REGISTRY -> capabilityRegistryTool.isAssetCategorySupported(AssetCategory.FUND);
+            case SEARCH_DOCUMENTS -> documentSearchTool.search(query);
+            case READ_MEMORY -> marketMemoryTool.retrieveMemory(request.sessionId(), query, 5);
+            case FINISH_GRAPH -> throw new IllegalStateException("FINISH_GRAPH must be handled before observation");
+        };
+        return new PlannerObservation(action.action().name(), result);
+    }
+
+    private String stripFence(String content) {
+        if (content == null) return "";
+        String value = content.trim();
+        if (value.startsWith("```")) {
+            int firstLine = value.indexOf('\n');
+            int end = value.lastIndexOf("```");
+            if (firstLine >= 0 && end > firstLine) value = value.substring(firstLine + 1, end).trim();
+        }
+        return value;
     }
 
     /**
