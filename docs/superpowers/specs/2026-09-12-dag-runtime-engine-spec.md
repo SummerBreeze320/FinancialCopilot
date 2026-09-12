@@ -533,6 +533,95 @@ public record EvidenceContract(
 
 ---
 
+### 4.3 节点质量门禁与图守卫 (NodeQualityGate / Graph Guard)
+
+> **核心原则**：**将传统的“文本式建议型反思”全面升级为“拦截式调度型图守卫”！**  
+> 传统 Agent 系统的 Reflection 仅仅是让反思模型生成一段文字（如 `data_sufficient=false, required_evidence=xxx`）塞进上下文，希望下一轮主 LLM “看看”。这种模式极度脆弱且被动：大模型容易视而不见，不合格或数据缺失的中间产物直接流入下游，导致严重的链式幻觉污染。
+> 
+> **`NodeQualityGate` (亦称 `EvidenceGuard` / `GraphGuard`) 作为节点产物与下游调度之间的法定质量拦截防线**，实行三态确定性裁决（Tri-State Verdict）：
+
+```text
+              Node Result / Artifact
+                         │
+                         ▼
+        [NodeQualityGate (Graph Guard)]
+                         │
+         ┌───────────────┼─────────────────────────────┐
+         │               │                             │
+         ▼               ▼                             ▼
+       PASS        NEED_MORE_DATA                   INVALID
+         │               │                             │
+         │               ▼                             ▼
+         │       Planner GraphPatch           FailurePolicy 治理
+         │       (动态插桩补数节点)             (RETRY / FALLBACK / FAIL_FAST)
+         │
+         ▼
+  ArtifactStore 归档
+  Checkpoint 记录
+  Downstream 依赖解除
+```
+
+#### 4.3.1 三态裁决与行为路由规范
+
+| 门禁裁决 (Verdict) | 触发条件 | 系统工程动作 | 业务价值 |
+| :--- | :--- | :--- | :--- |
+| **`PASS`** | 证据链完整，`missingEvidence` 为空，置信度 $\ge 0.75$，业务规则自洽 | 1. 产物正式归档至 `ArtifactStore`；<br>2. 记录当前节点成功 Checkpoint；<br>3. `DependencyResolver` 解锁下游节点进入 `PriorityReadyQueue` | 确保流向下游的均为高质量客观事实 |
+| **`NEED_MORE_DATA`** | 结论有初步推论，但显式声明了缺失指标（如缺少 2026Q2 换手率、持仓明细） | 1. **立即拦截！** 暂不解锁下游合成节点；<br>2. 唤醒 `GraphPlanner` 生成增量 `GraphPatch`；<br>3. 动态插入 `ADD_NODE(fetch_missing_data)` 与 `ADD_EDGE`；<br>4. 调度新节点补齐数据后再行汇聚 | 终结“巧妇难为无米之炊”，实现数据自愈补齐 |
+| **`INVALID`** | 产物违背金融常识约束（如回撤为正、指标严重冲突、格式彻底崩溃） | 1. **直接判定为失败产物**，阻止其污染黑板；<br>2. 移交该节点的 `FailurePolicy`：<br> - `RETRY`: 携失败原因局部重新推理；<br> - `FALLBACK`: 注入安全底线数据；<br> - `FAIL_FAST`: 立即熔断阻断全局 | 物理隔离毒数据与严重幻觉 |
+
+#### 4.3.2 核心代码接口契约
+
+```java
+package com.financial.copilot.agent.core.dag.guard;
+
+import com.financial.copilot.agent.core.dag.artifact.Artifact;
+import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
+import com.financial.copilot.agent.core.dag.model.GraphNode;
+
+import java.util.List;
+
+/**
+ * <h1>节点质量门禁与执行防线 (Node Quality Gate / Graph Guard)</h1>
+ */
+public interface NodeQualityGate {
+
+    /**
+     * 评估节点产物质量并给出三态决策
+     */
+    GateVerdict evaluate(GraphNode node, Artifact<?> artifact, ExecutionGraph graph);
+
+    enum Decision {
+        /** 质量合格，证据链完备，放行下游 */
+        PASS,
+        /** 结论有效但缺失关键支撑证据，需由 Planner 动态插桩补数 */
+        NEED_MORE_DATA,
+        /** 产物数据非法或违背金融事实约束，需触发 Retry / Fallback */
+        INVALID
+    }
+
+    record GateVerdict(
+        Decision decision,
+        String reason,
+        List<String> missingEvidence,
+        String recommendedAction
+    ) {
+        public static GateVerdict pass() {
+            return new GateVerdict(Decision.PASS, "Evidence and payload valid", List.of(), "CONTINUE");
+        }
+
+        public static GateVerdict needMoreData(List<String> missing, String reason) {
+            return new GateVerdict(Decision.NEED_MORE_DATA, reason, missing, "TRIGGER_GRAPH_PATCH");
+        }
+
+        public static GateVerdict invalid(String reason) {
+            return new GateVerdict(Decision.INVALID, reason, List.of(), "TRIGGER_FAILURE_POLICY");
+        }
+    }
+}
+```
+
+---
+
 ## 5. 依赖驱动运行时调度器 (DagRuntime)
 
 ### 5.1 事件驱动图执行模型 (Event-Driven DAG Execution Engine)

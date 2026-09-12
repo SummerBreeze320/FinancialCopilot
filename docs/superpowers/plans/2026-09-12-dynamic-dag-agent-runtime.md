@@ -128,6 +128,8 @@
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/checkpoint/DagCheckpointStore.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/checkpoint/InMemoryDagCheckpointStore.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/checkpoint/RedisDagCheckpointStore.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/guard/NodeQualityGate.java`
+- Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/guard/DefaultNodeQualityGate.java`
 - Create: `copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/DagRuntime.java`
 - Test: `copilot-agent-core/src/test/java/com/financial/copilot/agent/core/dag/runtime/DagRuntimeTest.java`
 
@@ -135,6 +137,7 @@
 - Consumes: `ExecutionGraph`, `GraphNode`, `NodeStatus`, `ArtifactStore`, `ResourceManager`
 - Produces:
   - `CancellationToken`: Tree-structured hierarchical token (`createChild(scopeId)`, `bindCurrentThread(): AutoCloseable`, `cancel(reason)`, `isCancelled()`, `throwIfCancelled()`, `onCancel(callback)`).
+  - `NodeQualityGate` (Graph Guard): Programmatic tri-state gate (`PASS` -> persist & dispatch; `NEED_MORE_DATA` -> invoke Planner to dynamically patch data-supplementation nodes; `INVALID` -> trigger node `FailurePolicy`).
   - `DagCheckpoint` & `DagCheckpointStore`: Atomic state snapshotting on every `NodeSucceeded`, persisting `runId`, `revision`, `nodeStatuses`, and `artifactIds`.
   - `DagRuntime.executeGraph(graph, cancellationToken, eventConsumer): CompletableFuture<Void>`
   - `DagRuntime.resume(runId, cancellationToken, eventConsumer): CompletableFuture<Void>` (re-hydrates graph from checkpoint, fast-forwards SUCCEEDED nodes without re-execution, enqueues READY dependents).
@@ -150,6 +153,7 @@
   - Tree Cancellation test: Trigger root `runToken.cancel()` mid-run; verify recursive child cancellation, virtual thread interruption, permits released, pending nodes aborted.
   - Child Cancellation Isolation test: Child node timeout cancels node and interrupts its agent/tool without cancelling parent run or sibling nodes.
   - FailurePolicy tests: `CONTINUE` passes degraded artifact; `OPTIONAL` skips gracefully; `FAIL_FAST` fails graph.
+  - NodeQualityGate test: Verify tri-state routing (`PASS` releases downstream, `NEED_MORE_DATA` blocks downstream and requests graph patch, `INVALID` invokes retry/fallback).
   - Checkpoint & Resume test: Run A -> B -> C -> D; simulate failure at D; invoke `dagRuntime.resume(runId)`; verify A, B, C are NOT executed again, their artifacts are loaded from store, D executes and pipeline finishes.
 - [ ] **Step 2: Run test to confirm it fails**
   - Run `mvn test -pl copilot-agent-core -Dtest=DagRuntimeTest`
