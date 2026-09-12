@@ -8,10 +8,12 @@ import com.financial.copilot.agent.core.dag.artifact.EvidenceContract;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.llm.service.LlmService;
+import com.financial.copilot.agent.core.skill.SkillMatcher;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
 import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
 import com.financial.copilot.domain.fund.entity.FundInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -33,6 +35,7 @@ public class FundScreenerAgent {
     private final LlmService clientService;
     private final FundScreeningTool screeningTool;
     private final ObjectMapper objectMapper;
+    private final SkillMatcher skillMatcher;
 
     private static final String SYSTEM_PROMPT = """
         你是一个资深公募基金量化筛选专员 ScreenerAgent。
@@ -54,9 +57,20 @@ public class FundScreenerAgent {
         """;
 
     public FundScreenerAgent(LlmService clientService, FundScreeningTool screeningTool, ObjectMapper objectMapper) {
+        this(clientService, screeningTool, objectMapper, null);
+    }
+
+    @Autowired
+    public FundScreenerAgent(
+            LlmService clientService,
+            FundScreeningTool screeningTool,
+            ObjectMapper objectMapper,
+            @Autowired(required = false) SkillMatcher skillMatcher
+    ) {
         this.clientService = clientService;
         this.screeningTool = screeningTool;
         this.objectMapper = objectMapper;
+        this.skillMatcher = skillMatcher;
     }
 
     /**
@@ -67,9 +81,14 @@ public class FundScreenerAgent {
      */
     public String executeScreening(String userPrompt) {
         log.info("[FUND-SCREENER] 正在进行基金自然语言筛选: prompt={}", userPrompt);
+        String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("SCREENING", userPrompt) : "";
+        String effectiveSystemPrompt = (skillRules != null && !skillRules.isBlank())
+                ? SYSTEM_PROMPT + "\n\n=== 适用的专业筛选准则 ===\n" + skillRules
+                : SYSTEM_PROMPT;
+
         String response = "";
         try {
-            response = clientService.chat(SYSTEM_PROMPT, userPrompt);
+            response = clientService.chat(effectiveSystemPrompt, userPrompt);
         } catch (Exception e) {
             log.warn("[FUND-SCREENER] 调用 LLM 筛选意图解析失败，启用稳健基础条件: error={}", e.getMessage());
         }

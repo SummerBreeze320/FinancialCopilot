@@ -130,7 +130,7 @@ public class FundComparatorAgent {
      * @return 对称事实与归因分析 Markdown 文本
      */
     public String compareFunds(String codeA, String codeB) {
-        return compareFunds(codeA, codeB, null);
+        return compareFunds(codeA, codeB, null, null);
     }
 
     /**
@@ -142,6 +142,19 @@ public class FundComparatorAgent {
      * @return 对标分析 Markdown
      */
     public String compareFunds(String codeA, String codeB, Consumer<LlmResponse> usageConsumer) {
+        return compareFunds(codeA, codeB, usageConsumer, null);
+    }
+
+    /**
+     * 带 Token 计量回调与用户意图上下文的横向深度对标（支持动态 Skill 挂载）
+     *
+     * @param codeA         标的A基金代码
+     * @param codeB         标的B基金代码
+     * @param usageConsumer Token 计量回调
+     * @param userQuery     用户原始提问或意图
+     * @return 对标分析 Markdown
+     */
+    public String compareFunds(String codeA, String codeB, Consumer<LlmResponse> usageConsumer, String userQuery) {
         if (codeA != null && (codeB == null || codeB.isBlank() || codeA.equals(codeB))) {
             log.info("[FUND-COMPARATOR] 执行单一最优标的穿透式深度剖析: code={}", codeA);
             String metricsA = quantTool.getFundMetrics(codeA, null, null);
@@ -158,7 +171,8 @@ public class FundComparatorAgent {
                 %s
                 """.formatted(codeA, cleanDataA);
 
-            String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("COMPARISON", codeA) : "";
+            String queryForSkill = (userQuery != null && !userQuery.isBlank()) ? userQuery : codeA;
+            String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("COMPARISON", queryForSkill) : "";
             try {
                 var spec = FundComparatorPrompt.buildSpec(codeA, cleanDataA, codeA, cleanDataA, skillRules, "单标的深度剖析，无跨标的重合持仓");
                 LlmRequest request = spec.toLlmRequest();
@@ -220,7 +234,8 @@ public class FundComparatorAgent {
                 (graphOverlapFact == null || graphOverlapFact.isBlank()) ? "" : "\n----------------------------------------\n【知识图谱持仓重合度穿透】:\n" + graphOverlapFact);
 
         // 4. 按需匹配并动态注入基金对标 Skill 规范
-        String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("COMPARISON", codeA + " " + codeB) : "";
+        String queryForSkill = (userQuery != null && !userQuery.isBlank()) ? userQuery : (codeA + " " + codeB);
+        String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("COMPARISON", queryForSkill) : "";
 
         try {
             var spec = FundComparatorPrompt.buildSpec(codeA, cleanDataA, codeB, cleanDataB, skillRules, graphOverlapFact);
@@ -279,8 +294,16 @@ public class FundComparatorAgent {
 
         boolean isSingle = (codeB == null || codeB.isBlank() || codeA.equals(codeB));
 
+        // 提取全局用户原始指令以支持精准 Skill 匹配
+        String userQuery = null;
+        if (store != null && store.getGlobalContext("userPrompt") instanceof String prompt) {
+            userQuery = prompt;
+        } else if (node != null && node.getParams() != null && node.getParams().get("query") instanceof String q) {
+            userQuery = q;
+        }
+
         // 2. 执行对标分析或单标的深度剖析
-        String comparisonAnalysis = compareFunds(codeA, isSingle ? null : codeB, usageConsumer);
+        String comparisonAnalysis = compareFunds(codeA, isSingle ? null : codeB, usageConsumer, userQuery);
 
         // 3. 提取知识图谱重合持仓 (仅双标的对标时采集)
         List<String> sharedHoldings = List.of();

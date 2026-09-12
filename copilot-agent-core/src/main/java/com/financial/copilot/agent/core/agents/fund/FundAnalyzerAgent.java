@@ -8,11 +8,13 @@ import com.financial.copilot.agent.core.dag.artifact.EvidenceContract;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
+import com.financial.copilot.agent.core.skill.SkillMatcher;
 import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
 import com.financial.copilot.domain.fund.entity.FundInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -57,7 +59,12 @@ public class FundAnalyzerAgent {
     private final FundReportRetrieverTool reportTool;
 
     /**
-     * 构造函数，由 Spring 容器自动注入底层只读工具组件
+     * Agent Skills 意图动态匹配器
+     */
+    private final SkillMatcher skillMatcher;
+
+    /**
+     * 构造函数，兼容非 Spring 环境测试
      *
      * @param quantTool    公募基金量化指标分析工具
      * @param holdingsTool 公募基金持仓透视工具
@@ -66,9 +73,26 @@ public class FundAnalyzerAgent {
     public FundAnalyzerAgent(FundQuantAnalysisTool quantTool,
                              FundHoldingsQueryTool holdingsTool,
                              FundReportRetrieverTool reportTool) {
+        this(quantTool, holdingsTool, reportTool, null);
+    }
+
+    /**
+     * 全参构造函数，Spring 容器自动注入底层工具与技能匹配器
+     *
+     * @param quantTool    公募基金量化指标分析工具
+     * @param holdingsTool 公募基金持仓透视工具
+     * @param reportTool   公募基金研报检索工具
+     * @param skillMatcher 技能动态匹配器（可选）
+     */
+    @Autowired
+    public FundAnalyzerAgent(FundQuantAnalysisTool quantTool,
+                             FundHoldingsQueryTool holdingsTool,
+                             FundReportRetrieverTool reportTool,
+                             @Autowired(required = false) SkillMatcher skillMatcher) {
         this.quantTool = quantTool;
         this.holdingsTool = holdingsTool;
         this.reportTool = reportTool;
+        this.skillMatcher = skillMatcher;
     }
 
     /**
@@ -78,6 +102,17 @@ public class FundAnalyzerAgent {
      * @return 格式化后的单基金全景体检数据事实 Markdown 报告
      */
     public String analyzeFund(String fundCode) {
+        return analyzeFund(fundCode, null);
+    }
+
+    /**
+     * 采集并组织单只公募基金的全维度体检数据上下文（支持用户意图动态技能挂载）
+     *
+     * @param fundCode   6位公募基金代码
+     * @param userPrompt 用户原始提问或意图
+     * @return 格式化后的单基金全景体检数据事实 Markdown 报告
+     */
+    public String analyzeFund(String fundCode, String userPrompt) {
         log.info("[FUND-ANALYZER] 正在进行公募基金全景数据采集与深度分析: fundCode={}", fundCode);
 
         // 1. 量化风险收益指标
@@ -89,6 +124,13 @@ public class FundAnalyzerAgent {
         // 3. 基金经理最新季度定性观点与展望
         String reportView = reportTool.getLatestQuarterlyReportView(fundCode);
 
+        // 4. 按需匹配深度体检与量化规范 (未命中则为 ""，零 Token 占用)
+        String query = (userPrompt != null && !userPrompt.isBlank()) ? userPrompt : fundCode;
+        String skillRules = (skillMatcher != null) ? skillMatcher.matchSkillInstructions("BATCH_ANALYSIS", query) : "";
+        String skillSection = (skillRules != null && !skillRules.isBlank())
+                ? "\n\n=== 适用的深度分析规范 ===\n" + skillRules
+                : "";
+
         return """
             === 公募基金全景体检数据事实 (Tool-as-Truth) ===
             【基金代码】: %s
@@ -99,8 +141,8 @@ public class FundAnalyzerAgent {
             %s
             
             【基金经理定性季报策略观点】:
-            %s
-            """.formatted(fundCode, metricsJson, holdingsJson, reportView);
+            %s%s
+            """.formatted(fundCode, metricsJson, holdingsJson, reportView, skillSection);
     }
 
     /**

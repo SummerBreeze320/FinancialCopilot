@@ -5,14 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
- * <h1>Agent 技能意图匹配器 (Agent Skill Matcher)</h1>
+ * <h1>Agent 技能意图按需动态匹配器 (Agent Skill Matcher)</h1>
  * <p>
- * 核心设计原则：按需加载。在特定任务执行或针对用户提问时，动态评估并匹配最适合的 Skill 规范；
- * 命中则提取规则正文并装配进 Prompt Context；未命中则返回空，绝不把全量规则塞进上下文。
+ * 核心设计原则：按需动态挂载与零 Token 占用。
+ * 在特定子任务执行时，结合子任务类型与用户 Query 意图动态匹配最适用的 Skill 规则；
+ * 命中时提取规范正文并挂载至 Prompt Context，未命中时严格返回空字符串，绝不让无关技能侵占昂贵的模型上下文。
  * </p>
  *
  * @author FinancialCopilot
@@ -27,9 +28,9 @@ public class SkillMatcher {
     /**
      * 针对特定任务类型和用户指令，匹配适用的技能规则正文
      *
-     * @param taskType  当前子任务类型 (如 COMPARISON, SYNTHESIS, SCREENING)
+     * @param taskType  当前子任务类型 (如 SCREENING, BATCH_ANALYSIS, COMPARISON, SYNTHESIS)
      * @param userQuery 用户指令或上下文
-     * @return 规整后的技能指导规则（若未命中任何技能则返回空字符串）
+     * @return 规整后的技能指导规则（若未命中任何技能则返回空字符串，0 Token 占用）
      */
     public String matchSkillInstructions(String taskType, String userQuery) {
         List<SkillDefinition> matched = matchSkills(taskType, userQuery);
@@ -39,7 +40,7 @@ public class SkillMatcher {
 
         StringBuilder sb = new StringBuilder();
         for (SkillDefinition skill : matched) {
-            log.info("[SKILL-MATCHER] 成功命中技能规范: name={}, taskType={}", skill.getName(), taskType);
+            log.info("[SKILL-MATCHER] 成功按需命中技能规范: name={}, taskType={}", skill.getName(), taskType);
             sb.append("#### 【行业专项规范: ").append(skill.getName()).append(" - ").append(skill.getDescription()).append("】\n")
               .append(skill.getRulesContent()).append("\n\n");
         }
@@ -48,31 +49,50 @@ public class SkillMatcher {
 
     /**
      * 检索匹配的技能定义列表
+     *
+     * @param taskType  当前子任务类型
+     * @param userQuery 用户指令或意图
+     * @return 命中的技能定义不可变列表
      */
     public List<SkillDefinition> matchSkills(String taskType, String userQuery) {
-        List<SkillDefinition> candidates = skillRegistry.findSkillsByTaskType(taskType);
-        if (candidates.isEmpty()) {
-            // 如果没有按任务类型匹配的，尝试从所有技能中按关键词查找
-            candidates = new ArrayList<>(skillRegistry.getAllSkills());
-        }
+        String lowerQuery = (userQuery != null) ? userQuery.toLowerCase().trim() : "";
+        List<SkillDefinition> matched = new ArrayList<>();
 
-        String lowerQuery = (userQuery != null) ? userQuery.toLowerCase() : "";
+        // 1. 优先按子任务类型筛选候选技能集
+        List<SkillDefinition> typeCandidates = (taskType != null && !taskType.isBlank())
+                ? skillRegistry.findSkillsByTaskType(taskType)
+                : List.of();
 
-        return candidates.stream().filter(skill -> {
-            // 如果技能指定了适用的 taskType，必须优先匹配
-            if (taskType != null && !taskType.isBlank() && skill.getTaskTypes() != null && !skill.getTaskTypes().isEmpty()) {
-                boolean typeMatched = skill.getTaskTypes().stream().anyMatch(t -> t.equalsIgnoreCase(taskType));
-                if (typeMatched) {
-                    return true;
+        for (SkillDefinition skill : typeCandidates) {
+            List<String> triggers = skill.getTriggerKeywords();
+            // 若技能未配置触发词，视为该任务类型的通用强制规范
+            if (triggers == null || triggers.isEmpty()) {
+                matched.add(skill);
+            } else if (!lowerQuery.isEmpty()) {
+                // 仅当用户意图匹配触发关键词时才动态装载
+                boolean keywordMatched = triggers.stream()
+                        .anyMatch(kw -> kw != null && !kw.isBlank() && lowerQuery.contains(kw.toLowerCase().trim()));
+                if (keywordMatched) {
+                    matched.add(skill);
                 }
             }
+        }
 
-            // 检查关键词触发
-            if (!lowerQuery.isEmpty() && skill.getTriggerKeywords() != null && !skill.getTriggerKeywords().isEmpty()) {
-                return skill.getTriggerKeywords().stream().anyMatch(kw -> lowerQuery.contains(kw.toLowerCase()));
+        // 2. 补充检索：若基于子任务未命中，或跨任务通用意图检索
+        if (matched.isEmpty() && !lowerQuery.isEmpty()) {
+            for (SkillDefinition skill : skillRegistry.getAllSkills()) {
+                if (matched.contains(skill)) continue;
+                List<String> triggers = skill.getTriggerKeywords();
+                if (triggers != null && !triggers.isEmpty()) {
+                    boolean keywordMatched = triggers.stream()
+                            .anyMatch(kw -> kw != null && !kw.isBlank() && lowerQuery.contains(kw.toLowerCase().trim()));
+                    if (keywordMatched) {
+                        matched.add(skill);
+                    }
+                }
             }
+        }
 
-            return false;
-        }).collect(Collectors.toList());
+        return Collections.unmodifiableList(matched);
     }
 }

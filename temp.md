@@ -10,6 +10,13 @@
   - `ContextBudgetManager` 全局 Token 配额预算与自适应截断。
 - [x] 4. Agent Skills 体系：
   - 规范以 Markdown/YAML 格式定义 `SKILL.md`（存放于 `classpath:skills/{skill_name}/SKILL.md`）；
-  - `SkillRegistry` 自动扫描发现并多维索引；
-  - `SkillMatcher` 依据子任务类型与用户 Query 意图按需动态匹配注入，未命中零 Token 占用；
-  - 内置首批三大行业技能：`fund-comparison`（两强横向对标四步审计法）、`asset-allocation`（C1-C5 适格投资者核心-卫星配置规范）、`quant-screening`（量化初筛硬性准入与极值风控剔除）。
+  - `SkillRegistry` 自动扫描发现并建立四维并发索引（技能名、子任务类型、触发词倒排、资产大类）；
+  - `SkillMatcher` 依据子任务类型与用户 Query 意图按需动态匹配注入，未命中严格返回空串（零 Token 占用契约）；
+  - 全量内置六大基金行业专精规范：
+    1. `quant-screening`（量化初筛硬性准入与异常风控剔除准则）
+    2. `fund-analysis`（多维量化体检、业绩归因与能力圈画像准则）
+    3. `fund-comparison`（两强横向对标四步审计法与重仓穿透）
+    4. `asset-allocation`（C1-C5 适格投资者核心-卫星组合架构）
+    5. `report-synthesis`（机构级研报四大板块终审与合规免责规范）
+    6. `macro-timing`（宏观经济周期与美林投资时钟大类资产定调规范）
+  - 全面打通核心 Agent：`FundScreenerAgent`、`FundAnalyzerAgent`、`FundComparatorAgent`、`ReportSynthesizer` 深度装配。

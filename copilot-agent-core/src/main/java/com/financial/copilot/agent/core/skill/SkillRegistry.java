@@ -9,15 +9,21 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
- * <h1>Agent 技能库发现与注册中心 (Agent Skill Registry)</h1>
+ * <h1>Agent 技能库发现与多维索引注册中心 (Agent Skill Registry)</h1>
  * <p>
- * 启动时自动扫描 classpath:skills/**\/SKILL.md 文件，解析 YAML 头部元数据与 Markdown 规则正文，
- * 建立内存多维索引（技能名、任务类型、触发词），支持按需检索。
+ * 启动时自动扫描 {@code classpath*:skills/**\/SKILL.md} 文件，严谨解析 YAML 头部元数据与 Markdown 规则正文，
+ * 建立内存四大核心多维索引（技能名、子任务类型、触发词、资产类别），支持毫秒级按需检索。
  * </p>
  *
  * @author FinancialCopilot
@@ -26,7 +32,25 @@ import java.util.stream.Collectors;
 @Component
 public class SkillRegistry {
 
-    private final Map<String, SkillDefinition> skillMap = new ConcurrentHashMap<>();
+    /**
+     * 按技能名索引 (name.toLowerCase() -> SkillDefinition)
+     */
+    private final Map<String, SkillDefinition> skillNameIndex = new ConcurrentHashMap<>();
+
+    /**
+     * 按子任务类型索引 (taskType.toUpperCase() -> Set<SkillDefinition>)
+     */
+    private final Map<String, Set<SkillDefinition>> taskTypeIndex = new ConcurrentHashMap<>();
+
+    /**
+     * 按触发词多维倒排索引 (keyword.toLowerCase() -> Set<SkillDefinition>)
+     */
+    private final Map<String, Set<SkillDefinition>> keywordIndex = new ConcurrentHashMap<>();
+
+    /**
+     * 按资产大类索引 (assetCategory.toUpperCase() -> Set<SkillDefinition>)
+     */
+    private final Map<String, Set<SkillDefinition>> assetCategoryIndex = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
@@ -40,7 +64,7 @@ public class SkillRegistry {
         try {
             PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
             Resource[] resources = resolver.getResources("classpath*:skills/**/SKILL.md");
-            log.info("[SKILL-REGISTRY] 扫描到 {} 个技能定义文件", resources.length);
+            log.info("[SKILL-REGISTRY] 扫描到 {} 个技能定义规范文件", resources.length);
 
             for (Resource res : resources) {
                 try {
@@ -58,39 +82,106 @@ public class SkillRegistry {
     }
 
     /**
-     * 注册技能定义
+     * 注册单个技能定义并原子构建多维索引
+     *
+     * @param skill 技能实体
      */
-    public void registerSkill(SkillDefinition skill) {
+    public synchronized void registerSkill(SkillDefinition skill) {
         if (skill == null || skill.getName() == null || skill.getName().isBlank()) {
             throw new IllegalArgumentException("Skill name must not be blank");
         }
-        skillMap.put(skill.getName().trim().toLowerCase(), skill);
-        log.info("[SKILL-REGISTRY] 成功注册技能: name={}, taskTypes={}, triggers={}",
-                skill.getName(), skill.getTaskTypes(), skill.getTriggerKeywords());
-    }
+        String nameKey = skill.getName().trim().toLowerCase();
+        skillNameIndex.put(nameKey, skill);
 
-    public Optional<SkillDefinition> getSkill(String name) {
-        if (name == null) return Optional.empty();
-        return Optional.ofNullable(skillMap.get(name.trim().toLowerCase()));
-    }
+        // 1. 任务类型多维索引构建
+        if (skill.getTaskTypes() != null) {
+            for (String type : skill.getTaskTypes()) {
+                if (type != null && !type.isBlank()) {
+                    taskTypeIndex.computeIfAbsent(type.trim().toUpperCase(), k -> ConcurrentHashMap.newKeySet()).add(skill);
+                }
+            }
+        }
 
-    public Collection<SkillDefinition> getAllSkills() {
-        return Collections.unmodifiableCollection(skillMap.values());
+        // 2. 触发关键词多维倒排索引构建
+        if (skill.getTriggerKeywords() != null) {
+            for (String kw : skill.getTriggerKeywords()) {
+                if (kw != null && !kw.isBlank()) {
+                    keywordIndex.computeIfAbsent(kw.trim().toLowerCase(), k -> ConcurrentHashMap.newKeySet()).add(skill);
+                }
+            }
+        }
+
+        // 3. 资产大类多维索引构建
+        String category = (skill.getAssetCategory() != null && !skill.getAssetCategory().isBlank())
+                ? skill.getAssetCategory().trim().toUpperCase() : "ALL";
+        assetCategoryIndex.computeIfAbsent(category, k -> ConcurrentHashMap.newKeySet()).add(skill);
+
+        log.info("[SKILL-REGISTRY] 成功注册技能并建立多维索引: name={}, taskTypes={}, keywords={}, category={}",
+                skill.getName(), skill.getTaskTypes(), skill.getTriggerKeywords(), category);
     }
 
     /**
-     * 按子任务类型过滤技能
+     * 依据技能唯一名称精准检索
+     *
+     * @param name 技能名称
+     * @return 技能实体 Optional
+     */
+    public Optional<SkillDefinition> getSkill(String name) {
+        if (name == null) return Optional.empty();
+        return Optional.ofNullable(skillNameIndex.get(name.trim().toLowerCase()));
+    }
+
+    /**
+     * 获取全量已注册技能清单
+     *
+     * @return 技能只读集合
+     */
+    public Collection<SkillDefinition> getAllSkills() {
+        return Collections.unmodifiableCollection(skillNameIndex.values());
+    }
+
+    /**
+     * 依据子任务类型检索关联技能集
+     *
+     * @param taskType 子任务类型 (如 SCREENING, COMPARISON, SYNTHESIS)
+     * @return 技能列表
      */
     public List<SkillDefinition> findSkillsByTaskType(String taskType) {
         if (taskType == null || taskType.isBlank()) return Collections.emptyList();
-        String upperType = taskType.trim().toUpperCase();
-        return skillMap.values().stream()
-                .filter(s -> s.getTaskTypes() != null && s.getTaskTypes().stream().anyMatch(t -> t.equalsIgnoreCase(upperType)))
-                .collect(Collectors.toList());
+        Set<SkillDefinition> skills = taskTypeIndex.get(taskType.trim().toUpperCase());
+        return skills != null ? List.copyOf(skills) : Collections.emptyList();
     }
 
     /**
-     * 解析单个 SKILL.md 资源文件
+     * 依据意图关键词通过倒排索引检索候选技能集
+     *
+     * @param keyword 触发词
+     * @return 命中技能列表
+     */
+    public List<SkillDefinition> findSkillsByKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) return Collections.emptyList();
+        Set<SkillDefinition> skills = keywordIndex.get(keyword.trim().toLowerCase());
+        return skills != null ? List.copyOf(skills) : Collections.emptyList();
+    }
+
+    /**
+     * 依据资产大类检索可用技能集
+     *
+     * @param assetCategory 资产大类 (如 FUND, STOCK, ALL)
+     * @return 命中技能列表
+     */
+    public List<SkillDefinition> findSkillsByAssetCategory(String assetCategory) {
+        if (assetCategory == null || assetCategory.isBlank()) return Collections.emptyList();
+        Set<SkillDefinition> skills = assetCategoryIndex.get(assetCategory.trim().toUpperCase());
+        return skills != null ? List.copyOf(skills) : Collections.emptyList();
+    }
+
+    /**
+     * 解析单个 SKILL.md 资源文件（支持 YAML Frontmatter 与 Markdown 正文）
+     *
+     * @param resource 资源文件
+     * @return 技能实体
+     * @throws Exception 解析异常
      */
     public SkillDefinition parseSkillResource(Resource resource) throws Exception {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
@@ -99,7 +190,6 @@ public class SkillRegistry {
 
             // 检查是否有 --- 前置 YAML Frontmatter
             if (!lines.get(0).trim().equals("---")) {
-                // 无 Frontmatter，回退使用文件名作为技能名
                 String filename = resource.getFilename();
                 return SkillDefinition.builder()
                         .name(filename != null ? filename.replace(".md", "") : "unnamed-skill")
@@ -107,7 +197,7 @@ public class SkillRegistry {
                         .build();
             }
 
-            // 解析 Frontmatter
+            // 定位第二个 --- 分隔符
             int secondSeparatorIndex = -1;
             for (int i = 1; i < lines.size(); i++) {
                 if (lines.get(i).trim().equals("---")) {
@@ -126,51 +216,82 @@ public class SkillRegistry {
             SkillDefinition.SkillDefinitionBuilder builder = SkillDefinition.builder();
             builder.rulesContent(String.join("\n", markdownLines).trim());
 
-            String currentKey = null;
             List<String> currentList = null;
 
             for (String line : yamlLines) {
                 String trimmed = line.trim();
                 if (trimmed.isEmpty() || trimmed.startsWith("#")) continue;
 
+                // 列表条目解析 (- item)
                 if (trimmed.startsWith("- ") && currentList != null) {
-                    currentList.add(trimmed.substring(2).trim());
+                    currentList.add(cleanYamlValue(trimmed.substring(2)));
                     continue;
                 }
 
                 int colonIdx = trimmed.indexOf(':');
                 if (colonIdx > 0) {
                     String key = trimmed.substring(0, colonIdx).trim();
-                    String val = trimmed.substring(colonIdx + 1).trim();
+                    String rawVal = trimmed.substring(colonIdx + 1).trim();
+                    String val = cleanYamlValue(rawVal);
 
                     if ("name".equalsIgnoreCase(key)) {
                         builder.name(val);
+                        currentList = null;
                     } else if ("description".equalsIgnoreCase(key)) {
                         builder.description(val);
+                        currentList = null;
                     } else if ("assetCategory".equalsIgnoreCase(key)) {
                         builder.assetCategory(val);
+                        currentList = null;
                     } else if ("taskTypes".equalsIgnoreCase(key)) {
-                        currentKey = "taskTypes";
                         currentList = new ArrayList<>();
                         builder.taskTypes(currentList);
-                        if (!val.isEmpty()) {
-                            currentList.add(val);
-                        }
+                        parseInlineListIfPresent(rawVal, currentList);
                     } else if ("triggerKeywords".equalsIgnoreCase(key)) {
-                        currentKey = "triggerKeywords";
                         currentList = new ArrayList<>();
                         builder.triggerKeywords(currentList);
-                        if (!val.isEmpty()) {
-                            currentList.add(val);
-                        }
+                        parseInlineListIfPresent(rawVal, currentList);
                     } else {
-                        currentKey = null;
                         currentList = null;
                     }
                 }
             }
 
             return builder.build();
+        }
+    }
+
+    private String cleanYamlValue(String raw) {
+        if (raw == null) return "";
+        String s = raw.trim();
+        // 去除尾部注释
+        int hashIdx = s.indexOf('#');
+        if (hashIdx >= 0) {
+            s = s.substring(0, hashIdx).trim();
+        }
+        // 去除外层引号
+        if ((s.startsWith("\"") && s.endsWith("\"")) || (s.startsWith("'") && s.endsWith("'"))) {
+            if (s.length() >= 2) {
+                s = s.substring(1, s.length() - 1).trim();
+            }
+        }
+        return s;
+    }
+
+    private void parseInlineListIfPresent(String rawVal, List<String> targetList) {
+        if (rawVal == null || rawVal.isBlank()) return;
+        String s = rawVal.trim();
+        if (s.startsWith("[") && s.endsWith("]")) {
+            String content = s.substring(1, s.length() - 1);
+            Arrays.stream(content.split(","))
+                    .map(this::cleanYamlValue)
+                    .filter(item -> !item.isBlank())
+                    .forEach(targetList::add);
+        } else if (!s.startsWith("-")) {
+            String cleaned = cleanYamlValue(s);
+            if (!cleaned.isBlank()) {
+                targetList.add(cleaned);
+            }
         }
     }
 }
