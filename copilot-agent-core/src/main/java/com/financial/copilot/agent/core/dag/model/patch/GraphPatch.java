@@ -8,13 +8,22 @@ import java.util.List;
  */
 public record GraphPatch(
     int baseRevision,
-    List<GraphOperation> operations
+    List<GraphOperation> operations,
+    String reason
 ) {
+    public GraphPatch(int baseRevision, List<GraphOperation> operations) {
+        this(baseRevision, operations != null ? List.copyOf(operations) : List.of(), "");
+    }
+
     public static GraphPatch of(int baseRevision, GraphOperation... ops) {
-        return new GraphPatch(baseRevision, List.of(ops));
+        return new GraphPatch(baseRevision, List.of(ops), "");
     }
 
     public static GraphPatch of(int baseRevision, List<GraphOperation> operations) {
-        return new GraphPatch(baseRevision, operations != null ? List.copyOf(operations) : List.of());
+        return new GraphPatch(baseRevision, operations != null ? List.copyOf(operations) : List.of(), "");
+    }
+
+    public static GraphPatch of(int baseRevision, List<GraphOperation> operations, String reason) {
+        return new GraphPatch(baseRevision, operations != null ? List.copyOf(operations) : List.of(), reason);
     }
 }

@@ -23,6 +23,14 @@ public record EvidenceContract(
         return new EvidenceContract("", List.of(), List.of(), List.of(), 1.0);
     }
 
+    public static EvidenceContract insufficient(List<String> missingEvidence) {
+        return new EvidenceContract("", List.of(), List.of(), missingEvidence, 0.5);
+    }
+
+    public static EvidenceContract sufficient(String conclusion, List<String> evidenceUris) {
+        return new EvidenceContract(conclusion, evidenceUris, List.of(), List.of(), 1.0);
+    }
+
     public boolean isSufficient() {
         return missingEvidence.isEmpty() && confidence >= 0.75;
     }

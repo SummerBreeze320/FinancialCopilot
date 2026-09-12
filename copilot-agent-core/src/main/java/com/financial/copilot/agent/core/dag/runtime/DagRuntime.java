@@ -44,9 +44,11 @@ public class DagRuntime {
     private final DagCheckpointStore checkpointStore;
     private final NodeQualityGate qualityGate;
     private final PriorityReadyQueue readyQueue = new PriorityReadyQueue();
+    private final ReplanPolicy replanPolicy;
+    private final RePlanAdvisor rePlanAdvisor;
 
     public DagRuntime(NodeExecutor nodeExecutor) {
-        this(nodeExecutor, new ArtifactStore(), ResourceManager.defaultManager(), new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate());
+        this(nodeExecutor, new ArtifactStore(), ResourceManager.defaultManager(), new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate(), ReplanPolicy.heuristic(), null);
     }
 
     public DagRuntime(
@@ -56,11 +58,25 @@ public class DagRuntime {
             DagCheckpointStore checkpointStore,
             NodeQualityGate qualityGate
     ) {
+        this(nodeExecutor, artifactStore, resourceManager, checkpointStore, qualityGate, ReplanPolicy.heuristic(), null);
+    }
+
+    public DagRuntime(
+            NodeExecutor nodeExecutor,
+            ArtifactStore artifactStore,
+            ResourceManager resourceManager,
+            DagCheckpointStore checkpointStore,
+            NodeQualityGate qualityGate,
+            ReplanPolicy replanPolicy,
+            RePlanAdvisor rePlanAdvisor
+    ) {
         this.nodeExecutor = Objects.requireNonNull(nodeExecutor, "nodeExecutor cannot be null");
         this.artifactStore = artifactStore != null ? artifactStore : new ArtifactStore();
         this.resourceManager = resourceManager != null ? resourceManager : ResourceManager.defaultManager();
         this.checkpointStore = checkpointStore != null ? checkpointStore : new InMemoryDagCheckpointStore();
         this.qualityGate = qualityGate != null ? qualityGate : new DefaultNodeQualityGate();
+        this.replanPolicy = replanPolicy != null ? replanPolicy : ReplanPolicy.heuristic();
+        this.rePlanAdvisor = rePlanAdvisor;
     }
 
     public CompletableFuture<Void> executeGraph(
@@ -369,6 +385,32 @@ public class DagRuntime {
                 finalStatus == NodeStatus.SUCCEEDED ? "Node succeeded" : "Node skipped/failed",
                 result
         ));
+
+        // 动态改图与自适应变轨 (RePlanAdvisor)
+        if (rePlanAdvisor != null && replanPolicy != null && replanPolicy.shouldReplan(graph, completedNodeId, result, finalStatus)) {
+            try {
+                com.financial.copilot.agent.core.dag.model.patch.GraphPatch patch = rePlanAdvisor.planPatch(graph, completedNodeId, result);
+                if (patch != null && !patch.operations().isEmpty()) {
+                    int newRev = graph.applyPatch(patch);
+                    log.info("Applied GraphPatch to graph {} (new revision={}), operations count={}", graph.getGraphId(), newRev, patch.operations().size());
+
+                    for (com.financial.copilot.agent.core.dag.model.patch.GraphOperation op : patch.operations()) {
+                        if (op.op() == com.financial.copilot.agent.core.dag.model.patch.PatchOp.ADD_NODE && op.node() != null) {
+                            String newNodeId = op.node().getNodeId();
+                            statusMap.put(newNodeId, new AtomicReference<>(NodeStatus.PENDING));
+                            activeOrPendingNodes.incrementAndGet();
+
+                            if (DependencyResolver.isReady(newNodeId, graph, id -> statusMap.get(id) != null ? statusMap.get(id).get() : null)) {
+                                enqueueReadyNode(newNodeId, graph, statusMap, publisher);
+                            }
+                        }
+                    }
+                    publisher.accept(new DagEvent(completedNodeId, NodeStatus.RUNNING, "Graph patched to rev " + newRev, patch));
+                }
+            } catch (Exception patchEx) {
+                log.error("Failed to plan/apply GraphPatch for completedNode {}: {}", completedNodeId, patchEx.getMessage(), patchEx);
+            }
+        }
 
         // 寻找满足全部依赖的下游直接子节点，放入优先级就绪队列
         List<String> readyChildren = DependencyResolver.findReadyChildren(
