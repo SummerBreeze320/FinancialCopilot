@@ -2,7 +2,7 @@
 
 日期：2026-09-13
 
-状态：待书面评审
+状态：已批准
 关联设计：[统一动态 Agent 图运行时设计](./2026-09-12-unified-dynamic-agent-graph-runtime-design.md)
 
 ## 1. 背景与目标
@@ -59,7 +59,7 @@ SSE 内容分片只用于实时传输。系统在运行开始时创建一条 RUN
 
     CREATE TABLE research_conversation (
         id UUID PRIMARY KEY,
-        user_id VARCHAR(128) NOT NULL,
+        user_id BIGINT NOT NULL,
         title VARCHAR(200) NOT NULL,
         status VARCHAR(20) NOT NULL,
         last_message_at TIMESTAMPTZ NOT NULL,
@@ -79,7 +79,7 @@ status 仅允许 ACTIVE 和 ARCHIVED。首版标题取第一条用户消息清�
     CREATE TABLE conversation_message (
         id BIGSERIAL PRIMARY KEY,
         conversation_id UUID NOT NULL REFERENCES research_conversation(id),
-        user_id VARCHAR(128) NOT NULL,
+        user_id BIGINT NOT NULL,
         run_id UUID NOT NULL,
         sequence_no BIGINT NOT NULL,
         role VARCHAR(20) NOT NULL,
@@ -104,7 +104,7 @@ metadata 只保存稳定的展示信息，例如 graphRevision、artifactIds、m
         id BIGSERIAL PRIMARY KEY,
         conversation_id UUID NOT NULL REFERENCES research_conversation(id),
         assistant_message_id BIGINT NOT NULL REFERENCES conversation_message(id),
-        user_id VARCHAR(128) NOT NULL,
+        user_id BIGINT NOT NULL,
         run_id UUID NOT NULL,
         node_id VARCHAR(128) NOT NULL,
         agent_name VARCHAR(128) NOT NULL,
