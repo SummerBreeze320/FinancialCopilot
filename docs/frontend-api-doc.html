@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinancialCopilot 前端接口文档</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #181b23;
+    --bg-code: #1e2230;
+    --bg-hover: #232838;
+    --text: #e4e6eb;
+    --text-dim: #9ca3af;
+    --text-muted: #6b7280;
+    --accent: #60a5fa;
+    --accent-2: #34d399;
+    --accent-3: #fbbf24;
+    --accent-4: #f87171;
+    --accent-5: #a78bfa;
+    --border: #2d3142;
+    --radius: 8px;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed; left: 0; top: 0; width: 280px; height: 100vh;
+    background: var(--bg-card); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 20px 0; z-index: 100;
+  }
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .sidebar-logo { padding: 0 24px 20px; font-size: 18px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .sidebar-section { padding: 8px 0; }
+  .sidebar-section-title { padding: 4px 24px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1px; font-weight: 600; }
+  .sidebar-link { display: block; padding: 6px 24px; color: var(--text-dim); text-decoration: none; font-size: 13px; transition: all .15s; border-left: 2px solid transparent; }
+  .sidebar-link:hover { color: var(--accent); background: var(--bg-hover); border-left-color: var(--accent); }
+  .sidebar-link.active { color: var(--accent); border-left-color: var(--accent); }
+
+  /* Main */
+  .main { margin-left: 280px; padding: 40px 48px; max-width: 1100px; }
+
+  /* Typography */
+  h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+  h2 { font-size: 24px; font-weight: 700; margin: 48px 0 16px; padding-bottom: 10px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  h2 .module-icon { font-size: 20px; }
+  h3 { font-size: 18px; font-weight: 600; margin: 32px 0 12px; color: var(--accent); }
+  h4 { font-size: 15px; font-weight: 600; margin: 20px 0 8px; color: var(--accent-2); }
+  p { margin-bottom: 12px; color: var(--text-dim); }
+  strong { color: var(--text); }
+
+  /* Tags */
+  .tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: var(--mono); letter-spacing: .5px; }
+  .tag-get { background: rgba(52,211,153,.15); color: var(--accent-2); }
+  .tag-post { background: rgba(96,165,250,.15); color: var(--accent); }
+  .tag-put { background: rgba(251,191,36,.15); color: var(--accent-3); }
+  .tag-delete { background: rgba(248,113,113,.15); color: var(--accent-4); }
+  .tag-auth { background: rgba(167,139,250,.15); color: var(--accent-5); }
+  .tag-public { background: rgba(52,211,153,.15); color: var(--accent-2); }
+  .tag-admin { background: rgba(248,113,113,.15); color: var(--accent-4); }
+
+  /* Endpoint card */
+  .endpoint { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px; overflow: hidden; }
+  .endpoint-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: var(--bg-code); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .endpoint-path { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--text); }
+  .endpoint-title { font-size: 13px; color: var(--text-dim); margin-left: auto; }
+  .endpoint-body { padding: 20px; }
+  .endpoint-body p { margin-bottom: 10px; }
+
+  /* Code blocks */
+  pre { background: var(--bg-code); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-x: auto; margin: 12px 0; font-size: 13px; line-height: 1.6; }
+  code { font-family: var(--mono); }
+  pre code { color: var(--text); }
+  :not(pre) > code { background: var(--bg-code); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--accent); }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; background: var(--bg-code); color: var(--text-dim); font-weight: 600; border-bottom: 2px solid var(--border); white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-dim); }
+  td code { background: none; padding: 0; color: var(--accent); }
+  td .type { color: var(--accent-3); font-family: var(--mono); font-size: 12px; }
+  td .required { color: var(--accent-4); font-size: 11px; font-weight: 600; }
+  td .optional { color: var(--text-muted); font-size: 11px; }
+  tr:hover td { background: var(--bg-hover); }
+
+  /* UI Design */
+  .ui-design { background: linear-gradient(135deg, rgba(96,165,250,.05), rgba(167,139,250,.05)); border: 1px solid rgba(96,165,250,.2); border-radius: var(--radius); padding: 20px; margin: 16px 0; }
+  .ui-design-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--accent-5); margin-bottom: 12px; }
+  .ui-flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+  .ui-step { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; font-size: 12px; color: var(--text-dim); }
+  .ui-arrow { color: var(--text-muted); font-size: 12px; }
+  .ui-mock { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 16px; margin: 12px 0; font-size: 13px; }
+  .ui-mock-title { font-size: 12px; color: var(--accent); margin-bottom: 8px; font-weight: 600; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+  .badge-deprecated { background: rgba(248,113,113,.15); color: var(--accent-4); }
+
+  /* Callout */
+  .callout { background: rgba(96,165,250,.08); border-left: 3px solid var(--accent); border-radius: 4px; padding: 12px 16px; margin: 12px 0; }
+  .callout-warn { background: rgba(251,191,36,.08); border-left-color: var(--accent-3); }
+  .callout p { margin: 0; color: var(--text-dim); }
+  .callout strong { color: var(--accent); }
+  .callout-warn strong { color: var(--accent-3); }
+
+  /* Anchor offset */
+  [id] { scroll-margin-top: 20px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">FinancialCopilot API</div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">概览</div>
+    <a class="sidebar-link" href="#overview">项目概览</a>
+    <a class="sidebar-link" href="#auth-mechanism">认证机制</a>
+    <a class="sidebar-link" href="#response-format">统一响应格式</a>
+    <a class="sidebar-link" href="#sse-format">SSE 事件格式</a>
+    <a class="sidebar-link" href="#enums">枚举字典</a>
+    <a class="sidebar-link" href="#error-codes">错误码</a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">业务模块</div>
+    <a class="sidebar-link" href="#module-auth">认证模块</a>
+    <a class="sidebar-link" href="#module-user">用户中心</a>
+    <a class="sidebar-link" href="#module-research">投研引擎</a>
+    <a class="sidebar-link" href="#module-research-run">运行控制</a>
+    <a class="sidebar-link" href="#module-billing">计费钱包</a>
+    <a class="sidebar-link" href="#module-alipay">支付宝支付</a>
+    <a class="sidebar-link" href="#module-admin-user">用户管理(Admin)</a>
+    <a class="sidebar-link" href="#module-admin-llm">模型管理(Admin)</a>
+  </div>
+</nav>
+
+<!-- ============ MAIN ============ -->
+<main class="main">
+
+<!-- ===== OVERVIEW ===== -->
+<section id="overview">
+<h1>FinancialCopilot 前端接口文档</h1>
+<p>后端基于 Spring Boot 3.3.3 + WebFlux 响应式架构，JWT 无状态认证，提供金融多智能体投研服务。本文档整理全部 26 个接口，按前端开发视角组织，含请求/响应 Schema 与 UI 交互设计建议。</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>属性</th><th>值</th></tr></thead>
+<tbody>
+<tr><td>Base URL</td><td><code>http://localhost:8080</code></td></tr>
+<tr><td>API 前缀</td><td><code>/api/v1</code></td></tr>
+<tr><td>认证方式</td><td>JWT Bearer Token（<code>Authorization: Bearer &lt;accessToken&gt;</code>）</td></tr>
+<tr><td>Token 有效期</td><td>Access Token: 2 小时 / Refresh Token: 7 天</td></tr>
+<tr><td>响应格式</td><td>统一 <code>ApiResult&lt;T&gt;</code> JSON 包装</td></tr>
+<tr><td>SSE 流式</td><td><code>text/event-stream</code>（投研运行）</td></tr>
+<tr><td>CORS</td><td>当前后端仅放行 <code>OPTIONS</code> 预检，<strong>需后端添加显式 CORS 配置</strong>或前端使用代理</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>接口总览（26 个端点）</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>模块</th><th>基础路径</th><th>鉴权</th><th>端点数</th></tr></thead>
+<tbody>
+<tr><td>认证模块</td><td><code>/api/v1/auth</code></td><td><span class="tag tag-public">公开</span></td><td>4</td></tr>
+<tr><td>用户中心</td><td><code>/api/v1/user</code></td><td><span class="tag tag-auth">需认证</span></td><td>6</td></tr>
+<tr><td>投研引擎</td><td><code>/api/v1/research</code></td><td><span class="tag tag-auth">需认证</span>（health 除外）</td><td>4</td></tr>
+<tr><td>运行控制</td><td><code>/api/v1/research/runs</code></td><td><span class="tag tag-auth">需认证</span></td><td>3</td></tr>
+<tr><td>计费钱包</td><td><code>/api/v1/billing</code></td><td><span class="tag tag-auth">需认证</span></td><td>7</td></tr>
+<tr><td>支付宝支付</td><td><code>/api/v1/billing/alipay</code></td><td>混合</td><td>2</td></tr>
+<tr><td>用户管理</td><td><code>/api/v1/admin/user</code></td><td><span class="tag tag-admin">ADMIN</span></td><td>3</td></tr>
+<tr><td>模型管理</td><td><code>/api/v1/admin/llm</code></td><td><span class="tag tag-admin">ADMIN</span></td><td>4</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ===== AUTH MECHANISM ===== -->
+<section id="auth-mechanism">
+<h2>认证机制</h2>
+<p>系统采用 JWT 双令牌模式：Access Token 用于 API 请求，Refresh Token 用于续期。</p>
+
+<h3>Token 获取流程</h3>
+<div class="ui-flow">
+  <span class="ui-step">用户输入账号密码</span>
+  <span class="ui-arrow">→</span>
+  <span class="ui-step">POST /auth/login</span>
+  <span class="ui-arrow">→</span>
+  <span class="ui-step">返回 accessToken + refreshToken</span>
+  <span class="ui-arrow">→</span>
+  <span class="ui-step">前端存储 Token</span>
+  <span class="ui-arrow">→</span>
+  <span class="ui-step">后续请求带 Authorization Header</span>
+</div>
+
+<h3>Token 续期流程</h3>
+<div class="ui-flow">
+  <span class="ui-step">Access Token 过期 (401)</span>
+  <span class="ui-arrow">→</span>
+  <span class="ui-step">拦截器捕获 401</span>
+  <span class="ui-arrow">→</span>
+  <span class="ui-step">POST /auth/refresh-token (带 refreshToken)</span>
+  <span class="ui-arrow">→</span>
+  <span class="ui-step">获取新 accessToken</span>
+  <span class="ui-arrow">→</span>
+  <span class="ui-step">重放原始请求</span>
+</div>
+
+<div class="callout callout-warn">
+<p><strong>前端实现要点：</strong></p>
+<p>1. Access Token 存储建议：内存变量 + localStorage 备份；Refresh Token 存 localStorage<br>
+2. HTTP 拦截器：每个请求自动注入 <code>Authorization: Bearer &lt;accessToken&gt;</code><br>
+3. 401 拦截：自动调用 refresh-token 续期并重放请求，续期失败则跳转登录页<br>
+4. 并发续期锁：多个请求同时 401 时，只发起一次 refresh，其余请求排队等待</p>
+</div>
+</section>
+
+<!-- ===== RESPONSE FORMAT ===== -->
+<section id="response-format">
+<h2>统一响应格式</h2>
+<p>所有 JSON 接口返回统一的 <code>ApiResult&lt;T&gt;</code> 包装结构。</p>
+
+<pre><code>{
+  "code": 200,           // 业务状态码，200=成功
+  "message": "success",  // 描述信息
+  "data": { ... },       // 业务数据载荷，失败时为 null
+  "timestamp": 1726210000000  // 服务器时间戳（毫秒）
+}</code></pre>
+
+<h3>前端统一处理建议</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>code</th><th>HTTP Status</th><th>含义</th><th>前端处理</th></tr></thead>
+<tbody>
+<tr><td>200</td><td>200</td><td>成功</td><td>取 <code>data</code> 字段</td></tr>
+<tr><td>400</td><td>400</td><td>参数错误</td><td>展示 <code>message</code></td></tr>
+<tr><td>401</td><td>401</td><td>未认证/Token过期</td><td>触发 refresh-token 流程</td></tr>
+<tr><td>402</td><td>402</td><td>积分不足</td><td>弹窗引导充值</td></tr>
+<tr><td>403</td><td>403</td><td>无权限/越权</td><td>展示权限不足提示</td></tr>
+<tr><td>404</td><td>404</td><td>资源不存在</td><td>展示 404 页面</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout">
+<p><strong>axios 响应拦截器伪代码：</strong></p>
+<pre><code>axios.interceptors.response.use(res => {
+  if (res.data.code === 200) return res.data.data;
+  return Promise.reject(res.data);
+}, err => {
+  if (err.response?.status === 401) { /* 触发 refresh */ }
+  if (err.response?.status === 402) { /* 弹充值弹窗 */ }
+  return Promise.reject(err);
+});</code></pre>
+</div>
+</section>
+
+<!-- ===== SSE FORMAT ===== -->
+<section id="sse-format">
+<h2>SSE 事件流格式（投研核心）</h2>
+<p>投研运行支持 SSE 流式输出，前端通过 <code>EventSource</code> 或 <code>fetch + ReadableStream</code> 消费事件。</p>
+
+<h3>ResearchStreamEvent 结构</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>type</code></td><td><span class="type">String</span></td><td>事件类型（见下表）</td></tr>
+<tr><td><code>runId</code></td><td><span class="type">String</span></td><td>运行唯一 ID</td></tr>
+<tr><td><code>nodeId</code></td><td><span class="type">String</span></td><td>DAG 节点 ID</td></tr>
+<tr><td><code>nodeName</code></td><td><span class="type">String</span></td><td>节点显示名称</td></tr>
+<tr><td><code>taskType</code></td><td><span class="type">String</span></td><td>任务类型（SCREENING / BATCH_ANALYSIS / COMPARISON / DEEP_DIVE / SYNTHESIS）</td></tr>
+<tr><td><code>status</code></td><td><span class="type">String</span></td><td>节点状态（PENDING/READY/RUNNING/SUCCEEDED/FAILED/SKIPPED/CANCELLED）</td></tr>
+<tr><td><code>revision</code></td><td><span class="type">Integer</span></td><td>执行图版本号</td></tr>
+<tr><td><code>title</code></td><td><span class="type">String</span></td><td>事件标题</td></tr>
+<tr><td><code>summary</code></td><td><span class="type">String</span></td><td>事件摘要</td></tr>
+<tr><td><code>chunk</code></td><td><span class="type">String</span></td><td>流式内容分片（Markdown）</td></tr>
+<tr><td><code>nodes</code></td><td><span class="type">Object</span></td><td>执行图节点列表（graph_initialized 时）</td></tr>
+<tr><td><code>artifactIds</code></td><td><span class="type">List&lt;String&gt;</span></td><td>产物 ID 列表</td></tr>
+<tr><td><code>patch</code></td><td><span class="type">Object</span></td><td>执行图补丁（graph_updated 时）</td></tr>
+<tr><td><code>durationMs</code></td><td><span class="type">Long</span></td><td>执行耗时（毫秒，run_completed 时）</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>SSE 事件类型</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>type</th><th>触发时机</th><th>前端处理</th></tr></thead>
+<tbody>
+<tr><td><code>graph_initialized</code></td><td>执行图规划完成</td><td>渲染 DAG 节点拓扑图</td></tr>
+<tr><td><code>node_ready</code></td><td>节点就绪</td><td>节点状态→READY</td></tr>
+<tr><td><code>node_started</code></td><td>节点开始执行</td><td>节点状态→RUNNING（加载动画）</td></tr>
+<tr><td><code>content_chunk</code></td><td>流式内容分片</td><td>追加到 Markdown 渲染区</td></tr>
+<tr><td><code>node_completed</code></td><td>节点完成</td><td>节点状态→SUCCEEDED</td></tr>
+<tr><td><code>node_failed</code></td><td>节点失败</td><td>节点状态→FAILED（红色高亮）</td></tr>
+<tr><td><code>graph_updated</code></td><td>执行图动态重规划</td><td>增量更新拓扑图</td></tr>
+<tr><td><code>run_completed</code></td><td>整个运行完成</td><td>关闭 SSE，展示最终报告</td></tr>
+<tr><td><code>run_failed</code></td><td>运行失败</td><td>关闭 SSE，展示错误</td></tr>
+<tr><td><code>run_cancelled</code></td><td>运行被取消</td><td>关闭 SSE，展示取消提示</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ===== ENUMS ===== -->
+<section id="enums">
+<h2>枚举字典</h2>
+
+<h3>KycStatus（实名认证状态）</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>枚举值</th><th>描述</th></tr></thead>
+<tbody>
+<tr><td><code>UNVERIFIED</code></td><td>未实名认证</td></tr>
+<tr><td><code>PENDING</code></td><td>实名审核中</td></tr>
+<tr><td><code>VERIFIED</code></td><td>实名认证已通过</td></tr>
+<tr><td><code>REJECTED</code></td><td>实名认证已驳回</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>UserStatus（用户状态）</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>枚举值</th><th>描述</th></tr></thead>
+<tbody>
+<tr><td><code>ACTIVE</code></td><td>正常启用</td></tr>
+<tr><td><code>LOCKED</code></td><td>风控锁定</td></tr>
+<tr><td><code>DISABLED</code></td><td>已注销/停用</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>RiskToleranceLevel（风险承受等级）</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>枚举值</th><th>code</th><th>显示名</th><th>描述</th></tr></thead>
+<tbody>
+<tr><td><code>C1</code></td><td>C1</td><td>保守型</td><td>本金安全优先，偏好低波动与货币纯债资产</td></tr>
+<tr><td><code>C2</code></td><td>C2</td><td>相对保守型</td><td>稳健防守优先，可承受极小净值回撤</td></tr>
+<tr><td><code>C3</code></td><td>C3</td><td>平衡型</td><td>兼顾收益与回撤，偏好股债均衡配置</td></tr>
+<tr><td><code>C4</code></td><td>C4</td><td>相对积极型</td><td>偏好优质成长与行业主题，可承受阶段性大幅回撤</td></tr>
+<tr><td><code>C5</code></td><td>C5</td><td>进取型</td><td>追求最大收益弹性，具备极强风险承受能力</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>InvestmentHorizon（投资期限）</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>枚举值</th><th>描述</th></tr></thead>
+<tbody>
+<tr><td><code>SHORT_TERM</code></td><td>短期持有 (&lt; 1年)</td></tr>
+<tr><td><code>MEDIUM_TERM</code></td><td>中期持有 (1 - 3年)</td></tr>
+<tr><td><code>LONG_TERM</code></td><td>长期持有 (&gt; 3年)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>InvestmentStyle（投资风格）</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>枚举值</th><th>描述</th></tr></thead>
+<tbody>
+<tr><td><code>VALUE</code></td><td>深度价值型 - 低估值、高安全边际与破净修复</td></tr>
+<tr><td><code>GROWTH</code></td><td>成长驱动型 - 高营收增速、高ROE盈利爆发</td></tr>
+<tr><td><code>BALANCED</code></td><td>均衡配置型 - 行业分散与大盘蓝筹/中盘成长搭配</td></tr>
+<tr><td><code>DIVIDEND</code></td><td>红利低波型 - 稳定现金流分红、央国企高股息</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>NodeStatus（DAG 节点状态）</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>枚举值</th><th>说明</th><th>是否终态</th></tr></thead>
+<tbody>
+<tr><td><code>PENDING</code></td><td>等待前驱完成</td><td>否</td></tr>
+<tr><td><code>READY</code></td><td>就绪，已入调度队列</td><td>否</td></tr>
+<tr><td><code>RUNNING</code></td><td>正在执行</td><td>否</td></tr>
+<tr><td><code>SUCCEEDED</code></td><td>执行成功</td><td>是</td></tr>
+<tr><td><code>FAILED</code></td><td>执行失败</td><td>是</td></tr>
+<tr><td><code>SKIPPED</code></td><td>级联跳过</td><td>是</td></tr>
+<tr><td><code>CANCELLED</code></td><td>被取消</td><td>是</td></tr>
+<tr><td><code>TIMEOUT</code></td><td>执行超时</td><td>是</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>LlmProviderType（大模型厂商）</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>枚举值</th><th>显示名</th></tr></thead>
+<tbody>
+<tr><td><code>DEEPSEEK</code></td><td>DeepSeek</td></tr>
+<tr><td><code>OPENAI</code></td><td>OpenAI</td></tr>
+<tr><td><code>QWEN</code></td><td>通义千问</td></tr>
+<tr><td><code>ZHIPU</code></td><td>智谱AI</td></tr>
+<tr><td><code>OLLAMA</code></td><td>Ollama（本地）</td></tr>
+<tr><td><code>CUSTOM</code></td><td>自定义</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>AssetCategory（资产大类）</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>枚举值</th><th>显示名</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td><code>FUND</code></td><td>公募基金</td><td><span class="tag tag-get">已实施</span></td></tr>
+<tr><td><code>STOCK</code></td><td>股票</td><td>规划中</td></tr>
+<tr><td><code>FUTURES</code></td><td>期货</td><td>规划中</td></tr>
+<tr><td><code>WEALTH_MANAGEMENT</code></td><td>银行理财</td><td>规划中</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ===== ERROR CODES ===== -->
+<section id="error-codes">
+<h2>错误码一览</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>HTTP Status</th><th>触发条件</th><th>响应体示例</th></tr></thead>
+<tbody>
+<tr><td>400</td><td>参数校验失败 / prompt 为空或超长</td><td><code>{"code":400,"message":"Invalid prompt"}</code></td></tr>
+<tr><td>401</td><td>未登录 / Token 过期</td><td>无 JSON body（HTTP 401 空响应）</td></tr>
+<tr><td>402</td><td>积分不足</td><td><code>{"code":402,"message":"余额不足","data":{"userId":1,"currentBalance":50,"requiredPoints":100}}</code></td></tr>
+<tr><td>403</td><td>无 ADMIN 权限 / 越权访问他人数据</td><td>无 JSON body（HTTP 403）</td></tr>
+<tr><td>404</td><td>运行记录不存在</td><td>无 JSON body（HTTP 404）</td></tr>
+<tr><td>410</td><td>支付回调接口已废弃</td><td>提示使用支付宝通知接口</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ================================================================ -->
+<!-- ===== MODULE: AUTH ===== -->
+<!-- ================================================================ -->
+<section id="module-auth">
+<h2><span class="module-icon">🔐</span> 认证模块</h2>
+<p>基础路径：<code>/api/v1/auth</code> &nbsp;|&nbsp; 鉴权：<span class="tag tag-public">公开（无需 Token）</span></p>
+
+<!-- 1. Register -->
+<div class="endpoint" id="auth-register">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/auth/register</span>
+    <span class="endpoint-title">用户注册（赠送 10,000 体验积分）</span>
+  </div>
+  <div class="endpoint-body">
+    <p>新用户注册，自动开户并初始化积分钱包，赠送 10,000 体验积分。注册成功直接返回 JWT 双令牌，无需再次登录。</p>
+
+    <h4>请求体</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>username</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>登录账号（唯一）</td></tr>
+    <tr><td><code>password</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>登录密码</td></tr>
+    <tr><td><code>mobile</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>手机号</td></tr>
+    <tr><td><code>email</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>邮箱</td></tr>
+    <tr><td><code>nickname</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>昵称</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应（AuthResponse）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>accessToken</code></td><td><span class="type">String</span></td><td>访问令牌（2h 过期）</td></tr>
+    <tr><td><code>refreshToken</code></td><td><span class="type">String</span></td><td>刷新令牌（7d 过期）</td></tr>
+    <tr><td><code>tokenType</code></td><td><span class="type">String</span></td><td>固定 "Bearer"</td></tr>
+    <tr><td><code>expiresIn</code></td><td><span class="type">Long</span></td><td>过期秒数</td></tr>
+    <tr><td><code>userId</code></td><td><span class="type">Long</span></td><td>用户 ID</td></tr>
+    <tr><td><code>username</code></td><td><span class="type">String</span></td><td>账号</td></tr>
+    <tr><td><code>nickname</code></td><td><span class="type">String</span></td><td>昵称</td></tr>
+    <tr><td><code>roles</code></td><td><span class="type">List&lt;String&gt;</span></td><td>角色列表（如 ["USER"]）</td></tr>
+    <tr><td><code>permissions</code></td><td><span class="type">List&lt;String&gt;</span></td><td>权限列表</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <pre><code>// 请求示例
+POST /api/v1/auth/register
+{
+  "username": "zhangsan",
+  "password": "Pass@1234",
+  "mobile": "13800138000",
+  "email": "zhangsan@example.com",
+  "nickname": "张三"
+}
+
+// 响应示例
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "accessToken": "eyJhbGciOi...",
+    "refreshToken": "eyJhbGciOi...",
+    "tokenType": "Bearer",
+    "expiresIn": 7200,
+    "userId": 1,
+    "username": "zhangsan",
+    "nickname": "张三",
+    "roles": ["USER"],
+    "permissions": []
+  },
+  "timestamp": 1726210000000
+}</code></pre>
+
+    <div class="ui-design">
+      <div class="ui-design-title">🎨 UI 交互设计</div>
+      <div class="ui-flow">
+        <span class="ui-step">注册表单</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">前端校验</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">提交注册</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">成功提示</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">跳转主页</span>
+      </div>
+      <div class="ui-mock">
+        <div class="ui-mock-title">注册页面布局</div>
+        <p>┌─────────────────────────────────┐<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 欢迎注册 FinancialCopilot &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 用户名： [__________________]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 密&nbsp;&nbsp;&nbsp;码： [__________________]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 手机号： [__________________]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 邮&nbsp;&nbsp;&nbsp;箱： [__________________]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 昵&nbsp;&nbsp;&nbsp;称： [__________________]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [注册] &nbsp;&nbsp; [已有账号?登录]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        └─────────────────────────────────┘</p>
+      </div>
+      <p><strong>交互要点：</strong>用户名/密码实时前端校验（非空、长度 6-20、密码强度），注册成功后 Toast 提示"注册成功！已赠送 10,000 体验积分"，自动存储 Token 并跳转主页。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Login -->
+<div class="endpoint" id="auth-login">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/auth/login</span>
+    <span class="endpoint-title">用户登录</span>
+  </div>
+  <div class="endpoint-body">
+    <p>账号密码登录，返回 JWT 双令牌。</p>
+
+    <h4>请求体（UserLoginRequest）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>username</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>登录账号</td></tr>
+    <tr><td><code>password</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>登录密码</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应</h4>
+    <p>同注册接口的 <code>AuthResponse</code> 结构。</p>
+
+    <pre><code>// 请求
+POST /api/v1/auth/login
+{ "username": "zhangsan", "password": "Pass@1234" }
+
+// 响应（同注册）</code></pre>
+
+    <div class="ui-design">
+      <div class="ui-design-title">🎨 UI 交互设计</div>
+      <div class="ui-flow">
+        <span class="ui-step">登录表单</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">前端校验</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">提交</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">存储Token</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">跳转主页</span>
+      </div>
+      <div class="ui-mock">
+        <div class="ui-mock-title">登录页面布局</div>
+        <p>┌─────────────────────────────────┐<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 欢迎登录 FinancialCopilot &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 用户名： [__________________]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 密&nbsp;&nbsp;&nbsp;码： [__________________]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [登录] &nbsp;&nbsp; [没有账号?注册]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        └─────────────────────────────────┘</p>
+      </div>
+      <p><strong>交互要点：</strong>密码输入框带显示/隐藏切换，登录失败时展示错误 message，登录成功后根据 roles 判断是否跳转管理后台。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Refresh Token -->
+<div class="endpoint" id="auth-refresh">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/auth/refresh-token</span>
+    <span class="endpoint-title">刷新访问令牌</span>
+  </div>
+  <div class="endpoint-body">
+    <p>使用 Refresh Token 换取新的 Access Token。Token 可通过 query 参数或请求头传递。</p>
+
+    <h4>请求参数</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>来源</th><th>位置</th><th>字段</th><th>必填</th></tr></thead>
+    <tbody>
+    <tr><td>Query 参数</td><td><code>?refreshToken=xxx</code></td><td><code>refreshToken</code></td><td>二选一</td></tr>
+    <tr><td>请求头</td><td><code>X-Refresh-Token: xxx</code></td><td><code>headerToken</code></td><td>二选一</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应</h4>
+    <p>同 <code>AuthResponse</code> 结构（含新的 accessToken 和 refreshToken）。</p>
+
+    <div class="callout">
+      <p><strong>前端实现：</strong>此接口通常由 axios 响应拦截器在 401 时自动调用，用户无感知。建议通过请求头 <code>X-Refresh-Token</code> 传递，避免 URL 泄露 Token。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Get Current User -->
+<div class="endpoint" id="auth-me">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/auth/me</span>
+    <span class="endpoint-title">获取当前登录用户信息</span>
+  </div>
+  <div class="endpoint-body">
+    <p>返回当前认证用户的安全主体详情。</p>
+
+    <h4>响应（UserPrincipal）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>userId</code></td><td><span class="type">Long</span></td><td>用户 ID</td></tr>
+    <tr><td><code>username</code></td><td><span class="type">String</span></td><td>账号</td></tr>
+    <tr><td><code>mobile</code></td><td><span class="type">String</span></td><td>手机号</td></tr>
+    <tr><td><code>email</code></td><td><span class="type">String</span></td><td>邮箱</td></tr>
+    <tr><td><code>status</code></td><td><span class="type">String</span></td><td>账号状态（ACTIVE/LOCKED/DISABLED）</td></tr>
+    <tr><td><code>roles</code></td><td><span class="type">List&lt;String&gt;</span></td><td>角色列表</td></tr>
+    <tr><td><code>permissions</code></td><td><span class="type">List&lt;String&gt;</span></td><td>权限列表</td></tr>
+    </tbody>
+    </table>
+    </div>
+    <p>未认证时返回 <code>{"code":401,"message":"当前未认证或登录凭证已失效"}</code>。</p>
+  </div>
+</div>
+</section>
+
+<!-- ===== MODULE: USER ===== -->
+<section id="module-user">
+<h2><span class="module-icon">👤</span> 用户中心</h2>
+<p>基础路径：<code>/api/v1/user</code> &nbsp;|&nbsp; 鉴权：<span class="tag tag-auth">需认证</span></p>
+
+<!-- 1. Get Profile -->
+<div class="endpoint" id="user-get-profile">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/user/profile</span>
+    <span class="endpoint-title">获取个人资料</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>响应（UserProfile）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>userId</code></td><td><span class="type">Long</span></td><td>用户 ID</td></tr>
+    <tr><td><code>nickname</code></td><td><span class="type">String</span></td><td>昵称</td></tr>
+    <tr><td><code>avatarUrl</code></td><td><span class="type">String</span></td><td>头像 URL</td></tr>
+    <tr><td><code>company</code></td><td><span class="type">String</span></td><td>所属机构</td></tr>
+    <tr><td><code>occupation</code></td><td><span class="type">String</span></td><td>职业头衔</td></tr>
+    <tr><td><code>bio</code></td><td><span class="type">String</span></td><td>个人简介</td></tr>
+    <tr><td><code>city</code></td><td><span class="type">String</span></td><td>常驻城市</td></tr>
+    <tr><td><code>updatedAt</code></td><td><span class="type">DateTime</span></td><td>更新时间</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Update Profile -->
+<div class="endpoint" id="user-update-profile">
+  <div class="endpoint-header">
+    <span class="tag tag-put">PUT</span>
+    <span class="endpoint-path">/api/v1/user/profile</span>
+    <span class="endpoint-title">更新个人资料</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>请求体（UserProfileUpdateRequest）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>nickname</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>昵称</td></tr>
+    <tr><td><code>avatarUrl</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>头像 URL</td></tr>
+    <tr><td><code>company</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>所属机构</td></tr>
+    <tr><td><code>occupation</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>职业头衔</td></tr>
+    <tr><td><code>bio</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>个人简介</td></tr>
+    <tr><td><code>city</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>常驻城市</td></tr>
+    </tbody>
+    </table>
+    </div>
+    <p>响应：更新后的 <code>UserProfile</code>。</p>
+  </div>
+</div>
+
+<!-- 3. Submit Identity -->
+<div class="endpoint" id="user-submit-identity">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/user/identity/submit</span>
+    <span class="endpoint-title">提交金融实名认证 (KYC)</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>请求体（IdentityVerificationRequest）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>realName</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>真实法定姓名</td></tr>
+    <tr><td><code>idCardType</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>证件类型，默认 "ID_CARD"</td></tr>
+    <tr><td><code>idCardNo</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>身份证号码</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应（UserIdentity）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>userId</code></td><td><span class="type">Long</span></td><td>用户 ID</td></tr>
+    <tr><td><code>realName</code></td><td><span class="type">String</span></td><td>真实姓名</td></tr>
+    <tr><td><code>idCardType</code></td><td><span class="type">String</span></td><td>证件类型</td></tr>
+    <tr><td><code>idCardHash</code></td><td><span class="type">String</span></td><td>身份证号 SHA-256 哈希</td></tr>
+    <tr><td><code>idCardEncrypted</code></td><td><span class="type">String</span></td><td>身份证号加密密文</td></tr>
+    <tr><td><code>idCardMasked</code></td><td><span class="type">String</span></td><td>脱敏掩码（如 110***1234）</td></tr>
+    <tr><td><code>verifyStatus</code></td><td><span class="type">String</span></td><td>审核状态（UNVERIFIED/PENDING/VERIFIED/REJECTED）</td></tr>
+    <tr><td><code>rejectReason</code></td><td><span class="type">String</span></td><td>驳回原因（REJECTED 时有值）</td></tr>
+    <tr><td><code>verifiedAt</code></td><td><span class="type">DateTime</span></td><td>认证通过时间</td></tr>
+    <tr><td><code>createdAt</code></td><td><span class="type">DateTime</span></td><td>申请提交时间</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <div class="ui-design">
+      <div class="ui-design-title">🎨 UI 交互设计 — 实名认证</div>
+      <div class="ui-flow">
+        <span class="ui-step">状态判断</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">未认证: 展示表单</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">审核中: 展示等待</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">已通过: 展示认证信息</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">已驳回: 展示原因+重新提交</span>
+      </div>
+      <div class="ui-mock">
+        <div class="ui-mock-title">实名认证页面（未认证状态）</div>
+        <p>┌──────────────────────────────────────┐<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 金融实名认证 (KYC) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 真实姓名： [_______________________]&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 证件类型： [身份证 ▼]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 身份证号： [_______________________]&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; ⓘ 您的身份信息将加密存储，仅用于合规验证&nbsp;&nbsp;│<br>
+        │<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [提交认证]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        └──────────────────────────────────────┘</p>
+      </div>
+      <p><strong>交互要点：</strong>身份证号输入时实时脱敏显示，提交前二次确认弹窗"确认提交实名信息？提交后不可修改"，提交成功后展示"审核中"状态页。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Get Identity -->
+<div class="endpoint" id="user-get-identity">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/user/identity</span>
+    <span class="endpoint-title">查询实名认证状态</span>
+  </div>
+  <div class="endpoint-body">
+    <p>返回当前用户的实名认证记录，含审核状态和脱敏信息。</p>
+    <p>响应：同 <code>UserIdentity</code> 结构。</p>
+  </div>
+</div>
+
+<!-- 5. Get Investment Profile -->
+<div class="endpoint" id="user-get-investment">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/user/investment-profile</span>
+    <span class="endpoint-title">获取投资偏好画像</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>响应（UserInvestmentProfile）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>默认值</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>userId</code></td><td><span class="type">Long</span></td><td>-</td><td>用户 ID</td></tr>
+    <tr><td><code>riskToleranceLevel</code></td><td><span class="type">String</span></td><td>C3</td><td>风险等级（C1~C5）</td></tr>
+    <tr><td><code>investmentHorizon</code></td><td><span class="type">String</span></td><td>MEDIUM_TERM</td><td>投资期限</td></tr>
+    <tr><td><code>preferredAssetClasses</code></td><td><span class="type">List&lt;String&gt;</span></td><td>[]</td><td>偏好资产门类</td></tr>
+    <tr><td><code>preferredSectors</code></td><td><span class="type">List&lt;String&gt;</span></td><td>[]</td><td>偏好行业板块</td></tr>
+    <tr><td><code>maxDrawdownTolerance</code></td><td><span class="type">BigDecimal</span></td><td>15.00</td><td>最大回撤容忍度（%）</td></tr>
+    <tr><td><code>targetAnnualReturn</code></td><td><span class="type">BigDecimal</span></td><td>12.00</td><td>目标年化收益率（%）</td></tr>
+    <tr><td><code>investmentStyle</code></td><td><span class="type">String</span></td><td>BALANCED</td><td>投资风格</td></tr>
+    <tr><td><code>singlePositionLimit</code></td><td><span class="type">BigDecimal</span></td><td>20.00</td><td>单只标的最大持仓比例（%）</td></tr>
+    <tr><td><code>updatedAt</code></td><td><span class="type">DateTime</span></td><td>-</td><td>更新时间</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 6. Update Investment Profile -->
+<div class="endpoint" id="user-update-investment">
+  <div class="endpoint-header">
+    <span class="tag tag-put">PUT</span>
+    <span class="endpoint-path">/api/v1/user/investment-profile</span>
+    <span class="endpoint-title">更新投资偏好画像</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>请求体（InvestmentProfileUpdateRequest）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>riskToleranceLevel</code></td><td><span class="type">String</span></td><td>风险等级（C1/C2/C3/C4/C5）</td></tr>
+    <tr><td><code>investmentHorizon</code></td><td><span class="type">String</span></td><td>投资期限（SHORT_TERM/MEDIUM_TERM/LONG_TERM）</td></tr>
+    <tr><td><code>preferredAssetClasses</code></td><td><span class="type">List&lt;String&gt;</span></td><td>偏好资产门类</td></tr>
+    <tr><td><code>preferredSectors</code></td><td><span class="type">List&lt;String&gt;</span></td><td>偏好行业板块</td></tr>
+    <tr><td><code>maxDrawdownTolerance</code></td><td><span class="type">BigDecimal</span></td><td>最大回撤容忍度（%）</td></tr>
+    <tr><td><code>targetAnnualReturn</code></td><td><span class="type">BigDecimal</span></td><td>目标年化收益率（%）</td></tr>
+    <tr><td><code>investmentStyle</code></td><td><span class="type">String</span></td><td>投资风格（VALUE/GROWTH/BALANCED/DIVIDEND）</td></tr>
+    <tr><td><code>singlePositionLimit</code></td><td><span class="type">BigDecimal</span></td><td>单只标的最大持仓比例（%）</td></tr>
+    </tbody>
+    </table>
+    </div>
+    <p>响应：更新后的 <code>UserInvestmentProfile</code>。</p>
+
+    <div class="ui-design">
+      <div class="ui-design-title">🎨 UI 交互设计 — 投资偏好问卷</div>
+      <div class="ui-flow">
+        <span class="ui-step">风险测评问卷</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">自动计算等级</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">手动微调参数</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">保存画像</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">影响投研推荐</span>
+      </div>
+      <div class="ui-mock">
+        <div class="ui-mock-title">投资画像设置页面</div>
+        <p>┌──────────────────────────────────────────┐<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 投资偏好画像 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │<br>
+        │&nbsp; 风险承受能力：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; ○C1保守 ○C2相对保守 ●C3平衡 ○C4积极 ○C5进取│<br>
+        │&nbsp; [=========●========] 滑块选择&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 描述: 兼顾收益与回撤，偏好股债均衡配置&nbsp;&nbsp;&nbsp;│<br>
+        │<br>
+        │&nbsp; 投资期限： [中期(1-3年) ▼]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 投资风格： [均衡配置型 ▼]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 最大回撤容忍： [15.0]%&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 目标年化收益： [12.0]%&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 单标的上限：&nbsp;&nbsp; [20.0]%&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 偏好行业： [新能源] [医药] [+]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [保存画像]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        └──────────────────────────────────────────┘</p>
+      </div>
+      <p><strong>交互要点：</strong>风险等级用可视化滑块+描述卡片，选中时展示该等级的详细说明。投资画像保存后 Toast 提示"画像已更新，将影响后续投研推荐"。</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== MODULE: RESEARCH ===== -->
+<section id="module-research">
+<h2><span class="module-icon">🔬</span> 投研引擎（核心）</h2>
+<p>基础路径：<code>/api/v1/research</code> &nbsp;|&nbsp; 鉴权：<span class="tag tag-auth">需认证</span>（health 除外）</p>
+
+<!-- 1. SSE Run -->
+<div class="endpoint" id="research-stream-run">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/research/runs</span>
+    <span class="endpoint-title">SSE 流式投研运行 <span class="badge badge-deprecated">Accept: text/event-stream</span></span>
+  </div>
+  <div class="endpoint-body">
+    <p>投研多智能体工作流的流式入口。通过 <code>Accept</code> 头区分 SSE 或 JSON 模式。SSE 模式返回 <code>Flux&lt;ResearchStreamEvent&gt;</code> 事件流。</p>
+
+    <div class="callout">
+      <p><strong>同一路径两个模式：</strong></p>
+      <p>• SSE 模式：<code>Accept: text/event-stream</code> → 返回事件流<br>
+      • JSON 模式：<code>Accept: application/json</code> → 返回同步结果<br>
+      前端通过设置 <code>Accept</code> 请求头来切换。</p>
+    </div>
+
+    <h4>请求体（ResearchRunRequest）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>prompt</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>自然语言投研问题（1-20000 字符）</td></tr>
+    <tr><td><code>sessionId</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>会话 ID（多轮对话时传入相同值；为空自动生成）</td></tr>
+    <tr><td><code>enableThinking</code></td><td><span class="type">Boolean</span></td><td><span class="optional">可选</span></td><td>深度思考模式（false=极速标准 deepseek-chat, true=深度推理 deepseek-reasoner）</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>SSE 响应</h4>
+    <p>返回一系列 <code>ResearchStreamEvent</code> JSON 事件（见 <a href="#sse-format">SSE 事件格式</a>）。</p>
+
+    <pre><code>// 前端 SSE 消费伪代码
+const response = await fetch('/api/v1/research/runs', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'text/event-stream',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify({ prompt: '帮我筛选近三年回撤小于5%的债券基金', enableThinking: false })
+});
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+let buffer = '';
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  buffer += decoder.decode(value, { stream: true });
+  const lines = buffer.split('\n');
+  buffer = lines.pop();
+  for (const line of lines) {
+    if (line.startsWith('data:')) {
+      const event = JSON.parse(line.slice(5).trim());
+      handleStreamEvent(event); // 分发到 UI
+    }
+  }
+}</code></pre>
+
+    <div class="ui-design">
+      <div class="ui-design-title">🎨 UI 交互设计 — 投研对话主界面</div>
+      <div class="ui-flow">
+        <span class="ui-step">输入投研问题</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">选择模式(极速/深度)</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">提交(SSE)</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">DAG拓扑图动画</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">内容流式渲染</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">最终报告展示</span>
+      </div>
+      <div class="ui-mock">
+        <div class="ui-mock-title">投研对话主界面</div>
+        <p>┌───────────────────────────────────────────────────────┐<br>
+        │&nbsp; FinancialCopilot 投研助手&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;余额: 9,800 积分&nbsp;│<br>
+        ├───────────────┬───────────────────────────────────────┤<br>
+        │&nbsp; DAG 执行图&nbsp;&nbsp; │&nbsp; 对话与报告区&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ┌──┐&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp; 👤: 帮我筛选近三年回撤&lt;5%的债基&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; │筛选│ ✅ │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; └──┘&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp; 🤖: 正在执行多智能体投研分析...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp; ↗&nbsp;&nbsp;&nbsp;&nbsp; ↖ │&nbsp; ┌─DAG─┐&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;┌──┐&nbsp;&nbsp;┌──┐│&nbsp; │筛选✅│→│分析⏳│→│综合⏳│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;│分析│&nbsp;│分析││&nbsp; └─────┘&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;│⏳ │&nbsp;│⏳ ││&nbsp; 正在生成分析报告...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;└──┘&nbsp;&nbsp;└──┘│&nbsp; ## 基金筛选结果&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp; ↘&nbsp;&nbsp; ↙&nbsp; │&nbsp; 根据...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp; ┌──┐&nbsp;&nbsp; │&nbsp; | 基金名称 | 回撤 | 夏普 |&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp; │综合│&nbsp;&nbsp; │&nbsp; |--------|------|------|&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp; │⏳ │&nbsp;&nbsp; │&nbsp; | 债基A  | 3.2% | 1.5 |&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp; └──┘&nbsp;&nbsp; │&nbsp; ...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        ├───────────────┴───────────────────────────────────────┤<br>
+        │&nbsp; [输入投研问题...]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ⚡极速 🧠深度&nbsp; [发送]│<br>
+        └───────────────────────────────────────────────────────┘</p>
+      </div>
+      <p><strong>交互要点：</strong></p>
+      <p>1. 左侧 DAG 拓扑图：节点根据 SSE 事件实时更新状态颜色（灰=Pending, 蓝=Ready, 旋转动画=Running, 绿=Succeeded, 红=Failed）<br>
+      2. 右侧对话区：<code>content_chunk</code> 事件实时追加 Markdown 内容并流式渲染<br>
+      3. 底部输入区：模式切换（极速/深度），积分消耗预估提示<br>
+      4. <code>run_completed</code> 事件触发后关闭连接，展示完整报告<br>
+      5. 支持"停止"按钮调用 <code>POST /runs/{runId}/cancel</code></p>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Sync Run -->
+<div class="endpoint" id="research-sync-run">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/research/runs</span>
+    <span class="endpoint-title">同步投研运行 <span class="badge badge-deprecated">Accept: application/json</span></span>
+  </div>
+  <div class="endpoint-body">
+    <p>同步 JSON 模式，阻塞等待执行完成后返回完整结果。适用于简单查询或测试场景。</p>
+
+    <h4>请求体</h4>
+    <p>同 SSE 模式的 <code>ResearchRunRequest</code>。</p>
+
+    <h4>响应（ResearchRunResponse）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>runId</code></td><td><span class="type">String</span></td><td>运行 ID</td></tr>
+    <tr><td><code>sessionId</code></td><td><span class="type">String</span></td><td>会话 ID</td></tr>
+    <tr><td><code>report</code></td><td><span class="type">String</span></td><td>最终投研报告（Markdown）</td></tr>
+    <tr><td><code>model</code></td><td><span class="type">String</span></td><td>使用的模型名</td></tr>
+    <tr><td><code>totalNodes</code></td><td><span class="type">int</span></td><td>DAG 节点总数</td></tr>
+    <tr><td><code>graphRevision</code></td><td><span class="type">int</span></td><td>执行图版本</td></tr>
+    <tr><td><code>summary</code></td><td><span class="type">String</span></td><td>摘要</td></tr>
+    <tr><td><code>executionTimeMs</code></td><td><span class="type">long</span></td><td>执行耗时（毫秒）</td></tr>
+    <tr><td><code>promptTokens</code></td><td><span class="type">int</span></td><td>输入 Token 总数</td></tr>
+    <tr><td><code>completionTokens</code></td><td><span class="type">int</span></td><td>输出 Token 总数</td></tr>
+    <tr><td><code>timestamp</code></td><td><span class="type">long</span></td><td>时间戳</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <div class="callout callout-warn">
+      <p><strong>402 余额不足响应：</strong></p>
+      <pre><code>{
+  "code": 402,
+  "message": "积分不足，当前余额 50，需要 100 积分",
+  "data": {
+    "userId": 1,
+    "currentBalance": 50,
+    "requiredPoints": 100
+  }
+}</code></pre>
+      <p>前端应弹出充值引导弹窗。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Session Memory -->
+<div class="endpoint" id="research-memory">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/research/memory/session/{sessionId}</span>
+    <span class="endpoint-title">查询会话记忆诊断</span>
+  </div>
+  <div class="endpoint-body">
+    <p>查询指定会话的短期上下文、长期记忆条目与后台提纯的结构化事实记录。</p>
+
+    <h4>路径参数</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>sessionId</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>会话唯一 ID</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应（SessionMemoryResponse）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>sessionId</code></td><td><span class="type">String</span></td><td>会话 ID</td></tr>
+    <tr><td><code>shortTermMessages</code></td><td><span class="type">List&lt;String&gt;</span></td><td>短期上下文消息列表</td></tr>
+    <tr><td><code>longTermEntries</code></td><td><span class="type">List&lt;String&gt;</span></td><td>长期记忆条目列表</td></tr>
+    <tr><td><code>refinedFacts</code></td><td><span class="type">List&lt;RefinedFactDTO&gt;</span></td><td>提纯事实列表</td></tr>
+    <tr><td><code>timestamp</code></td><td><span class="type">long</span></td><td>时间戳</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>RefinedFactDTO 结构</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>id</code></td><td><span class="type">Long</span></td><td>事实 ID</td></tr>
+    <tr><td><code>type</code></td><td><span class="type">String</span></td><td>事实类型</td></tr>
+    <tr><td><code>content</code></td><td><span class="type">String</span></td><td>事实内容</td></tr>
+    <tr><td><code>createdAt</code></td><td><span class="type">DateTime</span></td><td>创建时间</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Health -->
+<div class="endpoint" id="research-health">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/research/health</span>
+    <span class="endpoint-title">平台健康检查 <span class="tag tag-public">公开</span></span>
+  </div>
+  <div class="endpoint-body">
+    <p>返回系统运行状态与已挂载资产模块概览。</p>
+    <pre><code>{
+  "code": 200,
+  "data": {
+    "status": "UP",
+    "system": "Financial Research Agent (AgentScope + Spring Boot 3 + MyBatis-Plus)",
+    "activeDomain": "FUND (公募基金深度实施)",
+    "extensibleDomains": ["STOCK (股票)", "FUTURES (期货)", "WEALTH (银行理财)"],
+    "pipelineCapabilities": ["BATCH_ANALYSIS", "COMPARISON", "DEEP_DIVE", "SCREENING", "SYNTHESIS"],
+    "orm": "Lombok + MyBatis-Plus 3.5.7 + PGVector",
+    "timestamp": 1726210000000
+  }
+}</code></pre>
+  </div>
+</div>
+</section>
+
+<!-- ===== MODULE: RESEARCH RUN ===== -->
+<section id="module-research-run">
+<h2><span class="module-icon">⚡</span> 运行控制</h2>
+<p>基础路径：<code>/api/v1/research/runs</code> &nbsp;|&nbsp; 鉴权：<span class="tag tag-auth">需认证</span></p>
+
+<!-- 1. Get Status -->
+<div class="endpoint" id="run-status">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/research/runs/{runId}</span>
+    <span class="endpoint-title">查询运行状态</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>路径参数</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>runId</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>运行 ID</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应（Map）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>runId</code></td><td><span class="type">String</span></td><td>运行 ID</td></tr>
+    <tr><td><code>revision</code></td><td><span class="type">int</span></td><td>执行图版本</td></tr>
+    <tr><td><code>statuses</code></td><td><span class="type">Map&lt;String,String&gt;</span></td><td>节点状态映射（nodeId → NodeStatus）</td></tr>
+    <tr><td><code>savedAt</code></td><td><span class="type">DateTime</span></td><td>检查点保存时间</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Cancel -->
+<div class="endpoint" id="run-cancel">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/research/runs/{runId}/cancel</span>
+    <span class="endpoint-title">取消运行</span>
+  </div>
+  <div class="endpoint-body">
+    <p>主动取消正在执行的投研运行。</p>
+    <pre><code>// 响应
+{ "code": 200, "data": { "runId": "xxx", "status": "CANCELLED" } }</code></pre>
+  </div>
+</div>
+
+<!-- 3. Resume -->
+<div class="endpoint" id="run-resume">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/research/runs/{runId}/resume</span>
+    <span class="endpoint-title">恢复运行</span>
+  </div>
+  <div class="endpoint-body">
+    <p>从检查点恢复已暂停/中断的运行。</p>
+    <pre><code>// 响应
+{ "code": 200, "data": { "runId": "xxx", "status": "RESUMED" } }</code></pre>
+
+    <div class="ui-design">
+      <div class="ui-design-title">🎨 UI 交互设计 — 运行控制</div>
+      <div class="ui-flow">
+        <span class="ui-step">SSE 运行中</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">用户点击"停止"</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">POST cancel</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">SSE 收到 run_cancelled</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">展示"已停止"</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">可点击"恢复"</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">POST resume</span>
+      </div>
+      <p><strong>交互要点：</strong>投研运行中顶部展示进度条+停止按钮，停止后显示部分结果（如有），并提供"恢复运行"入口。</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== MODULE: BILLING ===== -->
+<section id="module-billing">
+<h2><span class="module-icon">💰</span> 计费钱包</h2>
+<p>基础路径：<code>/api/v1/billing</code> &nbsp;|&nbsp; 鉴权：<span class="tag tag-auth">需认证</span></p>
+
+<!-- 1. Wallet -->
+<div class="endpoint" id="billing-wallet">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/billing/wallet</span>
+    <span class="endpoint-title">查询钱包资产</span>
+  </div>
+  <div class="endpoint-body">
+    <p>查询当前用户的积分钱包资产状态。用户购买充值套餐获得积分，使用服务消耗积分；模型 Token 仅作为后台计量数据，前台余额、套餐和消费提示统一使用“积分”。</p>
+
+    <h4>响应（WalletDTO）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>userId</code></td><td><span class="type">Long</span></td><td>用户 ID</td></tr>
+    <tr><td><code>balancePoints</code></td><td><span class="type">Long</span></td><td>当前可用积分</td></tr>
+    <tr><td><code>estimatedCny</code></td><td><span class="type">BigDecimal</span></td><td>折合法币金额（10,000 积分=1元）</td></tr>
+    <tr><td><code>totalRechargedPoints</code></td><td><span class="type">Long</span></td><td>累计充值积分</td></tr>
+    <tr><td><code>totalConsumedPoints</code></td><td><span class="type">Long</span></td><td>累计消耗积分</td></tr>
+    <tr><td><code>walletStatus</code></td><td><span class="type">String</span></td><td>钱包状态（NORMAL/ARREARS/FROZEN）</td></tr>
+    <tr><td><code>estimatedReportsRemaining</code></td><td><span class="type">Long</span></td><td>预估可生成报告份数（约2000 积分/份）</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Packages -->
+<div class="endpoint" id="billing-packages">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/billing/packages</span>
+    <span class="endpoint-title">获取充值套餐列表</span>
+  </div>
+  <div class="endpoint-body">
+    <p>获取所有已上架生效的充值套餐规格。</p>
+
+    <h4>响应（List&lt;RechargePackage&gt;）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>id</code></td><td><span class="type">Long</span></td><td>套餐 ID</td></tr>
+    <tr><td><code>packageName</code></td><td><span class="type">String</span></td><td>套餐名称</td></tr>
+    <tr><td><code>priceCny</code></td><td><span class="type">BigDecimal</span></td><td>标价（元）</td></tr>
+    <tr><td><code>grantedPoints</code></td><td><span class="type">Long</span></td><td>基础到账积分</td></tr>
+    <tr><td><code>bonusPoints</code></td><td><span class="type">Long</span></td><td>赠送积分</td></tr>
+    <tr><td><code>badge</code></td><td><span class="type">String</span></td><td>营销角标（如"热销""超值"）</td></tr>
+    <tr><td><code>sortOrder</code></td><td><span class="type">Integer</span></td><td>排序权重</td></tr>
+    <tr><td><code>isActive</code></td><td><span class="type">Boolean</span></td><td>是否上架</td></tr>
+    </tbody>
+    </table>
+    </div>
+    <p><strong>注意：</strong>套餐总积分 = <code>grantedPoints + bonusPoints</code>（可通过 <code>getTotalPoints()</code> 获取）。</p>
+  </div>
+</div>
+
+<!-- 3. Create Order -->
+<div class="endpoint" id="billing-create-order">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/billing/order/create</span>
+    <span class="endpoint-title">创建充值订单</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>请求体（RechargeOrderCreateDTO）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>packageId</code></td><td><span class="type">Long</span></td><td><span class="required">必填</span></td><td>套餐 ID</td></tr>
+    <tr><td><code>payChannel</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>支付通道（ALIPAY / WECHAT / BANK）</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应（RechargeOrder）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>id</code></td><td><span class="type">Long</span></td><td>订单 ID</td></tr>
+    <tr><td><code>orderNo</code></td><td><span class="type">String</span></td><td>业务订单号（全局唯一）</td></tr>
+    <tr><td><code>userId</code></td><td><span class="type">Long</span></td><td>用户 ID</td></tr>
+    <tr><td><code>packageId</code></td><td><span class="type">Long</span></td><td>套餐 ID</td></tr>
+    <tr><td><code>payAmountCny</code></td><td><span class="type">BigDecimal</span></td><td>支付金额（元）</td></tr>
+    <tr><td><code>targetPoints</code></td><td><span class="type">Long</span></td><td>应到账总积分</td></tr>
+    <tr><td><code>payChannel</code></td><td><span class="type">String</span></td><td>支付通道</td></tr>
+    <tr><td><code>orderStatus</code></td><td><span class="type">String</span></td><td>订单状态（PENDING/PAID/CANCELLED）</td></tr>
+    <tr><td><code>thirdPartyTradeNo</code></td><td><span class="type">String</span></td><td>三方交易号</td></tr>
+    <tr><td><code>createdAt</code></td><td><span class="type">DateTime</span></td><td>创建时间</td></tr>
+    <tr><td><code>paidAt</code></td><td><span class="type">DateTime</span></td><td>支付时间</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Pay Callback (Deprecated) -->
+<div class="endpoint" id="billing-pay-callback">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/billing/order/pay-callback</span>
+    <span class="endpoint-title">支付回调（已废弃） <span class="badge badge-deprecated">DEPRECATED</span></span>
+  </div>
+  <div class="endpoint-body">
+    <div class="callout callout-warn">
+      <p><strong>此接口已废弃</strong>，返回 HTTP 410 Gone。提示使用支付宝签名通知接口 <code>POST /api/v1/billing/alipay/notify</code>。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 5. Ledger -->
+<div class="endpoint" id="billing-ledger">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/billing/ledger</span>
+    <span class="endpoint-title">分页查询消费流水</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>查询参数</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>参数</th><th>类型</th><th>默认</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>page</code></td><td><span class="type">int</span></td><td>1</td><td>页码</td></tr>
+    <tr><td><code>size</code></td><td><span class="type">int</span></td><td>10</td><td>每页条数</td></tr>
+    <tr><td><code>model</code></td><td><span class="type">String</span></td><td>-</td><td>模型筛选（可选）</td></tr>
+    <tr><td><code>taskType</code></td><td><span class="type">String</span></td><td>-</td><td>任务类型筛选（可选）</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应（Map — 分页结果）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>total</code></td><td><span class="type">Long</span></td><td>总记录数</td></tr>
+    <tr><td><code>list</code></td><td><span class="type">List&lt;TokenUsageLedger&gt;</span></td><td>流水列表</td></tr>
+    <tr><td><code>page</code></td><td><span class="type">int</span></td><td>当前页码</td></tr>
+    <tr><td><code>size</code></td><td><span class="type">int</span></td><td>每页条数</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>TokenUsageLedger 结构</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>id</code></td><td><span class="type">Long</span></td><td>流水 ID</td></tr>
+    <tr><td><code>userId</code></td><td><span class="type">Long</span></td><td>用户 ID</td></tr>
+    <tr><td><code>sessionId</code></td><td><span class="type">String</span></td><td>会话 ID</td></tr>
+    <tr><td><code>taskType</code></td><td><span class="type">String</span></td><td>任务类型</td></tr>
+    <tr><td><code>provider</code></td><td><span class="type">String</span></td><td>厂商</td></tr>
+    <tr><td><code>model</code></td><td><span class="type">String</span></td><td>模型名</td></tr>
+    <tr><td><code>promptTokens</code></td><td><span class="type">Integer</span></td><td>输入 Token</td></tr>
+    <tr><td><code>completionTokens</code></td><td><span class="type">Integer</span></td><td>输出 Token</td></tr>
+    <tr><td><code>totalTokens</code></td><td><span class="type">Integer</span></td><td>总 Token</td></tr>
+    <tr><td><code>consumedPoints</code></td><td><span class="type">Long</span></td><td>消耗积分</td></tr>
+    <tr><td><code>latencyMs</code></td><td><span class="type">Integer</span></td><td>延迟（毫秒）</td></tr>
+    <tr><td><code>createdAt</code></td><td><span class="type">DateTime</span></td><td>扣费时间</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 6. Usage Trend -->
+<div class="endpoint" id="billing-trend">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/billing/stats/trend</span>
+    <span class="endpoint-title">每日消耗走势</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>查询参数</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>参数</th><th>类型</th><th>默认</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>days</code></td><td><span class="type">int</span></td><td>7</td><td>统计天数（常用 7 或 30）</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应（List&lt;UsageTrendPointDTO&gt;）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>statDate</code></td><td><span class="type">String</span></td><td>日期（YYYY-MM-DD）</td></tr>
+    <tr><td><code>totalTokens</code></td><td><span class="type">Long</span></td><td>当日总 Token</td></tr>
+    <tr><td><code>consumedPoints</code></td><td><span class="type">Long</span></td><td>当日消耗积分</td></tr>
+    <tr><td><code>requestCount</code></td><td><span class="type">Long</span></td><td>当日请求次数</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 7. Pricing -->
+<div class="endpoint" id="billing-pricing">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/billing/pricing</span>
+    <span class="endpoint-title">查询模型计价矩阵</span>
+  </div>
+  <div class="endpoint-body">
+    <p>查询平台大模型公开计费单价矩阵。</p>
+
+    <h4>响应（List&lt;ModelPricing&gt;）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>id</code></td><td><span class="type">Long</span></td><td>主键</td></tr>
+    <tr><td><code>providerType</code></td><td><span class="type">String</span></td><td>厂商（DEEPSEEK/OPENAI/QWEN/ZHIPU/OLLAMA/CUSTOM）</td></tr>
+    <tr><td><code>modelName</code></td><td><span class="type">String</span></td><td>模型标识</td></tr>
+    <tr><td><code>inputPricePerK</code></td><td><span class="type">BigDecimal</span></td><td>每千输入 Token 积分</td></tr>
+    <tr><td><code>outputPricePerK</code></td><td><span class="type">BigDecimal</span></td><td>每千输出 Token 积分</td></tr>
+    <tr><td><code>cacheHitPricePerK</code></td><td><span class="type">BigDecimal</span></td><td>每千缓存命中 Token 积分</td></tr>
+    <tr><td><code>isActive</code></td><td><span class="type">Boolean</span></td><td>是否生效</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <div class="ui-design">
+      <div class="ui-design-title">🎨 UI 交互设计 — 钱包与计费中心</div>
+      <div class="ui-flow">
+        <span class="ui-step">钱包首页</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">余额+预估报告</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">充值入口</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">套餐列表</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">选套餐+支付</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">跳转支付宝</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">回调刷新余额</span>
+      </div>
+      <div class="ui-mock">
+        <div class="ui-mock-title">钱包首页</div>
+        <p>┌──────────────────────────────────────────┐<br>
+        │&nbsp; 💰 我的钱包&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [充值]│<br>
+        │<br>
+        │&nbsp;&nbsp; 9,800&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp; 可用积分&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp; ≈ ¥0.98&nbsp;|&nbsp; 预估可生成 ~4 份深度报告&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp; 状态: 正常 ✅&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        ├──────────────────────────────────────────┤<br>
+        │&nbsp; 📊 近 7 日消耗趋势&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [7天|30天]│<br>
+        │&nbsp;&nbsp; ▂▃▅▇▆▄▃▂&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        ├──────────────────────────────────────────┤<br>
+        │&nbsp; 📋 消费明细&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [筛选▼]│<br>
+        │&nbsp; 时间 | 模型 | 消耗积分 | 任务│&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 09-13 | deepseek | 12 | 筛选│&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 09-12 | deepseek | 35 | 分析│&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        └──────────────────────────────────────────┘</p>
+      </div>
+      <div class="ui-mock">
+        <div class="ui-mock-title">充值套餐选择页</div>
+        <p>┌──────────────┬──────────────┬──────────────┐<br>
+        │&nbsp;&nbsp;&nbsp; 体验包&nbsp;&nbsp;&nbsp; │&nbsp; 🔥标准包&nbsp;🔥 │&nbsp;&nbsp;&nbsp; 尊享包&nbsp;&nbsp;&nbsp; │<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp; ¥9.9&nbsp;&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp; ¥49&nbsp;&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp; ¥199&nbsp;&nbsp;&nbsp; │<br>
+        │&nbsp; 10万 积分&nbsp;&nbsp;&nbsp;&nbsp; │&nbsp; 55万 积分&nbsp;&nbsp;&nbsp;&nbsp; │&nbsp; 240万 积分&nbsp;&nbsp;&nbsp; │<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; │&nbsp; +5万赠送&nbsp;&nbsp;&nbsp; │&nbsp; +40万赠送&nbsp; │<br>
+        │&nbsp; ~50份报告 │&nbsp; ~275份报告 │&nbsp; ~1200份报告│<br>
+        │&nbsp;&nbsp;&nbsp; [选择]&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp; [选择]&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp; [选择]&nbsp;&nbsp;&nbsp; │<br>
+        └──────────────┴──────────────┴──────────────┘</p>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== MODULE: ALIPAY ===== -->
+<section id="module-alipay">
+<h2><span class="module-icon">💳</span> 支付宝支付</h2>
+<p>基础路径：<code>/api/v1/billing/alipay</code> &nbsp;|&nbsp; 鉴权：混合</p>
+
+<!-- 1. Pay -->
+<div class="endpoint" id="alipay-pay">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/billing/alipay/order/{orderNo}/pay</span>
+    <span class="endpoint-title">获取支付宝支付链接</span>
+  </div>
+  <div class="endpoint-body">
+    <p>根据订单号获取支付宝支付页面 URL，前端跳转或扫码支付。</p>
+
+    <h4>路径参数</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>orderNo</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>业务订单号</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应</h4>
+    <p><code>ApiResult&lt;String&gt;</code> — data 为支付宝支付 URL。</p>
+
+    <pre><code>{
+  "code": 200,
+  "data": "https://openapi.alipay.com/gateway.do?..."
+}</code></pre>
+
+    <div class="callout callout-warn">
+      <p><strong>错误处理：</strong></p>
+      <p>• HTTP 403 — SecurityException，安全拦截<br>
+      • HTTP 503 — IllegalStateException，支付服务未就绪（支付宝未配置）<br>
+      • HTTP 400 — IllegalArgumentException，订单参数错误</p>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Notify -->
+<div class="endpoint" id="alipay-notify">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/billing/alipay/notify</span>
+    <span class="endpoint-title">支付宝异步通知回调 <span class="tag tag-public">公开</span></span>
+  </div>
+  <div class="endpoint-body">
+    <p>支付宝服务端异步通知接口，接收支付结果。Content-Type: <code>application/x-www-form-urlencoded</code>。</p>
+    <p>响应：纯文本 <code>"success"</code> 或 <code>"failure"</code>（非 JSON）。</p>
+    <div class="callout">
+      <p><strong>前端无需直接调用此接口</strong>，由支付宝服务端在支付成功后回调。前端应通过轮询钱包余额或 WebSocket 感知支付结果。</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== MODULE: ADMIN USER ===== -->
+<section id="module-admin-user">
+<h2><span class="module-icon">🛡️</span> 用户管理（Admin）</h2>
+<p>基础路径：<code>/api/v1/admin/user</code> &nbsp;|&nbsp; 鉴权：<span class="tag tag-admin">需 ADMIN 角色</span></p>
+
+<!-- 1. List Users -->
+<div class="endpoint" id="admin-list-users">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/admin/user/list</span>
+    <span class="endpoint-title">分页查询全量用户</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>查询参数</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>参数</th><th>类型</th><th>默认</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>page</code></td><td><span class="type">int</span></td><td>1</td><td>页码</td></tr>
+    <tr><td><code>size</code></td><td><span class="type">int</span></td><td>20</td><td>每页条数</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应（List&lt;User&gt;）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>id</code></td><td><span class="type">Long</span></td><td>用户 ID</td></tr>
+    <tr><td><code>username</code></td><td><span class="type">String</span></td><td>登录账号</td></tr>
+    <tr><td><code>passwordHash</code></td><td><span class="type">String</span></td><td>密码哈希（前端不展示）</td></tr>
+    <tr><td><code>mobile</code></td><td><span class="type">String</span></td><td>手机号</td></tr>
+    <tr><td><code>email</code></td><td><span class="type">String</span></td><td>邮箱</td></tr>
+    <tr><td><code>status</code></td><td><span class="type">String</span></td><td>账号状态（ACTIVE/LOCKED/DISABLED）</td></tr>
+    <tr><td><code>roles</code></td><td><span class="type">List&lt;Role&gt;</span></td><td>角色列表</td></tr>
+    <tr><td><code>createdAt</code></td><td><span class="type">DateTime</span></td><td>创建时间</td></tr>
+    <tr><td><code>updatedAt</code></td><td><span class="type">DateTime</span></td><td>更新时间</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Pending Identities -->
+<div class="endpoint" id="admin-pending-identity">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/admin/user/identity/pending</span>
+    <span class="endpoint-title">查询待审核实名申请</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>查询参数</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>参数</th><th>类型</th><th>默认</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>page</code></td><td><span class="type">int</span></td><td>1</td><td>页码</td></tr>
+    <tr><td><code>size</code></td><td><span class="type">int</span></td><td>20</td><td>每页条数</td></tr>
+    </tbody>
+    </table>
+    </div>
+    <p>响应：<code>List&lt;UserIdentity&gt;</code>（同用户中心 UserIdentity 结构）。</p>
+  </div>
+</div>
+
+<!-- 3. Review Identity -->
+<div class="endpoint" id="admin-review-identity">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/admin/user/identity/review</span>
+    <span class="endpoint-title">审批实名认证</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>请求体（IdentityReviewRequest）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>userId</code></td><td><span class="type">Long</span></td><td><span class="required">必填</span></td><td>被审核用户 ID</td></tr>
+    <tr><td><code>approved</code></td><td><span class="type">Boolean</span></td><td><span class="required">必填</span></td><td>true=通过, false=驳回</td></tr>
+    <tr><td><code>rejectReason</code></td><td><span class="type">String</span></td><td><span class="optional">驳回时必填</span></td><td>驳回原因</td></tr>
+    </tbody>
+    </table>
+    </div>
+    <p>响应：审核后的 <code>UserIdentity</code>。</p>
+
+    <div class="ui-design">
+      <div class="ui-design-title">🎨 UI 交互设计 — 管理后台</div>
+      <div class="ui-flow">
+        <span class="ui-step">用户列表</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">待审核Tab</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">查看实名详情</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">通过/驳回</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">填写驳回原因</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">提交审核</span>
+      </div>
+      <div class="ui-mock">
+        <div class="ui-mock-title">管理后台 — 实名审核</div>
+        <p>┌──────────────────────────────────────────────┐<br>
+        │&nbsp; 管理后台 > 用户管理 > 实名审核&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        ├──────────────────────────────────────────────┤<br>
+        │&nbsp; [全部用户] [待审核(3)] [已通过] [已驳回]&nbsp;&nbsp;│<br>
+        ├──────────────────────────────────────────────┤<br>
+        │&nbsp; 用户ID: 42&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 状态: 审核中&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 真实姓名: 张三&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 证件类型: 身份证&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 证件号码: 110***********1234&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 提交时间: 2026-09-12 14:30&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │<br>
+        │&nbsp; 驳回原因: [_______________________]&nbsp;&nbsp;│<br>
+        │&nbsp;&nbsp;&nbsp;&nbsp; [✅ 通过] &nbsp;&nbsp;&nbsp;&nbsp; [❌ 驳回]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        └──────────────────────────────────────────────┘</p>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== MODULE: ADMIN LLM ===== -->
+<section id="module-admin-llm">
+<h2><span class="module-icon">⚙️</span> 模型管理（Admin）</h2>
+<p>基础路径：<code>/api/v1/admin/llm</code> &nbsp;|&nbsp; 鉴权：<span class="tag tag-admin">需 ADMIN 角色</span>（路径匹配 <code>/api/v1/admin/**</code>）</p>
+
+<!-- 1. Providers -->
+<div class="endpoint" id="llm-providers">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/admin/llm/providers</span>
+    <span class="endpoint-title">查询厂商与模型规格矩阵</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>响应（List&lt;LlmProviderMetadata&gt;）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>providerType</code></td><td><span class="type">String</span></td><td>厂商标识</td></tr>
+    <tr><td><code>displayName</code></td><td><span class="type">String</span></td><td>显示名</td></tr>
+    <tr><td><code>defaultBaseUrl</code></td><td><span class="type">String</span></td><td>默认 API 地址</td></tr>
+    <tr><td><code>description</code></td><td><span class="type">String</span></td><td>描述</td></tr>
+    <tr><td><code>officialWebsite</code></td><td><span class="type">String</span></td><td>官网</td></tr>
+    <tr><td><code>supportedModels</code></td><td><span class="type">List&lt;LlmModelOption&gt;</span></td><td>支持的模型列表</td></tr>
+    <tr><td><code>defaultModel</code></td><td><span class="type">String</span></td><td>默认模型</td></tr>
+    <tr><td><code>defaultReasoningModel</code></td><td><span class="type">String</span></td><td>默认推理模型</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>LlmModelOption 结构</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>modelId</code></td><td><span class="type">String</span></td><td>模型 ID</td></tr>
+    <tr><td><code>displayName</code></td><td><span class="type">String</span></td><td>显示名</td></tr>
+    <tr><td><code>description</code></td><td><span class="type">String</span></td><td>描述</td></tr>
+    <tr><td><code>contextWindow</code></td><td><span class="type">String</span></td><td>上下文窗口</td></tr>
+    <tr><td><code>supportsReasoning</code></td><td><span class="type">boolean</span></td><td>是否支持推理</td></tr>
+    <tr><td><code>supportsStreaming</code></td><td><span class="type">boolean</span></td><td>是否支持流式</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Get Config -->
+<div class="endpoint" id="llm-get-config">
+  <div class="endpoint-header">
+    <span class="tag tag-get">GET</span>
+    <span class="endpoint-path">/api/v1/admin/llm/config</span>
+    <span class="endpoint-title">获取当前生效配置</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>响应（LlmSettingsDTO）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>默认值</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>provider</code></td><td><span class="type">String</span></td><td>DEEPSEEK</td><td>厂商</td></tr>
+    <tr><td><code>model</code></td><td><span class="type">String</span></td><td>deepseek-chat</td><td>标准模型</td></tr>
+    <tr><td><code>reasoningModel</code></td><td><span class="type">String</span></td><td>deepseek-reasoner</td><td>推理模型</td></tr>
+    <tr><td><code>enableThinking</code></td><td><span class="type">boolean</span></td><td>false</td><td>是否启用深度思考</td></tr>
+    <tr><td><code>temperature</code></td><td><span class="type">Double</span></td><td>-</td><td>温度参数</td></tr>
+    <tr><td><code>topP</code></td><td><span class="type">Double</span></td><td>-</td><td>Top-P 参数</td></tr>
+    <tr><td><code>maxTokens</code></td><td><span class="type">Integer</span></td><td>-</td><td>最大 Token</td></tr>
+    <tr><td><code>customBaseUrl</code></td><td><span class="type">String</span></td><td>-</td><td>自定义 API 地址</td></tr>
+    <tr><td><code>customApiKey</code></td><td><span class="type">String</span></td><td>-</td><td>自定义 API Key</td></tr>
+    </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Update Config -->
+<div class="endpoint" id="llm-update-config">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/admin/llm/config</span>
+    <span class="endpoint-title">热更新模型配置</span>
+  </div>
+  <div class="endpoint-body">
+    <p>动态热更新系统生效的大模型厂商、模型标识与端点。</p>
+    <h4>请求体</h4>
+    <p>同 <code>LlmSettingsDTO</code> 结构。</p>
+    <h4>响应</h4>
+    <p>更新后的 <code>LlmSettingsDTO</code>。</p>
+  </div>
+</div>
+
+<!-- 4. Test Connection -->
+<div class="endpoint" id="llm-test">
+  <div class="endpoint-header">
+    <span class="tag tag-post">POST</span>
+    <span class="endpoint-path">/api/v1/admin/llm/test</span>
+    <span class="endpoint-title">测试模型连通性</span>
+  </div>
+  <div class="endpoint-body">
+    <h4>请求体（LlmConnectionTestRequest）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>provider</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>厂商</td></tr>
+    <tr><td><code>model</code></td><td><span class="type">String</span></td><td><span class="required">必填</span></td><td>模型名</td></tr>
+    <tr><td><code>baseUrl</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>自定义 Base URL</td></tr>
+    <tr><td><code>apiKey</code></td><td><span class="type">String</span></td><td><span class="optional">可选</span></td><td>自定义 API Key</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <h4>响应（LlmConnectionTestResult）</h4>
+    <div class="table-wrap">
+    <table>
+    <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+    <tbody>
+    <tr><td><code>success</code></td><td><span class="type">boolean</span></td><td>是否成功</td></tr>
+    <tr><td><code>message</code></td><td><span class="type">String</span></td><td>结果消息</td></tr>
+    <tr><td><code>latencyMs</code></td><td><span class="type">Long</span></td><td>往返延迟（毫秒）</td></tr>
+    <tr><td><code>sampleResponse</code></td><td><span class="type">String</span></td><td>模型回复样本</td></tr>
+    </tbody>
+    </table>
+    </div>
+
+    <div class="ui-design">
+      <div class="ui-design-title">🎨 UI 交互设计 — 模型管理后台</div>
+      <div class="ui-flow">
+        <span class="ui-step">查看当前配置</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">选择厂商+模型</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">填写API Key</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">测试连通性</span>
+        <span class="ui-arrow">→</span>
+        <span class="ui-step">保存配置</span>
+      </div>
+      <div class="ui-mock">
+        <div class="ui-mock-title">模型配置页面</div>
+        <p>┌──────────────────────────────────────────────┐<br>
+        │&nbsp; 管理后台 > 模型管理&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        ├──────────────────────────────────────────────┤<br>
+        │&nbsp; 当前生效配置&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 厂商: DeepSeek&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 模型: deepseek-chat&nbsp;&nbsp;│<br>
+        │&nbsp; 推理: deepseek-reasoner&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        ├──────────────────────────────────────────────┤<br>
+        │&nbsp; 厂商: [DeepSeek ▼]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; 模型: [deepseek-chat ▼]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; Base URL: [https://api.deepseek...]│<br>
+        │&nbsp; API Key: [sk-****************]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │&nbsp; Temperature: [0.7]&nbsp; MaxTokens: [4096]│<br>
+        │<br>
+        │&nbsp; [🔍 测试连通] &nbsp;&nbsp; [💾 保存配置]&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        │<br>
+        │&nbsp; 测试结果: ✅ 成功 (延迟: 856ms)&nbsp;&nbsp;│<br>
+        │&nbsp; 回复样本: "Hello! I'm DeepSeek..."&nbsp;&nbsp;│<br>
+        └──────────────────────────────────────────────┘</p>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===== FRONTEND ARCHITECTURE ===== -->
+<section id="frontend-arch">
+<h2><span class="module-icon">📐</span> 前端架构建议</h2>
+
+<h3>页面路由结构</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>路由</th><th>页面</th><th>鉴权</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>/login</code></td><td>登录页</td><td>公开</td><td>登录/注册切换</td></tr>
+<tr><td><code>/register</code></td><td>注册页</td><td>公开</td><td>新用户注册</td></tr>
+<tr><td><code>/</code></td><td>投研主页</td><td>需认证</td><td>对话式投研 + DAG 可视化</td></tr>
+<tr><td><code>/research/history</code></td><td>投研历史</td><td>需认证</td><td>历史会话列表</td></tr>
+<tr><td><code>/user/profile</code></td><td>个人资料</td><td>需认证</td><td>基础信息编辑</td></tr>
+<tr><td><code>/user/kyc</code></td><td>实名认证</td><td>需认证</td><td>KYC 状态与提交</td></tr>
+<tr><td><code>/user/investment</code></td><td>投资画像</td><td>需认证</td><td>风险偏好设置</td></tr>
+<tr><td><code>/wallet</code></td><td>钱包中心</td><td>需认证</td><td>余额/消费/趋势</td></tr>
+<tr><td><code>/wallet/recharge</code></td><td>充值页</td><td>需认证</td><td>套餐选择+支付</td></tr>
+<tr><td><code>/admin/users</code></td><td>用户管理</td><td>ADMIN</td><td>用户列表+KYC审核</td></tr>
+<tr><td><code>/admin/llm</code></td><td>模型管理</td><td>ADMIN</td><td>模型配置+测试</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>前端技术栈建议</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>分类</th><th>推荐</th><th>理由</th></tr></thead>
+<tbody>
+<tr><td>框架</td><td>Vue 3 + Composition API / React 18</td><td>响应式数据流适配 SSE 流式渲染</td></tr>
+<tr><td>HTTP</td><td>axios + 拦截器</td><td>统一 Token 注入与 401 自动续期</td></tr>
+<tr><td>SSE 消费</td><td>fetch + ReadableStream（非 EventSource）</td><td>需 POST 请求体，EventSource 不支持 POST</td></tr>
+<tr><td>Markdown 渲染</td><td>markdown-it + highlight.js</td><td>流式分片追加渲染投研报告</td></tr>
+<tr><td>DAG 可视化</td><td>Vue Flow / React Flow / D3.js</td><td>节点拓扑图实时状态更新</td></tr>
+<tr><td>图表</td><td>ECharts / Chart.js</td><td>消耗趋势折线图</td></tr>
+<tr><td>状态管理</td><td>Pinia / Zustand</td><td>全局 Token、用户信息、钱包余额</td></tr>
+<tr><td>UI 组件</td><td>Element Plus / Ant Design / shadcn/ui</td><td>表单、表格、弹窗、分页</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>全局状态设计</h3>
+<pre><code>// stores/auth.ts
+const useAuthStore = defineStore('auth', () => {
+  const accessToken = ref(localStorage.getItem('accessToken') || '')
+  const refreshToken = ref(localStorage.getItem('refreshToken') || '')
+  const user = ref(null)
+  const isAuthenticated = computed(() =&gt; !!accessToken.value)
+  const isAdmin = computed(() =&gt; user.value?.roles?.includes('ADMIN'))
+
+  async function login(req) { /* POST /api/v1/auth/login */ }
+  async function register(req) { /* POST /api/v1/auth/register */ }
+  async function refreshAccessToken() { /* POST /api/v1/auth/refresh-token */ }
+  function logout() { /* clear tokens, redirect to /login */ }
+  return { accessToken, refreshToken, user, isAuthenticated, isAdmin, ... }
+})
+
+// stores/wallet.ts
+const useWalletStore = defineStore('wallet', () => {
+  const balance = ref(0)
+  const walletStatus = ref('NORMAL')
+  const estimatedReports = ref(0)
+  async function fetchWallet() { /* GET /api/v1/billing/wallet */ }
+  return { balance, walletStatus, estimatedReports, fetchWallet }
+})</code></pre>
+
+<div class="callout">
+<p><strong>关键注意事项：</strong></p>
+<p>1. <strong>SSE 消费必须用 fetch</strong>：投研运行是 POST 请求，<code>EventSource</code> 不支持 POST 方法和自定义 Header<br>
+2. <strong>402 拦截</strong>：axios 拦截器捕获 402 状态码，弹出充值引导弹窗<br>
+3. <strong>余额实时更新</strong>：每次投研消耗后刷新钱包余额（SSE <code>run_completed</code> 事件后）<br>
+4. <strong>CORS</strong>：后端当前仅放行 OPTIONS，开发环境需配置 Vite/Webpack 代理或后端添加 <code>@CrossOrigin</code> 配置</p>
+</div>
+
+</section>
+
+</main>
+</body>
+</html>

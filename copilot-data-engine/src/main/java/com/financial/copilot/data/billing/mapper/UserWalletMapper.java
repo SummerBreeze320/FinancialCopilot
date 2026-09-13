@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Update;
 
 /**
- * <h1>用户算力钱包持久层 Mapper (MyBatis-Plus)</h1>
+ * <h1>用户积分钱包持久层 Mapper (MyBatis-Plus)</h1>
  *
  * @author FinancialCopilot
  */
@@ -27,7 +27,7 @@ public interface UserWalletMapper extends BaseMapper<UserWalletPO> {
      * 基于版本号乐观锁与余额校验的原子扣减 (防止超扣与并发脏写)
      *
      * @param userId  用户 ID
-     * @param points  扣减点数
+     * @param points  扣减积分
      * @param version 当前版本号
      * @return 影响行数 (1 成功，0 失败)
      */
@@ -42,10 +42,10 @@ public interface UserWalletMapper extends BaseMapper<UserWalletPO> {
                        @Param("version") Long version);
 
     /**
-     * 充值到账：原子增加可用算力点数与累计充值总额
+     * 充值到账：原子增加可用积分与累计充值总额
      *
      * @param userId 用户 ID
-     * @param points 增加点数
+     * @param points 增加积分
      * @return 影响行数
      */
     @Update("UPDATE sys_user_wallet " +

@@ -42,25 +42,25 @@ public class WalletBillingService {
      * 前置配额与余额探测：若钱包状态异常或余额低于门槛，抛出 {@link WalletInsufficientException}
      *
      * @param userId             用户 ID
-     * @param minThresholdPoints 最低起步门槛点数（默认通常为 100 点）
+     * @param minThresholdPoints 最低起步门槛积分（默认通常为 100 积分）
      */
     public void checkBalance(Long userId, long minThresholdPoints) {
         Long uid = Objects.requireNonNull(userId, "userId");
         UserWallet wallet = billingPort.getOrCreateWallet(uid, null);
         if (!wallet.hasSufficientBalance(minThresholdPoints)) {
-            log.warn("[WALLET-PRECHECK] 拦截调用：用户算力余额不足: userId={}, balance={}, required={}",
+            log.warn("[WALLET-PRECHECK] 拦截调用：用户积分余额不足: userId={}, balance={}, required={}",
                     uid, wallet.getBalancePoints(), minThresholdPoints);
             throw new WalletInsufficientException(uid, wallet.getBalancePoints(), minThresholdPoints);
         }
     }
 
     /**
-     * 根据模型标识与 Token 规模计算应扣算力点数
+     * 根据模型标识与 Token 规模计算应扣积分
      *
      * @param model            模型名称
      * @param promptTokens     输入 Token 数
      * @param completionTokens 输出 Token 数
-     * @return 应扣算力点数
+     * @return 应扣积分
      */
     public long calculatePoints(String model, int promptTokens, int completionTokens) {
         ModelPricing pricing = billingPort.getPricing(model)
@@ -203,7 +203,7 @@ public class WalletBillingService {
         order.setThirdPartyTradeNo(thirdPartyTradeNo);
         order.setPaidAt(LocalDateTime.now());
 
-        // 原子给用户钱包增加可用算力点
+        // 原子给用户钱包增加可用积分
         billingPort.addRechargePoints(order.getUserId(), order.getTargetPoints());
         billingPort.updateOrder(order);
 
@@ -213,7 +213,7 @@ public class WalletBillingService {
     }
 
     /**
-     * 查询当前用户钱包资产与可用点数
+     * 查询当前用户钱包资产与可用积分
      *
      * @param userId 用户 ID
      * @return 钱包传输对象
@@ -285,13 +285,13 @@ public class WalletBillingService {
      * 新用户注册自动赠送初始体验算力包
      *
      * @param userId     用户 ID
-     * @param giftPoints 赠送算力点数 (例如 10,000 点)
+     * @param giftPoints 赠送积分 (例如 10,000 积分)
      */
     @Transactional("jdbcTransactionManager")
     public void grantInitialTrialPoints(Long userId, long giftPoints) {
         if (userId == null || giftPoints <= 0) return;
         billingPort.getOrCreateWallet(userId, null);
         billingPort.addRechargePoints(userId, giftPoints);
-        log.info("[WALLET-GIFT] 新用户注册成功，赠送初始体验算力点: userId={}, points={}", userId, giftPoints);
+        log.info("[WALLET-GIFT] 新用户注册成功，赠送初始体验积分: userId={}, points={}", userId, giftPoints);
     }
 }

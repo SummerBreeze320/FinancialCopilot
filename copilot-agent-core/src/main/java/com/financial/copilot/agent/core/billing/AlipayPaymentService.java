@@ -40,7 +40,7 @@ public class AlipayPaymentService {
         var model = new AlipayTradePagePayModel();
         model.setOutTradeNo(orderNo);
         model.setTotalAmount(order.getPayAmountCny().toPlainString());
-        model.setSubject("FinancialCopilot 算力充值");
+        model.setSubject("FinancialCopilot 积分充值");
         model.setProductCode("FAST_INSTANT_TRADE_PAY");
         var request = new AlipayTradePagePayRequest();
         request.setBizModel(model);

@@ -17,7 +17,7 @@ import java.util.Optional;
 public interface BillingPort {
 
     /**
-     * 查询或初始化用户的算力钱包
+     * 查询或初始化用户的积分钱包
      *
      * @param userId   系统用户 ID
      * @param tenantId 租户或机构 ID
@@ -26,19 +26,19 @@ public interface BillingPort {
     UserWallet getOrCreateWallet(Long userId, String tenantId);
 
     /**
-     * 原子扣减用户钱包可用算力点数（具备乐观锁并发防超扣）
+     * 原子扣减用户钱包可用积分（具备乐观锁并发防超扣）
      *
      * @param userId         用户 ID
-     * @param pointsToDeduct 待扣减点数
+     * @param pointsToDeduct 待扣减积分
      * @return true 扣减成功，false 余额不足或并发版本冲突
      */
     boolean deductPoints(Long userId, long pointsToDeduct);
 
     /**
-     * 充值到账：原子增加用户钱包可用算力点数与累计充值总额
+     * 充值到账：原子增加用户钱包可用积分与累计充值总额
      *
      * @param userId      用户 ID
-     * @param pointsToAdd 到账总点数
+     * @param pointsToAdd 到账总积分
      */
     void addRechargePoints(Long userId, long pointsToAdd);
 
@@ -126,7 +126,7 @@ public interface BillingPort {
     void updateOrder(RechargeOrder order);
 
     /**
-     * 统计用户过去指定天数的每日 Token 消耗与点数扣减走势
+     * 统计用户过去指定天数的每日 Token 消耗与积分扣减走势
      *
      * @param userId 用户 ID
      * @param days   统计回溯天数 (如 7 或 30)

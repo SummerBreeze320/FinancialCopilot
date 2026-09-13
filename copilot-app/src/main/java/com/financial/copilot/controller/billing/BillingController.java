@@ -22,7 +22,7 @@ import java.util.Map;
  * <h1>商业化 Token 计量计费与账户收银台 REST 控制器 (Billing & Commercial Controller)</h1>
  * <p>
  * 职责：
- * 1. 提供用户钱包资产查询（可用算力点数、折合法币、预估报告份数）；
+ * 1. 提供用户钱包资产查询（可用积分、折合法币、预估报告份数）；
  * 2. 在线充值规格套餐清单查询与收银台订单创建；
  * 3. 支付回调确认与秒级到账；
  * 4. Token 消费对账明细与每日消耗走势图表数据源；
@@ -43,7 +43,7 @@ public class BillingController {
     }
 
     /**
-     * 查询当前登录用户的算力钱包资产状态
+     * 查询当前登录用户的积分钱包资产状态
      *
      * @param userId 用户 ID (可选，未提供时动态取已认证用户)
      * @return 钱包展示对象
@@ -68,7 +68,7 @@ public class BillingController {
     }
 
     /**
-     * 创建算力充值交易订单
+     * 创建积分充值交易订单
      *
      * @param request 创建订单参数 (套餐 ID 与支付通道)
      * @param userId  用户 ID (可选，未提供时动态取已认证用户)
@@ -78,7 +78,7 @@ public class BillingController {
     public Mono<ApiResult<RechargeOrder>> createOrder(@RequestBody RechargeOrderCreateDTO request,
                                                       @RequestParam(value = "userId", required = false) Long userId) {
         return resolveUserId(userId).map(uid -> {
-            log.info("[HTTP-BILLING] 用户发起算力充值下单: userId={}, packageId={}, channel={}",
+            log.info("[HTTP-BILLING] 用户发起积分充值下单: userId={}, packageId={}, channel={}",
                     uid, request.getPackageId(), request.getPayChannel());
             RechargeOrder order = billingService.createOrder(uid, request.getPackageId(), request.getPayChannel());
             return ApiResult.success(order);

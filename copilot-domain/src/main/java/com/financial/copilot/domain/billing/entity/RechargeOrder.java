@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * <h1>算力点数在线充值交易订单领域实体 (Recharge Order Entity)</h1>
+ * <h1>积分在线充值交易订单领域实体 (Recharge Order Entity)</h1>
  * <p>
  * 职责：记录客户发起的充值交易订单生命周期，包含待支付、已支付、已取消状态流转与第三方流水凭据。
  * </p>
@@ -49,7 +49,7 @@ public class RechargeOrder implements Serializable {
     private BigDecimal payAmountCny;
 
     /**
-     * 支付成功后应发放到账的总算力点数 (含赠送)
+     * 支付成功后应发放到账的总积分 (含赠送)
      */
     private Long targetPoints;
 

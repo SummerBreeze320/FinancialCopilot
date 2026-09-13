@@ -12,7 +12,7 @@ import java.math.RoundingMode;
 /**
  * <h1>大模型动态阶梯定价规格领域实体 (Model Pricing Entity)</h1>
  * <p>
- * 职责：定义各厂商具体模型在输入 Token、输出 Token 及 Prompt Cache 命中时的点数折算单价。
+ * 职责：定义各厂商具体模型在输入 Token、输出 Token 及 Prompt Cache 命中时的积分折算单价。
  * 平台运营可后台动态调价与灰度。
  * </p>
  *
@@ -40,17 +40,17 @@ public class ModelPricing implements Serializable {
     private String modelName;
 
     /**
-     * 每千输入 Token 扣减算力点数 (Points per 1k input tokens)
+     * 每千输入 Token 扣减积分 (Points per 1k input tokens)
      */
     private BigDecimal inputPricePerK;
 
     /**
-     * 每千输出 Token 扣减算力点数 (Points per 1k output tokens)
+     * 每千输出 Token 扣减积分 (Points per 1k output tokens)
      */
     private BigDecimal outputPricePerK;
 
     /**
-     * 每千上下文缓存命中 Token 优惠点数
+     * 每千上下文缓存命中 Token 优惠积分
      */
     private BigDecimal cacheHitPricePerK;
 
@@ -61,11 +61,11 @@ public class ModelPricing implements Serializable {
     private Boolean isActive = true;
 
     /**
-     * 根据输入与输出 Token 规模计算应扣除的整数算力点数
+     * 根据输入与输出 Token 规模计算应扣除的整数积分
      *
      * @param promptTokens     输入 Token 数
      * @param completionTokens 输出 Token 数
-     * @return 最终扣减点数（向上取整，最低扣 1 点）
+     * @return 最终扣减积分（向上取整，最低扣 1 积分）
      */
     public long calculatePoints(int promptTokens, int completionTokens) {
         if (promptTokens < 0 || completionTokens < 0) throw new IllegalArgumentException("Negative token usage");

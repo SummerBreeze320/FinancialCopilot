@@ -11,9 +11,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * <h1>用户算力钱包对外展示传输对象 (Wallet DTO)</h1>
+ * <h1>用户积分钱包对外展示传输对象 (Wallet DTO)</h1>
  * <p>
- * 包含点数余额、折合法币估值、累计充值与消耗、以及约可生成的报告份数估算。
+ * 包含积分余额、折合法币估值、累计充值与消耗、以及约可生成的报告份数估算。
  * </p>
  *
  * @author FinancialCopilot
@@ -30,22 +30,22 @@ public class WalletDTO implements Serializable {
     private Long userId;
 
     /**
-     * 当前可用算力点数
+     * 当前可用积分
      */
     private Long balancePoints;
 
     /**
-     * 折合法币预估金额 (元，基于 10,000点 = 1元)
+     * 折合法币预估金额 (元，基于 10,000 积分 = 1元)
      */
     private BigDecimal estimatedCny;
 
     /**
-     * 累计充值点数总额
+     * 累计充值积分总额
      */
     private Long totalRechargedPoints;
 
     /**
-     * 累计消耗点数总额
+     * 累计消耗积分总额
      */
     private Long totalConsumedPoints;
 
@@ -55,7 +55,7 @@ public class WalletDTO implements Serializable {
     private String walletStatus;
 
     /**
-     * 预估尚可生成标准深度投研报告的份数 (按平均 2,000 点/份预估)
+     * 预估尚可生成标准深度投研报告的份数 (按平均 2,000 积分/份预估)
      */
     private Long estimatedReportsRemaining;
 

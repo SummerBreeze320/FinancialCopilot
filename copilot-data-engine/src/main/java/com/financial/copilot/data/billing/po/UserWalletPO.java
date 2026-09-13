@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * <h1>用户算力钱包持久化对象 (MyBatis-Plus PO)</h1>
+ * <h1>用户积分钱包持久化对象 (MyBatis-Plus PO)</h1>
  *
  * @author FinancialCopilot
  */

@@ -9,9 +9,9 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * <h1>用户算力钱包领域实体 (User Wallet Entity)</h1>
+ * <h1>用户积分钱包领域实体 (User Wallet Entity)</h1>
  * <p>
- * 职责：维护客户在系统内的虚拟货币点数资产（1元人民币 = 10,000 智算点）。
+ * 职责：维护客户在系统内的虚拟货币积分资产（1元人民币 = 10,000 积分）。
  * 具备悲观/乐观锁防并发超扣、冻结额度流控与充值累计统计。
  * </p>
  *
@@ -39,25 +39,25 @@ public class UserWallet implements Serializable {
     private String tenantId;
 
     /**
-     * 当前可用算力点余额 (1 元 = 10,000 点)
+     * 当前可用积分余额 (1 元 = 10,000 积分)
      */
     @Builder.Default
     private Long balancePoints = 0L;
 
     /**
-     * 投研并发执行时临时锁定的冻结算力点
+     * 投研并发执行时临时锁定的冻结积分
      */
     @Builder.Default
     private Long frozenPoints = 0L;
 
     /**
-     * 历史累计充值算力点总额
+     * 历史累计充值积分总额
      */
     @Builder.Default
     private Long totalRechargedPoints = 0L;
 
     /**
-     * 历史累计消费消耗算力点总额
+     * 历史累计消费消耗积分总额
      */
     @Builder.Default
     private Long totalConsumedPoints = 0L;
@@ -80,9 +80,9 @@ public class UserWallet implements Serializable {
     private LocalDateTime updatedAt;
 
     /**
-     * 判定钱包是否可用并满足最低调用点数
+     * 判定钱包是否可用并满足最低调用积分
      *
-     * @param minPoints 最低点数门槛
+     * @param minPoints 最低积分门槛
      * @return true 允许执行，false 拦截
      */
     public boolean hasSufficientBalance(long minPoints) {

@@ -9,9 +9,9 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
- * <h1>算力点数在线充值套餐规格领域实体 (Recharge Package Entity)</h1>
+ * <h1>积分在线充值套餐规格领域实体 (Recharge Package Entity)</h1>
  * <p>
- * 职责：定义前端收银台展示的充值套餐（如尝鲜版 ¥49、进阶版 ¥199、专业版 ¥599、机构版 ¥2999），包含赠送点数与营销徽章。
+ * 职责：定义前端收银台展示的充值套餐（如尝鲜版 ¥49、进阶版 ¥199、专业版 ¥599、机构版 ¥2999），包含赠送积分与营销徽章。
  * </p>
  *
  * @author FinancialCopilot
@@ -38,12 +38,12 @@ public class RechargePackage implements Serializable {
     private BigDecimal priceCny;
 
     /**
-     * 基础到账算力点数
+     * 基础到账积分
      */
     private Long grantedPoints;
 
     /**
-     * 赠送福利算力点数 (如首充或限时加赠)
+     * 赠送福利积分 (如首充或限时加赠)
      */
     @Builder.Default
     private Long bonusPoints = 0L;
@@ -66,9 +66,9 @@ public class RechargePackage implements Serializable {
     private Boolean isActive = true;
 
     /**
-     * 获取购买该套餐最终可获得的合计总算力点数
+     * 获取购买该套餐最终可获得的合计总积分
      *
-     * @return 基础点数 + 赠送点数
+     * @return 基础积分 + 赠送积分
      */
     public long getTotalPoints() {
         long base = grantedPoints != null ? grantedPoints : 0L;

@@ -214,7 +214,7 @@ mvn spring-boot:run -pl copilot-app
 | `ALIPAY_PUBLIC_KEY` | 支付宝公钥，用于验证通知，不是应用公钥 |
 | `ALIPAY_NOTIFY_URL` | 公网 HTTPS 地址，路径 `/api/v1/billing/alipay/notify` |
 
-1. 登录后调用 `POST /api/v1/billing/order/create`，指定套餐及 `payChannel: "ALIPAY"`。金额和到账点数取服务端套餐快照。
+1. 登录后调用 `POST /api/v1/billing/order/create`，指定套餐及 `payChannel: "ALIPAY"`。金额和到账积分取服务端套餐快照。
 2. 调用 `POST /api/v1/billing/alipay/order/{orderNo}/pay`，携带登录令牌，获得 `data` 中的签名支付跳转 URL；只允许当前订单所有者获取。
 3. 支付宝向通知地址发送表单。服务端验签并核对应用、商户、订单及金额，只有成功交易状态到账。订单行锁和数据库事务保证重复通知只到账一次；同一支付宝交易号不能用于两个已支付订单。通知响应为纯文本 `success` 或 `failure`。
 

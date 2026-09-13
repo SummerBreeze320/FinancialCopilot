@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
  * <p>
  * 职责：
  * <ul>
- *   <li>用户账号注册：自动开户并初始化算力钱包赠送 10,000 体验点数；</li>
+ *   <li>用户账号注册：自动开户并初始化积分钱包赠送 10,000 体验积分；</li>
  *   <li>用户密码登录与双令牌 (Access/Refresh Token) 签发；</li>
  *   <li>长效刷新令牌换发新 Access Token；</li>
  *   <li>获取当前已登录用户的安全主体档案信息。</li>
@@ -35,7 +35,7 @@ public class AuthController {
     private final UserService userService;
 
     /**
-     * 新用户注册接口（自动赠送 10,000 算力点体验金）
+     * 新用户注册接口（自动赠送 10,000 积分体验金）
      *
      * @param request 注册载荷
      * @return 认证结果与 JWT 令牌凭证

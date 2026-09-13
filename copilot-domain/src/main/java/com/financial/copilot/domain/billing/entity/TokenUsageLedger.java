@@ -69,7 +69,7 @@ public class TokenUsageLedger implements Serializable {
     private Integer totalTokens;
 
     /**
-     * 本次扣除的智算点总额
+     * 本次扣除的积分总额
      */
     private Long consumedPoints;
 

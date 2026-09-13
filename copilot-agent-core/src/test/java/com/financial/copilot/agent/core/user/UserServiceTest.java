@@ -46,7 +46,7 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("用户注册成功：自动分配 ROLE_USER、挂载初始画像、自动充值 10,000 点算力体验金并返回 JWT")
+    @DisplayName("用户注册成功：自动分配 ROLE_USER、挂载初始画像、自动充值 10,000 体验积分并返回 JWT")
     void testRegisterSuccess() {
         UserRegisterRequest request = UserRegisterRequest.builder()
                 .username("test_investor")
@@ -90,7 +90,7 @@ class UserServiceTest {
         assertNotNull(authResponse.getRefreshToken());
         assertTrue(authResponse.getRoles().contains("ROLE_USER"));
 
-        // 验证自动调用钱包充值赠送 10,000 点
+        // 验证自动调用钱包充值赠送 10,000 积分
         verify(mockBillingService, times(1)).grantInitialTrialPoints(eq(1001L), eq(10000L));
 
         // 验证初始化资料与投资画像已持久化及角色分配

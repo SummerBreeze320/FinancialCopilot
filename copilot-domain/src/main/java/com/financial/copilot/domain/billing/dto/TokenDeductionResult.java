@@ -10,7 +10,7 @@ import java.io.Serializable;
 /**
  * <h1>Token 扣费结算结果传输对象 (Token Deduction Result)</h1>
  * <p>
- * 供研报底部“消耗透明度仪表”渲染：包含实际调用厂商、模型、Token 数、扣减点数、耗时与剩余点数。
+ * 供研报底部“消耗透明度仪表”渲染：包含实际调用厂商、模型、Token 数、扣减积分、耗时与剩余积分。
  * </p>
  *
  * @author FinancialCopilot

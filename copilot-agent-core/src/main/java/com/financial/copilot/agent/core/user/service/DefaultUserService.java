@@ -114,7 +114,7 @@ public class DefaultUserService implements UserService {
                 .build();
         userPort.saveInvestmentProfile(investmentProfile);
 
-        // 5. 跨系统业务联动：自动创建点数钱包并赠送 10,000 体验算力点
+        // 5. 跨系统业务联动：自动创建积分钱包并赠送 10,000 体验积分
         walletBillingService.grantInitialTrialPoints(savedUser.getId(), 10000L);
 
         log.info("[USER-REGISTER] 新用户注册成功并初始化钱包及投资画像: userId={}, username={}",

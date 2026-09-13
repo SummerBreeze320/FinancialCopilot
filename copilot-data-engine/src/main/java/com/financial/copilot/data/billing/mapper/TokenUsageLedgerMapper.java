@@ -19,7 +19,7 @@ import java.util.Map;
 public interface TokenUsageLedgerMapper extends BaseMapper<TokenUsageLedgerPO> {
 
     /**
-     * 按日时序聚合统计用户的 Token 消耗与点数走势
+     * 按日时序聚合统计用户的 Token 消耗与积分走势
      *
      * @param userId    用户 ID
      * @param startDate 起始统计时间

@@ -51,7 +51,7 @@ class WalletBillingServiceTest {
     @Test
     @DisplayName("验证投研前置配额探测与欠费拦截")
     void testCheckBalance() {
-        // 场景 1: 余额充裕 (10,000 点)
+        // 场景 1: 余额充裕 (10,000 积分)
         UserWallet normalWallet = UserWallet.builder()
                 .userId(1L)
                 .balancePoints(10000L)
@@ -61,7 +61,7 @@ class WalletBillingServiceTest {
 
         assertDoesNotThrow(() -> billingService.checkBalance(1L, 100L));
 
-        // 场景 2: 余额不足 (仅 50 点，门槛 100 点)
+        // 场景 2: 余额不足 (仅 50 积分，门槛 100 积分)
         UserWallet lowWallet = UserWallet.builder()
                 .userId(2L)
                 .balancePoints(50L)
@@ -77,7 +77,7 @@ class WalletBillingServiceTest {
     }
 
     @Test
-    @DisplayName("验证模型计价点数计算逻辑")
+    @DisplayName("验证模型计价积分计算逻辑")
     void testCalculatePoints() {
         ModelPricing pricing = ModelPricing.builder()
                 .inputPricePerK(new BigDecimal("10.0"))
@@ -86,7 +86,7 @@ class WalletBillingServiceTest {
 
         when(mockBillingPort.getPricing("deepseek-chat")).thenReturn(Optional.of(pricing));
 
-        // 1,000 输入 tokens (10点) + 2,000 输出 tokens (40点) = 50 点
+        // 1,000 输入 tokens (10 积分) + 2,000 输出 tokens (40 积分) = 50 积分
         long points = billingService.calculatePoints("deepseek-chat", 1000, 2000);
         assertEquals(50L, points);
     }

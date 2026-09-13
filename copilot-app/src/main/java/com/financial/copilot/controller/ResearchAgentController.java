@@ -288,12 +288,12 @@ public class ResearchAgentController {
     }
 
     /**
-     * 算力点数不足欠费异常全局捕获处理器 (HTTP 402 Payment Required)
+     * 积分不足欠费异常全局捕获处理器 (HTTP 402 Payment Required)
      */
     @ExceptionHandler(WalletInsufficientException.class)
     @ResponseStatus(HttpStatus.PAYMENT_REQUIRED)
     public ApiResult<Map<String, Object>> handleWalletInsufficient(WalletInsufficientException e) {
-        log.warn("[WALLET-INSUFFICIENT] 捕获算力点数欠费异常: {}", e.getMessage());
+        log.warn("[WALLET-INSUFFICIENT] 捕获积分欠费异常: {}", e.getMessage());
         return ApiResult.<Map<String, Object>>builder()
                 .code(402)
                 .message(e.getMessage())

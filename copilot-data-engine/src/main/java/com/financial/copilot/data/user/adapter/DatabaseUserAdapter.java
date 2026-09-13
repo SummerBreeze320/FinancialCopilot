@@ -81,7 +81,7 @@ public class DatabaseUserAdapter implements UserPort {
 
         Permission p1 = Permission.builder().id(1L).permCode("research:chat").permName("标准投研问答").build();
         Permission p2 = Permission.builder().id(2L).permCode("research:thinking").permName("深度思考推理推演").build();
-        Permission p3 = Permission.builder().id(3L).permCode("billing:recharge").permName("算力点数充值").build();
+        Permission p3 = Permission.builder().id(3L).permCode("billing:recharge").permName("积分充值").build();
         Permission p4 = Permission.builder().id(4L).permCode("admin:llm:config").permName("大模型动态热切换").build();
         Permission p5 = Permission.builder().id(5L).permCode("admin:user:manage").permName("用户与实名风控管理").build();
 

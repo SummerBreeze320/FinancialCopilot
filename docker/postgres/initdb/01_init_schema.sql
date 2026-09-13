@@ -128,15 +128,15 @@ CREATE INDEX IF NOT EXISTS idx_stock_industry ON stock_info(industry);
 -- 10. 商业化运营与 Token 计量计费中心表
 -- ==============================================================================
 
--- 10.1 用户算力钱包表 (1 元人民币 = 10,000 智算点)
+-- 10.1 用户积分钱包表 (1 元人民币 = 10,000 积分)
 CREATE TABLE IF NOT EXISTS sys_user_wallet (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL UNIQUE,
     tenant_id VARCHAR(50) DEFAULT 'DEFAULT',
-    balance_points BIGINT DEFAULT 0,                       -- 可用算力点余额
-    frozen_points BIGINT DEFAULT 0,                        -- 投研并发冻结占用点数
-    total_recharged_points BIGINT DEFAULT 0,               -- 累计充值点数
-    total_consumed_points BIGINT DEFAULT 0,                -- 累计消费点数
+    balance_points BIGINT DEFAULT 0,                       -- 可用积分余额
+    frozen_points BIGINT DEFAULT 0,                        -- 投研并发冻结占用积分
+    total_recharged_points BIGINT DEFAULT 0,               -- 累计充值积分
+    total_consumed_points BIGINT DEFAULT 0,                -- 累计消费积分
     wallet_status VARCHAR(20) DEFAULT 'NORMAL',            -- NORMAL(正常), ARREARS(欠费), FROZEN(冻结)
     version BIGINT DEFAULT 0,                              -- 乐观锁版本号
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS llm_token_usage_ledger (
     prompt_tokens INT NOT NULL DEFAULT 0,
     completion_tokens INT NOT NULL DEFAULT 0,
     total_tokens INT NOT NULL DEFAULT 0,
-    consumed_points BIGINT NOT NULL DEFAULT 0,             -- 本次扣减智算点数
+    consumed_points BIGINT NOT NULL DEFAULT 0,             -- 本次扣减积分数
     latency_ms INT DEFAULT 0,                              -- 端到端模型响应耗时 (ms)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -180,8 +180,8 @@ CREATE TABLE IF NOT EXISTS sys_recharge_package (
     id BIGSERIAL PRIMARY KEY,
     package_name VARCHAR(100) NOT NULL,
     price_cny NUMERIC(10, 2) NOT NULL,                     -- 售价人民币 (元)
-    granted_points BIGINT NOT NULL,                        -- 基础算力点数
-    bonus_points BIGINT DEFAULT 0,                         -- 赠送点数
+    granted_points BIGINT NOT NULL,                        -- 基础积分
+    bonus_points BIGINT DEFAULT 0,                         -- 赠送积分
     badge VARCHAR(50),                                     -- 营销角标
     sort_order INT DEFAULT 0,                              -- 排序权重
     is_active BOOLEAN DEFAULT TRUE,
@@ -195,7 +195,7 @@ CREATE TABLE IF NOT EXISTS sys_recharge_order (
     user_id BIGINT NOT NULL,
     package_id BIGINT REFERENCES sys_recharge_package(id),
     pay_amount_cny NUMERIC(10, 2) NOT NULL,
-    target_points BIGINT NOT NULL,                         -- 最终到账点数
+    target_points BIGINT NOT NULL,                         -- 最终到账积分
     pay_channel VARCHAR(30) NOT NULL,                      -- WECHAT, ALIPAY, BANK
     order_status VARCHAR(20) DEFAULT 'PENDING',            -- PENDING, PAID, CANCELLED
     third_party_trade_no VARCHAR(100),                     -- 第三方流水凭证
@@ -229,7 +229,7 @@ VALUES
     (4, '企业旗舰包', 2999.00, 30000000, 9000000, '尊享 1V1 投研支持', 4, true)
 ON CONFLICT (id) DO NOTHING;
 
--- 预置体验用户钱包 (User 1 初始赠送 100,000 点数)
+-- 预置体验用户钱包 (User 1 初始赠送 100,000 积分)
 INSERT INTO sys_user_wallet (user_id, balance_points, total_recharged_points, wallet_status, version)
 VALUES (1, 100000, 100000, 'NORMAL', 0)
 ON CONFLICT (user_id) DO NOTHING;
@@ -334,7 +334,7 @@ INSERT INTO sys_role (id, role_code, role_name, description, is_system)
 VALUES 
     (1, 'ROLE_ADMIN', '平台研发管理员', '拥有大模型参数热切换、实名审批与用户全量管理特权', true),
     (2, 'ROLE_ANALYST', '专业机构分析师', '拥有深度思考推理、批量对标与高并发投研特权', true),
-    (3, 'ROLE_USER', '个人注册投资者', '拥有标准投研检索问答与基础点数钱包功能', true)
+    (3, 'ROLE_USER', '个人注册投资者', '拥有标准投研检索问答与基础积分钱包功能', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 预置基础权限
@@ -342,7 +342,7 @@ INSERT INTO sys_permission (id, perm_code, perm_name, resource_type)
 VALUES
     (1, 'research:chat', '标准投研问答', 'API'),
     (2, 'research:thinking', '深度思考推理推演', 'API'),
-    (3, 'billing:recharge', '算力点数充值', 'API'),
+    (3, 'billing:recharge', '积分充值', 'API'),
     (4, 'admin:llm:config', '大模型动态热切换', 'API'),
     (5, 'admin:user:manage', '用户与实名风控管理', 'API')
 ON CONFLICT (id) DO NOTHING;

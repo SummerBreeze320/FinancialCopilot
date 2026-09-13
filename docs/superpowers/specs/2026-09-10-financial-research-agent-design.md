@@ -509,7 +509,7 @@ data: {"type":"DONE"}
 #### 1. 金融终端客户侧（Client / End-User）：
 - **绝对禁止切换底层模型与厂商**：客户不应感知、也不允许直接切换底层模型厂商（如自由在 OpenAI、DeepSeek、Qwen 之间跳切）或填入自定义 API Key，避免破坏领域 Prompt 对齐、造成合规失控或输出质量骤降。
 - **客户唯一可见与可调节项**：仅限业务语义层面的 **“投研深度 / 思考强度 (Research Depth: LOW / MIDDLE / HIGH)”**：
-  - **`LOW` (极速初筛模式)**：低延迟、低点数消耗，适合标的代码抽取、意图快速初筛；
+  - **`LOW` (极速初筛模式)**：低延迟、低积分消耗，适合标的代码抽取、意图快速初筛；
   - **`MIDDLE` (标准投研模式 - 默认)**：平衡型深度，适合标准基金/个股多维体检与常规对标；
   - **`HIGH` (深度推演模式)**：开启全链条深度思考与多角度长程归因，适合万字 CIO 资产配置研报终审。
 
@@ -609,17 +609,17 @@ graph TD
 
 ### 10.1 需求背景与产品模式定义 (PRD - 业务全景)
 
-作为专业级金融多资产投研 Copilot，系统在底层依赖多厂商异构大模型（DeepSeek-V3/R1、GPT-4o/o1、Qwen-Plus、GLM-4 等）进行深度计算、意图解构与长文研报生成。为实现商业化可持续闭环（SaaS / ToB 机构私有化授权 / ToC 投顾会员），系统构建了**企业级 Token 计量、计费、充值与账户钱包中心**。
+作为专业级金融多资产投研 Copilot，系统在底层依赖多厂商异构大模型（DeepSeek-V3/R1、GPT-4o/o1、Qwen-Plus、GLM-4 等）进行深度计算、意图解构与长文研报生成。为实现商业化可持续闭环（SaaS / ToB 机构私有化授权 / ToC 投顾会员），系统构建了**企业级积分计费、充值与账户钱包中心（后台保留模型 Token 用量计量）**。
 
 #### 商业化计费模式：
-1. **“点数制”统一虚拟货币（Compute Points / 智算点）**：
-   - **基准汇率**：`1 元人民币 (CNY) = 10,000 智算点`；
-   - 对客户屏蔽不同厂商极其零碎的“0.0015元/千tokens”小数感知，转换为整数点数扣减；
+1. **“积分制”统一服务额度（Points / 积分）**：
+   - **基准汇率**：`1 元人民币 (CNY) = 10,000 积分`；
+   - 对客户屏蔽不同厂商极其零碎的“0.0015元/千tokens”小数感知，转换为整数积分扣减；
 2. **按量计费（Pay-as-you-go）+ 预付费规格包（Prepaid Packages）**：
-   - 客户通过在线购买充值包获得账户点数余额；
+   - 客户通过在线购买充值包获得账户积分余额；用户购买和消耗的单位统一为积分，Token 仅用于后台模型用量计量和积分折算；
    - 每次投研根据使用的实际模型、输入 Token 与输出 Token 实时精确扣费；
 3. **前置额度保护与并发流控 (Pre-check & Rate Limiting)**：
-   - 发起投研前执行钱包余额探测，低于起步门槛（如 100 点）优雅拦截并引导充值；
+   - 发起投研前执行钱包余额探测，低于起步门槛（如 100 积分）优雅拦截并引导充值；
    - 欠费熔断保障服务商不被无限薅羊毛。
 
 ---
@@ -628,15 +628,15 @@ graph TD
 
 平台支持运营人员在管理后台动态维护各厂商模型的单价策略（支持输入、输出及 Prompt 缓存命中差异化定价）：
 
-| 厂商 | 模型标识 (`model_name`) | 输入单价 (点 / 1k Tokens) | 输出单价 (点 / 1k Tokens) | 缓存命中单价 (点 / 1k Tokens) | 对应法币成本与场景设计 |
+| 厂商 | 模型标识 (`model_name`) | 输入单价 (积分 / 1k Tokens) | 输出单价 (积分 / 1k Tokens) | 缓存命中单价 (积分 / 1k Tokens) | 对应法币成本与场景设计 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **DeepSeek** | `deepseek-chat` (V3) | `10 点` (0.001元) | `20 点` (0.002元) | `2 点` (0.0002元) | 低成本极速初筛，主打性价比 |
-| **DeepSeek** | `deepseek-reasoner` (R1) | `40 点` (0.004元) | `160 点` (0.016元) | `10 点` (0.001元) | 深度思维链推演，主打专业级投研 |
-| **OpenAI** | `gpt-4o-mini` | `15 点` (0.0015元) | `60 点` (0.006元) | `7.5 点` | 轻量级高吞吐分析 |
-| **OpenAI** | `gpt-4o` | `250 点` (0.025元) | `1000 点` (0.1元) | `125 点` | 业界标杆级综合金融对标 |
-| **OpenAI** | `o1` / `o3-mini` | `300 点` (0.03元) | `1200 点` (0.12元) | `150 点` | 复杂量化归因与极端压力测试推演 |
-| **阿里千问** | `qwen-plus` | `8 点` (0.0008元) | `20 点` (0.002元) | `2 点` | 国内合规主流金融投研 |
-| **本地私有** | `ollama/*` | `0 点` (或固定通道费) | `0 点` | `0 点` | 机构本地部署硬件，零模型 API 费 |
+| **DeepSeek** | `deepseek-chat` (V3) | `10 积分` (0.001元) | `20 积分` (0.002元) | `2 积分` (0.0002元) | 低成本极速初筛，主打性价比 |
+| **DeepSeek** | `deepseek-reasoner` (R1) | `40 积分` (0.004元) | `160 积分` (0.016元) | `10 积分` (0.001元) | 深度思维链推演，主打专业级投研 |
+| **OpenAI** | `gpt-4o-mini` | `15 积分` (0.0015元) | `60 积分` (0.006元) | `7.5 积分` | 轻量级高吞吐分析 |
+| **OpenAI** | `gpt-4o` | `250 积分` (0.025元) | `1000 积分` (0.1元) | `125 积分` | 业界标杆级综合金融对标 |
+| **OpenAI** | `o1` / `o3-mini` | `300 积分` (0.03元) | `1200 积分` (0.12元) | `150 积分` | 复杂量化归因与极端压力测试推演 |
+| **阿里千问** | `qwen-plus` | `8 积分` (0.0008元) | `20 积分` (0.002元) | `2 积分` | 国内合规主流金融投研 |
+| **本地私有** | `ollama/*` | `0 积分` (或固定通道费) | `0 积分` | `0 积分` | 机构本地部署硬件，零模型 API 费 |
 
 ---
 
@@ -653,10 +653,10 @@ erDiagram
         bigint id PK "钱包主键 ID"
         bigint user_id UK "用户 ID"
         varchar tenant_id "多租户/机构 ID"
-        bigint balance_points "可用算力点余额"
-        bigint frozen_points "冻结算力点 (并发投研占用)"
-        bigint total_recharged_points "累计充值点数"
-        bigint total_consumed_points "累计消耗点数"
+        bigint balance_points "可用积分余额"
+        bigint frozen_points "冻结积分 (并发投研占用)"
+        bigint total_recharged_points "累计充值积分"
+        bigint total_consumed_points "累计消耗积分"
         varchar wallet_status "状态: NORMAL(正常), ARREARS(欠费), FROZEN(冻结)"
         bigint version "乐观锁版本号"
         timestamp updated_at "更新时间"
@@ -666,9 +666,9 @@ erDiagram
         bigint id PK "主键 ID"
         varchar provider_type "厂商标识 (DEEPSEEK, OPENAI等)"
         varchar model_name UK "模型名称 (如 deepseek-reasoner)"
-        decimal input_price_per_k "每千 Token 输入点数"
-        decimal output_price_per_k "每千 Token 输出点数"
-        decimal cache_hit_price_per_k "每千 Token 缓存命中点数"
+        decimal input_price_per_k "每千 Token 输入积分"
+        decimal output_price_per_k "每千 Token 输出积分"
+        decimal cache_hit_price_per_k "每千 Token 缓存命中积分"
         boolean is_active "是否启用"
     }
 
@@ -682,7 +682,7 @@ erDiagram
         integer prompt_tokens "输入 Token 数量"
         integer completion_tokens "输出 Token 数量"
         integer total_tokens "总 Token 数量"
-        bigint consumed_points "扣减智算点"
+        bigint consumed_points "扣减积分"
         integer latency_ms "响应耗时 (毫秒)"
         timestamp created_at "扣费入账时间"
     }
@@ -691,8 +691,8 @@ erDiagram
         bigint id PK "套餐主键 ID"
         varchar package_name "套餐名称 (如 体验包 / 专业包 / 机构包)"
         decimal price_cny "标价人民币 (元)"
-        bigint granted_points "基础充值点数"
-        bigint bonus_points "赠送福利点数"
+        bigint granted_points "基础充值积分"
+        bigint bonus_points "赠送福利积分"
         varchar badge "角标说明 (如 热销推荐 / 送20%等)"
         integer sort_order "排序权重"
         boolean is_active "是否上架"
@@ -704,7 +704,7 @@ erDiagram
         bigint user_id "充值用户 ID"
         bigint package_id "充值套餐 ID"
         decimal pay_amount_cny "实付金额 (元)"
-        bigint target_points "到账总点数"
+        bigint target_points "到账总积分"
         varchar pay_channel "支付渠道: WECHAT(微信), ALIPAY(支付宝), BANK(对公)"
         varchar order_status "状态: PENDING(待支付), PAID(已支付), CANCELLED(已取消)"
         varchar third_party_trade_no "第三方支付凭单号"
@@ -730,11 +730,11 @@ sequenceDiagram
     Web->>Controller: POST /chat 或 SSE /chat/pipeline/stream (携带 userId & llmSettings)
     
     Note over Controller,Billing: 1. 前置配额与余额校验 (Pre-check)
-    Controller->>Billing: checkBalance(userId, minThreshold=100点)
+    Controller->>Billing: checkBalance(userId, minThreshold=100 积分)
     Billing->>DB: 查询 sys_user_wallet 余额
     alt 余额不足 (balance < 100)
         Billing-->>Controller: 抛出 WalletInsufficientException
-        Controller-->>Web: 返回 402 Payment Required ("智算点不足，请前往充值")
+        Controller-->>Web: 返回 402 Payment Required ("积分不足，请前往充值")
         Web-->>User: 弹出快捷充值收银台抽屉
     else 余额充足
         Billing-->>Controller: 校验通过 (允许执行)
@@ -746,30 +746,30 @@ sequenceDiagram
 
     Note over Controller,Billing: 3. 异步原子扣费与对账记账 (Billing Ledger)
     Controller->>Billing: deductTokenPoints(userId, model, promptTokens, completionTokens)
-    Billing->>DB: 根据 llm_model_pricing 计算本次消耗点数
+    Billing->>DB: 根据 llm_model_pricing 计算本次消耗积分
     Billing->>DB: 扣减 sys_user_wallet.balance_points (乐观锁防超扣)
     Billing->>DB: 写入不可篡改账单流水 llm_token_usage_ledger
 
-    Controller-->>Web: 推送完整报告 + 本次消耗摘要 (模型、Token数、消耗点数)
-    Web-->>User: 呈现报告，并在报告底部与顶栏实时刷新剩余可用算力点
+    Controller-->>Web: 推送完整报告 + 本次消耗摘要 (模型、Token数、消耗积分)
+    Web-->>User: 呈现报告，并在报告底部与顶栏实时刷新剩余可用积分
 ```
 
 ---
 
 ### 10.5 前端交互与数据可视化规范 (UI/UX Specification)
 
-1. **顶栏“算力点数胶囊” (Global Compute Bar)**：
-   - 顶部导航栏常驻展示：`⚡ 86,400 算力点`，鼠标悬浮显示“当前约可生成 43 份深度投研报告”；
-   - 当点数低于 1,000 点时，图标变为橙黄色预警，并展示闪烁的“立即充值”按钮；
+1. **顶栏“积分胶囊” (Global Compute Bar)**：
+   - 顶部导航栏常驻展示：`⚡ 86,400 积分`，鼠标悬浮显示“当前约可生成 43 份深度投研报告”；
+   - 当积分低于 1,000 积分时，图标变为橙黄色预警，并展示闪烁的“立即充值”按钮；
 2. **研报卡片底部“消耗透明度仪表” (Transparency Footer)**：
    - 每一份由 AI 生成的专业投研报告末尾，自动附带极简暗色透明面板：
-     > *本次投研生成由 **DeepSeek-Reasoner (R1)** 强力驱动 ｜ 消耗输入: 1,420 tokens, 输出: 3,890 tokens ｜ 本次计费: 68 智算点 (约合 ¥0.0068) ｜ 耗时: 6.4s*
+     > *本次投研生成由 **DeepSeek-Reasoner (R1)** 强力驱动 ｜ 本次计费: 68 积分 (约合 ¥0.0068) ｜ 耗时: 6.4s*
 3. **在线充值收银台 (Recharge Drawer / Modal)**：
    - 预设 4 款标准阶梯充值卡片（¥49 尝鲜版、¥199 进阶版、¥599 专业版、¥2999 机构旗舰版）；
-   - 支持展示立省折扣与赠送点数徽章（“送 20% 点数”）；
-   - 唤起微信支付/支付宝扫码即时到账，到账后基于 WebSocket / SSE 瞬间刷新用户前台点数。
+   - 支持展示立省折扣与赠送积分徽章（“送 20% 积分”）；
+   - 唤起微信支付/支付宝扫码即时到账，到账后基于 WebSocket / SSE 瞬间刷新用户前台积分。
 4. **财务中心与消耗趋势报表 (Billing & Analytics Dashboard)**：
-   - **消耗折线图/面积图**：展示过去 30 天每日 Token 消耗量与每日消费点数走势；
+   - **消耗折线图/面积图**：展示过去 30 天每日消费积分走势；
    - **资产模块分布饼图**：展示公募基金、个股、研报合成各模块的消耗占比；
    - **消费流水清单**：支持按时间、任务类型、模型筛选每一笔扣费详情，并支持一键导出 CSV 财务对账单。
 
@@ -779,12 +779,12 @@ sequenceDiagram
 
 | 请求方式 | 端点路径 | 接口功能与业务描述 |
 | :--- | :--- | :--- |
-| `GET` | `/api/v1/billing/wallet` | 查询当前登录用户的钱包资产（可用点数、累计充值、累计消耗、钱包状态） |
+| `GET` | `/api/v1/billing/wallet` | 查询当前登录用户的钱包资产（可用积分、累计充值、累计消耗、钱包状态） |
 | `GET` | `/api/v1/billing/packages` | 获取当前平台已上架的充值规格套餐列表 |
 | `POST` | `/api/v1/billing/order/create` | 创建充值订单，生成唯一订单号与待支付收银台信息 |
 | `POST` | `/api/v1/billing/order/pay-callback` | 第三方支付网关异步回调接口（验签、原子充值入账、更新钱包余额） |
-| `GET` | `/api/v1/billing/ledger` | 分页查询用户的 Token 消费对账明细列表（支持按时间/模型筛选） |
-| `GET` | `/api/v1/billing/stats/trend` | 查询过去 7 天 / 30 天每日消耗 Token 数量与点数统计趋势（供前端图表渲染） |
+| `GET` | `/api/v1/billing/ledger` | 分页查询用户的积分消费对账明细列表（支持按时间/模型筛选） |
+| `GET` | `/api/v1/billing/stats/trend` | 查询过去 7 天 / 30 天每日消耗 Token 数量与积分统计趋势（供前端图表渲染） |
 | `GET` | `/api/v1/billing/pricing` | 查询当前系统各厂商模型的公开计费单价矩阵 |
 
 ---
@@ -810,7 +810,7 @@ sequenceDiagram
    - 建模投资者的风险偏好（C1保守型 ~ C5进取型）、投资期限、目标年化收益率、最大可承受回撤、偏好行业板块与投资风格；
    - **投研 Agent 深度联动**：将投资画像作为事实上下文直接载入 `ResearchBlackboard`，驱动主编 Agent (`ReportSynthesizer`) 生成千人千面的个性化资产配置建议方案；
 4. **跨模块自动联动**：
-   - **注册即开户**：新用户注册事务自动向 `sys_user_wallet` 初始化钱包并赠送 **10,000 体验算力点**；
+   - **注册即开户**：新用户注册事务自动向 `sys_user_wallet` 初始化钱包并赠送 **10,000 体验积分**；
    - **废除硬编码**：全平台投研与计费接口全面基于当前登录用户的安全上下文动态绑定。
 
 ---
@@ -826,7 +826,7 @@ erDiagram
     sys_user ||--|| sys_user_profile : "扩展个人资料"
     sys_user ||--|| sys_user_identity : "实名认证档案"
     sys_user ||--|| sys_user_investment_profile : "投资偏好画像"
-    sys_user ||--|| sys_user_wallet : "绑定点数钱包"
+    sys_user ||--|| sys_user_wallet : "绑定积分钱包"
 
     sys_user {
         bigint id PK "用户主键 ID"
@@ -896,7 +896,7 @@ erDiagram
 
 | 请求方式 | 端点路径 | 接口功能与业务描述 | 鉴权与权限要求 |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/auth/register` | 用户注册（密码 BCrypt 加密，自动分配 `ROLE_USER`，自动赠送 10,000 体验点并初始化画像） | 匿名公开 |
+| `POST` | `/api/v1/auth/register` | 用户注册（密码 BCrypt 加密，自动分配 `ROLE_USER`，自动赠送 10,000 体验积分并初始化画像） | 匿名公开 |
 | `POST` | `/api/v1/auth/login` | 用户登录（账号密码校验，签发 Access Token + Refresh Token） | 匿名公开 |
 | `POST` | `/api/v1/auth/refresh-token` | 刷新 Access Token | 匿名公开（携带 Refresh Token） |
 | `GET` | `/api/v1/auth/me` | 获取当前鉴权登录用户的基础信息与权限列表 | 已登录鉴权 |

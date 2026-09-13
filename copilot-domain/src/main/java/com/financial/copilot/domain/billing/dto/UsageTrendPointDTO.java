@@ -10,7 +10,7 @@ import java.io.Serializable;
 /**
  * <h1>Token 消耗时序统计点传输对象 (Usage Trend Point DTO)</h1>
  * <p>
- * 用于前端绘制过去 7 天或 30 天每日消耗 Token 数量与算力点数趋势折线图/面积图。
+ * 用于前端绘制过去 7 天或 30 天每日消耗 Token 数量与积分趋势折线图/面积图。
  * </p>
  *
  * @author FinancialCopilot
@@ -32,7 +32,7 @@ public class UsageTrendPointDTO implements Serializable {
     private Long totalTokens;
 
     /**
-     * 当日总扣减算力点数
+     * 当日总扣减积分
      */
     private Long consumedPoints;
 
