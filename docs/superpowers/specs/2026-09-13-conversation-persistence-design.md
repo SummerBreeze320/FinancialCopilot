@@ -65,6 +65,33 @@ SSE 内容分片只用于实时传输。系统在运行开始时创建一条 RUN
 
 历史列表、消息和工具审计查询接口返回 HTTP 503，错误码为 CONVERSATION_PERSISTENCE_DISABLED。运行状态、取消和恢复接口继续以 userId 加 runId 的 Checkpoint/Run Registry 所有权边界工作。切换配置只影响切换后的请求，不迁移或删除已有历史。
 
+### 3.2 可配置 Redis 存储模式
+
+新增独立配置：
+
+    copilot:
+      redis:
+        enabled: ${REDIS_ENABLED:true}
+
+默认值为 true。设置 REDIS_ENABLED=false 后，应用不读取或写入 Redis，且以下组件在启动时切换为进程内实现：
+
+- ShortTermMemoryService 使用 InMemoryShortTermMemoryStore，保留 30 分钟 TTL、消息顺序和 token 裁剪语义；
+- LongTermMemoryService 使用 InMemoryLongTermMemoryCache，长期记忆和 refined_fact 仍以 PostgreSQL 为事实来源；
+- DagCheckpointStore 使用 InMemoryDagCheckpointStore，继续保存当前进程中的图、节点状态和 Artifact。
+
+RedisConfig、RedisShortTermMemoryStore、RedisLongTermMemoryCache 和 RedisDagCheckpointStore 只在 enabled=true 时装配。业务服务不再直接依赖 RedisTemplate，而是依赖各自的存储接口。模式在应用启动时确定，不在运行期间自动切换。
+
+内存模式的数据只在当前 JVM 内有效，应用重启后短期记忆缓存和 DAG Checkpoint 会丢失，也不能在多个应用实例之间共享。PostgreSQL 中的长期记忆、提炼事实以及启用的完整对话记录不受影响。内存实现必须按 TTL 惰性清理，并限制最多 1000 个 session/run，超限时淘汰最早访问项，避免测试进程无限增长。
+
+两个开关互相独立：
+
+| conversation.persistence-enabled | redis.enabled | 对话历史 | 短期记忆 | DAG Checkpoint | 长期记忆 |
+| --- | --- | --- | --- | --- | --- |
+| true | true | PostgreSQL | Redis | Redis | PostgreSQL，Redis 缓存 |
+| true | false | PostgreSQL | JVM 内存 | JVM 内存 | PostgreSQL，JVM 缓存 |
+| false | true | 不保存 | Redis | Redis | PostgreSQL，Redis 缓存 |
+| false | false | 不保存 | JVM 内存 | JVM 内存 | PostgreSQL，JVM 缓存 |
+
 ## 4. 标识与所有权
 
 - conversationId：服务端生成 UUID，表示一个用户对话。
@@ -308,6 +335,9 @@ ShortTermMemoryService 改为缓存适配器：
 12. long_term_memory 和 refined_fact 明确作为派生数据，删除它们不会损坏原始对话历史。
 13. persistence-enabled=false 时不写三张对话表，但短期记忆、长期记忆、提炼事实、计费和 DAG Checkpoint 仍正常工作。
 14. persistence-enabled=false 时历史查询返回 CONVERSATION_PERSISTENCE_DISABLED，运行状态、取消和恢复仍可使用。
+15. redis.enabled=false 且 Redis 地址不可达时应用仍能启动，短期记忆、长期记忆缓存和 Checkpoint 均使用进程内实现。
+16. Redis 关闭模式保持 TTL、token 裁剪和用户隔离，但应用重启后内存态短期记忆与 Checkpoint 按预期丢失。
+17. 两个开关的四种组合均有配置装配测试，且不会意外调用被禁用的存储后端。
 
 ## 16. 不在首版范围内
 

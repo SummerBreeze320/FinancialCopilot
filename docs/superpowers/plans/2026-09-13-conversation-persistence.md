@@ -14,8 +14,9 @@
 
 - PostgreSQL is the source of truth for conversations, messages and tool audits.
 - copilot.conversation.persistence-enabled defaults to true and disables only conversation, message and tool-audit database access when false.
+- copilot.redis.enabled defaults to true; false selects bounded in-process stores for short-term memory, long-term-memory cache and DAG checkpoints without contacting Redis.
 - userId remains Long in Java and BIGINT in PostgreSQL and comes only from authentication.
-- Redis memory has a 30-minute TTL and is rebuilt from PostgreSQL; DAG checkpoints keep their 24-hour recovery role.
+- Short-term memory has a 30-minute TTL; it is rebuilt from PostgreSQL only when conversation persistence is enabled. DAG checkpoints keep a 24-hour TTL in either backend.
 - Never persist hidden reasoning, system prompts, credentials, headers or complete large tool results.
 - Persist one USER and one RUNNING ASSISTANT message before Graph planning.
 - Only RUNNING assistants enter COMPLETED, FAILED or CANCELLED; resume reuses the same runId/message.
@@ -32,6 +33,8 @@ PostgreSQL files live under copilot-data-engine/src/main/java/com/financial/copi
 Core files are ConversationService, ConversationPersistenceProperties, ConversationPersistenceDisabledException, ToolArgumentSanitizer and PersistentAgentToolAuditSink under agent/core/conversation; AgentToolAuditSink and ToolAuditEvent under agent/core/agentscope; plus changes to AgentScopeAgentFactory, GraphRunRequest, NodeExecutionContext, DagCheckpoint, DagRuntime, GraphPlanningRequest, GraphPlannerAgent, MarketMemoryTool and FinancialResearchWorkflow.
 
 SSE identity propagation also modifies copilot-common/src/main/java/com/financial/copilot/common/event/ResearchStreamEvent.java and copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/event/NodeEventBus.java.
+
+Redis selection uses RedisFeatureProperties and MemoryStorageConfig under agent/core/config; ShortTermMemoryStore and LongTermMemoryCache interfaces under agent/core/memory/store; Redis and in-memory implementations under agent/core/memory/store/redis and agent/core/memory/store/local. ShortTermMemoryService and LongTermMemoryService depend only on these interfaces. DagRuntimeConfig selects RedisDagCheckpointStore or InMemoryDagCheckpointStore from the same switch.
 
 HTTP files are ResearchAgentController, ResearchRunController and a new ConversationController. Verification uses controller unit tests and copilot-app/src/test/java/com/financial/copilot/ConversationPersistenceTest.java.
 
@@ -227,7 +230,122 @@ git add copilot-data-engine copilot-app/src/main/resources
 git commit -m "feat(conversation): persist messages and tool audits"
 ~~~
 
-### Task 3: Add lifecycle service and Redis reconstruction
+### Task 3: Make Redis an optional storage backend
+
+**Files:**
+- Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/config/RedisFeatureProperties.java
+- Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/config/MemoryStorageConfig.java
+- Modify: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/config/RedisConfig.java
+- Modify: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/config/DagRuntimeConfig.java
+- Modify: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/checkpoint/InMemoryDagCheckpointStore.java
+- Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/memory/store/ShortTermMemoryStore.java
+- Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/memory/store/LongTermMemoryCache.java
+- Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/memory/store/redis/RedisShortTermMemoryStore.java
+- Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/memory/store/redis/RedisLongTermMemoryCache.java
+- Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/memory/store/local/InMemoryShortTermMemoryStore.java
+- Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/memory/store/local/InMemoryLongTermMemoryCache.java
+- Modify: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/memory/ShortTermMemoryService.java
+- Modify: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/memory/LongTermMemoryService.java
+- Test: copilot-agent-core/src/test/java/com/financial/copilot/agent/core/config/RedisStorageModeTest.java
+- Test: copilot-agent-core/src/test/java/com/financial/copilot/agent/core/memory/InMemoryMemoryStoreTest.java
+
+**Interfaces:**
+- Produces RedisFeatureProperties.enabled, default true.
+- Produces identical service behavior across Redis and bounded in-memory stores.
+- Produces InMemoryDagCheckpointStore when Redis is disabled.
+
+- [ ] **Step 1: Write failing configuration tests**
+
+~~~java
+@Test
+void disabledRedisCreatesOnlyInMemoryStores() {
+    contextRunner.withPropertyValues("copilot.redis.enabled=false",
+                    "spring.data.redis.host=unreachable.invalid")
+            .run(context -> {
+                assertThat(context).hasNotFailed();
+                assertThat(context).hasSingleBean(InMemoryShortTermMemoryStore.class);
+                assertThat(context).hasSingleBean(InMemoryLongTermMemoryCache.class);
+                assertThat(context.getBean(DagCheckpointStore.class))
+                        .isInstanceOf(InMemoryDagCheckpointStore.class);
+                assertThat(context).doesNotHaveBean(RedisShortTermMemoryStore.class);
+                assertThat(context).doesNotHaveBean(RedisLongTermMemoryCache.class);
+            });
+}
+
+@Test
+void enabledRedisCreatesRedisStores() {
+    contextRunner.withPropertyValues("copilot.redis.enabled=true")
+            .withBean(StringRedisTemplate.class, () -> mock(StringRedisTemplate.class))
+            .run(context -> {
+                assertThat(context).hasSingleBean(RedisShortTermMemoryStore.class);
+                assertThat(context).hasSingleBean(RedisLongTermMemoryCache.class);
+                assertThat(context.getBean(DagCheckpointStore.class))
+                        .isInstanceOf(RedisDagCheckpointStore.class);
+            });
+}
+~~~
+
+- [ ] **Step 2: Verify failure**
+
+Run: mvn -s maven-settings.xml -pl copilot-agent-core -am -Dtest=RedisStorageModeTest,InMemoryMemoryStoreTest -Dsurefire.failIfNoSpecifiedTests=false test
+
+Expected: FAIL because storage abstractions and conditional beans do not exist.
+
+- [ ] **Step 3: Define store contracts**
+
+~~~java
+public interface ShortTermMemoryStore {
+    void append(String key, String message, Duration ttl);
+    List<String> read(String key);
+    void replace(String key, List<String> messages, Duration ttl);
+    void trim(String key, long start, long end);
+    void removeEarliest(String key);
+}
+
+public interface LongTermMemoryCache {
+    List<String> readRecent(String key, int limit);
+    void put(String key, String content, Instant createdAt, Duration ttl);
+    void replace(String key, List<CachedMemory> entries, Duration ttl);
+    void evict(String key);
+}
+~~~
+
+Define CachedMemory as a nested record of LongTermMemoryCache. Services keep the existing public API and delegate storage operations through these contracts.
+
+- [ ] **Step 4: Implement conditional configuration**
+
+RedisFeatureProperties uses @ConfigurationProperties(prefix="copilot.redis") with enabled=true. Mark RedisConfig and Redis store beans with @ConditionalOnProperty(name="copilot.redis.enabled", havingValue="true", matchIfMissing=true). MemoryStorageConfig creates local stores and InMemoryDagCheckpointStore with havingValue="false". DagRuntimeConfig must not construct RedisDagCheckpointStore when disabled.
+
+Add to application.yml:
+
+~~~yaml
+copilot:
+  redis:
+    enabled: ${REDIS_ENABLED:true}
+~~~
+
+- [ ] **Step 5: Implement bounded in-memory semantics**
+
+Use ConcurrentHashMap<String, Entry> where Entry contains immutable values, expiresAt and lastAccess sequence. Purge expired entries on every read/write. Keep at most 1000 keys and evict the smallest lastAccess when inserting key 1001. Preserve insertion order, 30-minute TTL, replace, trim and remove-earliest behavior. InMemoryLongTermMemoryCache keeps newest-first ordering and applies the requested limit.
+
+Apply the same bounded strategy to InMemoryDagCheckpointStore with a 24-hour TTL and at most 1000 run keys. Add a Clock constructor for deterministic expiry tests while retaining the no-argument production constructor.
+
+- [ ] **Step 6: Remove direct Redis dependencies from memory services**
+
+ShortTermMemoryService accepts ShortTermMemoryStore. LongTermMemoryService accepts LongTermMemoryCache; PostgreSQL repositories remain mandatory and authoritative. Remove RedisTemplate/StringRedisTemplate imports from both services. Redis enabled mode uses the adapters; disabled mode never resolves a Redis operation.
+
+- [ ] **Step 7: Verify and commit**
+
+Run: mvn -s maven-settings.xml -pl copilot-agent-core -am test
+
+Expected: PASS.
+
+~~~bash
+git add copilot-agent-core/src/main/java/com/financial/copilot/agent/core/config copilot-agent-core/src/main/java/com/financial/copilot/agent/core/memory copilot-agent-core/src/test/java/com/financial/copilot/agent/core/config copilot-agent-core/src/test/java/com/financial/copilot/agent/core/memory copilot-app/src/main/resources/application.yml
+git commit -m "feat(storage): make Redis optional"
+~~~
+
+### Task 4: Add lifecycle service and memory reconstruction
 
 **Files:**
 - Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/conversation/ConversationService.java
@@ -326,7 +444,7 @@ git add copilot-agent-core/src/main/java/com/financial/copilot/agent/core/conver
 git commit -m "feat(conversation): manage durable run lifecycle"
 ~~~
 
-### Task 4: Propagate identity through Graph and checkpoint resume
+### Task 5: Propagate identity through Graph and checkpoint resume
 
 **Files:**
 - Modify: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/runtime/GraphRunRequest.java
@@ -401,7 +519,7 @@ git add copilot-agent-core/src
 git commit -m "refactor(runtime): carry durable conversation identity"
 ~~~
 
-### Task 5: Persist AgentScope ReAct tool audits
+### Task 6: Persist AgentScope ReAct tool audits
 
 **Files:**
 - Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/agentscope/AgentToolAuditSink.java
@@ -464,7 +582,7 @@ git add copilot-agent-core/src
 git commit -m "feat(agentscope): persist sanitized tool audits"
 ~~~
 
-### Task 6: Replace HTTP session entry with conversation lifecycle
+### Task 7: Replace HTTP session entry with conversation lifecycle
 
 **Files:**
 - Modify: copilot-app/src/main/java/com/financial/copilot/controller/ResearchAgentController.java
@@ -561,11 +679,13 @@ git add copilot-app/src/main/java/com/financial/copilot/controller copilot-app/s
 git commit -m "feat(api): unify research runs around conversations"
 ~~~
 
-### Task 7: Verify real persistence, isolation and concurrency
+### Task 8: Verify real persistence, isolation and concurrency
 
 **Files:**
 - Create: copilot-app/src/test/java/com/financial/copilot/ConversationPersistenceTest.java
 - Create: copilot-app/src/test/java/com/financial/copilot/ConversationPersistenceDisabledTest.java
+- Create: copilot-app/src/test/java/com/financial/copilot/RedisDisabledStorageIntegrationTest.java
+- Create: copilot-app/src/test/java/com/financial/copilot/AllOptionalPersistenceDisabledTest.java
 - Modify: copilot-app/src/test/java/com/financial/copilot/ApplicationStartupTest.java
 - Modify: README.md
 
@@ -621,19 +741,73 @@ void disabledModeWritesMemoryAndCheckpointButNoConversationRows() {
 }
 ~~~
 
+Add RedisDisabledStorageIntegrationTest with @EnabledIfSystemProperty(named="copilot.integration", matches="true") and @SpringBootTest(properties={"copilot.redis.enabled=false", "spring.data.redis.host=unreachable.invalid"}):
+
+~~~java
+@Test
+void startsWithoutRedisAndUsesLocalMemoryAndCheckpointStores() {
+    String key = "redis-off-" + UUID.randomUUID();
+    shortMemory.addMessage(key, "recent fact");
+    longMemory.record(key, "durable fact");
+    DagCheckpoint checkpoint = checkpointFor(key);
+    checkpointStore.saveCheckpoint(checkpoint);
+
+    assertThat(checkpointStore).isInstanceOf(InMemoryDagCheckpointStore.class);
+    assertThat(shortMemory.getContext(key)).containsExactly("recent fact");
+    assertThat(longMemory.retrieve(key, 10)).contains("durable fact");
+    assertThat(checkpointStore.load(checkpoint.userId(), checkpoint.runId())).isPresent();
+}
+
+private DagCheckpoint checkpointFor(String key) {
+    return new DagCheckpoint(UUID.randomUUID().toString(), 7L, UUID.randomUUID(), null,
+            key, "prompt", false, null, new ExecutionGraph("redis-off").snapshot(),
+            Map.of(), Map.of(), Instant.now());
+}
+~~~
+
+The test does not inject or invoke RedisTemplate. Cleanup deletes only the generated long_term_memory row.
+
+Add AllOptionalPersistenceDisabledTest with both copilot.redis.enabled=false and copilot.conversation.persistence-enabled=false:
+
+~~~java
+@EnabledIfSystemProperty(named="copilot.integration", matches="true")
+@SpringBootTest(properties={
+        "copilot.redis.enabled=false",
+        "copilot.conversation.persistence-enabled=false",
+        "spring.data.redis.host=unreachable.invalid"
+})
+class AllOptionalPersistenceDisabledTest {
+@Test
+void bothDisabledKeepsOnlyRequiredMemoryAndLocalCheckpointBehavior() {
+    ConversationRun run = service.beginRun(7L, null, UUID.randomUUID(), "prompt");
+    String key = SecurityUtils.sessionKey(7L, run.conversationId().toString());
+    service.complete(7L, run, key, "prompt", "report", Map.of());
+
+    assertThat(run.assistantMessageId()).isNull();
+    assertThat(checkpointStore).isInstanceOf(InMemoryDagCheckpointStore.class);
+    assertThat(shortMemory.getContext(key)).containsExactly("USER: prompt", "ASSISTANT: report");
+    assertThat(longMemory.retrieve(key, 10)).contains("report");
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM conversation_message WHERE run_id = ?",
+            Long.class, run.runId())).isZero();
+}
+}
+~~~
+
+Clean only its generated long-term-memory rows.
+
 - [ ] **Step 2: Verify environment gating and real services**
 
-Run: mvn -s maven-settings.xml -pl copilot-app -am -Dtest=ConversationPersistenceTest,ConversationPersistenceDisabledTest -Dsurefire.failIfNoSpecifiedTests=false test
+Run: mvn -s maven-settings.xml -pl copilot-app -am -Dtest=ConversationPersistenceTest,ConversationPersistenceDisabledTest,RedisDisabledStorageIntegrationTest,AllOptionalPersistenceDisabledTest -Dsurefire.failIfNoSpecifiedTests=false test
 
 Expected: SKIPPED.
 
-Run: mvn -s maven-settings.xml -pl copilot-app -am "-Dcopilot.integration=true" -Dtest=ConversationPersistenceTest,ConversationPersistenceDisabledTest -Dsurefire.failIfNoSpecifiedTests=false test
+Run: mvn -s maven-settings.xml -pl copilot-app -am "-Dcopilot.integration=true" -Dtest=ConversationPersistenceTest,ConversationPersistenceDisabledTest,RedisDisabledStorageIntegrationTest,AllOptionalPersistenceDisabledTest -Dsurefire.failIfNoSpecifiedTests=false test
 
 Expected: PASS against configured PostgreSQL and Redis without remote LLM calls.
 
 - [ ] **Step 3: Update startup test and README**
 
-Assert all three new tables exist in ApplicationStartupTest. Document conversationId requests, history/audit endpoints, PostgreSQL source-of-truth behavior, Redis 30-minute cache and Checkpoint 24-hour recovery. Document CONVERSATION_PERSISTENCE_ENABLED=false for test environments and state that memory and checkpoints remain enabled. Remove sessionId and memory/session examples.
+Assert all three new tables exist in ApplicationStartupTest. Document conversationId requests, history/audit endpoints, PostgreSQL source-of-truth behavior, Redis 30-minute cache and Checkpoint 24-hour recovery. Document CONVERSATION_PERSISTENCE_ENABLED=false and REDIS_ENABLED=false independently, including the four supported combinations and the process-local restart limitation. Remove sessionId and memory/session examples.
 
 - [ ] **Step 4: Verify old entry removal**
 
@@ -658,7 +832,7 @@ git add copilot-app/src/test README.md
 git commit -m "test(conversation): verify durable isolated history"
 ~~~
 
-### Task 8: Final regression gate
+### Task 9: Final regression gate
 
 **Files:**
 - Review all changed files and both spec/plan documents.
@@ -669,7 +843,7 @@ git commit -m "test(conversation): verify durable isolated history"
 
 - [ ] **Step 1: Check diff and workspace**
 
-Run: git diff --check HEAD~7..HEAD
+Run: git diff --check HEAD~8..HEAD
 
 Expected: no errors.
 
