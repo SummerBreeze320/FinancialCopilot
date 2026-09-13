@@ -43,6 +43,28 @@
 
 SSE 内容分片只用于实时传输。系统在运行开始时创建一条 RUNNING 的 ASSISTANT 消息，在结束时一次性写入合并后的最终内容，不逐块保存流式分片。
 
+### 3.1 可配置持久化模式
+
+新增配置：
+
+    copilot:
+      conversation:
+        persistence-enabled: ${CONVERSATION_PERSISTENCE_ENABLED:true}
+
+默认值为 true。生产环境默认保存完整对话；测试或临时环境可以显式设置 CONVERSATION_PERSISTENCE_ENABLED=false，避免产生大量对话与工具审计数据。
+
+关闭后只停用 research_conversation、conversation_message 和 agent_tool_audit 的读写，以下能力继续运行：
+
+- 每次请求仍生成 conversationId 和 runId，统一 Graph 入口与 AgentScope ReAct 执行方式不变；
+- Redis 短期记忆继续按用户隔离的 sessionKey 保存；
+- long_term_memory 和 refined_fact 继续保存语义记忆；
+- Redis DAG Checkpoint 继续保存图、节点、Artifact 和恢复信息；
+- 计费、用户隔离、取消和 Checkpoint 恢复继续生效。
+
+关闭模式下不创建用户消息、助手消息和工具审计记录，GraphRunRequest 与 DagCheckpoint 的 assistantMessageId 允许为空。传入 conversationId 时，系统只把它作为当前用户隔离记忆的逻辑标识，不执行数据库所有权校验；sessionKey 仍包含认证 userId，因此不同用户使用相同 conversationId 也不会共享记忆。
+
+历史列表、消息和工具审计查询接口返回 HTTP 503，错误码为 CONVERSATION_PERSISTENCE_DISABLED。运行状态、取消和恢复接口继续以 userId 加 runId 的 Checkpoint/Run Registry 所有权边界工作。切换配置只影响切换后的请求，不迁移或删除已有历史。
+
 ## 4. 标识与所有权
 
 - conversationId：服务端生成 UUID，表示一个用户对话。
@@ -284,6 +306,8 @@ ShortTermMemoryService 改为缓存适配器：
 10. 同步和 SSE 入口共享相同的消息生命周期与状态语义。
 11. 现有用户隔离、计费、Checkpoint 恢复和统一 Graph 入口测试继续通过。
 12. long_term_memory 和 refined_fact 明确作为派生数据，删除它们不会损坏原始对话历史。
+13. persistence-enabled=false 时不写三张对话表，但短期记忆、长期记忆、提炼事实、计费和 DAG Checkpoint 仍正常工作。
+14. persistence-enabled=false 时历史查询返回 CONVERSATION_PERSISTENCE_DISABLED，运行状态、取消和恢复仍可使用。
 
 ## 16. 不在首版范围内
 

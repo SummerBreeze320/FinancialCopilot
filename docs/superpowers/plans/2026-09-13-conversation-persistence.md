@@ -13,6 +13,7 @@
 ## Global Constraints
 
 - PostgreSQL is the source of truth for conversations, messages and tool audits.
+- copilot.conversation.persistence-enabled defaults to true and disables only conversation, message and tool-audit database access when false.
 - userId remains Long in Java and BIGINT in PostgreSQL and comes only from authentication.
 - Redis memory has a 30-minute TTL and is rebuilt from PostgreSQL; DAG checkpoints keep their 24-hour recovery role.
 - Never persist hidden reasoning, system prompts, credentials, headers or complete large tool results.
@@ -28,7 +29,7 @@ Domain files live under copilot-domain/src/main/java/com/financial/copilot/domai
 
 PostgreSQL files live under copilot-data-engine/src/main/java/com/financial/copilot/data/conversation: three PO classes, three Mapper interfaces and PostgresConversationAdapter. DDL lives in copilot-app/src/main/resources/db/conversation-schema.sql.
 
-Core files are ConversationService, ToolArgumentSanitizer and PersistentAgentToolAuditSink under agent/core/conversation; AgentToolAuditSink and ToolAuditEvent under agent/core/agentscope; plus changes to AgentScopeAgentFactory, GraphRunRequest, NodeExecutionContext, DagCheckpoint, DagRuntime, GraphPlanningRequest, GraphPlannerAgent, MarketMemoryTool and FinancialResearchWorkflow.
+Core files are ConversationService, ConversationPersistenceProperties, ConversationPersistenceDisabledException, ToolArgumentSanitizer and PersistentAgentToolAuditSink under agent/core/conversation; AgentToolAuditSink and ToolAuditEvent under agent/core/agentscope; plus changes to AgentScopeAgentFactory, GraphRunRequest, NodeExecutionContext, DagCheckpoint, DagRuntime, GraphPlanningRequest, GraphPlannerAgent, MarketMemoryTool and FinancialResearchWorkflow.
 
 SSE identity propagation also modifies copilot-common/src/main/java/com/financial/copilot/common/event/ResearchStreamEvent.java and copilot-agent-core/src/main/java/com/financial/copilot/agent/core/dag/event/NodeEventBus.java.
 
@@ -54,7 +55,7 @@ HTTP files are ResearchAgentController, ResearchRunController and a new Conversa
 - Test: copilot-domain/src/test/java/com/financial/copilot/domain/conversation/ConversationStateTest.java
 
 **Interfaces:**
-- Produces ConversationRun(UUID conversationId, UUID runId, long userMessageId, long assistantMessageId, MessageStatus assistantStatus).
+- Produces ConversationRun(UUID conversationId, UUID runId, Long userMessageId, Long assistantMessageId, MessageStatus assistantStatus); message IDs are null only when persistence is disabled.
 - Produces owner-scoped ConversationPort and AgentToolAuditPort.
 
 - [ ] **Step 1: Write failing state tests**
@@ -185,6 +186,14 @@ Expected: FAIL because adapter files do not exist.
 
 Create research_conversation, conversation_message and agent_tool_audit exactly as the spec defines, using BIGINT user_id. Add CHECK constraints, ON DELETE CASCADE, unique (conversation_id, sequence_no), unique (user_id, run_id, role), unique (user_id, run_id, tool_call_id), and the partial user/last-message index. Add classpath:db/conversation-schema.sql to spring.sql.init.schema-locations.
 
+Add the runtime switch to application.yml:
+
+~~~yaml
+copilot:
+  conversation:
+    persistence-enabled: ${CONVERSATION_PERSISTENCE_ENABLED:true}
+~~~
+
 - [ ] **Step 4: Implement owner-scoped SQL**
 
 ~~~sql
@@ -222,6 +231,8 @@ git commit -m "feat(conversation): persist messages and tool audits"
 
 **Files:**
 - Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/conversation/ConversationService.java
+- Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/conversation/ConversationPersistenceProperties.java
+- Create: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/conversation/ConversationPersistenceDisabledException.java
 - Modify: copilot-agent-core/src/main/java/com/financial/copilot/agent/core/memory/ShortTermMemoryService.java
 - Test: copilot-agent-core/src/test/java/com/financial/copilot/agent/core/conversation/ConversationServiceTest.java
 - Test: copilot-agent-core/src/test/java/com/financial/copilot/agent/core/memory/ShortTermMemoryServiceTest.java
@@ -229,6 +240,7 @@ git commit -m "feat(conversation): persist messages and tool audits"
 **Interfaces:**
 - Produces beginRun, complete, fail, cancel, recentContext and query delegation.
 - Produces ShortTermMemoryService.replaceContext.
+- Produces configuration property copilot.conversation.persistence-enabled, default true.
 
 - [ ] **Step 1: Write failing lifecycle tests**
 
@@ -252,6 +264,16 @@ void cacheMissRebuildsOnlyCompletedMessages() {
     assertThat(service.recentContext(7L, conversationId, "key", 20))
             .containsExactly("USER: prompt", "ASSISTANT: report");
 }
+
+@Test
+void disabledModeSkipsConversationTablesButKeepsMemoryProjection() {
+    properties.setPersistenceEnabled(false);
+    ConversationRun run = service.beginRun(7L, null, runId, "prompt");
+    service.complete(7L, run, "key", "prompt", "report", Map.of());
+    verifyNoInteractions(port, audits);
+    verify(memory).replaceContext("key", List.of("USER: prompt", "ASSISTANT: report"));
+    verify(longMemory).record("key", "report");
+}
 ~~~
 
 - [ ] **Step 2: Verify failure**
@@ -272,6 +294,8 @@ List<String> recentContext(Long userId, UUID conversationId, String sessionKey, 
 ~~~
 
 beginRun generates the conversation UUID before calling createAndStart when requestedId is absent; otherwise it calls startRun. The HTTP layer derives sessionKey from the returned server conversation ID. complete writes PostgreSQL before Redis, then calls LongTermMemoryService.record and publishes WorkflowFinishedEvent so refined facts remain a derived projection. fail/cancel use stable codes and sanitized messages up to 500 characters, and close RUNNING tool audits. Optional MeterRegistry records the approved counters without content tags.
+
+ConversationPersistenceProperties is a Spring @ConfigurationProperties component with prefix copilot.conversation and persistenceEnabled=true. When false, beginRun returns an ephemeral ConversationRun with null message IDs, terminal methods skip both ports, while successful completion still updates ShortTermMemoryService, LongTermMemoryService and WorkflowFinishedEvent. History query methods throw ConversationPersistenceDisabledException.
 
 Wrap terminal message writes in a local three-attempt retry for transient DataAccessException values, with 50 ms then 200 ms delay. The third failure propagates so the HTTP lifecycle cannot claim persistence succeeded; the existing checkpoint and final Artifact remain available for compensation.
 
@@ -329,7 +353,7 @@ git commit -m "feat(conversation): manage durable run lifecycle"
 - Modify: copilot-agent-core/src/test/java/com/financial/copilot/agent/core/workflow/FinancialResearchWorkflowTest.java
 
 **Interfaces:**
-- Produces GraphRunRequest(String runId, Long userId, UUID conversationId, long assistantMessageId, String sessionKey, String prompt, boolean enableThinking, UserInvestmentProfile profile, Consumer<LlmResponse> usageConsumer, RunMode mode).
+- Produces GraphRunRequest(String runId, Long userId, UUID conversationId, Long assistantMessageId, String sessionKey, String prompt, boolean enableThinking, UserInvestmentProfile profile, Consumer<LlmResponse> usageConsumer, RunMode mode).
 - Produces NodeExecutionContext(GraphRunRequest request, String nodeId, ArtifactStore artifacts, CancellationToken cancellationToken).
 
 - [ ] **Step 1: Write failing checkpoint test**
@@ -358,7 +382,7 @@ Apply the exact record signatures above. Rename GraphPlanningRequest.sessionId t
 
 - [ ] **Step 4: Persist and restore linkage**
 
-Every checkpoint copies conversationId, assistantMessageId and sessionKey. resume reconstructs GraphRunRequest from them. Remove request.sessionId and saved.sessionId references.
+Every checkpoint copies conversationId, nullable assistantMessageId and sessionKey. resume reconstructs GraphRunRequest from them. Remove request.sessionId and saved.sessionId references.
 
 Add conversationId to ResearchStreamEvent and change graphInitialized plus NodeEventBus.publishGraphInitialized to require it. DagRuntime passes request.conversationId().toString(), making the first SSE graph_initialized event contain both conversationId and runId.
 
@@ -427,7 +451,7 @@ MeteredModel emits RUNNING for each new ToolUseBlock in ChatResponse and SUCCEED
 
 - [ ] **Step 5: Implement persistent sink**
 
-Map RUNNING to port.start and terminal events to port.complete. Extract artifact IDs only from explicit artifactId/artifactIds fields. Retry a transient DataAccessException once after 50 ms, then log, increment agent_tool_audit_write_failure_total and return without changing the Agent result. ConversationService cancel/fail closes remaining RUNNING audits.
+When ConversationPersistenceProperties.persistenceEnabled is false, return before calling AgentToolAuditPort. Otherwise map RUNNING to port.start and terminal events to port.complete. Extract artifact IDs only from explicit artifactId/artifactIds fields. Retry a transient DataAccessException once after 50 ms, then log, increment agent_tool_audit_write_failure_total and return without changing the Agent result. ConversationService cancel/fail closes remaining RUNNING audits.
 
 - [ ] **Step 6: Verify and commit**
 
@@ -479,6 +503,15 @@ void foreignConversationReturnsSameNotFoundAsMissing() {
     assertThatThrownBy(() -> authenticatedMessages(8L, foreignId))
             .isInstanceOf(ResponseStatusException.class).hasMessageContaining("404");
 }
+
+@Test
+void disabledPersistenceReturnsServiceUnavailableForHistory() {
+    when(service.listConversations(7L, null, 20))
+            .thenThrow(new ConversationPersistenceDisabledException());
+    assertThatThrownBy(() -> authenticatedConversationList(7L))
+            .isInstanceOf(ResponseStatusException.class)
+            .hasMessageContaining("503").hasMessageContaining("CONVERSATION_PERSISTENCE_DISABLED");
+}
 ~~~
 
 - [ ] **Step 2: Verify failure**
@@ -511,9 +544,11 @@ Mono<ApiResult<Map<String, Object>>> archive(UUID conversationId);
 
 Add GET /api/v1/research/runs/{runId}/tool-audits. Enforce limit 1..100. Missing/foreign resources return 404 and malformed cursors return 400. No endpoint accepts userId.
 
+Map ConversationPersistenceDisabledException to HTTP 503 with code CONVERSATION_PERSISTENCE_DISABLED for conversation, message and tool-audit queries. Run creation remains available.
+
 - [ ] **Step 6: Make resume/cancel durable**
 
-Resolve persisted run ownership before resume/cancel. Resume uses checkpoint identity and the same completion observer. Cancel stops the active handle and marks the persisted assistant CANCELLED.
+When persistence is enabled, resolve persisted run ownership before resume/cancel. When disabled, use the existing userId-scoped Checkpoint and Run Registry ownership checks. Resume uses checkpoint identity and the same completion observer. Cancel stops the active handle; it marks the assistant CANCELLED only when persistence is enabled.
 
 - [ ] **Step 7: Verify and commit**
 
@@ -530,6 +565,7 @@ git commit -m "feat(api): unify research runs around conversations"
 
 **Files:**
 - Create: copilot-app/src/test/java/com/financial/copilot/ConversationPersistenceTest.java
+- Create: copilot-app/src/test/java/com/financial/copilot/ConversationPersistenceDisabledTest.java
 - Modify: copilot-app/src/test/java/com/financial/copilot/ApplicationStartupTest.java
 - Modify: README.md
 
@@ -565,19 +601,39 @@ void concurrentStartsAllocateSixUniqueSequences() throws Exception {
 
 Use @EnabledIfSystemProperty(named="copilot.integration", matches="true"), CountDownLatch, virtual threads and exact-ID cleanup in finally blocks.
 
+Add ConversationPersistenceDisabledTest with @EnabledIfSystemProperty(named="copilot.integration", matches="true") and @SpringBootTest(properties="copilot.conversation.persistence-enabled=false"), then add this assertion:
+
+~~~java
+@Test
+void disabledModeWritesMemoryAndCheckpointButNoConversationRows() {
+    ConversationRun run = service.beginRun(owner, null, UUID.randomUUID(), "prompt");
+    String key = SecurityUtils.sessionKey(owner, run.conversationId().toString());
+    service.complete(owner, run, key, "prompt", "report", Map.of());
+    checkpointStore.saveCheckpoint(new DagCheckpoint(run.runId().toString(), owner,
+            run.conversationId(), null, key, "prompt", false, null,
+            new ExecutionGraph("disabled").snapshot(), Map.of(), Map.of(), Instant.now()));
+
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM conversation_message WHERE run_id = ?",
+            Long.class, run.runId())).isZero();
+    assertThat(shortMemory.getContext(key)).contains("ASSISTANT: report");
+    assertThat(longMemory.retrieve(key, 10)).contains("report");
+    assertThat(checkpointStore.load(owner, run.runId().toString())).isPresent();
+}
+~~~
+
 - [ ] **Step 2: Verify environment gating and real services**
 
-Run: mvn -s maven-settings.xml -pl copilot-app -am -Dtest=ConversationPersistenceTest -Dsurefire.failIfNoSpecifiedTests=false test
+Run: mvn -s maven-settings.xml -pl copilot-app -am -Dtest=ConversationPersistenceTest,ConversationPersistenceDisabledTest -Dsurefire.failIfNoSpecifiedTests=false test
 
 Expected: SKIPPED.
 
-Run: mvn -s maven-settings.xml -pl copilot-app -am "-Dcopilot.integration=true" -Dtest=ConversationPersistenceTest -Dsurefire.failIfNoSpecifiedTests=false test
+Run: mvn -s maven-settings.xml -pl copilot-app -am "-Dcopilot.integration=true" -Dtest=ConversationPersistenceTest,ConversationPersistenceDisabledTest -Dsurefire.failIfNoSpecifiedTests=false test
 
 Expected: PASS against configured PostgreSQL and Redis without remote LLM calls.
 
 - [ ] **Step 3: Update startup test and README**
 
-Assert all three new tables exist in ApplicationStartupTest. Document conversationId requests, history/audit endpoints, PostgreSQL source-of-truth behavior, Redis 30-minute cache and Checkpoint 24-hour recovery. Remove sessionId and memory/session examples.
+Assert all three new tables exist in ApplicationStartupTest. Document conversationId requests, history/audit endpoints, PostgreSQL source-of-truth behavior, Redis 30-minute cache and Checkpoint 24-hour recovery. Document CONVERSATION_PERSISTENCE_ENABLED=false for test environments and state that memory and checkpoints remain enabled. Remove sessionId and memory/session examples.
 
 - [ ] **Step 4: Verify old entry removal**
 
