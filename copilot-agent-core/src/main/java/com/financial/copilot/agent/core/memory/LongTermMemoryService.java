@@ -2,9 +2,9 @@ package com.financial.copilot.agent.core.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ZSetOperations;
+import java.time.Duration;
 import java.time.ZoneOffset;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
-// Domain imports
+import com.financial.copilot.agent.core.memory.store.LongTermMemoryCache;
 import com.financial.copilot.agent.core.memory.LongTermMemoryEntry;
 import com.financial.copilot.agent.core.memory.LongTermMemoryEntryRepository;
 import com.financial.copilot.agent.core.memory.RefinedFact;
@@ -48,28 +48,28 @@ public class LongTermMemoryService {
 
     private final LongTermMemoryEntryRepository repository;
     private final RefinedFactRepository refinedFactRepository;
-    private final StringRedisTemplate redisTemplate;
+    private final LongTermMemoryCache cache;
 
     public LongTermMemoryService(LongTermMemoryEntryRepository repository,
                                  RefinedFactRepository refinedFactRepository,
-                                 StringRedisTemplate redisTemplate) {
+                                 LongTermMemoryCache cache) {
         this.repository = repository;
         this.refinedFactRepository = refinedFactRepository;
-        this.redisTemplate = redisTemplate;
+        this.cache = cache;
     }
 
     /**
      * 持久化一条记忆，并同步写入 Redis Sorted Set。
      */
-    public void record(String sessionId, String content) {
+    public void record(String sessionKey, String content) {
         // Idempotent check
-        if (repository.countBySessionIdAndContent(sessionId, content) == 0) {
+        if (repository.countBySessionIdAndContent(sessionKey, content) == 0) {
             LongTermMemoryEntry entry = new LongTermMemoryEntry()
-                    .setSessionId(sessionId)
+                    .setSessionKey(sessionKey)
                     .setContent(content);
             repository.insert(entry);
-            double score = entry.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
-            redisTemplate.opsForZSet().add(redisKey(sessionId), content, score);
+            Instant createdAt = entry.getCreatedAt().toInstant(ZoneOffset.UTC);
+            cache.put(cacheKey(sessionKey), content, createdAt, Duration.ofDays(30));
         }
     }
 
@@ -217,10 +217,9 @@ public class LongTermMemoryService {
      * 优先从 Redis 获取最近的 {@code limit} 条记忆记录，若未命中则回退到数据库并缓存。
      */
     public List<String> retrieve(String sessionId, int limit) {
-        ZSetOperations<String, String> zset = redisTemplate.opsForZSet();
-        Set<String> cachedSet = zset.reverseRange(redisKey(sessionId), 0, limit - 1);
-        if (cachedSet != null && !cachedSet.isEmpty()) {
-            return new ArrayList<>(cachedSet);
+        List<String> cached = cache.readRecent(cacheKey(sessionId), limit);
+        if (cached != null && !cached.isEmpty()) {
+            return cached;
         }
         // DB fallback
         List<LongTermMemoryEntry> all = repository.findBySessionIdOrderByCreatedAtDesc(sessionId);
@@ -228,15 +227,15 @@ public class LongTermMemoryService {
                 .limit(limit)
                 .map(LongTermMemoryEntry::getContent)
                 .collect(Collectors.toList());
-        // Warm up Redis cache
+        // Warm up cache
         for (LongTermMemoryEntry e : all) {
-            double score = e.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
-            zset.add(redisKey(sessionId), e.getContent(), score);
+            Instant createdAt = e.getCreatedAt().toInstant(ZoneOffset.UTC);
+            cache.put(cacheKey(sessionId), e.getContent(), createdAt, Duration.ofDays(30));
         }
         return result;
     }
 
-    private String redisKey(String sessionId) {
+    private String cacheKey(String sessionId) {
         return "ltm:" + sessionId;
     }
 

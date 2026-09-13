@@ -73,7 +73,7 @@ class DagRunIsolationTest {
     }
 
     private static GraphRunRequest request(String runId) {
-        return new GraphRunRequest(runId, 7L, "session", "prompt", false, null, null, RunMode.SYNC);
+        return new GraphRunRequest(runId, 7L,java.util.UUID.randomUUID(), null,  "session", "prompt", false, null, null, RunMode.SYNC);
     }
 
     private static ExecutionGraph graph(String nodeId, Duration timeout) {

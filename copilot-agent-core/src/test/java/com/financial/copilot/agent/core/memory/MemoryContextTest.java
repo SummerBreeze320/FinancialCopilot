@@ -5,6 +5,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import com.financial.copilot.agent.core.config.AsyncConfig;
 import com.financial.copilot.agent.core.config.RedisConfig;
+import com.financial.copilot.agent.core.memory.store.ShortTermMemoryStore;
+import com.financial.copilot.agent.core.memory.store.LongTermMemoryCache;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -40,7 +42,7 @@ class MemoryContextTest {
     @Test
     void memoryServicesCanBeCreatedWithoutCircularReferences() {
         new ApplicationContextRunner()
-                .withBean(StringRedisTemplate.class, () -> mock(StringRedisTemplate.class))
+                .withBean(ShortTermMemoryStore.class, () -> mock(ShortTermMemoryStore.class))
                 .withUserConfiguration(ShortTermMemoryService.class, ContextReducer.class)
                 .run(context -> assertThat(context).hasNotFailed()
                         .hasSingleBean(ShortTermMemoryService.class));

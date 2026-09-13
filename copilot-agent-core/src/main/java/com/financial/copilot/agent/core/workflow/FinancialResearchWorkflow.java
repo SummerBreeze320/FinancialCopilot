@@ -22,9 +22,6 @@ import java.util.function.Consumer;
 @Service
 public class FinancialResearchWorkflow {
     private final AgentNodeRouter agentRouter;
-    private final ShortTermMemoryService shortMemory;
-    private final LongTermMemoryService longMemory;
-    private final ApplicationEventPublisher eventPublisher;
     private final GraphPlannerAgent planner;
     private final DagRuntime runtime;
     private final GraphRunRegistry registry;
@@ -33,9 +30,6 @@ public class FinancialResearchWorkflow {
     @Autowired
     public FinancialResearchWorkflow(
             AgentNodeRouter agentRouter,
-            @Autowired(required = false) ShortTermMemoryService shortMemory,
-            @Autowired(required = false) LongTermMemoryService longMemory,
-            @Autowired(required = false) ApplicationEventPublisher eventPublisher,
             GraphPlannerAgent planner,
             @Autowired(required = false) ResourceManager resources,
             @Autowired(required = false) DagCheckpointStore checkpointStore,
@@ -43,12 +37,9 @@ public class FinancialResearchWorkflow {
             @Autowired(required = false) ReplanPolicy replanPolicy,
             @Autowired(required = false) GraphRunRegistry registry) {
         this.agentRouter = agentRouter;
-        this.shortMemory = shortMemory;
-        this.longMemory = longMemory;
-        this.eventPublisher = eventPublisher;
         this.planner = planner;
         this.registry = registry == null ? new GraphRunRegistry() : registry;
-        this.checkpointStore = checkpointStore == null ? new RedisDagCheckpointStore() : checkpointStore;
+        this.checkpointStore = checkpointStore == null ? new InMemoryDagCheckpointStore() : checkpointStore;
         NodeExecutor dispatcher = this::dispatch;
         this.runtime = new DagRuntime(dispatcher,
                 resources == null ? ResourceManager.defaultManager() : resources,
@@ -59,10 +50,9 @@ public class FinancialResearchWorkflow {
     }
 
     public GraphRunHandle run(GraphRunRequest request) {
-        ExecutionGraph graph = planner.plan(new GraphPlanningRequest(request.prompt(), request.sessionId(),
-                request.profile(), request.usageConsumer(), request.enableThinking()));
+        ExecutionGraph graph = planner.plan(new GraphPlanningRequest(request.prompt(), request.sessionKey(),
+                request.profile(), request.usageConsumer(), request.enableThinking(), request));
         GraphRunHandle handle = registry.register(request.userId(), runtime.run(request, graph));
-        handle.completion().thenAccept(result -> recordCompletion(request, result));
         return handle;
     }
 
@@ -84,26 +74,6 @@ public class FinancialResearchWorkflow {
 
     private Artifact<?> dispatch(GraphNode node, NodeInput input, NodeExecutionContext context) {
         return agentRouter.execute(node, input, context);
-    }
-
-    private void recordCompletion(GraphRunRequest request, GraphRunResult result) {
-        String report = report(result);
-        if (shortMemory != null) {
-            shortMemory.addMessage(request.sessionId(), "USER: " + request.prompt());
-            shortMemory.addMessage(request.sessionId(), "ASSISTANT: " + report);
-        }
-        if (longMemory != null) longMemory.record(request.sessionId(), report);
-        if (eventPublisher != null) eventPublisher.publishEvent(new WorkflowFinishedEvent(this, request.sessionId()));
-    }
-
-    private String report(GraphRunResult result) {
-        return result.artifacts().values().stream()
-                .filter(artifact -> artifact.type() == ArtifactType.FINAL_REPORT)
-                .map(Artifact::payload)
-                .filter(com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport.class::isInstance)
-                .map(com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport.class::cast)
-                .map(com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport::markdownReport)
-                .findFirst().orElse("");
     }
 
     @PreDestroy

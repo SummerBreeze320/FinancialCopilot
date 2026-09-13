@@ -14,7 +14,9 @@ import java.util.Map;
 public record DagCheckpoint(
     String runId,
     Long userId,
-    String sessionId,
+    java.util.UUID conversationId,
+    Long assistantMessageId,
+    String sessionKey,
     String prompt,
     boolean enableThinking,
     UserInvestmentProfile profile,

@@ -83,7 +83,7 @@ public class AgentScopeAgentFactory {
         RuntimeContext.Builder builder = RuntimeContext.builder()
                 .put(NodeExecutionContext.class, context);
         if (request != null) {
-            builder.sessionId(request.sessionId()).userId(String.valueOf(request.userId()));
+            builder.sessionId(request.sessionKey()).userId(String.valueOf(request.userId()));
         }
         return builder.build();
     }

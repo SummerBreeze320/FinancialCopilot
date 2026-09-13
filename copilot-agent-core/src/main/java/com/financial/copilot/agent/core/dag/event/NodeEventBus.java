@@ -56,8 +56,8 @@ public class NodeEventBus {
         }
     }
 
-    public void publishGraphInitialized(String runId, int revision, List<NodeDescriptor> nodes) {
-        emit(ResearchStreamEvent.graphInitialized(runId, revision, nodes));
+    public void publishGraphInitialized(String runId, String conversationId, int revision, List<NodeDescriptor> nodes) {
+        emit(ResearchStreamEvent.graphInitialized(runId, conversationId, revision, nodes));
     }
 
     public void publishNodeStarted(String runId, String nodeId, String nodeName, String taskType) {

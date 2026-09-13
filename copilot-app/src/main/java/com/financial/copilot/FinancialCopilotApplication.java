@@ -1,8 +1,10 @@
 package com.financial.copilot;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
 
 /**
  * <h1>金融智能投研 Copilot 启动主程序</h1>
@@ -13,14 +15,18 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * @author FinancialCopilot
  */
-@SpringBootApplication(scanBasePackages = "com.financial.copilot")
-@MapperScan({
-        "com.financial.copilot.data.fund.mapper",
-        "com.financial.copilot.data.stock.mapper",
-        "com.financial.copilot.data.billing.mapper",
-        "com.financial.copilot.data.user.mapper",
-        "com.financial.copilot.agent.core.memory"
-})
+@SpringBootApplication(scanBasePackages = "com.financial.copilot", exclude = Neo4jAutoConfiguration.class)
+@MapperScan(
+        basePackages = {
+                "com.financial.copilot.data.fund.mapper",
+                "com.financial.copilot.data.stock.mapper",
+                "com.financial.copilot.data.billing.mapper",
+                "com.financial.copilot.data.user.mapper",
+                "com.financial.copilot.data.conversation.mapper",
+                "com.financial.copilot.agent.core.memory"
+        },
+        annotationClass = Mapper.class
+)
 public class FinancialCopilotApplication {
 
     /**

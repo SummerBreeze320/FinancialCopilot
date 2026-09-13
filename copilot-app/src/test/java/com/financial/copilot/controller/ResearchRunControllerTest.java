@@ -1,6 +1,7 @@
 package com.financial.copilot.controller;
 
 import com.financial.copilot.agent.core.billing.WalletBillingService;
+import com.financial.copilot.agent.core.conversation.ConversationService;
 import com.financial.copilot.agent.core.security.UserPrincipal;
 import com.financial.copilot.agent.core.workflow.FinancialResearchWorkflow;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,8 @@ class ResearchRunControllerTest {
     void foreignOrMissingRunReturnsNotFound() {
         FinancialResearchWorkflow workflow = mock(FinancialResearchWorkflow.class);
         when(workflow.findCheckpoint(8L, "owned-by-7")).thenReturn(Optional.empty());
-        ResearchRunController controller = new ResearchRunController(workflow, mock(WalletBillingService.class));
+        ResearchRunController controller = new ResearchRunController(workflow, mock(WalletBillingService.class),
+                mock(ConversationService.class));
         var auth = new UsernamePasswordAuthenticationToken(UserPrincipal.builder().userId(8L).build(), null, List.of());
         assertThatThrownBy(() -> controller.status("owned-by-7")
                 .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth)).block())

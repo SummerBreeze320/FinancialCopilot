@@ -274,7 +274,7 @@ class DagRuntimeTest {
     }
 
     private GraphRunRequest request(String runId) {
-        return new GraphRunRequest(runId, 1L, "test-session", "test prompt", false,
+        return new GraphRunRequest(runId, 1L,java.util.UUID.randomUUID(), null,  "test-session", "test prompt", false,
                 null, ignored -> {}, RunMode.SYNC);
     }
 }

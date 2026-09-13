@@ -41,12 +41,12 @@ class AgentScopeAgentFactoryTest {
         toolkit.registerTool(new EchoTool());
         AtomicInteger meteredTokens = new AtomicInteger();
         AtomicReference<LlmResponse> lastUsage = new AtomicReference<>();
-        GraphRunRequest request = new GraphRunRequest("run-1", 7L, "session-1", "echo hello", false,
+        GraphRunRequest request = new GraphRunRequest("run-1", 7L,java.util.UUID.randomUUID(), null,  "session-1", "echo hello", false,
                 null, usage -> {
                     meteredTokens.addAndGet(usage.getTotalTokens());
                     lastUsage.set(usage);
                 }, RunMode.SYNC);
-        NodeExecutionContext context = new NodeExecutionContext(request, new ArtifactStore(), new CancellationToken("node-1"));
+        NodeExecutionContext context = new NodeExecutionContext(request,"test-node",  new ArtifactStore(), new CancellationToken("node-1"));
 
         Msg result = factory.invoke(new AgentScopeAgentFactory.AgentDefinition(
                 "EchoAgent", "test agent", "Call echo and use its result.", toolkit, 3), "hello", context);

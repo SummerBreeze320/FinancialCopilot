@@ -22,4 +22,8 @@ public interface RePlanAdvisor {
      * @return 增量变更补丁，若不需要变更返回 null 或空操作补丁
      */
     GraphPatch planPatch(ExecutionGraph graph, String completedNodeId, Artifact<?> result);
+
+    default GraphPatch planPatch(ExecutionGraph graph, String completedNodeId, Artifact<?> result, GraphRunRequest request) {
+        return planPatch(graph, completedNodeId, result);
+    }
 }

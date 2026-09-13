@@ -45,9 +45,9 @@ public class GraphPlannerAgent implements RePlanAdvisor {
 
     public ExecutionGraph plan(GraphPlanningRequest request) {
         Toolkit toolkit=new Toolkit();toolkit.registerTool(new PlanningTools(metrics,skills,capabilities,memory,documents));
-        NodeExecutionContext context=context(request);
+        NodeExecutionContext context=context(request,"__planner__");
         var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("GraphPlannerAgent","动态图规划",PLAN_PROMPT,toolkit,8),
-                "用户目标="+request.prompt()+"\n会话="+request.sessionId()+"\n画像="+request.profile(),context);
+                "用户目标="+request.prompt()+"\n会话="+request.sessionKey()+"\n画像="+request.profile(),context);
         try {
             if(run.observations().isEmpty())throw new IllegalStateException("Planner finished without capability discovery");
             GraphPlan plan=mapper.readValue(stripFence(run.reply().getTextContent()),GraphPlan.class);
@@ -66,12 +66,16 @@ public class GraphPlannerAgent implements RePlanAdvisor {
     }
 
     @Override public GraphPatch planPatch(ExecutionGraph graph,String completedNodeId,Artifact<?> result){
+        return planPatch(graph, completedNodeId, result, null);
+    }
+
+    @Override public GraphPatch planPatch(ExecutionGraph graph,String completedNodeId,Artifact<?> result, GraphRunRequest owner){
         Toolkit toolkit=new Toolkit();toolkit.registerTool(new PlanningTools(metrics,skills,capabilities,memory,documents));
-        GraphPlanningRequest request=new GraphPlanningRequest("runtime replan","replan-"+graph.getGraphId(),null,ignored->{},false);
+        GraphPlanningRequest request=new GraphPlanningRequest("runtime replan","replan-"+graph.getGraphId(),null,ignored->{},false,owner);
         try {
             String prompt="graph="+mapper.writeValueAsString(ExecutionGraphSnapshot.from(graph))+"\ncompletedNode="+completedNodeId
                     +"\nartifact="+mapper.writeValueAsString(result);
-            var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("GraphPlannerAgent","动态图重规划",PATCH_PROMPT,toolkit,5),prompt,context(request));
+            var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("GraphPlannerAgent","动态图重规划",PATCH_PROMPT,toolkit,5),prompt,context(request,"__replanner__"));
             String reply=stripFence(run.reply().getTextContent());
             if("NO_PATCH".equalsIgnoreCase(reply))return null;
             GraphPatch patch = mapper.readValue(reply,GraphPatch.class);
@@ -91,11 +95,11 @@ public class GraphPlannerAgent implements RePlanAdvisor {
         }catch(Exception e){throw new IllegalStateException("GraphPlannerAgent returned invalid GraphPatch",e);}
     }
 
-    private NodeExecutionContext context(GraphPlanningRequest request){
-        GraphRunRequest run=new GraphRunRequest("plan-"+java.util.UUID.randomUUID(),0L,
-                request.sessionId()==null?"planning":request.sessionId(),request.prompt()==null?"":request.prompt(),
+    private NodeExecutionContext context(GraphPlanningRequest request, String nodeId){
+        GraphRunRequest run=request.runRequest()!=null?request.runRequest():new GraphRunRequest("plan-"+java.util.UUID.randomUUID(),0L,java.util.UUID.randomUUID(),null,
+                request.sessionKey()==null?"planning":request.sessionKey(),request.prompt()==null?"":request.prompt(),
                 request.enableThinking(),request.profile(),request.usageConsumer(),RunMode.SYNC);
-        return new NodeExecutionContext(run,new com.financial.copilot.agent.core.dag.artifact.ArtifactStore(),new CancellationToken(run.runId()));
+        return new NodeExecutionContext(run,nodeId,new com.financial.copilot.agent.core.dag.artifact.ArtifactStore(),new CancellationToken(run.runId()));
     }
 
     private static String stripFence(String text){return text==null?"":text.trim().replaceFirst("^```(?:json)?\\s*","").replaceFirst("\\s*```$","");}
@@ -108,6 +112,6 @@ public class GraphPlannerAgent implements RePlanAdvisor {
         @Tool(name="list_skills",description="列出可用投研技能",readOnly=true) public Object skills(){return s.listSkills();}
         @Tool(name="check_capability",description="检查资产类别的数据能力",readOnly=true) public boolean capability(@ToolParam(name="assetCategory",description="FUND 或 STOCK")String category){return c.isAssetCategorySupported(AssetCategory.valueOf(category));}
         @Tool(name="search_documents",description="检索金融文档",readOnly=true) public Object documents(@ToolParam(name="query",description="检索词")String q){return docs.search(q);}
-        @Tool(name="read_memory",description="读取会话市场记忆",readOnly=true) public Object memory(@ToolParam(name="sessionId",description="会话ID")String id,@ToolParam(name="query",description="检索词")String q){return memory.retrieveMemory(id,q,5);}
+        @Tool(name="read_memory",description="读取会话市场记忆",readOnly=true) public Object memory(@ToolParam(name="sessionKey",description="会话ID")String id,@ToolParam(name="query",description="检索词")String q){return memory.retrieveMemory(id,q,5);}
     }
 }

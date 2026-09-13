@@ -45,16 +45,16 @@ public class MemoryRefinementTask {
     @Async("taskExecutor")
     public void handleWorkflowFinished(WorkflowFinishedEvent event) {
         try {
-            refineAndRecord(event.getSessionId());
+            refineAndRecord(event.getSessionKey());
         } catch (Exception e) {
-            log.error("[MemoryRefinement] Failed handling WorkflowFinishedEvent for session {}: {}", event.getSessionId(), e.getMessage(), e);
+            log.error("[MemoryRefinement] Failed handling WorkflowFinishedEvent for session {}: {}", event.getSessionKey(), e.getMessage(), e);
         }
     }
-    public void refineAndRecord(String sessionId) {
+    public void refineAndRecord(String sessionKey) {
         try {
-            List<String> context = shortTermMemoryService.getContext(sessionId);
+            List<String> context = shortTermMemoryService.getContext(sessionKey);
             if (context == null || context.isEmpty()) {
-                log.warn("[MemoryRefinement] No short‑term memory found for session {}", sessionId);
+                log.warn("[MemoryRefinement] No short‑term memory found for session {}", sessionKey);
                 return;
             }
             String joined = String.join("\n", context);
@@ -65,13 +65,13 @@ public class MemoryRefinementTask {
                     .filter(l -> !l.isEmpty())
                     .collect(Collectors.toList());
             if (facts.isEmpty()) {
-                log.warn("[MemoryRefinement] LLM returned no facts for session {}", sessionId);
+                log.warn("[MemoryRefinement] LLM returned no facts for session {}", sessionKey);
                 return;
             }
-            longTermMemoryService.recordRefinedFacts(sessionId, facts);
-            log.info("[MemoryRefinement] Recorded {} refined facts for session {}", facts.size(), sessionId);
+            longTermMemoryService.recordRefinedFacts(sessionKey, facts);
+            log.info("[MemoryRefinement] Recorded {} refined facts for session {}", facts.size(), sessionKey);
         } catch (Exception e) {
-            log.error("[MemoryRefinement] Failed for session {}: {}", sessionId, e.getMessage(), e);
+            log.error("[MemoryRefinement] Failed for session {}: {}", sessionKey, e.getMessage(), e);
         }
     }
 

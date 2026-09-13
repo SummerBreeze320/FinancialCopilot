@@ -44,7 +44,7 @@ class MarketMemoryToolTest {
         MarketMemoryTool.MemoryRetrievalResult result = tool.retrieveMemory("session-100", "稳健理财", 3);
 
         assertNotNull(result);
-        assertEquals("session-100", result.sessionId());
+        assertEquals("session-100", result.sessionKey());
         assertThat(result.relevantFacts()).hasSize(2)
                 .contains("用户风险偏好为稳健型R2", "偏好近三年最大回撤<15%");
         assertThat(result.historicalDecisions()).hasSize(1)

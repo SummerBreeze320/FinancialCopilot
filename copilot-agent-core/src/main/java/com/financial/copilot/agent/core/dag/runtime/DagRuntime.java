@@ -100,7 +100,7 @@ public class DagRuntime implements AutoCloseable {
         DagRunContext context = new DagRunContext(request, graph);
 
         if (graph.getNodes().isEmpty()) {
-            context.events.publishGraphInitialized(request.runId(), graph.getRevision(), List.of());
+            context.events.publishGraphInitialized(request.runId(), request.conversationId().toString(), graph.getRevision(), List.of());
             context.events.publishRunCompleted(request.runId(), "SUCCEEDED", 0L);
             context.events.complete();
             return new GraphRunHandle(request.runId(), context.events.flux(),
@@ -110,7 +110,7 @@ public class DagRuntime implements AutoCloseable {
         DagRuntime isolated = new DagRuntime(nodeExecutor, resourceManager,
                 checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request, virtualThreadExecutor);
         CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
-        context.events.publishGraphInitialized(request.runId(), graph.getRevision(), graph.getNodes().values().stream()
+        context.events.publishGraphInitialized(request.runId(), request.conversationId().toString(), graph.getRevision(), graph.getNodes().values().stream()
                 .map(node -> new com.financial.copilot.agent.core.dag.event.NodeEventBus.NodeDescriptor(
                         node.getNodeId(), node.getName(), node.getTaskType(), List.copyOf(graph.getUpstream(node.getNodeId()))))
                 .toList());
@@ -194,7 +194,7 @@ public class DagRuntime implements AutoCloseable {
         }
         DagCheckpoint saved = checkpoint.get();
         ExecutionGraph graph = saved.graph().restore();
-        GraphRunRequest request = new GraphRunRequest(runId, userId, saved.sessionId(), saved.prompt(),
+        GraphRunRequest request = new GraphRunRequest(runId, userId, saved.conversationId(), saved.assistantMessageId(), saved.sessionKey(), saved.prompt(),
                 saved.enableThinking(), saved.profile(), usageConsumer, RunMode.SYNC);
         DagRunContext context = new DagRunContext(request, graph);
         saved.artifacts().forEach(context.artifacts::store);
@@ -203,7 +203,7 @@ public class DagRuntime implements AutoCloseable {
         DagRuntime isolated = new DagRuntime(nodeExecutor, resourceManager,
                 checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request, virtualThreadExecutor);
         CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
-        context.events.publishGraphInitialized(runId, graph.getRevision(), graph.getNodes().values().stream()
+        context.events.publishGraphInitialized(runId, request.conversationId().toString(), graph.getRevision(), graph.getNodes().values().stream()
                 .map(node -> new com.financial.copilot.agent.core.dag.event.NodeEventBus.NodeDescriptor(
                         node.getNodeId(), node.getName(), node.getTaskType(), List.copyOf(graph.getUpstream(node.getNodeId()))))
                 .toList());
@@ -371,7 +371,7 @@ public class DagRuntime implements AutoCloseable {
         Future<Artifact<?>> future = virtualThreadExecutor.submit(() -> {
             try (AutoCloseable ignored = token.bindCurrentThread()) {
                 NodeInput input = DependencyResolver.resolve(node, store);
-                return nodeExecutor.execute(node, input, new NodeExecutionContext(runRequest, store, token));
+                return nodeExecutor.execute(node, input, new NodeExecutionContext(runRequest, node.getNodeId(), store, token));
             }
         });
         try {
@@ -503,7 +503,7 @@ public class DagRuntime implements AutoCloseable {
         if (rePlanAdvisor != null && replanPolicy != null && replanPolicy.shouldReplan(graph, completedNodeId, result, finalStatus)) {
             synchronized (replanLock) {
                 try {
-                    GraphPatch patch = rePlanAdvisor.planPatch(graph, completedNodeId, result);
+                    GraphPatch patch = rePlanAdvisor.planPatch(graph, completedNodeId, result, runRequest);
                     if (patch != null && !patch.operations().isEmpty()) {
                         validatePatchLifecycle(patch, statusMap);
                         int newRev = graph.applyPatch(patch, id -> {
@@ -658,7 +658,9 @@ public class DagRuntime implements AutoCloseable {
             DagCheckpoint cp = new DagCheckpoint(
                     runId,
                     runRequest != null ? runRequest.userId() : null,
-                    runRequest != null ? runRequest.sessionId() : graph.getGraphId(),
+                    runRequest != null ? runRequest.conversationId() : java.util.UUID.nameUUIDFromBytes(graph.getGraphId().getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+                    runRequest != null ? runRequest.assistantMessageId() : null,
+                    runRequest != null ? runRequest.sessionKey() : graph.getGraphId(),
                     runRequest != null ? runRequest.prompt() : "",
                     runRequest != null && runRequest.enableThinking(),
                     runRequest != null ? runRequest.profile() : null,

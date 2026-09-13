@@ -9,7 +9,9 @@ import java.util.function.Consumer;
 public record GraphRunRequest(
         String runId,
         Long userId,
-        String sessionId,
+        java.util.UUID conversationId,
+        Long assistantMessageId,
+        String sessionKey,
         String prompt,
         boolean enableThinking,
         UserInvestmentProfile profile,
@@ -19,7 +21,8 @@ public record GraphRunRequest(
     public GraphRunRequest {
         Objects.requireNonNull(runId, "runId");
         Objects.requireNonNull(userId, "userId");
-        Objects.requireNonNull(sessionId, "sessionId");
+        Objects.requireNonNull(conversationId, "conversationId");
+        Objects.requireNonNull(sessionKey, "sessionKey");
         Objects.requireNonNull(prompt, "prompt");
         mode = mode == null ? RunMode.SYNC : mode;
     }

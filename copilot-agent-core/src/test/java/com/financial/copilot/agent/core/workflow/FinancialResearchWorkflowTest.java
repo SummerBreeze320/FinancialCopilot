@@ -23,9 +23,9 @@ class FinancialResearchWorkflowTest {
         graph.addNode(GraphNode.builder().nodeId("report").taskType("SYNTHESIS").outputType(ArtifactType.FINAL_REPORT).build());
         when(planner.plan(any())).thenReturn(graph);
         when(router.execute(any(),any(),any())).thenAnswer(call->Artifact.of("report",ArtifactType.FINAL_REPORT,"report",FinalSynthesisReport.of("summary","# report")));
-        FinancialResearchWorkflow workflow=new FinancialResearchWorkflow(router,null,null,null,planner,null,null,null,ReplanPolicy.never(),null);
+        FinancialResearchWorkflow workflow=new FinancialResearchWorkflow(router,planner,null,null,null,ReplanPolicy.never(),null);
 
-        GraphRunResult result=workflow.run(new GraphRunRequest("run",7L,"session","分析基金",false,null,ignored->{},RunMode.SYNC))
+        GraphRunResult result=workflow.run(new GraphRunRequest("run",7L,java.util.UUID.randomUUID(), null, "session","分析基金",false,null,ignored->{},RunMode.SYNC))
                 .completion().get(2, TimeUnit.SECONDS);
 
         assertThat(result.artifacts().values()).extracting(Artifact::type).contains(ArtifactType.FINAL_REPORT);

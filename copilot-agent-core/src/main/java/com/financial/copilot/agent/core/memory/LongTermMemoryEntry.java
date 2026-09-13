@@ -1,6 +1,7 @@
 package com.financial.copilot.agent.core.memory;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -27,7 +28,8 @@ public class LongTermMemoryEntry {
     private Long id;
 
     /** 会话标识，用于范围查询 */
-    private String sessionId;
+    @TableField("session_id")
+    private String sessionKey;
 
     /** 存储的记忆内容 */
     private String content;

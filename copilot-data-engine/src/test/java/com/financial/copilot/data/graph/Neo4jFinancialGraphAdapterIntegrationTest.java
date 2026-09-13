@@ -6,6 +6,8 @@ import com.financial.copilot.domain.graph.entity.HoldingRelation;
 import com.financial.copilot.domain.graph.entity.ManagerGraphNode;
 import com.financial.copilot.domain.graph.entity.StockGraphNode;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -22,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * 连通本地运行的 Docker Neo4j 5.26 容器 (bolt://localhost:7687)。
  */
 @DisplayName("Neo4j 5.x 金融知识图谱真实集成测试")
+@DisabledIfSystemProperty(named = "copilot.neo4j.enabled", matches = "(?i)false")
+@DisabledIfEnvironmentVariable(named = "NEO4J_ENABLED", matches = "(?i)false")
 class Neo4jFinancialGraphAdapterIntegrationTest {
 
     private static Driver driver;

@@ -3,7 +3,7 @@ package com.financial.copilot.agent.core.memory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import com.financial.copilot.agent.core.memory.store.LongTermMemoryCache;
 
 import java.util.List;
 
@@ -16,15 +16,15 @@ class LongTermMemoryRecallTest {
 
     private LongTermMemoryEntryRepository entryRepository;
     private RefinedFactRepository refinedFactRepository;
-    private StringRedisTemplate redisTemplate;
+    private LongTermMemoryCache cache;
     private LongTermMemoryService memoryService;
 
     @BeforeEach
     void setUp() {
         entryRepository = mock(LongTermMemoryEntryRepository.class);
         refinedFactRepository = mock(RefinedFactRepository.class);
-        redisTemplate = mock(StringRedisTemplate.class);
-        memoryService = new LongTermMemoryService(entryRepository, refinedFactRepository, redisTemplate);
+        cache = mock(LongTermMemoryCache.class);
+        memoryService = new LongTermMemoryService(entryRepository, refinedFactRepository, cache);
     }
 
     @Test

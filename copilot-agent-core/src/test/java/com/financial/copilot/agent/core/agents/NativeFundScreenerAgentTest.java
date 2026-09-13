@@ -53,12 +53,12 @@ class NativeFundScreenerAgentTest {
         AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
                 () -> LlmSettingsDTO.builder().model("scripted").build(), ignored -> model);
         FundScreenerAgent agent = new FundScreenerAgent(factory, tool, new ObjectMapper());
-        GraphRunRequest request = new GraphRunRequest("run", 1L, "session", "筛选医药基金", false,
+        GraphRunRequest request = new GraphRunRequest("run", 1L,java.util.UUID.randomUUID(), null,  "session", "筛选医药基金", false,
                 null, ignored -> {}, RunMode.SYNC);
 
         var artifact = agent.execute(GraphNode.builder().nodeId("screen").taskType("SCREENING")
                         .outputType(ArtifactType.FUND_POOL).build(), NodeInput.empty(),
-                new NodeExecutionContext(request, new ArtifactStore(), new CancellationToken("screen")));
+                new NodeExecutionContext(request,"test-node",  new ArtifactStore(), new CancellationToken("screen")));
 
         assertThat(turns).hasValue(2);
         assertThat(artifact.payload()).isInstanceOf(FundPool.class);

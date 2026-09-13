@@ -12,6 +12,7 @@ import com.financial.copilot.agent.tools.fund.*;
 import com.financial.copilot.agent.tools.graph.FinancialGraphTool;
 import io.agentscope.core.tool.*;
 import org.springframework.stereotype.Component;
+import org.springframework.lang.Nullable;
 
 import java.util.*;
 
@@ -19,7 +20,7 @@ import java.util.*;
 @Component
 public class FundComparatorAgent {
     private static final String SYSTEM_PROMPT = """
-            你是基金对标 ReAct Agent。自主调用 compare_metrics、compare_holdings、compare_reports、shared_holdings，
+            你是基金对标 ReAct Agent。自主调用 compare_metrics、compare_holdings、compare_reports；仅在可用时调用 shared_holdings，
             观察真实结果后生成 Markdown 对标结论。至少调用 compare_metrics；双标的必须对称比较，禁止模型心算。
             """;
     private final AgentScopeAgentFactory factory; private final FundQuantAnalysisTool quant;
@@ -28,13 +29,14 @@ public class FundComparatorAgent {
 
     public FundComparatorAgent(AgentScopeAgentFactory factory, FundQuantAnalysisTool quant,
                                FundHoldingsQueryTool holdings, FundReportRetrieverTool reports,
-                               FinancialGraphTool graph, ObjectMapper mapper) {
+                               @Nullable FinancialGraphTool graph, ObjectMapper mapper) {
         this.factory=factory; this.quant=quant; this.holdings=holdings; this.reports=reports; this.graph=graph; this.mapper=mapper;
     }
 
     public Artifact<ComparisonReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
         List<String> codes = codes(input, node);
-        Toolkit toolkit = new Toolkit(); toolkit.registerTool(new ComparisonTools(quant, holdings, reports, graph));
+        Toolkit toolkit = new Toolkit(); toolkit.registerTool(new ComparisonTools(quant, holdings, reports));
+        if (graph != null) toolkit.registerTool(new GraphComparisonTools(graph));
         var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
                 "FundComparatorAgent", "基金横向对标", SYSTEM_PROMPT, toolkit, 8),
                 "用户目标=" + context.request().prompt() + "\n对标代码=" + codes, context);
@@ -68,15 +70,26 @@ public class FundComparatorAgent {
 
     static final class ComparisonTools {
         private final FundQuantAnalysisTool q; private final FundHoldingsQueryTool h;
-        private final FundReportRetrieverTool r; private final FinancialGraphTool g;
-        ComparisonTools(FundQuantAnalysisTool q, FundHoldingsQueryTool h, FundReportRetrieverTool r, FinancialGraphTool g){this.q=q;this.h=h;this.r=r;this.g=g;}
+        private final FundReportRetrieverTool r;
+        ComparisonTools(FundQuantAnalysisTool q, FundHoldingsQueryTool h, FundReportRetrieverTool r){this.q=q;this.h=h;this.r=r;}
         @Tool(name="compare_metrics", description="对称查询两只基金量化指标；单标的时两个代码相同", readOnly=true)
         public String metrics(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+q.getFundMetrics(a,null,null)+"\nB="+q.getFundMetrics(b,null,null);}
         @Tool(name="compare_holdings", description="对称查询两只基金持仓", readOnly=true)
         public String holdings(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+h.getTopHoldings(a,null)+"\nB="+h.getTopHoldings(b,null);}
         @Tool(name="compare_reports", description="对称查询两只基金季报", readOnly=true)
         public String reports(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+r.getLatestQuarterlyReportView(a)+"\nB="+r.getLatestQuarterlyReportView(b);}
+    }
+
+    /** 仅在图谱启用时向模型提供重合持仓查询。 */
+    static final class GraphComparisonTools {
+        private final FinancialGraphTool graph;
+        GraphComparisonTools(FinancialGraphTool graph) { this.graph = graph; }
+
+        /** 查询两只基金在图谱中的共同持仓。 */
         @Tool(name="shared_holdings", description="查询两只基金的重合持仓", readOnly=true)
-        public String shared(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return g==null?"{}":g.getSharedHoldings(a,b);}
+        public String shared(@ToolParam(name="code_a",description="基金A") String a,
+                             @ToolParam(name="code_b",description="基金B") String b) {
+            return graph.getSharedHoldings(a, b);
+        }
     }
 }

@@ -9,6 +9,7 @@ import com.financial.copilot.agent.core.dag.runtime.checkpoint.RedisDagCheckpoin
 import com.financial.copilot.agent.core.dag.runtime.resource.ResourceManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -31,6 +32,7 @@ public class DagRuntimeConfig {
 
     @Bean
     @ConditionalOnMissingBean
+    @ConditionalOnProperty(name = "copilot.redis.enabled", havingValue = "true", matchIfMissing = true)
     public DagCheckpointStore dagCheckpointStore(
             @Autowired(required = false) StringRedisTemplate redisTemplate,
             @Autowired(required = false) ObjectMapper objectMapper

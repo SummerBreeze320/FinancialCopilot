@@ -26,7 +26,7 @@ class NodeEventBusTest {
         // 订阅收集事件
         eventFlux.subscribe(received::add);
 
-        eventBus.publishGraphInitialized("run-sse-1", 1, List.of(
+        eventBus.publishGraphInitialized("run-sse-1", "conversation", 1, List.of(
                 new NodeEventBus.NodeDescriptor("node-1", "初筛", "SCREENING", List.of())
         ));
         eventBus.publishNodeStarted("run-sse-1", "node-1", "初筛", "SCREENING");

@@ -18,6 +18,25 @@ services:
     networks:
       - myservice_network
 
+  neo4j:
+    image: neo4j:5.20-community
+    container_name: docker_neo4j_5
+    environment:
+      NEO4J_AUTH: neo4j/financial_copilot
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_db_memory_heap_max__size: 1G
+      TZ: Asia/Shanghai
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - ./data/neo4j:/data
+      - ./neo4j/import:/var/lib/neo4j/import
+      - ./neo4j/plugins:/var/lib/neo4j/plugins
+    restart: always
+    networks:
+      - myservice_network
+
 networks:
   myservice_network:
     external: true

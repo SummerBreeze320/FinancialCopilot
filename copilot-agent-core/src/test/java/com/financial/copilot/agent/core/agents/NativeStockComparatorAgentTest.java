@@ -64,14 +64,14 @@ class NativeStockComparatorAgentTest {
         AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
                 () -> LlmSettingsDTO.builder().model("scripted").build(), ignored -> model);
         StockComparatorAgent agent = new StockComparatorAgent(factory, tool);
-        GraphRunRequest request = new GraphRunRequest("run", 1L, "session", "比较两只股票", false,
+        GraphRunRequest request = new GraphRunRequest("run", 1L,java.util.UUID.randomUUID(), null,  "session", "比较两只股票", false,
                 null, ignored -> {}, RunMode.SYNC);
         GraphNode node = GraphNode.builder().nodeId("compare").taskType("COMPARISON")
                 .outputType(ArtifactType.GENERAL)
                 .param("targetCodes", List.of("600519.SH", "000858.SZ")).build();
 
         var artifact = agent.execute(node, NodeInput.empty(),
-                new NodeExecutionContext(request, new ArtifactStore(), new CancellationToken("compare")));
+                new NodeExecutionContext(request,"test-node",  new ArtifactStore(), new CancellationToken("compare")));
 
         assertThat(turns).hasValue(2);
         assertThat(artifact.payload()).contains("股票对标");

@@ -8,14 +8,14 @@ import org.springframework.context.ApplicationEvent;
  * refine and persist short‑term memory.
  */
 public class WorkflowFinishedEvent extends ApplicationEvent {
-    private final String sessionId;
+    private final String sessionKey;
 
-    public WorkflowFinishedEvent(Object source, String sessionId) {
+    public WorkflowFinishedEvent(Object source, String sessionKey) {
         super(source);
-        this.sessionId = sessionId;
+        this.sessionKey = sessionKey;
     }
 
-    public String getSessionId() {
-        return sessionId;
+    public String getSessionKey() {
+        return sessionKey;
     }
 }

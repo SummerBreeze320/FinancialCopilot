@@ -32,6 +32,10 @@ class ApplicationStartupTest {
                 .get().uri("/api/v1/research/health").exchange()
                 .expectStatus().isOk().expectBody().jsonPath("$.data.status").isEqualTo("UP");
 
+        assertThat(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_name IN ('research_conversation','conversation_message','agent_tool_audit')",
+                Integer.class)).isEqualTo(3);
+
         String session = "startup-test-" + UUID.randomUUID();
         try {
             shortTerm.addMessage(session, "old".repeat(12000));

@@ -1,5 +1,10 @@
 # FinancialCopilot (金融投研多智能体系统)
 
+Neo4j 可通过 `copilot.neo4j.enabled` 配置或环境变量 `NEO4J_ENABLED` 控制，默认 `true`。
+设为 `false` 后无需启动 Neo4j，不创建图谱驱动、数据适配器和查询工具；规划器将图谱能力标记为不可用，基金对比仍可使用普通持仓查询。
+连接地址与认证继续使用 `spring.neo4j.*`（`NEO4J_URI`、`NEO4J_USER`、`NEO4J_PASSWORD`）。修改开关后需重启应用。
+无 Neo4j 环境运行测试：`mvn -s maven-settings.xml test "-Dcopilot.neo4j.enabled=false"`，此时跳过真实图数据库集成测试。
+
 > **基于 AgentScope Java 2.x + Spring Boot 3.3.x + Lombok + MyBatis-Plus + PostgreSQL 16 (PGVector) 的专业金融智能投研协同平台**
 
 [![Java Version](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
@@ -111,9 +116,11 @@ mvn -s maven-settings.xml test "-Dcopilot.integration=true"
 
 该测试启动随机端口上的完整 Spring Boot 应用，检查健康接口、短期记忆裁剪，以及长期记忆和提纯事实的真实数据库读写；不调用远程模型。测试使用随机会话 ID，结束后只清理该会话的数据。未指定此开关时，外部服务集成测试会跳过。
 
+会话持久化集成测试覆盖真实 PostgreSQL 中的消息序列隔离、Redis 缓存失效后重建、跨用户越权防护，以及 `CONVERSATION_PERSISTENCE_ENABLED=false` 和 `REDIS_ENABLED=false` 四种组合下的行为验证。这些测试同样需要 `-Dcopilot.integration=true` 开启。
+
 数据库连接使用 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USER`、`DB_PASSWORD` 环境变量（默认值见 `application.yml`）。Redis 使用 `REDIS_HOST`、`REDIS_PORT`、`REDIS_PASSWORD`、`REDIS_DATABASE`，默认连接本机 `localhost:6379`、数据库 0；启用了认证的实例需设置 `REDIS_PASSWORD`。应用启动时执行 `db/memory-schema.sql`，幂等创建两张记忆表及索引，已有业务数据保持不变；数据库账号需要建表权限。基础业务表仍由 Docker 的 `initdb/01_init_schema.sql` 初始化。
 
-### 4. 启动后端应用
+### 5. 启动后端应用
 在项目根目录启动 Spring Boot 主应用：
 ```bash
 mvn spring-boot:run -pl copilot-app
@@ -127,11 +134,11 @@ mvn spring-boot:run -pl copilot-app
 ### 1. 统一投研运行入口
 
 - **URL**: `POST /api/v1/research/runs`
-- **请求体**: `{"prompt": "帮我分析张坤的投资能力", "sessionId": "可选", "enableThinking": false}`
-- **同步响应**: 请求头 `Accept: application/json`，返回包含 `runId`、报告、Graph 版本、节点数和 token 统计的结构化结果
+- **请求体**: `{"prompt": "帮我分析张坤的投资能力", "conversationId": "可选UUID", "enableThinking": false}`
+- **同步响应**: 请求头 `Accept: application/json`，返回包含 `runId`、`conversationId`、报告、Graph 版本、节点数和 token 统计的结构化结果
 - **流式响应**: 请求头 `Accept: text/event-stream`，返回动态执行图事件流
 - **事件类型**:
-  - `graph_initialized`: 返回初始图、真实版本号和节点依赖
+  - `graph_initialized`: 返回初始图、真实版本号、节点依赖和 `conversationId`
   - `node_ready` / `node_started` / `node_completed`: 节点生命周期
   - `graph_updated`: 动态图补丁及新版本号
   - `content_chunk`: 最终研报增量文本
@@ -143,8 +150,17 @@ mvn spring-boot:run -pl copilot-app
 - `GET /api/v1/research/runs/{runId}`：查询当前用户拥有的检查点和节点状态
 - `POST /api/v1/research/runs/{runId}/cancel`：取消当前用户正在执行的运行
 - `POST /api/v1/research/runs/{runId}/resume`：从当前用户的持久化检查点恢复
+- `GET /api/v1/research/runs/{runId}/tool-audits`：查询某次运行的工具调用审计记录
 
-### 3. 平台健康检查与能力清单
+### 3. 会话历史与审计接口
+
+- `GET /api/v1/conversations?cursor=&limit=`：分页列出当前用户的会话，按最后消息时间倒序
+- `GET /api/v1/conversations/{conversationId}/messages?beforeSequence=&limit=`：分页列出会话消息
+- `POST /api/v1/conversations/{conversationId}/archive`：归档会话
+
+所有会话接口仅允许访问当前登录用户拥有的资源，缺失或他人的 `conversationId` 均返回 404，无法区分。当 `CONVERSATION_PERSISTENCE_ENABLED=false` 时，会话、消息和审计查询返回 HTTP 503 (`CONVERSATION_PERSISTENCE_DISABLED`)，但投研运行不受影响。
+
+### 4. 平台健康检查与能力清单
 - **URL**: `GET /api/v1/research/health`
 - **响应示例**:
 ```json
@@ -197,6 +213,21 @@ mvn spring-boot:run -pl copilot-app
 ## 用户隔离、计费与支付宝接入
 
 投研、钱包、订单和会话记忆接口使用登录 JWT 中的用户 ID。兼容的 `userId` 参数只能等于当前用户，否则返回 403；会话按用户隔离，同名会话不会共享记忆。旧的未归属用户会话不会自动迁移。
+
+### 会话持久化与存储分层
+
+PostgreSQL 是会话、消息和工具审计的唯一真实数据源。每次投研运行在 Graph 规划前持久化一条 USER 和一条 RUNNING ASSISTANT 消息；运行结束后更新为 COMPLETED、FAILED 或 CANCELLED。短期记忆（Redis）作为 30 分钟 TTL 缓存投影，缓存未命中时从 PostgreSQL 重建。DAG 检查点保留 24 小时恢复窗口。
+
+工具审计在 AgentScope ReAct 执行时自动持久化，参数经脱敏处理（移除 `apiKey`、`Authorization` 等敏感键，截断大结果并记录 SHA-256），不存储系统提示、推理内容和完整大结果。
+
+### 可选存储后端
+
+| 配置 | 默认 | 说明 |
+| --- | --- | --- |
+| `CONVERSATION_PERSISTENCE_ENABLED` | `true` | 设为 `false` 后跳过会话表读写，但短期记忆、长期记忆和检查点仍正常工作。会话历史查询返回 503。 |
+| `REDIS_ENABLED` | `true` | 设为 `false` 后使用进程内有界存储替代 Redis（短期记忆、长期记忆缓存和 DAG 检查点），上限 1000 键、30 分钟 TTL。需要设置 `spring.data.redis.host=unreachable.invalid` 防止连接超时。 |
+
+两个开关可独立组合，共支持四种模式：都启用（默认）、仅禁用会话持久化、仅禁用 Redis、都禁用。禁用 Redis 后进程重启会丢失短期记忆和检查点，但不影响 PostgreSQL 中的持久化数据。
 
 计费取模型响应的实际 `usage` 和模型名称，覆盖规划、基金对比与报告合成。Mock 不收费；真实调用缺失 usage、缺少有效模型定价或数据库不可用时会报错。扣款与用量流水在同一数据库事务内，余额不足不会写成功流水。后台记忆提纯属于系统成本。流式报告开始后，客户端断连仍会完成该次模型调用并按最终用量结算，不再开始后续步骤。
 

@@ -30,7 +30,7 @@ class DagCheckpointRoundTripTest {
         ExecutionGraph graph = new ExecutionGraph("serialized");
         graph.addNode(GraphNode.builder().nodeId("A").outputType(ArtifactType.GENERAL).build());
         Artifact<?> artifact = Artifact.of("art-A", ArtifactType.GENERAL, "A", Map.of("value", 42));
-        DagCheckpoint checkpoint = new DagCheckpoint("run", 7L, "session", "original prompt", true, null,
+        DagCheckpoint checkpoint = new DagCheckpoint("run", 7L,java.util.UUID.randomUUID(), null,  "session", "original prompt", true, null,
                 ExecutionGraphSnapshot.from(graph),
                 Map.of("A", NodeStatus.SUCCEEDED), Map.of("A", artifact), java.time.Instant.now());
         ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
@@ -67,7 +67,7 @@ class DagCheckpointRoundTripTest {
             resumedExecutions.incrementAndGet();
             assertThat(context.artifacts().get("A").payload()).isEqualTo(Map.of("value", 42));
             assertThat(context.request().prompt()).isEqualTo("prompt");
-            assertThat(context.request().sessionId()).isEqualTo("session");
+            assertThat(context.request().sessionKey()).isEqualTo("session");
             return Artifact.of("art-B", ArtifactType.GENERAL, "B", "done");
         });
         GraphRunHandle resumed = second.resume(7L, "owned-run", ignored -> {});
@@ -87,6 +87,6 @@ class DagCheckpointRoundTripTest {
     }
 
     private GraphRunRequest request(Long userId, String runId) {
-        return new GraphRunRequest(runId, userId, "session", "prompt", false, null, ignored -> {}, RunMode.SYNC);
+        return new GraphRunRequest(runId, userId,java.util.UUID.randomUUID(), null,  "session", "prompt", false, null, ignored -> {}, RunMode.SYNC);
     }
 }

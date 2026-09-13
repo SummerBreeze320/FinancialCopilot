@@ -6,6 +6,7 @@ import com.financial.copilot.domain.graph.entity.ManagerGraphNode;
 import com.financial.copilot.domain.graph.entity.StockGraphNode;
 import com.financial.copilot.domain.graph.port.FinancialGraphPort;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Repository;
 
@@ -21,6 +22,7 @@ import java.util.Map;
  */
 @Slf4j
 @Repository
+@ConditionalOnProperty(prefix = "copilot.neo4j", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class Neo4jFinancialGraphAdapter implements FinancialGraphPort {
 
     private final Neo4jClient neo4jClient;

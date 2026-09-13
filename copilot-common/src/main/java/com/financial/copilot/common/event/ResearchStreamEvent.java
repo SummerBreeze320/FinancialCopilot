@@ -29,6 +29,7 @@ public class ResearchStreamEvent {
     private String chunk;
 
     private String runId;
+    private String conversationId;
     private String nodeId;
     private String nodeName;
     private String status;
@@ -40,9 +41,9 @@ public class ResearchStreamEvent {
     private Object payload;
     private Object patch;
 
-    public static ResearchStreamEvent graphInitialized(String runId, int revision, Object nodes) {
+    public static ResearchStreamEvent graphInitialized(String runId, String conversationId, int revision, Object nodes) {
         return ResearchStreamEvent.builder()
-                .type("graph_initialized")
+                .type("graph_initialized").conversationId(conversationId)
                 .runId(runId)
                 .revision(revision)
                 .nodes(nodes)

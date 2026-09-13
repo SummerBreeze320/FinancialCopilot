@@ -12,7 +12,7 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:db/memory-schema.sql,classpath:db/billing-schema.sql
+      schema-locations: classpath:db/memory-schema.sql,classpath:db/billing-schema.sql,classpath:db/conversation-schema.sql
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -27,12 +27,19 @@ spring:
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.financial.copilot.data.*.po
+  type-handlers-package: com.financial.copilot.data.config
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
 # 金融智能投研核心配置 (copilot)
 copilot:
+  neo4j:
+    enabled: ${NEO4J_ENABLED:true}
+  redis:
+    enabled: ${REDIS_ENABLED:true}
+  conversation:
+    persistence-enabled: ${CONVERSATION_PERSISTENCE_ENABLED:true}
   alipay:
     enabled: ${ALIPAY_ENABLED:false}
     sandbox: ${ALIPAY_SANDBOX:true}

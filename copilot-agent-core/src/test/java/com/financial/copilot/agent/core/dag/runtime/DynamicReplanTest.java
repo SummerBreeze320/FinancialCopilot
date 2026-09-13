@@ -56,7 +56,7 @@ class DynamicReplanTest {
                 new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate(),
                 (current, nodeId, artifact, status) -> "root".equals(nodeId), advisor);
 
-        GraphRunHandle handle = runtime.run(new GraphRunRequest("skip-ready-run", 1L, "session", "prompt",
+        GraphRunHandle handle = runtime.run(new GraphRunRequest("skip-ready-run", 1L,java.util.UUID.randomUUID(), null,  "session", "prompt",
                 false, null, ignored -> {}, RunMode.SYNC), graph);
         Thread.sleep(300);
         releaseBlocker.countDown();
@@ -85,7 +85,7 @@ class DynamicReplanTest {
         }, ResourceManager.defaultManager(), checkpoints, new DefaultNodeQualityGate(),
                 (current, nodeId, artifact, status) -> "root".equals(nodeId), advisor);
 
-        GraphRunHandle handle = runtime.run(new GraphRunRequest("patch-checkpoint-run", 1L, "session", "prompt",
+        GraphRunHandle handle = runtime.run(new GraphRunRequest("patch-checkpoint-run", 1L,java.util.UUID.randomUUID(), null,  "session", "prompt",
                 false, null, ignored -> {}, RunMode.SYNC), graph);
         try {
             assertThat(addedStarted.await(1, TimeUnit.SECONDS)).isTrue();
@@ -123,7 +123,7 @@ class DynamicReplanTest {
                 ResourceManager.defaultManager(), new InMemoryDagCheckpointStore(),
                 new DefaultNodeQualityGate(), (g, n, a, s) -> "root".equals(n), advisor);
 
-        GraphRunRequest request = new GraphRunRequest("patch-run", 1L, "session", "prompt", false,
+        GraphRunRequest request = new GraphRunRequest("patch-run", 1L,java.util.UUID.randomUUID(), null,  "session", "prompt", false,
                 null, ignored -> {}, RunMode.SYNC);
         GraphRunResult result = runtime.run(request, graph).completion().get(2, TimeUnit.SECONDS);
 
@@ -376,7 +376,7 @@ class DynamicReplanTest {
     }
 
     private GraphRunRequest request(String runId) {
-        return new GraphRunRequest(runId, 1L, "test-session", "test prompt", false,
+        return new GraphRunRequest(runId, 1L,java.util.UUID.randomUUID(), null,  "test-session", "test prompt", false,
                 null, ignored -> {}, RunMode.SYNC);
     }
 }
