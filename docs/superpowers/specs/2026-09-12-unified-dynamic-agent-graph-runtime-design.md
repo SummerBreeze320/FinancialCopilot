@@ -321,3 +321,9 @@ Agent 中仅供旧入口使用的 `executeStep`、字符串黑板读写和旧式
 6. 增加 Run 查询、取消和恢复入口。
 7. 删除旧执行模型和兼容代码。
 8. 运行单元、并发、恢复、控制器和真实 PostgreSQL/Redis 集成验证。
+
+## 18. 对话持久化
+
+统一 Graph 入口需要把用户可见对话与运行恢复状态分开管理。PostgreSQL 保存对话、消息和 AgentScope 工具审计，Redis 短期记忆只作为可重建缓存，DAG Checkpoint 继续只承担 24 小时内的运行恢复。每次运行在 Graph 启动前持久化用户消息和 RUNNING 助手消息，并在成功、失败或取消时进入明确终态。
+
+完整的数据模型、生命周期、用户隔离、幂等策略、API 和验收标准见 [对话持久化设计](./2026-09-13-conversation-persistence-design.md)。
