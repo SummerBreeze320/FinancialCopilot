@@ -47,6 +47,10 @@ public class PriorityReadyQueue {
         return queue.remove(node);
     }
 
+    public boolean remove(String nodeId) {
+        return nodeId != null && queue.removeIf(node -> nodeId.equals(node.getNodeId()));
+    }
+
     public void clear() {
         queue.clear();
     }

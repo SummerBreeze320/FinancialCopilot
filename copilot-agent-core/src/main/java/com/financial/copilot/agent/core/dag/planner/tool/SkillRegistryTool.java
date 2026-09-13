@@ -2,6 +2,7 @@ package com.financial.copilot.agent.core.dag.planner.tool;
 
 import com.financial.copilot.agent.core.skill.SkillDefinition;
 import com.financial.copilot.agent.core.skill.SkillRegistry;
+import com.financial.copilot.agent.core.agents.AgentRoleCatalog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -33,9 +34,7 @@ public class SkillRegistryTool {
             new SkillDescriptor("fund-screener", "SCREENING", "公募基金多维量化筛选能力", List.of("screening_criteria"), "FUND_POOL"),
             new SkillDescriptor("fund-analyzer", "BATCH_ANALYSIS", "基金及基金经理能力圈体检打分能力", List.of("fund_codes"), "FUND_RESEARCH"),
             new SkillDescriptor("fund-comparator", "COMPARISON", "决赛圈标的深度定量与定性季报对标能力", List.of("top_candidates"), "COMPARISON_REPORT"),
-            new SkillDescriptor("report-synthesizer", "SYNTHESIS", "专业投研研报长文本终审合成能力", List.of("facts"), "FINAL_REPORT"),
-            new SkillDescriptor("macro-analyzer", "MACRO", "宏观流动性与大类资产轮动定调能力", List.of("macro_indicators"), "MACRO_FACTS"),
-            new SkillDescriptor("asset-allocation", "ALLOCATION", "大类资产配置比例与股债平衡测算能力", List.of("user_profile"), "ALLOCATION_PLAN")
+            new SkillDescriptor("report-synthesizer", "SYNTHESIS", "专业投研研报长文本终审合成能力", List.of("facts"), "FINAL_REPORT")
     );
 
     public SkillRegistryTool() {
@@ -53,9 +52,10 @@ public class SkillRegistryTool {
         }
         List<SkillDescriptor> result = new ArrayList<>(BUILTIN_SKILLS);
         for (SkillDefinition sd : skillRegistry.getAllSkills()) {
+            String taskType = (sd.getTaskTypes() != null && !sd.getTaskTypes().isEmpty()) ? sd.getTaskTypes().get(0) : "GENERAL";
+            if (!AgentRoleCatalog.supports(taskType)) continue;
             boolean exists = result.stream().anyMatch(s -> s.skillName().equalsIgnoreCase(sd.getName()));
             if (!exists) {
-                String taskType = (sd.getTaskTypes() != null && !sd.getTaskTypes().isEmpty()) ? sd.getTaskTypes().get(0) : "GENERAL";
                 result.add(new SkillDescriptor(
                         sd.getName(),
                         taskType,

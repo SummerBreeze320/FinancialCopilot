@@ -124,9 +124,12 @@ mvn spring-boot:run -pl copilot-app
 
 ## 📡 API 端点概览
 
-### 1. 动态执行图 SSE 流式接口（推荐）
-- **URL**: `GET /api/v1/research/chat/pipeline/stream?prompt={prompt}`
-- **响应格式**: `text/event-stream`
+### 1. 统一投研运行入口
+
+- **URL**: `POST /api/v1/research/runs`
+- **请求体**: `{"prompt": "帮我分析张坤的投资能力", "sessionId": "可选", "enableThinking": false}`
+- **同步响应**: 请求头 `Accept: application/json`，返回包含 `runId`、报告、Graph 版本、节点数和 token 统计的结构化结果
+- **流式响应**: 请求头 `Accept: text/event-stream`，返回动态执行图事件流
 - **事件类型**:
   - `graph_initialized`: 返回初始图、真实版本号和节点依赖
   - `node_ready` / `node_started` / `node_completed`: 节点生命周期
@@ -135,18 +138,13 @@ mvn spring-boot:run -pl copilot-app
   - `node_failed` / `run_failed` / `run_cancelled`: 失败和取消状态
   - `run_completed`: 本次运行完成及耗时
 
-### 2. 同步投研研报生成接口
-- **URL**: `POST /api/v1/research/chat`
-- **请求体**: `{"prompt": "帮我分析张坤的投资能力"}`
-- **响应**: `ApiResult<String>` 包含完整结构化 Markdown 报告
-
-### 3. 运行控制接口
+### 2. 运行控制接口
 
 - `GET /api/v1/research/runs/{runId}`：查询当前用户拥有的检查点和节点状态
 - `POST /api/v1/research/runs/{runId}/cancel`：取消当前用户正在执行的运行
 - `POST /api/v1/research/runs/{runId}/resume`：从当前用户的持久化检查点恢复
 
-### 4. 平台健康检查与能力清单
+### 3. 平台健康检查与能力清单
 - **URL**: `GET /api/v1/research/health`
 - **响应示例**:
 ```json

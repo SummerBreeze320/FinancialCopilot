@@ -1,9 +1,7 @@
 package com.financial.copilot.agent.core.dag.runtime;
 
 import com.financial.copilot.agent.core.dag.artifact.Artifact;
-import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
-import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
 
 /**
  * <h1>DAG 节点执行器适配接口</h1>
@@ -16,15 +14,10 @@ public interface NodeExecutor {
      * 执行指定图节点并生成强类型产物
      *
      * @param node              当前执行节点
-     * @param artifactStore     全局产物总线 (获取上游输入)
-     * @param cancellationToken 作用域取消令牌
+     * @param input             根据节点 InputBinding 解析出的精确输入
+     * @param context           当前运行与节点执行上下文
      * @return 节点产物实体
      * @throws Exception 执行异常
      */
-    Artifact<?> execute(GraphNode node, ArtifactStore artifactStore, CancellationToken cancellationToken) throws Exception;
-
-    /** New explicit-input contract used by the unified graph runtime. */
-    default Artifact<?> execute(GraphNode node, NodeInput input, NodeExecutionContext context) throws Exception {
-        return execute(node, context.artifacts(), context.cancellationToken());
-    }
+    Artifact<?> execute(GraphNode node, NodeInput input, NodeExecutionContext context) throws Exception;
 }

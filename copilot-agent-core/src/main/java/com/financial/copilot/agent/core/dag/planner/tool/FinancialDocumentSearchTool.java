@@ -3,10 +3,13 @@ package com.financial.copilot.agent.core.dag.planner.tool;
 import org.springframework.stereotype.Component;
 import java.util.List;
 
-/** Planning-time document capability adapter; actual node execution performs full retrieval. */
+/** Reports document-search availability without presenting placeholder text as evidence. */
 @Component
 public class FinancialDocumentSearchTool {
-    public List<String> search(String query) {
-        return List.of("document-search capability available for: " + (query == null ? "" : query));
+    public DocumentSearchResult search(String query) {
+        return new DocumentSearchResult(false, List.of(),
+                "No general financial-document data source is configured");
     }
+
+    public record DocumentSearchResult(boolean available, List<String> documents, String message) {}
 }

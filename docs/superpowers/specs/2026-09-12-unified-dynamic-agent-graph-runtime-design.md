@@ -4,7 +4,7 @@
 
 将投研系统的同步、SSE、恢复和人工控制统一到一套动态 Graph Runtime。生产链路不再经过 `TaskDecomposer`、`ExecutionPlan`、`SubTask`、`LegacyPlanAdapter`、`ResearchBlackboard` 或串行 `for step` 执行器。
 
-外部 HTTP 路径和主要响应字段保持兼容；内部执行模型完成硬切换。系统使用 Java 21 虚拟线程、依赖满足即调度的 DAG、强类型 Artifact、有限轮次 ReAct Planner/Agent、动态 GraphPatch、资源限流、节点超时和可恢复 Checkpoint。
+外部 HTTP 执行入口与内部执行模型一并硬切换。系统使用 Java 21 虚拟线程、依赖满足即调度的 DAG、强类型 Artifact、有限轮次 AgentScope ReAct Planner/Agent、动态 GraphPatch、资源限流、节点超时和可恢复 Checkpoint。
 
 ## 2. 范围
 
@@ -56,13 +56,9 @@ GraphRunHandle run(GraphRunRequest request);
 
 同步接口等待 `completion()` 并返回最终报告；SSE 接口直接返回 `events()`。两者使用相同 Planner、Graph、节点执行器、ArtifactStore 和计费回调。
 
-旧接口路径继续保留：
-
-- `POST /api/v1/research/chat`
-- `POST /api/v1/research/workflow/execute`
-- 当前 Pipeline SSE 路径
-
-旧响应中的 `sessionId`、`report`、`model`、token 统计和执行时间继续提供。旧的 `PLAN`、`STEP_START`、`STEP_COMPLETE` 事件不再作为执行事实来源；兼容期可以由节点事件映射生成，但内部不维护 step 计数执行器。
+HTTP 统一使用 `POST /api/v1/research/runs`，通过 `Accept: application/json` 或
+`Accept: text/event-stream` 选择同步结构化结果或 SSE。旧的 `/chat`、`/workflow/execute` 和
+`/chat/pipeline/stream` 执行入口已删除；用户身份只从认证上下文获取。
 
 ## 4. Graph Planner
 
@@ -83,7 +79,7 @@ Planner 使用最多 4 轮的有限 ReAct：
 - `FinancialDocumentSearchTool`
 - `MarketMemoryTool`
 
-Planner 输出结构化 `GraphPlan`，再由确定性校验器构造成 `ExecutionGraph`。校验失败、模型不可用或达到最大轮次时，使用规则型 `DeterministicGraphPlanner`，但仍直接输出 `ExecutionGraph`。
+Planner 输出结构化 `GraphPlan`，再由确定性校验器构造成 `ExecutionGraph`。校验器拒绝环、无显式输入绑定的非根节点，以及没有实际 AgentScope 角色的 taskType。模型不可用、输出无效或达到最大轮次时本次规划失败，不使用自制规则 Planner 兜底。
 
 Planner 只描述 WHAT、WHY、依赖、输入和输出契约，不指定 Agent 内部的原子工具调用顺序。
 

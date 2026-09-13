@@ -2,6 +2,7 @@ package com.financial.copilot.agent.core.dag.planner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.core.agentscope.AgentScopeAgentFactory;
+import com.financial.copilot.agent.core.agents.AgentRoleCatalog;
 import com.financial.copilot.agent.core.dag.artifact.Artifact;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraphSnapshot;
@@ -52,6 +53,14 @@ public class GraphPlannerAgent implements RePlanAdvisor {
             GraphPlan plan=mapper.readValue(stripFence(run.reply().getTextContent()),GraphPlan.class);
             ExecutionGraph graph=plan.restore();
             if(graph.getNodes().isEmpty()||graph.hasCycle())throw new IllegalStateException("Planner produced an invalid graph");
+            graph.getNodes().values().forEach(node -> {
+                if (!AgentRoleCatalog.supports(node.getTaskType())) {
+                    throw new IllegalArgumentException("No AgentScope role for task type: " + node.getTaskType());
+                }
+                if (!graph.getUpstream(node.getNodeId()).isEmpty() && node.getInputBindings().isEmpty()) {
+                    throw new IllegalArgumentException("Non-root node requires explicit inputBindings: " + node.getNodeId());
+                }
+            });
             return graph;
         } catch(Exception e){throw new IllegalStateException("GraphPlannerAgent returned invalid GraphPlan",e);}
     }
@@ -65,7 +74,20 @@ public class GraphPlannerAgent implements RePlanAdvisor {
             var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("GraphPlannerAgent","动态图重规划",PATCH_PROMPT,toolkit,5),prompt,context(request));
             String reply=stripFence(run.reply().getTextContent());
             if("NO_PATCH".equalsIgnoreCase(reply))return null;
-            return mapper.readValue(reply,GraphPatch.class);
+            GraphPatch patch = mapper.readValue(reply,GraphPatch.class);
+            patch.operations().forEach(operation -> {
+                if (operation.op() == com.financial.copilot.agent.core.dag.model.patch.PatchOp.ADD_NODE
+                        && (operation.node() == null || !AgentRoleCatalog.supports(operation.node().getTaskType()))) {
+                    String taskType = operation.node() == null ? null : operation.node().getTaskType();
+                    throw new IllegalArgumentException("No AgentScope role for task type: " + taskType);
+                }
+                if (operation.op() == com.financial.copilot.agent.core.dag.model.patch.PatchOp.UPDATE_NODE
+                        && operation.params() != null && operation.params().containsKey("taskType")
+                        && !AgentRoleCatalog.supports(String.valueOf(operation.params().get("taskType")))) {
+                    throw new IllegalArgumentException("No AgentScope role for task type: " + operation.params().get("taskType"));
+                }
+            });
+            return patch;
         }catch(Exception e){throw new IllegalStateException("GraphPlannerAgent returned invalid GraphPatch",e);}
     }
 

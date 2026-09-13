@@ -43,12 +43,13 @@ class ResearchAgentControllerTest {
     }
 
     @Test
-    void syncUsesAuthenticatedOwnedRunEntry() {
-        ResearchAgentController.ChatRequest request = new ResearchAgentController.ChatRequest();
+    void jsonRunUsesAuthenticatedOwnedRunEntry() {
+        ResearchAgentController.ResearchRunRequest request = new ResearchAgentController.ResearchRunRequest();
         request.setPrompt("分析基金"); request.setSessionId("client");
-        var response = controller.syncChat(request)
+        var response = controller.run(request)
                 .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth)).block();
-        assertThat(response.getData()).isEqualTo("# report");
+        assertThat(response.getData().getReport()).isEqualTo("# report");
+        assertThat(response.getData().getRunId()).isEqualTo("run");
         ArgumentCaptor<GraphRunRequest> captor = ArgumentCaptor.forClass(GraphRunRequest.class);
         verify(workflow).run(captor.capture());
         assertThat(captor.getValue().userId()).isEqualTo(7L);
@@ -57,8 +58,10 @@ class ResearchAgentControllerTest {
     }
 
     @Test
-    void streamUsesSameRunEntry() {
-        var events = controller.streamPipelineChat("分析基金", "client", false, null)
+    void sseRunUsesSameRunEntry() {
+        ResearchAgentController.ResearchRunRequest request = new ResearchAgentController.ResearchRunRequest();
+        request.setPrompt("分析基金"); request.setSessionId("client");
+        var events = controller.streamRun(request)
                 .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth)).collectList().block();
         assertThat(events).hasSize(1);
         ArgumentCaptor<GraphRunRequest> captor = ArgumentCaptor.forClass(GraphRunRequest.class);

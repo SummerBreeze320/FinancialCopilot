@@ -13,7 +13,6 @@ import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.model.NodeStatus;
 import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpoint;
 import com.financial.copilot.agent.core.dag.runtime.checkpoint.InMemoryDagCheckpointStore;
-import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
 import com.financial.copilot.agent.core.dag.runtime.resource.NodePriority;
 import com.financial.copilot.agent.core.dag.runtime.resource.ResourceManager;
 import com.financial.copilot.agent.core.dag.runtime.resource.ResourceRequirement;
@@ -62,7 +61,6 @@ class DagRuntimeTest {
         graph.addEdge("A", "C");
         graph.addEdge("C", "D"); // D 仅依赖 C，与 B 并发独立！
 
-        ArtifactStore store = new ArtifactStore();
         ResourceManager rm = ResourceManager.defaultManager();
         List<String> executionOrder = new CopyOnWriteArrayList<>();
 
@@ -77,9 +75,8 @@ class DagRuntimeTest {
             return Artifact.of("art_" + node.getNodeId(), ArtifactType.GENERAL, node.getNodeId(), "ok", ArtifactMetadata.standard("TEST"));
         };
 
-        DagRuntime runtime = new DagRuntime(executor, store, rm, new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate());
-        CompletableFuture<Void> future = runtime.executeGraph(graph, new CancellationToken("run-1"), event -> {});
-        future.get(3, TimeUnit.SECONDS);
+        DagRuntime runtime = new DagRuntime(executor, rm, new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate());
+        runtime.run(request("run-1"), graph).completion().get(3, TimeUnit.SECONDS);
 
         // 验证 D_START 必定在 C_DONE 之后，且在 B_DONE 之前执行！
         int cDoneIndex = executionOrder.indexOf("C_DONE");
@@ -106,7 +103,6 @@ class DagRuntimeTest {
         graph.addEdge("ROOT", "B");
         graph.addEdge("ROOT", "C");
 
-        ArtifactStore store = new ArtifactStore();
         ResourceManager rm = new ResourceManager(Map.of(ResourceType.LLM, 1));
         List<String> startOrder = new CopyOnWriteArrayList<>();
 
@@ -116,9 +112,8 @@ class DagRuntimeTest {
             return Artifact.of("art_" + node.getNodeId(), ArtifactType.GENERAL, node.getNodeId(), "ok", ArtifactMetadata.standard("TEST"));
         };
 
-        DagRuntime runtime = new DagRuntime(executor, store, rm, new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate());
-        CompletableFuture<Void> future = runtime.executeGraph(graph, new CancellationToken("run-priority"), event -> {});
-        future.get(3, TimeUnit.SECONDS);
+        DagRuntime runtime = new DagRuntime(executor, rm, new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate());
+        runtime.run(request("run-priority"), graph).completion().get(3, TimeUnit.SECONDS);
 
         // 验证 C 比 B 先启动（HIGH 优先级抢占）
         int bIdx = startOrder.indexOf("B");
@@ -136,9 +131,7 @@ class DagRuntimeTest {
         graph.addNode(nodeB);
         graph.addEdge("A", "B");
 
-        ArtifactStore store = new ArtifactStore();
         ResourceManager rm = new ResourceManager(Map.of(ResourceType.LLM, 1));
-        CancellationToken runToken = new CancellationToken("run-cancel");
 
         AtomicBoolean threadInterrupted = new AtomicBoolean(false);
         CountDownLatch nodeAStarted = new CountDownLatch(1);
@@ -158,15 +151,15 @@ class DagRuntimeTest {
             return Artifact.of("art_" + node.getNodeId(), ArtifactType.GENERAL, node.getNodeId(), "ok", ArtifactMetadata.standard("TEST"));
         };
 
-        DagRuntime runtime = new DagRuntime(executor, store, rm, new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate());
-        CompletableFuture<Void> future = runtime.executeGraph(graph, runToken, event -> {});
+        DagRuntime runtime = new DagRuntime(executor, rm, new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate());
+        GraphRunHandle handle = runtime.run(request("run-cancel"), graph);
 
         // 等待 A 运行并持有信号量
         nodeAStarted.await(1, TimeUnit.SECONDS);
         // 主动触发全局取消
-        runToken.cancel("User aborted request");
+        handle.cancel("User aborted request");
 
-        assertThatThrownBy(() -> future.get(2, TimeUnit.SECONDS))
+        assertThatThrownBy(() -> handle.completion().get(2, TimeUnit.SECONDS))
                 .isInstanceOf(CancellationException.class);
 
         // 等待虚拟线程完成中断处理
@@ -188,30 +181,26 @@ class DagRuntimeTest {
         // 1. FAIL_FAST 抛异常中断全局
         ExecutionGraph failFastGraph = new ExecutionGraph("failfast-graph");
         failFastGraph.addNode(createNode("N1", "N1", FailurePolicy.FAIL_FAST, NodePriority.NORMAL, null));
-        ArtifactStore store1 = new ArtifactStore();
         DagRuntime runtime1 = new DagRuntime(
                 (node, s, t) -> { throw new RuntimeException("Crash"); },
-                store1,
                 ResourceManager.defaultManager(),
                 new InMemoryDagCheckpointStore(),
                 new DefaultNodeQualityGate()
         );
-        assertThatThrownBy(() -> runtime1.executeGraph(failFastGraph, new CancellationToken("r1"), e -> {}).get(2, TimeUnit.SECONDS))
+        assertThatThrownBy(() -> runtime1.run(request("r1"), failFastGraph).completion().get(2, TimeUnit.SECONDS))
                 .isInstanceOf(ExecutionException.class);
 
         // 2. CONTINUE 降级放行，产物标记 partial=true
         ExecutionGraph continueGraph = new ExecutionGraph("continue-graph");
         continueGraph.addNode(createNode("C1", "C1", FailurePolicy.CONTINUE, NodePriority.NORMAL, null));
-        ArtifactStore store2 = new ArtifactStore();
         DagRuntime runtime2 = new DagRuntime(
                 (node, s, t) -> { throw new RuntimeException("Minor Error"); },
-                store2,
                 ResourceManager.defaultManager(),
                 new InMemoryDagCheckpointStore(),
                 new DefaultNodeQualityGate()
         );
-        runtime2.executeGraph(continueGraph, new CancellationToken("r2"), e -> {}).get(2, TimeUnit.SECONDS);
-        Artifact<?> art = store2.get("C1");
+        GraphRunResult continueResult = runtime2.run(request("r2"), continueGraph).completion().get(2, TimeUnit.SECONDS);
+        Artifact<?> art = continueResult.artifacts().get("C1");
         assertThat(art).isNotNull();
         assertThat(art.metadata().partial()).isTrue();
 
@@ -220,19 +209,17 @@ class DagRuntimeTest {
         optGraph.addNode(createNode("OPT", "OPT", FailurePolicy.OPTIONAL, NodePriority.NORMAL, null));
         optGraph.addNode(createNode("DOWN", "DOWN", FailurePolicy.CONTINUE, NodePriority.NORMAL, null));
         optGraph.addEdge("OPT", "DOWN");
-        ArtifactStore store3 = new ArtifactStore();
         DagRuntime runtime3 = new DagRuntime(
                 (node, s, t) -> {
                     if ("OPT".equals(node.getNodeId())) throw new RuntimeException("Optional Branch Failed");
                     return Artifact.of("art_DOWN", ArtifactType.GENERAL, "DOWN", "ok", ArtifactMetadata.standard("TEST"));
                 },
-                store3,
                 ResourceManager.defaultManager(),
                 new InMemoryDagCheckpointStore(),
                 new DefaultNodeQualityGate()
         );
-        runtime3.executeGraph(optGraph, new CancellationToken("r3"), e -> {}).get(2, TimeUnit.SECONDS);
-        assertThat(store3.get("DOWN")).isNotNull();
+        GraphRunResult optionalResult = runtime3.run(request("r3"), optGraph).completion().get(2, TimeUnit.SECONDS);
+        assertThat(optionalResult.artifacts().get("DOWN")).isNotNull();
     }
 
     @Test
@@ -246,7 +233,6 @@ class DagRuntimeTest {
         graph.addEdge("B", "C");
 
         InMemoryDagCheckpointStore checkpointStore = new InMemoryDagCheckpointStore();
-        ArtifactStore store = new ArtifactStore();
         ResourceManager rm = ResourceManager.defaultManager();
         Set<String> executedNodes = ConcurrentHashMap.newKeySet();
 
@@ -260,16 +246,16 @@ class DagRuntimeTest {
             return Artifact.of("art_" + node.getNodeId(), ArtifactType.GENERAL, node.getNodeId(), "data_" + node.getNodeId(), ArtifactMetadata.standard("TEST"));
         };
 
-        DagRuntime runtime = new DagRuntime(executor, store, rm, checkpointStore, new DefaultNodeQualityGate());
+        DagRuntime runtime = new DagRuntime(executor, rm, checkpointStore, new DefaultNodeQualityGate());
         String runId = "resume-run-1";
 
         // 第一轮执行：在 C 崩溃
-        assertThatThrownBy(() -> runtime.executeGraph(runId, graph, new CancellationToken("t1"), e -> {}).get(2, TimeUnit.SECONDS))
+        assertThatThrownBy(() -> runtime.run(request(runId), graph).completion().get(2, TimeUnit.SECONDS))
                 .isInstanceOf(ExecutionException.class);
 
         assertThat(executedNodes).contains("A", "B", "C");
-        assertThat(checkpointStore.loadCheckpoint(runId)).isPresent();
-        DagCheckpoint cp = checkpointStore.loadCheckpoint(runId).get();
+        assertThat(checkpointStore.load(1L, runId)).isPresent();
+        DagCheckpoint cp = checkpointStore.load(1L, runId).get();
         assertThat(cp.isNodeCompleted("A")).isTrue();
         assertThat(cp.isNodeCompleted("B")).isTrue();
         assertThat(cp.isNodeCompleted("C")).isFalse();
@@ -279,11 +265,16 @@ class DagRuntimeTest {
         failAtC.set(false); // 恢复正常
 
         // 执行断点续跑 resume
-        runtime.resume(runId, graph, new CancellationToken("t2"), e -> {}).get(2, TimeUnit.SECONDS);
+        GraphRunResult resumed = runtime.resume(1L, runId, ignored -> {}).completion().get(2, TimeUnit.SECONDS);
 
         // 验证 A 和 B 没有再次执行，只有 C 被执行了！
         assertThat(executedNodes).doesNotContain("A", "B");
         assertThat(executedNodes).contains("C");
-        assertThat(store.get("C")).isNotNull();
+        assertThat(resumed.artifacts().get("C")).isNotNull();
+    }
+
+    private GraphRunRequest request(String runId) {
+        return new GraphRunRequest(runId, 1L, "test-session", "test prompt", false,
+                null, ignored -> {}, RunMode.SYNC);
     }
 }

@@ -15,7 +15,6 @@ import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
 import com.financial.copilot.agent.core.dag.planner.tool.MetricRAGTool;
 import com.financial.copilot.agent.core.dag.planner.tool.SkillRegistryTool;
 import com.financial.copilot.agent.core.dag.runtime.checkpoint.InMemoryDagCheckpointStore;
-import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
 import com.financial.copilot.agent.core.dag.runtime.resource.NodePriority;
 import com.financial.copilot.agent.core.dag.runtime.resource.ResourceManager;
 import com.financial.copilot.agent.core.dag.runtime.resource.ResourceRequirement;
@@ -25,7 +24,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +36,68 @@ import static org.junit.jupiter.api.Assertions.*;
  * 单元测试：ReplanPolicy 与动态 GraphPatch 自适应改图
  */
 class DynamicReplanTest {
+
+    @Test
+    void readyNodeSkippedByPatchIsRemovedFromDispatchQueue() throws Exception {
+        ExecutionGraph graph = new ExecutionGraph("skip-ready");
+        graph.addNode(GraphNode.builder().nodeId("root").priority(NodePriority.HIGH).build());
+        graph.addNode(GraphNode.builder().nodeId("blocker").priority(NodePriority.NORMAL).build());
+        graph.addNode(GraphNode.builder().nodeId("victim").priority(NodePriority.LOW).build());
+        CountDownLatch releaseBlocker = new CountDownLatch(1);
+        AtomicBoolean victimExecuted = new AtomicBoolean();
+        RePlanAdvisor advisor = (current, completed, artifact) -> "root".equals(completed)
+                ? GraphPatch.of(current.getRevision(), GraphOperation.skipNode("victim")) : null;
+        DagRuntime runtime = new DagRuntime((node, input, context) -> {
+            if ("root".equals(node.getNodeId())) Thread.sleep(100);
+            if ("blocker".equals(node.getNodeId())) releaseBlocker.await(2, TimeUnit.SECONDS);
+            if ("victim".equals(node.getNodeId())) victimExecuted.set(true);
+            return Artifact.of("art-" + node.getNodeId(), ArtifactType.GENERAL, node.getNodeId(), "ok");
+        }, new ResourceManager(Map.of(com.financial.copilot.agent.core.dag.runtime.resource.ResourceType.AGENT, 2)),
+                new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate(),
+                (current, nodeId, artifact, status) -> "root".equals(nodeId), advisor);
+
+        GraphRunHandle handle = runtime.run(new GraphRunRequest("skip-ready-run", 1L, "session", "prompt",
+                false, null, ignored -> {}, RunMode.SYNC), graph);
+        Thread.sleep(300);
+        releaseBlocker.countDown();
+        GraphRunResult result = handle.completion().get(2, TimeUnit.SECONDS);
+
+        assertThat(victimExecuted).isFalse();
+        assertThat(result.nodeStatuses()).containsEntry("victim", com.financial.copilot.agent.core.dag.model.NodeStatus.SKIPPED);
+    }
+
+    @Test
+    void appliedPatchIsCheckpointedBeforeAddedNodeCompletes() throws Exception {
+        ExecutionGraph graph = new ExecutionGraph("patch-checkpoint");
+        graph.addNode(GraphNode.builder().nodeId("root").build());
+        InMemoryDagCheckpointStore checkpoints = new InMemoryDagCheckpointStore();
+        CountDownLatch addedStarted = new CountDownLatch(1);
+        CountDownLatch releaseAdded = new CountDownLatch(1);
+        RePlanAdvisor advisor = (current, completed, artifact) -> "root".equals(completed)
+                ? GraphPatch.of(current.getRevision(), GraphOperation.addNode(GraphNode.builder().nodeId("added").build()))
+                : null;
+        DagRuntime runtime = new DagRuntime((node, input, context) -> {
+            if ("added".equals(node.getNodeId())) {
+                addedStarted.countDown();
+                releaseAdded.await(2, TimeUnit.SECONDS);
+            }
+            return Artifact.of("art-" + node.getNodeId(), ArtifactType.GENERAL, node.getNodeId(), "ok");
+        }, ResourceManager.defaultManager(), checkpoints, new DefaultNodeQualityGate(),
+                (current, nodeId, artifact, status) -> "root".equals(nodeId), advisor);
+
+        GraphRunHandle handle = runtime.run(new GraphRunRequest("patch-checkpoint-run", 1L, "session", "prompt",
+                false, null, ignored -> {}, RunMode.SYNC), graph);
+        try {
+            assertThat(addedStarted.await(1, TimeUnit.SECONDS)).isTrue();
+            var saved = checkpoints.load(1L, "patch-checkpoint-run").orElseThrow();
+            assertThat(saved.graph().revision()).isEqualTo(1);
+            assertThat(saved.graph().nodes()).extracting(com.financial.copilot.agent.core.dag.model.ExecutionGraphSnapshot.NodeSnapshot::nodeId)
+                    .contains("added");
+        } finally {
+            releaseAdded.countDown();
+        }
+        handle.completion().get(2, TimeUnit.SECONDS);
+    }
 
     @Test
     void removeAndSkipPatchOperationsUpdateRunCompletion() throws Exception {
@@ -57,7 +120,7 @@ class DynamicReplanTest {
         DagRuntime runtime = new DagRuntime(
                 (node, store, token) -> Artifact.of("art-" + node.getNodeId(), ArtifactType.GENERAL,
                         node.getNodeId(), node.getNodeId()),
-                new ArtifactStore(), ResourceManager.defaultManager(), new InMemoryDagCheckpointStore(),
+                ResourceManager.defaultManager(), new InMemoryDagCheckpointStore(),
                 new DefaultNodeQualityGate(), (g, n, a, s) -> "root".equals(n), advisor);
 
         GraphRunRequest request = new GraphRunRequest("patch-run", 1L, "session", "prompt", false,
@@ -81,7 +144,6 @@ class DynamicReplanTest {
                 .build();
         graph.addNode(n1);
 
-        ArtifactStore store = new ArtifactStore();
         AtomicInteger advisorInvocations = new AtomicInteger(0);
 
         RePlanAdvisor mockAdvisor = (g, nodeId, art) -> {
@@ -91,7 +153,6 @@ class DynamicReplanTest {
 
         DagRuntime runtime = new DagRuntime(
                 (node, s, t) -> Artifact.of("art_N1", ArtifactType.FUND_POOL, "N1", List.of("003095"), ArtifactMetadata.standard("TEST")),
-                store,
                 ResourceManager.defaultManager(),
                 new InMemoryDagCheckpointStore(),
                 new DefaultNodeQualityGate(),
@@ -99,11 +160,11 @@ class DynamicReplanTest {
                 mockAdvisor
         );
 
-        runtime.executeGraph(graph, new CancellationToken("run-1"), e -> {}).get(2, TimeUnit.SECONDS);
+        GraphRunResult result = runtime.run(request("run-1"), graph).completion().get(2, TimeUnit.SECONDS);
 
         assertEquals(0, advisorInvocations.get(), "正常数据不应调用 RePlanAdvisor");
         assertEquals(0, graph.getRevision(), "图版本号应维持 0");
-        assertNotNull(store.get("N1"));
+        assertNotNull(result.artifacts().get("N1"));
     }
 
     @Test
@@ -124,7 +185,6 @@ class DynamicReplanTest {
         graph.addNode(reportNode);
         graph.addEdge("screen", "report");
 
-        ArtifactStore store = new ArtifactStore();
         List<String> executedNodes = new CopyOnWriteArrayList<>();
 
         // RePlanAdvisor: 发现初筛为空时，生成 GraphPatch 动态插入宽松筛选节点
@@ -164,7 +224,6 @@ class DynamicReplanTest {
 
         DagRuntime runtime = new DagRuntime(
                 executor,
-                store,
                 ResourceManager.defaultManager(),
                 new InMemoryDagCheckpointStore(),
                 new DefaultNodeQualityGate(),
@@ -172,13 +231,13 @@ class DynamicReplanTest {
                 advisor
         );
 
-        runtime.executeGraph(graph, new CancellationToken("run-adaptive"), e -> {}).get(3, TimeUnit.SECONDS);
+        GraphRunResult result = runtime.run(request("run-adaptive"), graph).completion().get(3, TimeUnit.SECONDS);
 
         // 验证执行链路：初筛 -> 动态插入宽松筛选 -> 最终研报
         assertThat(executedNodes).contains("screen", "screen_relaxed", "report");
         assertEquals(1, graph.getRevision(), "图成功应用 Patch，版本号递增至 1");
-        assertNotNull(store.get("screen_relaxed"));
-        assertNotNull(store.get("report"));
+        assertNotNull(result.artifacts().get("screen_relaxed"));
+        assertNotNull(result.artifacts().get("report"));
     }
 
     @Test
@@ -192,7 +251,6 @@ class DynamicReplanTest {
                 .build();
         graph.addNode(analysisNode);
 
-        ArtifactStore store = new ArtifactStore();
         List<String> executedNodes = new CopyOnWriteArrayList<>();
 
         RePlanAdvisor advisor = (g, nodeId, art) -> {
@@ -225,7 +283,6 @@ class DynamicReplanTest {
 
         DagRuntime runtime = new DagRuntime(
                 executor,
-                store,
                 ResourceManager.defaultManager(),
                 new InMemoryDagCheckpointStore(),
                 new DefaultNodeQualityGate(),
@@ -233,11 +290,11 @@ class DynamicReplanTest {
                 advisor
         );
 
-        runtime.executeGraph(graph, new CancellationToken("run-evidence"), e -> {}).get(3, TimeUnit.SECONDS);
+        GraphRunResult result = runtime.run(request("run-evidence"), graph).completion().get(3, TimeUnit.SECONDS);
 
         assertThat(executedNodes).contains("analysis", "fetch_turnover");
         assertEquals(1, graph.getRevision());
-        assertNotNull(store.get("fetch_turnover"));
+        assertNotNull(result.artifacts().get("fetch_turnover"));
     }
 
     @Test
@@ -277,7 +334,6 @@ class DynamicReplanTest {
         graph.addNode(compNode);
         graph.addEdge("step-2-analysis", "step-3-comparison");
 
-        ArtifactStore store = new ArtifactStore();
         List<String> executedNodeTypes = new CopyOnWriteArrayList<>();
         RePlanAdvisor planner = (current, completed, artifact) -> {
             FundResearchResult research = (FundResearchResult) artifact.payload();
@@ -305,7 +361,6 @@ class DynamicReplanTest {
 
         DagRuntime runtime = new DagRuntime(
                 executor,
-                store,
                 ResourceManager.defaultManager(),
                 new InMemoryDagCheckpointStore(),
                 new DefaultNodeQualityGate(),
@@ -313,10 +368,15 @@ class DynamicReplanTest {
                 planner
         );
 
-        runtime.executeGraph(graph, new CancellationToken("run-downgrade"), e -> {}).get(3, TimeUnit.SECONDS);
+        runtime.run(request("run-downgrade"), graph).completion().get(3, TimeUnit.SECONDS);
 
         assertEquals(1, graph.getRevision(), "图版本号应因自适应降级递增为 1");
         assertThat(executedNodeTypes).containsExactly("BATCH_ANALYSIS", "DEEP_DIVE");
         assertEquals("DEEP_DIVE", graph.getNode("step-3-comparison").getTaskType());
+    }
+
+    private GraphRunRequest request(String runId) {
+        return new GraphRunRequest(runId, 1L, "test-session", "test prompt", false,
+                null, ignored -> {}, RunMode.SYNC);
     }
 }

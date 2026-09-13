@@ -33,6 +33,9 @@ public class AgentNodeRouter {
     }
 
     public Artifact<?> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
+        if (!AgentRoleCatalog.supports(node.getTaskType())) {
+            throw new IllegalArgumentException("No AgentScope role for task type: " + node.getTaskType());
+        }
         boolean stock = "STOCK".equalsIgnoreCase(String.valueOf(node.getParams().get("assetCategory")))
                 || context.request().prompt().contains("股票") || context.request().prompt().contains("个股");
         return switch (node.getTaskType()) {
@@ -42,7 +45,7 @@ public class AgentNodeRouter {
                     ? stockComparator.execute(node, input, context)
                     : fundComparator.execute(node, input, context);
             case "SYNTHESIS" -> synthesizer.execute(node, input, context);
-            default -> throw new IllegalArgumentException("No AgentScope role for task type: " + node.getTaskType());
+            default -> throw new IllegalStateException("Agent role catalog and router are inconsistent");
         };
     }
 }

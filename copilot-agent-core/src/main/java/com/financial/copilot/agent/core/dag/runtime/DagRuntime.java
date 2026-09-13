@@ -38,13 +38,12 @@ import java.util.function.Consumer;
  * 运行时彻底消除物理 Wavefront 屏障，依赖就绪即按优先级入队并派发。
  * </p>
  */
-public class DagRuntime {
+public class DagRuntime implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(DagRuntime.class);
 
-    private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    private final ExecutorService virtualThreadExecutor;
     private final NodeExecutor nodeExecutor;
-    private final ArtifactStore artifactStore;
     private final ResourceManager resourceManager;
     private final DagCheckpointStore checkpointStore;
     private final NodeQualityGate qualityGate;
@@ -52,44 +51,47 @@ public class DagRuntime {
     private final ReplanPolicy replanPolicy;
     private final RePlanAdvisor rePlanAdvisor;
     private final GraphRunRequest runRequest;
+    private final Object replanLock = new Object();
 
     public DagRuntime(NodeExecutor nodeExecutor) {
-        this(nodeExecutor, new ArtifactStore(), ResourceManager.defaultManager(), new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate(), ReplanPolicy.heuristic(), null);
+        this(nodeExecutor, ResourceManager.defaultManager(), new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate(),
+                ReplanPolicy.heuristic(), null, null, Executors.newVirtualThreadPerTaskExecutor());
     }
 
     public DagRuntime(
             NodeExecutor nodeExecutor,
-            ArtifactStore artifactStore,
             ResourceManager resourceManager,
             DagCheckpointStore checkpointStore,
             NodeQualityGate qualityGate
     ) {
-        this(nodeExecutor, artifactStore, resourceManager, checkpointStore, qualityGate, ReplanPolicy.heuristic(), null);
+        this(nodeExecutor, resourceManager, checkpointStore, qualityGate, ReplanPolicy.heuristic(), null,
+                null, Executors.newVirtualThreadPerTaskExecutor());
     }
 
     public DagRuntime(
             NodeExecutor nodeExecutor,
-            ArtifactStore artifactStore,
             ResourceManager resourceManager,
             DagCheckpointStore checkpointStore,
             NodeQualityGate qualityGate,
             ReplanPolicy replanPolicy,
             RePlanAdvisor rePlanAdvisor
     ) {
-        this(nodeExecutor, artifactStore, resourceManager, checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, null);
+        this(nodeExecutor, resourceManager, checkpointStore, qualityGate, replanPolicy, rePlanAdvisor,
+                null, Executors.newVirtualThreadPerTaskExecutor());
     }
 
-    private DagRuntime(NodeExecutor nodeExecutor, ArtifactStore artifactStore, ResourceManager resourceManager,
+    private DagRuntime(NodeExecutor nodeExecutor, ResourceManager resourceManager,
                        DagCheckpointStore checkpointStore, NodeQualityGate qualityGate, ReplanPolicy replanPolicy,
-                       RePlanAdvisor rePlanAdvisor, GraphRunRequest runRequest) {
+                       RePlanAdvisor rePlanAdvisor, GraphRunRequest runRequest,
+                       ExecutorService virtualThreadExecutor) {
         this.nodeExecutor = Objects.requireNonNull(nodeExecutor, "nodeExecutor cannot be null");
-        this.artifactStore = artifactStore != null ? artifactStore : new ArtifactStore();
         this.resourceManager = resourceManager != null ? resourceManager : ResourceManager.defaultManager();
         this.checkpointStore = checkpointStore != null ? checkpointStore : new InMemoryDagCheckpointStore();
         this.qualityGate = qualityGate != null ? qualityGate : new DefaultNodeQualityGate();
         this.replanPolicy = replanPolicy != null ? replanPolicy : ReplanPolicy.heuristic();
         this.rePlanAdvisor = rePlanAdvisor;
         this.runRequest = runRequest;
+        this.virtualThreadExecutor = Objects.requireNonNull(virtualThreadExecutor, "virtualThreadExecutor cannot be null");
     }
 
     public GraphRunHandle run(GraphRunRequest request, ExecutionGraph graph) {
@@ -105,20 +107,19 @@ public class DagRuntime {
                     CompletableFuture.completedFuture(context.result()), context.cancellation::cancel);
         }
 
-        DagRuntime isolated = new DagRuntime(nodeExecutor, context.artifacts, resourceManager,
-                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request);
+        DagRuntime isolated = new DagRuntime(nodeExecutor, resourceManager,
+                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request, virtualThreadExecutor);
         CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
         context.events.publishGraphInitialized(request.runId(), graph.getRevision(), graph.getNodes().values().stream()
                 .map(node -> new com.financial.copilot.agent.core.dag.event.NodeEventBus.NodeDescriptor(
                         node.getNodeId(), node.getName(), node.getTaskType(), List.copyOf(graph.getUpstream(node.getNodeId()))))
                 .toList());
-        isolated.executeGraph(request.runId(), graph, context.artifacts, context.cancellation, event -> {
+        isolated.executeGraphInternal(request.runId(), graph, context.artifacts, context.cancellation, event -> {
             if (!(event.payload() instanceof GraphPatch)) {
                 context.statuses.put(event.nodeId(), event.status());
             }
             context.events.publishDagEvent(request.runId(), graph, event);
         }).whenComplete((ignored, error) -> {
-            isolated.virtualThreadExecutor.shutdown();
             if (error != null) {
                 if (error instanceof CancellationException || error.getCause() instanceof CancellationException) {
                     context.events.emit(com.financial.copilot.common.event.ResearchStreamEvent.runCancelled(request.runId(), error.getMessage()));
@@ -139,25 +140,7 @@ public class DagRuntime {
         return new GraphRunHandle(request.runId(), context.events.flux(), completion, context.cancellation::cancel);
     }
 
-    public CompletableFuture<Void> executeGraph(
-            ExecutionGraph graph,
-            CancellationToken cancellationToken,
-            Consumer<DagEvent> eventPublisher
-    ) {
-        String runId = "run-" + UUID.randomUUID().toString().substring(0, 8);
-        return executeGraph(runId, graph, this.artifactStore, cancellationToken, eventPublisher);
-    }
-
-    public CompletableFuture<Void> executeGraph(
-            String runId,
-            ExecutionGraph graph,
-            CancellationToken cancellationToken,
-            Consumer<DagEvent> eventPublisher
-    ) {
-        return executeGraph(runId, graph, this.artifactStore, cancellationToken, eventPublisher);
-    }
-
-    public CompletableFuture<Void> executeGraph(
+    private CompletableFuture<Void> executeGraphInternal(
             String runId,
             ExecutionGraph graph,
             ArtifactStore customStore,
@@ -166,7 +149,7 @@ public class DagRuntime {
     ) {
         Objects.requireNonNull(graph, "graph cannot be null");
         Objects.requireNonNull(cancellationToken, "cancellationToken cannot be null");
-        ArtifactStore effectiveStore = customStore != null ? customStore : this.artifactStore;
+        ArtifactStore effectiveStore = Objects.requireNonNull(customStore, "artifact store cannot be null");
         Consumer<DagEvent> publisher = eventPublisher != null ? eventPublisher : e -> {};
 
         CompletableFuture<Void> graphFuture = new CompletableFuture<>();
@@ -200,64 +183,6 @@ public class DagRuntime {
         return graphFuture;
     }
 
-    public CompletableFuture<Void> resume(
-            String runId,
-            ExecutionGraph graph,
-            CancellationToken cancellationToken,
-            Consumer<DagEvent> eventPublisher
-    ) {
-        Objects.requireNonNull(runId, "runId cannot be null");
-        Objects.requireNonNull(graph, "graph cannot be null");
-        Consumer<DagEvent> publisher = eventPublisher != null ? eventPublisher : e -> {};
-
-        Optional<DagCheckpoint> checkpointOpt = checkpointStore.loadCheckpoint(runId);
-        if (checkpointOpt.isEmpty()) {
-            log.warn("No checkpoint found for runId={}, falling back to clean run", runId);
-            return executeGraph(runId, graph, cancellationToken, publisher);
-        }
-
-        DagCheckpoint checkpoint = checkpointOpt.get();
-        CompletableFuture<Void> graphFuture = new CompletableFuture<>();
-        Map<String, AtomicReference<NodeStatus>> statusMap = new ConcurrentHashMap<>();
-        AtomicInteger activeOrPendingNodes = new AtomicInteger(0);
-
-        cancellationToken.onCancel(() -> {
-            if (!graphFuture.isDone()) {
-                graphFuture.completeExceptionally(new CancellationException("Resume [" + runId + "] cancelled: " + cancellationToken.getReason()));
-            }
-        });
-
-        // 1. 恢复快照状态
-        for (String nodeId : graph.getNodes().keySet()) {
-            NodeStatus historicalStatus = checkpoint.nodeStatuses().get(nodeId);
-            if (historicalStatus == NodeStatus.SUCCEEDED || historicalStatus == NodeStatus.SKIPPED) {
-                // 已完成的节点无需重复计算，直接标记完成
-                statusMap.put(nodeId, new AtomicReference<>(historicalStatus));
-                publisher.accept(new DagEvent(nodeId, historicalStatus, "Restored from checkpoint (skipped re-execution)"));
-            } else {
-                statusMap.put(nodeId, new AtomicReference<>(NodeStatus.PENDING));
-                activeOrPendingNodes.incrementAndGet();
-            }
-        }
-
-        if (activeOrPendingNodes.get() == 0) {
-            graphFuture.complete(null);
-            return graphFuture;
-        }
-
-        // 2. 找出当前所有依赖已满足的未完成节点并推入优先级就绪队列
-        for (String nodeId : graph.getNodes().keySet()) {
-            if (statusMap.get(nodeId).get() == NodeStatus.PENDING) {
-                if (DependencyResolver.isReady(nodeId, graph, id -> statusMap.get(id) != null ? statusMap.get(id).get() : null)) {
-                    enqueueReadyNode(nodeId, graph, statusMap, publisher);
-                }
-            }
-        }
-        drainReadyQueue(runId, graph, this.artifactStore, statusMap, activeOrPendingNodes, graphFuture, cancellationToken, publisher);
-
-        return graphFuture;
-    }
-
     /** Restores an owned run from durable state in a fresh runtime instance. */
     public GraphRunHandle resume(Long userId, String runId,
                                  Consumer<com.financial.copilot.agent.core.llm.dto.LlmResponse> usageConsumer) {
@@ -269,23 +194,48 @@ public class DagRuntime {
         }
         DagCheckpoint saved = checkpoint.get();
         ExecutionGraph graph = saved.graph().restore();
-        GraphRunRequest request = new GraphRunRequest(runId, userId, saved.sessionId(), "", false,
-                null, usageConsumer, RunMode.SYNC);
+        GraphRunRequest request = new GraphRunRequest(runId, userId, saved.sessionId(), saved.prompt(),
+                saved.enableThinking(), saved.profile(), usageConsumer, RunMode.SYNC);
         DagRunContext context = new DagRunContext(request, graph);
         saved.artifacts().forEach(context.artifacts::store);
         saved.nodeStatuses().forEach((id, status) -> context.statuses.put(id, normalizeRestoredStatus(status)));
 
-        DagRuntime isolated = new DagRuntime(nodeExecutor, context.artifacts, resourceManager,
-                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request);
+        DagRuntime isolated = new DagRuntime(nodeExecutor, resourceManager,
+                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request, virtualThreadExecutor);
         CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
+        context.events.publishGraphInitialized(runId, graph.getRevision(), graph.getNodes().values().stream()
+                .map(node -> new com.financial.copilot.agent.core.dag.event.NodeEventBus.NodeDescriptor(
+                        node.getNodeId(), node.getName(), node.getTaskType(), List.copyOf(graph.getUpstream(node.getNodeId()))))
+                .toList());
         isolated.resumeFromCheckpoint(saved, graph, context.artifacts, context.cancellation, event -> {
-            context.statuses.put(event.nodeId(), event.status());
+            if (!(event.payload() instanceof GraphPatch)) {
+                context.statuses.put(event.nodeId(), event.status());
+            }
+            context.events.publishDagEvent(runId, graph, event);
         }).whenComplete((ignored, error) -> {
-            isolated.virtualThreadExecutor.shutdown();
-            if (error != null) completion.completeExceptionally(error);
-            else completion.complete(context.result());
+            if (error != null) {
+                if (error instanceof CancellationException || error.getCause() instanceof CancellationException) {
+                    context.events.emit(com.financial.copilot.common.event.ResearchStreamEvent.runCancelled(runId, error.getMessage()));
+                } else {
+                    context.events.emit(com.financial.copilot.common.event.ResearchStreamEvent.runFailed(runId, error.getMessage()));
+                }
+                context.events.complete();
+                completion.completeExceptionally(error);
+            } else {
+                context.statuses.keySet().retainAll(graph.getNodes().keySet());
+                GraphRunResult result = context.result();
+                context.events.publishRunCompleted(runId, "SUCCEEDED",
+                        java.time.Duration.between(result.startedAt(), result.completedAt()).toMillis());
+                context.events.complete();
+                completion.complete(result);
+            }
         });
         return new GraphRunHandle(runId, context.events.flux(), completion, context.cancellation::cancel);
+    }
+
+    @Override
+    public void close() {
+        virtualThreadExecutor.shutdownNow();
     }
 
     private CompletableFuture<Void> resumeFromCheckpoint(
@@ -462,7 +412,7 @@ public class DagRuntime {
                     drainReadyQueue(runId, graph, currentStore, statusMap, activeOrPendingNodes, graphFuture, parentToken, publisher);
                 } else {
                     log.error("Node {} retries exhausted, failing fast: {}", nodeId, e.getMessage());
-                    failFast(nodeId, e, runId, graph, statusMap, graphFuture, parentToken, publisher);
+                    failFast(nodeId, e, runId, graph, currentStore, statusMap, graphFuture, parentToken, publisher);
                 }
             }
             case FALLBACK -> {
@@ -504,7 +454,7 @@ public class DagRuntime {
             }
             case FAIL_FAST -> {
                 log.error("Node {} failed under FAIL_FAST, aborting graph: {}", nodeId, e.getMessage());
-                failFast(nodeId, e, runId, graph, statusMap, graphFuture, parentToken, publisher);
+                failFast(nodeId, e, runId, graph, currentStore, statusMap, graphFuture, parentToken, publisher);
             }
         }
     }
@@ -514,6 +464,7 @@ public class DagRuntime {
             Throwable e,
             String runId,
             ExecutionGraph graph,
+            ArtifactStore currentStore,
             Map<String, AtomicReference<NodeStatus>> statusMap,
             CompletableFuture<Void> graphFuture,
             CancellationToken parentToken,
@@ -521,7 +472,7 @@ public class DagRuntime {
     ) {
         statusMap.get(nodeId).set(NodeStatus.FAILED);
         publisher.accept(new DagEvent(nodeId, NodeStatus.FAILED, "Node failed: " + e.getMessage()));
-        saveRunCheckpoint(runId, graph, this.artifactStore, statusMap);
+        saveRunCheckpoint(runId, graph, currentStore, statusMap);
         graphFuture.completeExceptionally(e);
         parentToken.cancel("FAIL_FAST triggered by node: " + nodeId);
     }
@@ -550,24 +501,27 @@ public class DagRuntime {
 
         // 动态改图与自适应变轨 (RePlanAdvisor)
         if (rePlanAdvisor != null && replanPolicy != null && replanPolicy.shouldReplan(graph, completedNodeId, result, finalStatus)) {
-            try {
-                GraphPatch patch = rePlanAdvisor.planPatch(graph, completedNodeId, result);
-                if (patch != null && !patch.operations().isEmpty()) {
-                    validatePatchLifecycle(patch, statusMap);
-                    int newRev = graph.applyPatch(patch, id -> {
-                        AtomicReference<NodeStatus> reference = statusMap.get(id);
-                        if (reference == null) return true;
-                        NodeStatus status = reference.get();
-                        return status == NodeStatus.PENDING || status == NodeStatus.READY
-                                || status == NodeStatus.FAILED || status == NodeStatus.TIMEOUT;
-                    });
-                    log.info("Applied GraphPatch to graph {} (new revision={}), operations count={}", graph.getGraphId(), newRev, patch.operations().size());
+            synchronized (replanLock) {
+                try {
+                    GraphPatch patch = rePlanAdvisor.planPatch(graph, completedNodeId, result);
+                    if (patch != null && !patch.operations().isEmpty()) {
+                        validatePatchLifecycle(patch, statusMap);
+                        int newRev = graph.applyPatch(patch, id -> {
+                            AtomicReference<NodeStatus> reference = statusMap.get(id);
+                            if (reference == null) return true;
+                            NodeStatus status = reference.get();
+                            return status == NodeStatus.PENDING || status == NodeStatus.READY
+                                    || status == NodeStatus.FAILED || status == NodeStatus.TIMEOUT;
+                        });
+                        log.info("Applied GraphPatch to graph {} (new revision={}), operations count={}", graph.getGraphId(), newRev, patch.operations().size());
 
-                    reconcilePatch(patch, graph, statusMap, activeOrPendingNodes, publisher);
-                    publisher.accept(new DagEvent(completedNodeId, NodeStatus.RUNNING, "Graph patched to rev " + newRev, patch));
+                        reconcilePatch(patch, graph, statusMap, activeOrPendingNodes, publisher);
+                        saveRunCheckpoint(runId, graph, currentStore, statusMap);
+                        publisher.accept(new DagEvent(completedNodeId, NodeStatus.RUNNING, "Graph patched to rev " + newRev, patch));
+                    }
+                } catch (Exception patchEx) {
+                    log.error("Failed to plan/apply GraphPatch for completedNode {}: {}", completedNodeId, patchEx.getMessage(), patchEx);
                 }
-            } catch (Exception patchEx) {
-                log.error("Failed to plan/apply GraphPatch for completedNode {}: {}", completedNodeId, patchEx.getMessage(), patchEx);
             }
         }
 
@@ -615,11 +569,13 @@ public class DagRuntime {
                     activeOrPendingNodes.incrementAndGet();
                 }
                 case REMOVE_NODE -> {
+                    readyQueue.remove(op.nodeId());
                     if (statuses.remove(op.nodeId()) != null) activeOrPendingNodes.decrementAndGet();
                 }
                 case SKIP_NODE -> {
                     AtomicReference<NodeStatus> status = statuses.get(op.nodeId());
                     if (status != null) {
+                        readyQueue.remove(op.nodeId());
                         status.set(NodeStatus.SKIPPED);
                         activeOrPendingNodes.decrementAndGet();
                         publisher.accept(new DagEvent(op.nodeId(), NodeStatus.SKIPPED, "Node skipped by graph patch"));
@@ -630,6 +586,19 @@ public class DagRuntime {
                     if (status != null) {
                         status.set(NodeStatus.PENDING);
                         activeOrPendingNodes.incrementAndGet();
+                    }
+                }
+                case UPDATE_NODE -> {
+                    AtomicReference<NodeStatus> status = statuses.get(op.nodeId());
+                    if (status != null && status.get() == NodeStatus.READY) {
+                        readyQueue.remove(op.nodeId());
+                        readyQueue.offer(graph.getNode(op.nodeId()));
+                    }
+                }
+                case ADD_EDGE -> {
+                    AtomicReference<NodeStatus> target = statuses.get(op.to());
+                    if (target != null && target.compareAndSet(NodeStatus.READY, NodeStatus.PENDING)) {
+                        readyQueue.remove(op.to());
                     }
                 }
                 default -> { }
@@ -659,6 +628,17 @@ public class DagRuntime {
         while (!readyQueue.isEmpty()) {
             GraphNode nextNode = readyQueue.peek();
             if (nextNode == null) break;
+            AtomicReference<NodeStatus> nextStatus = statusMap.get(nextNode.getNodeId());
+            GraphNode currentNode = graph.getNode(nextNode.getNodeId());
+            if (nextStatus == null || nextStatus.get() != NodeStatus.READY || currentNode == null) {
+                readyQueue.poll();
+                continue;
+            }
+            if (currentNode != nextNode) {
+                readyQueue.poll();
+                readyQueue.offer(currentNode);
+                continue;
+            }
 
             if (resourceManager.tryAcquire(nextNode.getResourceRequirements())) {
                 readyQueue.poll();
@@ -679,6 +659,9 @@ public class DagRuntime {
                     runId,
                     runRequest != null ? runRequest.userId() : null,
                     runRequest != null ? runRequest.sessionId() : graph.getGraphId(),
+                    runRequest != null ? runRequest.prompt() : "",
+                    runRequest != null && runRequest.enableThinking(),
+                    runRequest != null ? runRequest.profile() : null,
                     ExecutionGraphSnapshot.from(graph),
                     snapshot,
                     currentStore.getAllArtifacts(),

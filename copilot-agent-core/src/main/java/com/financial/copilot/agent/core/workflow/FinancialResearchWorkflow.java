@@ -7,7 +7,6 @@ import com.financial.copilot.agent.core.dag.model.*;
 import com.financial.copilot.agent.core.dag.planner.*;
 import com.financial.copilot.agent.core.dag.runtime.*;
 import com.financial.copilot.agent.core.dag.runtime.checkpoint.*;
-import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
 import com.financial.copilot.agent.core.dag.runtime.resource.ResourceManager;
 import com.financial.copilot.agent.core.event.WorkflowFinishedEvent;
 import com.financial.copilot.agent.core.llm.dto.LlmResponse;
@@ -15,6 +14,7 @@ import com.financial.copilot.agent.core.memory.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.PreDestroy;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -49,18 +49,8 @@ public class FinancialResearchWorkflow {
         this.planner = planner;
         this.registry = registry == null ? new GraphRunRegistry() : registry;
         this.checkpointStore = checkpointStore == null ? new RedisDagCheckpointStore() : checkpointStore;
-        NodeExecutor dispatcher = new NodeExecutor() {
-            @Override
-            public Artifact<?> execute(GraphNode node, ArtifactStore store, CancellationToken token) {
-                throw new UnsupportedOperationException("Unified runtime requires explicit NodeInput");
-            }
-
-            @Override
-            public Artifact<?> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
-                return dispatch(node, input, context);
-            }
-        };
-        this.runtime = new DagRuntime(dispatcher, new ArtifactStore(),
+        NodeExecutor dispatcher = this::dispatch;
+        this.runtime = new DagRuntime(dispatcher,
                 resources == null ? ResourceManager.defaultManager() : resources,
                 this.checkpointStore,
                 qualityGate == null ? new DefaultNodeQualityGate() : qualityGate,
@@ -114,6 +104,11 @@ public class FinancialResearchWorkflow {
                 .map(com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport.class::cast)
                 .map(com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport::markdownReport)
                 .findFirst().orElse("");
+    }
+
+    @PreDestroy
+    void closeRuntime() {
+        runtime.close();
     }
 
 }

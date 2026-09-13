@@ -1,6 +1,7 @@
 package com.financial.copilot.controller;
 
 import com.financial.copilot.agent.core.billing.WalletBillingService;
+import com.financial.copilot.agent.core.agents.AgentRoleCatalog;
 import com.financial.copilot.agent.core.user.service.UserService;
 import com.financial.copilot.agent.core.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.agent.core.dag.runtime.GraphRunRequest;
@@ -12,7 +13,6 @@ import com.financial.copilot.common.event.ResearchStreamEvent;
 import com.financial.copilot.common.exception.WalletInsufficientException;
 import com.financial.copilot.common.result.ApiResult;
 import com.financial.copilot.config.security.SecurityUtils;
-import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
 import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
 import com.financial.copilot.agent.core.memory.LongTermMemoryService;
 import com.financial.copilot.agent.core.memory.RefinedFact;
@@ -41,12 +41,8 @@ import java.util.stream.Collectors;
 /**
  * <h1>金融多资产智能投研 Agent REST / SSE 控制器</h1>
  * <p>
- * 提供多端交互接入端点：
- * 1. 动态执行图 SSE 流式输出接口（包含图、节点、补丁、Markdown 增量与完结事件）；
- * 2. 同步阻塞式研报生成接口（适合批处理或一次性拉取）；
- * 3. 结构化工作流触发执行接口（返回生成研报、会话唯一标识及阶段执行指标）；
- * 4. 会话记忆诊断与语义提纯事实查询接口（观测短期对话缓存与后台异步提纯的长期记忆）；
- * 5. 平台健康度与资产能力矩阵探针。
+ * 投研执行统一使用 {@code POST /api/v1/research/runs}，由 Accept 协商同步 JSON 或 SSE 事件流。
+ * 另提供运行控制、会话记忆诊断与平台健康探针。
  * </p>
  *
  * @author FinancialCopilot
@@ -97,10 +93,10 @@ public class ResearchAgentController {
     }
 
     /**
-     * 同步问答分析请求体传输对象
+     * 统一投研运行请求体
      */
     @Data
-    public static class ChatRequest {
+    public static class ResearchRunRequest {
         /**
          * 用户输入的自然语言投研问题或选基要求
          */
@@ -116,50 +112,22 @@ public class ResearchAgentController {
          */
         private Boolean enableThinking = false;
 
-        /**
-         * 兼容字段，仅允许与当前登录用户 ID 相同
-         */
-        private Long userId;
     }
 
     /**
-     * 结构化工作流触发请求体
-     */
-    @Data
-    public static class WorkflowExecuteRequest {
-        /**
-         * 用户输入的自然语言投研问题或复合诉求
-         */
-        private String prompt;
-
-        /**
-         * 会话唯一标识 (可选，留空则自动生成 UUID)
-         */
-        private String sessionId;
-
-        /**
-         * 客户端是否开启深度思考推理模式
-         */
-        private Boolean enableThinking = false;
-
-        /**
-         * 客户用户系统唯一 ID (可选，默认为当前登录用户)
-         */
-        private Long userId;
-    }
-
-    /**
-     * 结构化工作流响应体
+     * 同步投研运行响应体
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class WorkflowExecuteResponse {
+    public static class ResearchRunResponse {
+        private String runId;
         private String sessionId;
         private String report;
         private String model;
-        private int totalSteps;
+        private int totalNodes;
+        private int graphRevision;
         private String summary;
         private long executionTimeMs;
         private int promptTokens;
@@ -197,89 +165,66 @@ public class ResearchAgentController {
     }
 
     /**
-     * 动态执行图 SSE 流式交互接口
-     *
-     * @param prompt         用户自然语言诉求
-     * @param sessionId      会话唯一 ID (可选)
-     * @param enableThinking 是否开启深度思考推理模式
-     * @param userId         用户 ID (可选，若不传则优先取当前已认证的 UID)
-     * @return 响应式事件流
+     * 动态执行图 SSE 流式交互入口
      */
-    @GetMapping(value = "/chat/pipeline/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ResearchStreamEvent> streamPipelineChat(
-            @RequestParam("prompt") String prompt,
-            @RequestParam(value = "sessionId", required = false) String sessionId,
-            @RequestParam(value = "enableThinking", defaultValue = "false") Boolean enableThinking,
-            @RequestParam(value = "userId", required = false) Long userId) {
-        return resolveUserId(userId).publishOn(Schedulers.boundedElastic()).flatMapMany(uid -> {
-            validatePrompt(prompt);
-            String clientSession = sessionId == null ? UUID.randomUUID().toString() : sessionId;
-            String key = SecurityUtils.sessionKey(uid, clientSession);
-            billingService.checkBalance(uid, 100L);
-            return workflow.run(new GraphRunRequest(UUID.randomUUID().toString(), uid, key, prompt,
-                    Boolean.TRUE.equals(enableThinking), userService.getInvestmentProfile(uid),
-                    usage -> chargeUsage(uid, key, usage), RunMode.STREAM)).events();
+    @PostMapping(value = "/runs", consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ResearchStreamEvent> streamRun(@RequestBody ResearchRunRequest request) {
+        return resolveUserId().publishOn(Schedulers.boundedElastic()).flatMapMany(uid -> {
+            StartedRun started = start(uid, request, RunMode.STREAM, usage -> chargeUsage(uid,
+                    SecurityUtils.sessionKey(uid, startedSession(request)), usage));
+            return started.handle().events();
         });
     }
 
     /**
-     * 同步全量投研研报生成接口
-     *
-     * @param request 请求体封装（含投研问题、是否开启深度思考与用户 ID）
-     * @return 最终研报 Markdown 结果
+     * 同步结构化投研入口
      */
-    @PostMapping("/chat")
-    public Mono<ApiResult<String>> syncChat(@RequestBody ChatRequest request) {
-        return resolveUserId(request.getUserId()).publishOn(Schedulers.boundedElastic()).map(uid -> {
-            validatePrompt(request.getPrompt());
-            String clientSession = request.getSessionId() == null ? UUID.randomUUID().toString() : request.getSessionId();
-            String key = SecurityUtils.sessionKey(uid, clientSession);
-            billingService.checkBalance(uid, 100L);
-            GraphRunResult result = workflow.run(new GraphRunRequest(UUID.randomUUID().toString(), uid, key,
-                    request.getPrompt(), Boolean.TRUE.equals(request.getEnableThinking()),
-                    userService.getInvestmentProfile(uid), usage -> chargeUsage(uid, key, usage), RunMode.SYNC))
-                    .completion().join();
-            return ApiResult.success(report(result));
-        });
-    }
-
-    /**
-     * 触发工作流执行并返回结构化研报结果 REST 接口
-     * <p>
-     * 1. 执行任务规划与多智能体拓扑协作；
-     * 2. 生成专业投研 Markdown 报告并沉淀短期/长期记忆；
-     * 3. 异步触发 LLM 对本轮对话进行语义提纯；
-     * 4. 返回包含会话 ID、研报内容、执行耗时与步骤清单的结构化结果。
-     * </p>
-     *
-     * @param request 工作流触发请求
-     * @return 结构化工作流执行结果
-     */
-    @PostMapping("/workflow/execute")
-    public Mono<ApiResult<WorkflowExecuteResponse>> executeWorkflow(@RequestBody WorkflowExecuteRequest request) {
-        return resolveUserId(request.getUserId()).publishOn(Schedulers.boundedElastic()).map(uid -> {
-            validatePrompt(request.getPrompt());
-            String clientSession = request.getSessionId() == null ? UUID.randomUUID().toString() : request.getSessionId();
-            String key = SecurityUtils.sessionKey(uid, clientSession);
-            billingService.checkBalance(uid, 100L);
+    @PostMapping(value = "/runs", consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ApiResult<ResearchRunResponse>> run(@RequestBody ResearchRunRequest request) {
+        return resolveUserId().publishOn(Schedulers.boundedElastic()).map(uid -> {
             List<LlmResponse> usages = new ArrayList<>();
-            GraphRunResult result = workflow.run(new GraphRunRequest(UUID.randomUUID().toString(), uid, key,
-                    request.getPrompt(), Boolean.TRUE.equals(request.getEnableThinking()),
-                    userService.getInvestmentProfile(uid), usage -> {
+            String clientSession = startedSession(request);
+            String key = SecurityUtils.sessionKey(uid, clientSession);
+            StartedRun started = start(uid, request, RunMode.SYNC, usage -> {
                         chargeUsage(uid, key, usage);
                         usages.add(usage);
-                    }, RunMode.SYNC)).completion().join();
-            return ApiResult.success(WorkflowExecuteResponse.builder()
+                    });
+            GraphRunResult result = started.handle().completion().join();
+            return ApiResult.success(ResearchRunResponse.builder()
+                    .runId(result.runId())
                     .sessionId(clientSession).report(report(result))
                     .model(usages.isEmpty() ? null : usages.get(usages.size() - 1).getModel())
                     .promptTokens(usages.stream().mapToInt(LlmResponse::getPromptTokens).sum())
                     .completionTokens(usages.stream().mapToInt(LlmResponse::getCompletionTokens).sum())
-                    .totalSteps(result.graph().getNodes().size())
+                    .totalNodes(result.graph().getNodes().size())
+                    .graphRevision(result.graph().getRevision())
                     .summary("ExecutionGraph revision " + result.graph().getRevision())
                     .executionTimeMs(java.time.Duration.between(result.startedAt(), result.completedAt()).toMillis())
                     .timestamp(System.currentTimeMillis()).build());
         });
     }
+
+    private StartedRun start(Long uid, ResearchRunRequest request, RunMode mode, Consumer<LlmResponse> usageConsumer) {
+        validatePrompt(request.getPrompt());
+        String clientSession = startedSession(request);
+        String key = SecurityUtils.sessionKey(uid, clientSession);
+        billingService.checkBalance(uid, 100L);
+        var handle = workflow.run(new GraphRunRequest(UUID.randomUUID().toString(), uid, key,
+                request.getPrompt(), Boolean.TRUE.equals(request.getEnableThinking()),
+                userService.getInvestmentProfile(uid), usageConsumer, mode));
+        return new StartedRun(clientSession, handle);
+    }
+
+    private String startedSession(ResearchRunRequest request) {
+        if (request.getSessionId() == null || request.getSessionId().isBlank()) {
+            request.setSessionId(UUID.randomUUID().toString());
+        }
+        return request.getSessionId();
+    }
+
+    private record StartedRun(String sessionId, com.financial.copilot.agent.core.dag.runtime.GraphRunHandle handle) {}
 
     /**
      * 查询指定会话的记忆诊断与语义提纯事实记录 REST 接口
@@ -289,7 +234,7 @@ public class ResearchAgentController {
      */
     @GetMapping("/memory/session/{sessionId}")
     public Mono<ApiResult<SessionMemoryResponse>> getSessionMemory(@PathVariable("sessionId") String sessionId) {
-        return resolveUserId(null).publishOn(Schedulers.boundedElastic()).map(uid -> {
+        return resolveUserId().publishOn(Schedulers.boundedElastic()).map(uid -> {
             String key = SecurityUtils.sessionKey(uid, sessionId);
             List<String> shortTerm = shortTermMemoryService.getContext(key);
             List<String> longTerm = longTermMemoryService.retrieve(key, 20);
@@ -338,8 +283,8 @@ public class ResearchAgentController {
         }
     }
 
-    private Mono<Long> resolveUserId(Long paramUserId) {
-        return SecurityUtils.requireCurrentUserId(paramUserId);
+    private Mono<Long> resolveUserId() {
+        return SecurityUtils.requireCurrentUserId(null);
     }
 
     /**
@@ -373,7 +318,7 @@ public class ResearchAgentController {
                 "system", "Financial Research Agent (AgentScope + Spring Boot 3 + MyBatis-Plus)",
                 "activeDomain", "FUND (公募基金深度实施)",
                 "extensibleDomains", new String[]{"STOCK (股票)", "FUTURES (期货)", "WEALTH (银行理财)"},
-                "pipelineCapabilities", new String[]{"SCREENING", "BATCH_ANALYSIS", "COMPARISON", "SYNTHESIS", "COMPOSITE_DAG"},
+                "pipelineCapabilities", AgentRoleCatalog.taskTypes().stream().sorted().toArray(String[]::new),
                 "orm", "Lombok + MyBatis-Plus 3.5.7 + PGVector",
                 "timestamp", System.currentTimeMillis()
         ));

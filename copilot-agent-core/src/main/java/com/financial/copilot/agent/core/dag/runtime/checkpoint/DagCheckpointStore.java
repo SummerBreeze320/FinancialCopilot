@@ -17,16 +17,9 @@ public interface DagCheckpointStore {
      */
     Optional<DagCheckpoint> load(Long userId, String runId);
 
-    default Optional<DagCheckpoint> loadCheckpoint(String runId) {
-        return load(null, runId);
-    }
-
     /**
      * 清除快照（工作流最终成功或中止后按需清理）
      */
     void clear(Long userId, String runId);
 
-    default void clearCheckpoint(String runId) {
-        clear(null, runId);
-    }
 }

@@ -12,7 +12,11 @@ class NoLegacyExecutionArchitectureTest {
                 "ResearchBlackboard", "LegacyPlanAdapter", "BlackboardAdapter",
                 "BoundedAgentLoop", "AgentAction", "AgentObservation",
                 "DeterministicGraphPlanner", "class ScreenerAgent {", "class AnalyzerAgent {",
-                "class ComparatorAgent {", "class ReportSynthesizer {", "class PlannerAgent {");
+                "class ComparatorAgent {", "class ReportSynthesizer {", "class PlannerAgent {",
+                "execute(GraphNode node, ArtifactStore artifactStore, CancellationToken cancellationToken)",
+                "public CompletableFuture<Void> executeGraph(",
+                "public CompletableFuture<Void> resume(",
+                "loadCheckpoint(String runId)", "clearCheckpoint(String runId)");
         StringBuilder production = new StringBuilder();
         try (var files = Files.walk(Path.of("src/main/java"))) {
             for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
