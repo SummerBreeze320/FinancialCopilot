@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.domain.graph.entity.HoldingRelation;
 import com.financial.copilot.domain.graph.port.FinancialGraphPort;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(prefix = "copilot.neo4j", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class FinancialGraphTool {
 
     private final FinancialGraphPort graphPort;
