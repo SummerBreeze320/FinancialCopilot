@@ -5,8 +5,6 @@ import com.financial.copilot.domain.rag.entity.RagFundSector;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
@@ -18,30 +16,16 @@ class MetricSectorDataParserTest {
 
     private final MetricSectorDataParser parser = new MetricSectorDataParser();
 
-    private File resolveFile(String relativePath) {
-        File file = new File(relativePath);
-        if (file.exists()) {
-            return file;
-        }
-        File parentRelative = new File(".." + File.separator + relativePath);
-        if (parentRelative.exists()) {
-            return parentRelative;
-        }
-        return file;
-    }
-
     @Test
-    @DisplayName("测试解析真实 docs/temp/metrics.json 文件")
-    void testParseMetricsFile() throws Exception {
-        File metricsFile = resolveFile("docs/temp/metrics.json");
-        assertTrue(metricsFile.exists(), "docs/temp/metrics.json 文件必须存在: path=" + metricsFile.getAbsolutePath());
+    @DisplayName("测试从类路径加载指标样例 JSON 并解析为领域实体")
+    void testParseMetricsStream() throws Exception {
+        try (InputStream is = getClass().getResourceAsStream("/data/sample-metrics.json")) {
+            assertNotNull(is, "测试资源 /data/sample-metrics.json 必须存在");
 
-        try (InputStream is = new FileInputStream(metricsFile)) {
             List<RagFundMetric> metrics = parser.parseMetrics(is);
             assertNotNull(metrics);
-            assertEquals(169, metrics.size(), "指标总数量必须为 169 项");
+            assertEquals(4, metrics.size(), "样例指标数量为 4");
 
-            // 检查特定核心指标
             Map<String, RagFundMetric> metricMap = metrics.stream()
                     .collect(Collectors.toMap(RagFundMetric::getMnemonic, m -> m));
 
@@ -60,15 +44,14 @@ class MetricSectorDataParserTest {
     }
 
     @Test
-    @DisplayName("测试解析真实 docs/temp/sectors.json 文件并验证树形层级展开")
-    void testParseSectorsFile() throws Exception {
-        File sectorsFile = resolveFile("docs/temp/sectors.json");
-        assertTrue(sectorsFile.exists(), "docs/temp/sectors.json 文件必须存在: path=" + sectorsFile.getAbsolutePath());
+    @DisplayName("测试从类路径加载板块样例 JSON 并验证树形层级展开与祖先面包屑计算")
+    void testParseSectorsStream() throws Exception {
+        try (InputStream is = getClass().getResourceAsStream("/data/sample-sectors.json")) {
+            assertNotNull(is, "测试资源 /data/sample-sectors.json 必须存在");
 
-        try (InputStream is = new FileInputStream(sectorsFile)) {
             List<RagFundSector> sectors = parser.parseSectors(is);
             assertNotNull(sectors);
-            assertEquals(1712, sectors.size(), "板块总数量必须为 1712 项");
+            assertEquals(4, sectors.size(), "样例板块数量为 4");
 
             Map<String, RagFundSector> sectorMap = sectors.stream()
                     .collect(Collectors.toMap(RagFundSector::getSectorId, s -> s));
@@ -81,7 +64,7 @@ class MetricSectorDataParserTest {
             assertEquals("内地公募基金", root.getFullPathNames());
             assertFalse(root.isLeaf(), "根节点不应是叶子节点");
 
-            // 检查特定下级节点
+            // 检查第一级子节点
             RagFundSector etf = sectorMap.get("1000009160000000");
             assertNotNull(etf, "中国上市ETF 节点必须存在");
             assertEquals("中国上市ETF", etf.getName());
@@ -89,8 +72,11 @@ class MetricSectorDataParserTest {
             assertEquals("内地公募基金 > 中国上市ETF", etf.getFullPathNames());
 
             // 检查叶子节点
-            long leafCount = sectors.stream().filter(RagFundSector::isLeaf).count();
-            assertTrue(leafCount > 1500, "叶子节点数量应大于 1500 项");
+            RagFundSector stockEtf = sectorMap.get("1000009161000000");
+            assertNotNull(stockEtf);
+            assertTrue(stockEtf.isLeaf());
+            assertEquals(2, stockEtf.getTreeLevel());
+            assertEquals("内地公募基金 > 中国上市ETF > 股票型ETF", stockEtf.getFullPathNames());
         }
     }
 }

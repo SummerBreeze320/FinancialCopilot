@@ -1,0 +1,50 @@
+[
+  {
+    "source_sector_id": "1000019220000000",
+    "parent_id": null,
+    "name": "内地公募基金",
+    "name_en": "Mainland Mutual Funds",
+    "aliases": ["公募基金", "公募"],
+    "description": "内地公募基金顶层分类根节点",
+    "embedding_text": "内地公募基金 公募基金",
+    "is_leaf": false,
+    "element_type": 6,
+    "enabled": true
+  },
+  {
+    "source_sector_id": "1000009160000000",
+    "parent_id": "1000019220000000",
+    "name": "中国上市ETF",
+    "name_en": "China Listed ETFs",
+    "aliases": ["ETF", "交易型开放式指数基金"],
+    "description": "中国境内上市交易型开放式指数基金",
+    "embedding_text": "中国上市ETF ETF 场内基金",
+    "is_leaf": false,
+    "element_type": 6,
+    "enabled": true
+  },
+  {
+    "source_sector_id": "1000009161000000",
+    "parent_id": "1000009160000000",
+    "name": "股票型ETF",
+    "name_en": "Equity ETFs",
+    "aliases": ["股票ETF"],
+    "description": "主要投资于股票现货组合的ETF",
+    "embedding_text": "股票型ETF 股票ETF",
+    "is_leaf": true,
+    "element_type": 6,
+    "enabled": true
+  },
+  {
+    "source_sector_id": "1000009162000000",
+    "parent_id": "1000009160000000",
+    "name": "债券型ETF",
+    "name_en": "Bond ETFs",
+    "aliases": ["债券ETF"],
+    "description": "主要投资于债券现货组合的ETF",
+    "embedding_text": "债券型ETF 债券ETF",
+    "is_leaf": true,
+    "element_type": 6,
+    "enabled": true
+  }
+]

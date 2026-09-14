@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * <h1>基金指标原始 JSON 反序列化传输对象 (DTO)</h1>
  * <p>
- * 对应 <code>docs/temp/metrics.json</code> 文件中的指标元数据结构。
+ * 对应公募基金指标元数据的标准输入结构。
  * </p>
  *
  * @author FinancialCopilot

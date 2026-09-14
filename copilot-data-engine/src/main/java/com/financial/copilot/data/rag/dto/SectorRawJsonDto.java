@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * <h1>基金板块原始 JSON 反序列化传输对象 (DTO)</h1>
  * <p>
- * 对应 <code>docs/temp/sectors.json</code> 文件中的分类树节点结构。
+ * 对应公募基金板块多层级分类树的标准输入结构。
  * </p>
  *
  * @author FinancialCopilot

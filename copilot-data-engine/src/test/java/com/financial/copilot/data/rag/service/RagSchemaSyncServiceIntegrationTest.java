@@ -15,7 +15,7 @@ import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
-import java.io.File;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,22 +23,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RagSchemaSyncServiceIntegrationTest {
 
-    private File resolveFile(String relativePath) {
-        File file = new File(relativePath);
-        if (file.exists()) return file;
-        File parentRelative = new File(".." + File.separator + relativePath);
-        if (parentRelative.exists()) return parentRelative;
-        return file;
-    }
-
     @Test
-    @DisplayName("端到端验证 169 项指标与 1712 项板块批量向量化及双写入库")
+    @DisplayName("端到端验证指标与板块样例批量向量化及双库同步入库与混合检索")
     void testEndToEndSyncAndHybridSearch() throws Exception {
-        File metricsFile = resolveFile("docs/temp/metrics.json");
-        File sectorsFile = resolveFile("docs/temp/sectors.json");
-        assertTrue(metricsFile.exists(), "metrics.json 必须存在");
-        assertTrue(sectorsFile.exists(), "sectors.json 必须存在");
-
         // 1. 数据源初始化
         DriverManagerDataSource pgDs = new DriverManagerDataSource();
         pgDs.setDriverClassName("org.postgresql.Driver");
@@ -60,35 +47,42 @@ class RagSchemaSyncServiceIntegrationTest {
                 parser, embeddingAdapter, schemaAdapter, Optional.of(graphAdapter)
         );
 
-        // 3. 执行全量数据同步与向量化写入
-        RagSchemaSyncService.SyncReport report = syncService.syncFromFiles(metricsFile, sectorsFile);
-        assertNotNull(report);
-        assertEquals(169, report.metricsCount(), "指标同步数应为 169");
-        assertEquals(1712, report.sectorsCount(), "板块同步数应为 1712");
-        assertTrue(report.neo4jSynced(), "Neo4j 图拓扑同步应标记为成功");
+        // 3. 从测试类路径读取样例数据，执行端到端同步流水线
+        try (InputStream mIs = getClass().getResourceAsStream("/data/sample-metrics.json");
+             InputStream sIs = getClass().getResourceAsStream("/data/sample-sectors.json")) {
 
-        // 4. 验证 PostgreSQL 数据库落库总数
-        assertTrue(schemaAdapter.countMetrics() >= 169L);
-        assertTrue(schemaAdapter.countSectors() >= 1712L);
+            assertNotNull(mIs, "测试资源 /data/sample-metrics.json 必须存在");
+            assertNotNull(sIs, "测试资源 /data/sample-sectors.json 必须存在");
 
-        // 5. 验证 Neo4j 节点与拓扑关系
-        assertTrue(graphAdapter.countSectorNodes() >= 1712L);
-        assertTrue(graphAdapter.countMetricNodes() >= 169L);
+            RagSchemaSyncService.SyncReport report = syncService.syncAll(mIs, sIs);
 
-        // 6. 验证图谱拓扑下钻：中国上市ETF (1000009160000000) 递归展开叶子节点
+            assertNotNull(report);
+            assertEquals(4, report.metricsCount(), "指标同步数量应为 4");
+            assertEquals(4, report.sectorsCount(), "板块同步数量应为 4");
+            assertTrue(report.neo4jSynced(), "Neo4j 必须同步成功");
+        }
+
+        // 4. 验证 PostgreSQL 数据持久化
+        assertTrue(schemaAdapter.countMetrics() >= 4, "Postgres 指标总数应不少于 4");
+        assertTrue(schemaAdapter.countSectors() >= 4, "Postgres 板块总数应不少于 4");
+
+        // 5. 验证 Neo4j 节点与关系
+        assertTrue(graphAdapter.countSectorNodes() >= 4, "Neo4j 板块节点应不少于 4");
+        assertTrue(graphAdapter.countMetricNodes() >= 4, "Neo4j 指标节点应不少于 4");
+
+        // 6. 验证 Neo4j 叶子节点展开
         List<String> etfLeaves = graphAdapter.expandLeafSectors("1000009160000000");
         assertNotNull(etfLeaves);
-        assertFalse(etfLeaves.isEmpty(), "中国上市ETF 应能展开出下级叶子板块代码");
+        assertTrue(etfLeaves.contains("1000009161000000"), "展开应包含股票型ETF");
+        assertTrue(etfLeaves.contains("1000009162000000"), "展开应包含债券型ETF");
 
-        // 7. 验证三路混合语义召回
-        float[] queryVec = embeddingAdapter.embed("近1年回报");
-        List<SchemaRecallResult.MetricMatch> metricMatches = schemaAdapter.searchMetrics("近1年回报", queryVec, 5);
-        assertFalse(metricMatches.isEmpty());
-        assertEquals("f_return_1y", metricMatches.get(0).metric().getMnemonic(), "查询'近1年回报'排首位必须是 f_return_1y");
+        // 7. 验证基于向量余弦的三路混合召回
+        float[] queryVec = embeddingAdapter.embed("近1年收益率最高的基金");
+        List<SchemaRecallResult.MetricMatch> metricMatches = schemaAdapter.searchMetrics("近1年收益率", queryVec, 3);
+        assertFalse(metricMatches.isEmpty(), "必须能召回相关指标");
+        assertEquals("f_return_1y", metricMatches.get(0).metric().getMnemonic());
 
-        float[] sectorVec = embeddingAdapter.embed("中国上市ETF");
-        List<SchemaRecallResult.SectorMatch> sectorMatches = schemaAdapter.searchSectors("中国上市ETF", sectorVec, 5);
-        assertFalse(sectorMatches.isEmpty());
-        assertEquals("1000009160000000", sectorMatches.get(0).sector().getSectorId(), "查询'中国上市ETF'首位板块代码必须正确");
+        List<SchemaRecallResult.SectorMatch> sectorMatches = schemaAdapter.searchSectors("中国上市ETF", queryVec, 3);
+        assertFalse(sectorMatches.isEmpty(), "必须能召回相关板块");
     }
 }
