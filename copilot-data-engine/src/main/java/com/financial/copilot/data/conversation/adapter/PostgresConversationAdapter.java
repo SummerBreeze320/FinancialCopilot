@@ -27,9 +27,23 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.function.Function;
 
+/**
+ * <h1>基于 PostgreSQL 的金融投研会话与工具调用审计持久化适配器</h1>
+ * <p>
+ * 实现领域层 {@link ConversationPort} 与 {@link AgentToolAuditPort} SPI 端口，
+ * 基于 MyBatis-Plus Mapper 操作关系表，完成复杂多智能体协同运行流的消息归档、行级排他锁、游标翻页及调用轨迹审计。
+ * </p>
+ *
+ * @author FinancialCopilot
+ */
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class PostgresConversationAdapter implements ConversationPort, AgentToolAuditPort {
 
     private final ResearchConversationMapper conversations;
@@ -37,15 +51,6 @@ public class PostgresConversationAdapter implements ConversationPort, AgentToolA
     private final AgentToolAuditMapper audits;
     private final ObjectMapper json;
 
-    public PostgresConversationAdapter(ResearchConversationMapper conversations,
-                                       ConversationMessageMapper messages,
-                                       AgentToolAuditMapper audits,
-                                       ObjectMapper json) {
-        this.conversations = conversations;
-        this.messages = messages;
-        this.audits = audits;
-        this.json = json;
-    }
 
     @Override
     @Transactional("jdbcTransactionManager")

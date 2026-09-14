@@ -7,8 +7,10 @@ import com.financial.copilot.data.user.po.*;
 import com.financial.copilot.domain.user.entity.*;
 import com.financial.copilot.domain.user.enums.*;
 import com.financial.copilot.domain.user.port.UserPort;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import jakarta.annotation.PostConstruct;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class DatabaseUserAdapter implements UserPort {
 
     private final UserMapper userMapper;
@@ -51,23 +54,11 @@ public class DatabaseUserAdapter implements UserPort {
     private final Map<Long, UserInvestmentProfile> memoryInvestmentProfiles = new ConcurrentHashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(100);
 
-    public DatabaseUserAdapter(UserMapper userMapper,
-                               RoleMapper roleMapper,
-                               PermissionMapper permissionMapper,
-                               UserRoleMapper userRoleMapper,
-                               RolePermissionMapper rolePermissionMapper,
-                               UserProfileMapper userProfileMapper,
-                               UserIdentityMapper userIdentityMapper,
-                               UserInvestmentProfileMapper userInvestmentProfileMapper) {
-        this.userMapper = userMapper;
-        this.roleMapper = roleMapper;
-        this.permissionMapper = permissionMapper;
-        this.userRoleMapper = userRoleMapper;
-        this.rolePermissionMapper = rolePermissionMapper;
-        this.userProfileMapper = userProfileMapper;
-        this.userIdentityMapper = userIdentityMapper;
-        this.userInvestmentProfileMapper = userInvestmentProfileMapper;
-
+    /**
+     * Bean 初始化后执行内置角色与种子数据预热
+     */
+    @PostConstruct
+    public void init() {
         initSeedData();
     }
 

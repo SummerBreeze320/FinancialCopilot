@@ -25,21 +25,45 @@ import java.util.ArrayList;
 @TableName("sys_user")
 public class UserPO {
 
+    /**
+     * 系统用户唯一自增主键 ID
+     */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 用户名（唯一登录账号）
+     */
     private String username;
 
+    /**
+     * BCrypt 加密密码哈希
+     */
     private String passwordHash;
 
+    /**
+     * 绑定手机号码
+     */
     private String mobile;
 
+    /**
+     * 绑定电子邮箱
+     */
     private String email;
 
+    /**
+     * 用户账号状态：ACTIVE(正常活跃), SUSPENDED(已冻结), DELETED(已注销)
+     */
     private String status;
 
+    /**
+     * 注册创建时间戳
+     */
     private LocalDateTime createdAt;
 
+    /**
+     * 最后资料更新时间戳
+     */
     private LocalDateTime updatedAt;
 
     public User toDomain() {

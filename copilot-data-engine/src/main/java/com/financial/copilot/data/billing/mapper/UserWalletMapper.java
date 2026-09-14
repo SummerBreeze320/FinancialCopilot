@@ -13,11 +13,25 @@ import org.apache.ibatis.annotations.Update;
  */
 @Mapper
 public interface UserWalletMapper extends BaseMapper<UserWalletPO> {
+    /**
+     * 若用户钱包尚不存在，则幂等初始化一个余额为 0 的新钱包
+     *
+     * @param userId   用户 ID
+     * @param tenantId 租户 ID
+     * @return 影响行数
+     */
     @org.apache.ibatis.annotations.Insert("INSERT INTO sys_user_wallet " +
             "(user_id, tenant_id, balance_points, frozen_points, total_recharged_points, total_consumed_points, wallet_status, version, updated_at) " +
             "VALUES (#{userId}, #{tenantId}, 0, 0, 0, 0, 'NORMAL', 0, NOW()) ON CONFLICT (user_id) DO NOTHING")
     int createIfAbsent(@Param("userId") Long userId, @Param("tenantId") String tenantId);
 
+    /**
+     * 扣减用户可用积分（确保可用积分 balance - frozen >= points）
+     *
+     * @param userId 系统用户 ID
+     * @param points 扣减积分数
+     * @return 影响行数 (1 扣减成功, 0 余额不足或失败)
+     */
     @Update("UPDATE sys_user_wallet SET balance_points = balance_points - #{points}, " +
             "total_consumed_points = total_consumed_points + #{points}, version = version + 1, updated_at = NOW() " +
             "WHERE user_id = #{userId} AND wallet_status = 'NORMAL' AND balance_points - frozen_points >= #{points}")

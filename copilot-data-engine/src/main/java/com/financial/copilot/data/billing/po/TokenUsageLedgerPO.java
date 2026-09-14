@@ -23,29 +23,65 @@ import java.time.LocalDateTime;
 @TableName("llm_token_usage_ledger")
 public class TokenUsageLedgerPO {
 
+    /**
+     * 自增主键 ID
+     */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 系统用户 ID
+     */
     private Long userId;
 
+    /**
+     * 投研会话或分析 Run 批次 SessionId
+     */
     private String sessionId;
 
+    /**
+     * 业务任务类型（如 RESEARCH, COMPARISON, SUMMARY, SCREENING）
+     */
     private String taskType;
 
+    /**
+     * 模型供应商代码（如 DEEPSEEK, OPENAI, QWEN）
+     */
     private String provider;
 
+    /**
+     * 调用的具体大模型名称（如 "deepseek-reasoner", "gpt-4o"）
+     */
     private String model;
 
+    /**
+     * 输入提示词 Token 消耗数
+     */
     private Integer promptTokens;
 
+    /**
+     * 补全回答 Token 消耗数
+     */
     private Integer completionTokens;
 
+    /**
+     * 本次交互累计 Token 总数
+     */
     private Integer totalTokens;
 
+    /**
+     * 依据阶梯定价折算扣减的算力积分数额
+     */
     private Long consumedPoints;
 
+    /**
+     * 大模型网络往返与生成耗时（毫秒）
+     */
     private Integer latencyMs;
 
+    /**
+     * 账单流水落库记录时间戳
+     */
     private LocalDateTime createdAt;
 
     public TokenUsageLedger toDomain() {

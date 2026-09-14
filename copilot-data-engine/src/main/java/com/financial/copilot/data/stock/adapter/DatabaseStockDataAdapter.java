@@ -7,6 +7,7 @@ import com.financial.copilot.data.stock.mapper.StockInfoMapper;
 import com.financial.copilot.data.stock.po.StockInfoPO;
 import com.financial.copilot.domain.stock.entity.StockInfo;
 import com.financial.copilot.domain.stock.port.StockDataPort;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
@@ -26,18 +27,11 @@ import java.util.Optional;
  */
 @Slf4j
 @Repository
+@RequiredArgsConstructor
 public class DatabaseStockDataAdapter implements StockDataPort {
 
     private final StockInfoMapper stockInfoMapper;
 
-    /**
-     * 构造函数，注入 MyBatis-Plus Mapper
-     *
-     * @param stockInfoMapper 股票基础信息映射器
-     */
-    public DatabaseStockDataAdapter(StockInfoMapper stockInfoMapper) {
-        this.stockInfoMapper = stockInfoMapper;
-    }
 
     @Override
     public Optional<StockInfo> getStockByCode(String stockCode) {

@@ -23,19 +23,40 @@ import java.time.LocalDateTime;
 @TableName("sys_permission")
 public class PermissionPO {
 
+    /**
+     * 自增主键 ID
+     */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 权限唯一标识编码（例如 "fund:read", "fund:execute"）
+     */
     private String permCode;
 
+    /**
+     * 权限显示名称（例如 "查看基金画像", "执行量化筛选"）
+     */
     private String permName;
 
+    /**
+     * 资源类型（API 接口 / MENU 菜单 / BUTTON 按钮等）
+     */
     private String resourceType;
 
+    /**
+     * 资源路径/Ant表达式（例如 "/api/v1/funds/**"）
+     */
     private String path;
 
+    /**
+     * HTTP 方法（GET, POST, PUT, DELETE, *）
+     */
     private String method;
 
+    /**
+     * 权限创建时间戳
+     */
     private LocalDateTime createdAt;
 
     public Permission toDomain() {

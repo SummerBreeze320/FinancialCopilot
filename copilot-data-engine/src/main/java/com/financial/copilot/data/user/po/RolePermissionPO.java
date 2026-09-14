@@ -20,10 +20,19 @@ import lombok.NoArgsConstructor;
 @TableName("sys_role_permission")
 public class RolePermissionPO {
 
+    /**
+     * 自增主键 ID
+     */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 所属角色 ID
+     */
     private Long roleId;
 
+    /**
+     * 关联权限点 ID
+     */
     private Long permissionId;
 }

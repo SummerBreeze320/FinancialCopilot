@@ -23,19 +23,40 @@ import java.math.BigDecimal;
 @TableName("llm_model_pricing")
 public class ModelPricingPO {
 
+    /**
+     * 自增主键 ID
+     */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 模型供应商类型（如 DEEPSEEK, OPENAI, ANTHROPIC, QWEN, OLLAMA）
+     */
     private String providerType;
 
+    /**
+     * 模型具体标识名称（如 "deepseek-reasoner", "gpt-4o", "qwen-max"）
+     */
     private String modelName;
 
+    /**
+     * 每 1,000 输入 Token 消耗的算力积分
+     */
     private BigDecimal inputPricePerK;
 
+    /**
+     * 每 1,000 输出 Token 消耗的算力积分
+     */
     private BigDecimal outputPricePerK;
 
+    /**
+     * 每 1,000 命中文中缓存 (Context Cache Hit) 输入 Token 优惠计费积分
+     */
     private BigDecimal cacheHitPricePerK;
 
+    /**
+     * 定价规则是否生效激活
+     */
     private Boolean isActive;
 
     public ModelPricing toDomain() {

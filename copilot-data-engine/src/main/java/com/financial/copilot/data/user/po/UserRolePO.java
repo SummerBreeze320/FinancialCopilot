@@ -20,10 +20,19 @@ import lombok.NoArgsConstructor;
 @TableName("sys_user_role")
 public class UserRolePO {
 
+    /**
+     * 自增主键 ID
+     */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 系统用户 ID
+     */
     private Long userId;
 
+    /**
+     * 所属角色 ID
+     */
     private Long roleId;
 }

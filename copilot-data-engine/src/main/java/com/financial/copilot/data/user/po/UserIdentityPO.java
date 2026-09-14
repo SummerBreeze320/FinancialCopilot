@@ -23,25 +23,55 @@ import java.time.LocalDateTime;
 @TableName("sys_user_identity")
 public class UserIdentityPO {
 
+    /**
+     * 所属系统用户 ID（主键）
+     */
     @TableId(value = "user_id")
     private Long userId;
 
+    /**
+     * 认证真实姓名（例如 "张三"）
+     */
     private String realName;
 
+    /**
+     * 证件类型（ID_CARD 居民身份证 / PASSPORT 护照等）
+     */
     private String idCardType;
 
+    /**
+     * 证件号 SHA-256 不可逆哈希（用于唯一样本防重校验）
+     */
     private String idCardHash;
 
+    /**
+     * AES-256 对称加密存储的完整证件密文
+     */
     private String idCardEncrypted;
 
+    /**
+     * 脱敏掩码展示证件号（例如 "110101********2345"）
+     */
     private String idCardMasked;
 
+    /**
+     * 实名认证审核状态：PENDING(待审核), APPROVED(审核通过), REJECTED(驳回)
+     */
     private String verifyStatus;
 
+    /**
+     * 审核驳回原因说明
+     */
     private String rejectReason;
 
+    /**
+     * 实名认证审核完成时间戳
+     */
     private LocalDateTime verifiedAt;
 
+    /**
+     * 认证申请提交时间戳
+     */
     private LocalDateTime createdAt;
 
     public UserIdentity toDomain() {

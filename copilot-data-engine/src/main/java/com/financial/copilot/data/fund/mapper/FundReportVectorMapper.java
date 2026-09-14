@@ -8,6 +8,14 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
+/**
+ * <h1>基金定性报告向量数据访问映射器 (MyBatis-Plus + PGVector Mapper)</h1>
+ * <p>
+ * 提供针对 {@code fund_report_vector} 表的高维文本向量插入及基于余弦距离 (&lt;=&gt;) 的近似最近邻 (ANN) 检索。
+ * </p>
+ *
+ * @author FinancialCopilot
+ */
 @Mapper
 public interface FundReportVectorMapper extends BaseMapper<FundReportVectorPO> {
 

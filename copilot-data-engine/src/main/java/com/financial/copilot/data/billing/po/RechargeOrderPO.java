@@ -24,27 +24,60 @@ import java.time.LocalDateTime;
 @TableName("sys_recharge_order")
 public class RechargeOrderPO {
 
+    /**
+     * 自增主键 ID
+     */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 系统业务充值订单号（唯一防重流水号）
+     */
     private String orderNo;
 
+    /**
+     * 充值用户 ID
+     */
     private Long userId;
 
+    /**
+     * 购买的充值套餐 ID
+     */
     private Long packageId;
 
+    /**
+     * 实际支付人民币金额（单位：元）
+     */
     private BigDecimal payAmountCny;
 
+    /**
+     * 充值到账目标总算力积分（含赠送积分）
+     */
     private Long targetPoints;
 
+    /**
+     * 支付渠道（ALIPAY 支付宝 / WECHAT 微信支付 / MANUAL 人工入账等）
+     */
     private String payChannel;
 
+    /**
+     * 订单状态：CREATED(待支付), PAID(已支付入账), CANCELLED(已取消), EXPIRED(超时失效)
+     */
     private String orderStatus;
 
+    /**
+     * 第三方支付流水号
+     */
     private String thirdPartyTradeNo;
 
+    /**
+     * 订单生成创建时间戳
+     */
     private LocalDateTime createdAt;
 
+    /**
+     * 实际到账支付时间戳
+     */
     private LocalDateTime paidAt;
 
     public RechargeOrder toDomain() {

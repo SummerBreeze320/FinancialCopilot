@@ -8,6 +8,8 @@ import com.financial.copilot.data.fund.po.*;
 import com.financial.copilot.domain.fund.entity.*;
 import com.financial.copilot.domain.fund.port.FundDataPort;
 import com.financial.copilot.math.FinancialMathUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -28,7 +30,9 @@ import java.util.Optional;
  *
  * @author FinancialCopilot
  */
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class DatabaseFundDataAdapter implements FundDataPort {
 
     private final FundInfoMapper fundInfoMapper;
@@ -37,17 +41,6 @@ public class DatabaseFundDataAdapter implements FundDataPort {
     private final FundManagerMapper managerMapper;
     private final FundCompanyMapper companyMapper;
 
-    public DatabaseFundDataAdapter(FundInfoMapper fundInfoMapper,
-                                   FundNavHistoryMapper navHistoryMapper,
-                                   FundQuarterlyHoldingMapper holdingMapper,
-                                   FundManagerMapper managerMapper,
-                                   FundCompanyMapper companyMapper) {
-        this.fundInfoMapper = fundInfoMapper;
-        this.navHistoryMapper = navHistoryMapper;
-        this.holdingMapper = holdingMapper;
-        this.managerMapper = managerMapper;
-        this.companyMapper = companyMapper;
-    }
 
     @Override
     public Optional<FundInfo> getFundByCode(String fundCode) {

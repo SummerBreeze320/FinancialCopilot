@@ -32,25 +32,55 @@ public class UserInvestmentProfilePO {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    /**
+     * 所属系统用户 ID（主键）
+     */
     @TableId(value = "user_id")
     private Long userId;
 
+    /**
+     * 投资风险承受能力评级 (C1 保守型 ~ C5 进取型)
+     */
     private String riskToleranceLevel;
 
+    /**
+     * 计划投资期限（SHORT_TERM &lt; 1年, MEDIUM_TERM 1~3年, LONG_TERM &gt; 3年）
+     */
     private String investmentHorizon;
 
+    /**
+     * 偏好的大类资产（JSON 数组字符串，如 ["EQUITY", "BOND"]）
+     */
     private String preferredAssetClasses;
 
+    /**
+     * 偏好的投资板块/行业主题（JSON 数组字符串，如 ["半导体", "创新药"]）
+     */
     private String preferredSectors;
 
+    /**
+     * 最大可承受回撤比例（例如 0.20 代表 20%）
+     */
     private BigDecimal maxDrawdownTolerance;
 
+    /**
+     * 目标年化收益率期望（例如 0.15 代表 15%）
+     */
     private BigDecimal targetAnnualReturn;
 
+    /**
+     * 投资风格偏好（VALUE 价值型, GROWTH 成长型, BALANCED 平衡型）
+     */
     private String investmentStyle;
 
+    /**
+     * 单只标的最高仓位上限限制（例如 0.25 代表单基金/股票不超 25%）
+     */
     private BigDecimal singlePositionLimit;
 
+    /**
+     * 投资画像最后更新时间戳
+     */
     private LocalDateTime updatedAt;
 
     public UserInvestmentProfile toDomain() {

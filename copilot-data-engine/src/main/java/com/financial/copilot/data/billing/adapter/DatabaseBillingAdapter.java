@@ -6,6 +6,7 @@ import com.financial.copilot.data.billing.po.*;
 import com.financial.copilot.domain.billing.dto.UsageTrendPointDTO;
 import com.financial.copilot.domain.billing.entity.*;
 import com.financial.copilot.domain.billing.port.BillingPort;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,7 @@ import java.util.*;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class DatabaseBillingAdapter implements BillingPort {
 
     private final UserWalletMapper walletMapper;
@@ -32,19 +34,6 @@ public class DatabaseBillingAdapter implements BillingPort {
     private final TokenUsageLedgerMapper ledgerMapper;
     private final RechargePackageMapper packageMapper;
     private final RechargeOrderMapper orderMapper;
-
-
-    public DatabaseBillingAdapter(UserWalletMapper walletMapper,
-                                  ModelPricingMapper pricingMapper,
-                                  TokenUsageLedgerMapper ledgerMapper,
-                                  RechargePackageMapper packageMapper,
-                                  RechargeOrderMapper orderMapper) {
-        this.walletMapper = walletMapper;
-        this.pricingMapper = pricingMapper;
-        this.ledgerMapper = ledgerMapper;
-        this.packageMapper = packageMapper;
-        this.orderMapper = orderMapper;
-    }
 
     @Override
     public UserWallet getOrCreateWallet(Long userId, String tenantId) {

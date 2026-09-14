@@ -23,21 +23,45 @@ import java.math.BigDecimal;
 @TableName("sys_recharge_package")
 public class RechargePackagePO {
 
+    /**
+     * 自增主键 ID
+     */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 套餐显示名称（例如 "体验包", "进阶研报包", "专业机构包"）
+     */
     private String packageName;
 
+    /**
+     * 套餐销售定价（单位：元）
+     */
     private BigDecimal priceCny;
 
+    /**
+     * 购买获得的基础算力积分额度
+     */
     private Long grantedPoints;
 
+    /**
+     * 限时赠送/促销奖励的算力积分额度
+     */
     private Long bonusPoints;
 
+    /**
+     * UI 促销角标文本（如 "限时特惠", "最受欢迎", "性价比之王"）
+     */
     private String badge;
 
+    /**
+     * 前台界面展示排序权重（升序）
+     */
     private Integer sortOrder;
 
+    /**
+     * 套餐是否在架销售
+     */
     private Boolean isActive;
 
     public RechargePackage toDomain() {

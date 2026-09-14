@@ -23,17 +23,35 @@ import java.time.LocalDateTime;
 @TableName("sys_role")
 public class RolePO {
 
+    /**
+     * 自增主键 ID
+     */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 角色唯一代码（例如 "ROLE_ADMIN", "ROLE_ANALYST"）
+     */
     private String roleCode;
 
+    /**
+     * 角色名称（例如 "系统管理员", "资深投研分析师"）
+     */
     private String roleName;
 
+    /**
+     * 角色职权说明
+     */
     private String description;
 
+    /**
+     * 是否为系统内置角色（内置角色不可删除）
+     */
     private Boolean isSystem;
 
+    /**
+     * 创建时间戳
+     */
     private LocalDateTime createdAt;
 
     public Role toDomain() {

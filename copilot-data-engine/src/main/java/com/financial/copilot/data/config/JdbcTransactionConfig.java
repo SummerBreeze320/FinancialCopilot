@@ -7,7 +7,16 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 
-/** Selects the relational transaction manager explicitly in the mixed JDBC/Neo4j application. */
+/**
+ * <h1>JDBC 关系数据库事务管理器配置</h1>
+ * <p>
+ * 在混合使用 PostgreSQL 关系型数据库与 Neo4j 图数据库的分布式投研架构中，
+ * 显式声明命名为 {@code jdbcTransactionManager} 的 {@link PlatformTransactionManager} Bean，
+ * 防止声明式事务 {@code @Transactional} 发生多数据源上下文歧义。
+ * </p>
+ *
+ * @author FinancialCopilot
+ */
 @Configuration
 public class JdbcTransactionConfig {
 
