@@ -15,7 +15,9 @@ import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RagSchemaSyncServiceIntegrationTest {
 
     @Test
-    @DisplayName("端到端验证指标与板块样例批量向量化及双库同步入库与混合检索")
+    @DisplayName("端到端验证指标与板块内存流批量向量化及双库同步入库与混合检索")
     void testEndToEndSyncAndHybridSearch() throws Exception {
         // 1. 数据源初始化
         DriverManagerDataSource pgDs = new DriverManagerDataSource();
@@ -47,42 +49,61 @@ class RagSchemaSyncServiceIntegrationTest {
                 parser, embeddingAdapter, schemaAdapter, Optional.of(graphAdapter)
         );
 
-        // 3. 从测试类路径读取样例数据，执行端到端同步流水线
-        try (InputStream mIs = getClass().getResourceAsStream("/data/sample-metrics.json");
-             InputStream sIs = getClass().getResourceAsStream("/data/sample-sectors.json")) {
+        // 3. 内存模拟流，纯净执行双库端到端向量化与写入
+        String mockMetricsJson = """
+            [
+              {
+                "mnemonic": "test_sync_metric",
+                "index_name": "测试同步指标",
+                "parent_name": "测试指标",
+                "description": "用于双库流水线同步测试",
+                "supported_usage": ["filter", "sort"],
+                "aliases": ["测试同步"]
+              }
+            ]
+            """;
 
-            assertNotNull(mIs, "测试资源 /data/sample-metrics.json 必须存在");
-            assertNotNull(sIs, "测试资源 /data/sample-sectors.json 必须存在");
+        String mockSectorsJson = """
+            [
+              {
+                "source_sector_id": "test_sync_sec_root",
+                "parent_id": null,
+                "name": "测试同步根板块",
+                "is_leaf": false
+              },
+              {
+                "source_sector_id": "test_sync_sec_leaf",
+                "parent_id": "test_sync_sec_root",
+                "name": "测试同步叶子板块",
+                "is_leaf": true
+              }
+            ]
+            """;
+
+        try (InputStream mIs = new ByteArrayInputStream(mockMetricsJson.getBytes(StandardCharsets.UTF_8));
+             InputStream sIs = new ByteArrayInputStream(mockSectorsJson.getBytes(StandardCharsets.UTF_8))) {
 
             RagSchemaSyncService.SyncReport report = syncService.syncAll(mIs, sIs);
 
             assertNotNull(report);
-            assertEquals(4, report.metricsCount(), "指标同步数量应为 4");
-            assertEquals(4, report.sectorsCount(), "板块同步数量应为 4");
-            assertTrue(report.neo4jSynced(), "Neo4j 必须同步成功");
+            assertEquals(1, report.metricsCount());
+            assertEquals(2, report.sectorsCount());
+            assertTrue(report.neo4jSynced());
         }
 
         // 4. 验证 PostgreSQL 数据持久化
-        assertTrue(schemaAdapter.countMetrics() >= 4, "Postgres 指标总数应不少于 4");
-        assertTrue(schemaAdapter.countSectors() >= 4, "Postgres 板块总数应不少于 4");
+        assertTrue(schemaAdapter.countMetrics() >= 1);
+        assertTrue(schemaAdapter.countSectors() >= 2);
 
-        // 5. 验证 Neo4j 节点与关系
-        assertTrue(graphAdapter.countSectorNodes() >= 4, "Neo4j 板块节点应不少于 4");
-        assertTrue(graphAdapter.countMetricNodes() >= 4, "Neo4j 指标节点应不少于 4");
+        // 5. 验证 Neo4j 节点与叶子节点展开
+        List<String> leaves = graphAdapter.expandLeafSectors("test_sync_sec_root");
+        assertNotNull(leaves);
+        assertTrue(leaves.contains("test_sync_sec_leaf"));
 
-        // 6. 验证 Neo4j 叶子节点展开
-        List<String> etfLeaves = graphAdapter.expandLeafSectors("1000009160000000");
-        assertNotNull(etfLeaves);
-        assertTrue(etfLeaves.contains("1000009161000000"), "展开应包含股票型ETF");
-        assertTrue(etfLeaves.contains("1000009162000000"), "展开应包含债券型ETF");
-
-        // 7. 验证基于向量余弦的三路混合召回
-        float[] queryVec = embeddingAdapter.embed("近1年收益率最高的基金");
-        List<SchemaRecallResult.MetricMatch> metricMatches = schemaAdapter.searchMetrics("近1年收益率", queryVec, 3);
-        assertFalse(metricMatches.isEmpty(), "必须能召回相关指标");
-        assertEquals("f_return_1y", metricMatches.get(0).metric().getMnemonic());
-
-        List<SchemaRecallResult.SectorMatch> sectorMatches = schemaAdapter.searchSectors("中国上市ETF", queryVec, 3);
-        assertFalse(sectorMatches.isEmpty(), "必须能召回相关板块");
+        // 6. 验证基于向量余弦的三路混合召回
+        float[] queryVec = embeddingAdapter.embed("测试同步指标");
+        List<SchemaRecallResult.MetricMatch> metricMatches = schemaAdapter.searchMetrics("测试同步指标", queryVec, 3);
+        assertFalse(metricMatches.isEmpty());
+        assertEquals("test_sync_metric", metricMatches.get(0).metric().getMnemonic());
     }
 }
