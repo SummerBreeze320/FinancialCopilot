@@ -1,0 +1,119 @@
+{
+  "toolId": "compare_similar",
+  "name": "相似基金对标推荐",
+  "scope": "COMPARISON",
+  "toolType": "COMPARISON_TOOL",
+  "description": "基于基金类型、业绩与风格多因子对标检索与目标基金高度相似的基金池及评分",
+  "provider": "mcp",
+  "server": "wind-fund-analysis",
+  "targetTool": "fund_get_similar",
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "startDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: startDate"
+    },
+    {
+      "name": "endDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: endDate"
+    }
+  ],
+  "componentCount": 1,
+  "components": [
+    {
+      "componentId": "similar",
+      "name": "相似基金",
+      "cardTitle": "相似基金",
+      "displayType": "table",
+      "description": "基于基金类型、业绩、风险和持仓风格获取相似基金列表与相似度。",
+      "metadata": {
+        "dateMode": "range",
+        "table": {
+          "columns": [
+            {
+              "title": "代码",
+              "type": "string",
+              "id": "代码",
+              "width": "110px"
+            },
+            {
+              "title": "名称",
+              "type": "string",
+              "id": "名称",
+              "width": "180px"
+            },
+            {
+              "title": "组合配置",
+              "type": "number",
+              "id": "组合配置(分)",
+              "sorter": true,
+              "fixed": 2
+            },
+            {
+              "title": "收益表现",
+              "type": "number",
+              "id": "收益表现(分)",
+              "sorter": true,
+              "fixed": 2
+            },
+            {
+              "title": "总评分",
+              "type": "number",
+              "id": "总评分(分)",
+              "sorter": true,
+              "fixed": 2,
+              "ColorRanking": true
+            },
+            {
+              "title": "成立日期",
+              "type": "date",
+              "id": "成立日期",
+              "width": "110px"
+            },
+            {
+              "title": "基金总规模",
+              "type": "number",
+              "id": "基金总规模(亿元)",
+              "sorter": true,
+              "unit": "亿元",
+              "fixed": 2
+            },
+            {
+              "title": "Wind三年评级",
+              "type": "string",
+              "id": "Wind三年评级",
+              "width": "110px"
+            },
+            {
+              "title": "申赎状态",
+              "type": "string",
+              "id": "申赎状态",
+              "width": "110px"
+            },
+            {
+              "title": "管理人",
+              "type": "string",
+              "id": "管理人",
+              "width": "180px"
+            }
+          ]
+        },
+        "chart": null,
+        "width": 24
+      }
+    }
+  ]
+}

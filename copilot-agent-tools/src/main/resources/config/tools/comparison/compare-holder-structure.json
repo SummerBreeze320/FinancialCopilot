@@ -1,0 +1,104 @@
+{
+  "toolId": "compare_holder_structure",
+  "name": "多基金持有人结构对比",
+  "scope": "COMPARISON",
+  "toolType": "COMPARISON_TOOL",
+  "description": "以堆叠柱状图形式横向对比多只基金的机构投资者占比与个人投资者占比",
+  "provider": "http_invoke",
+  "server": null,
+  "targetTool": null,
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "reportDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: reportDate"
+    },
+    {
+      "name": "merge",
+      "type": "string",
+      "required": false,
+      "defaultValue": "0",
+      "description": "入参: merge"
+    }
+  ],
+  "componentCount": 1,
+  "components": [
+    {
+      "componentId": "HolderStructure",
+      "name": "持有人结构",
+      "cardTitle": "持有人结构",
+      "displayType": "chart:stackedBar",
+      "description": "以图表形式展示{windCodes}基金的持有人结构数据，包括机构投资者占比、个人投资者占比，报告期：{reportDate}",
+      "command": "MFCP.Report17Picker",
+      "params": [
+        "windCodes",
+        "reportDate",
+        "merge:0"
+      ],
+      "columns": {
+        "Object/WindCode": "windCode",
+        "Object/FundName": "name",
+        "Object/PrivateHold": "privateHold",
+        "Object/InstitutionHold": "institutionHold"
+      },
+      "metadata": {
+        "stackedBar": {
+          "columns": {
+            "series": {
+              "name": [
+                "privateHold",
+                "institutionHold"
+              ],
+              "xAxis": [
+                {
+                  "value": "个人",
+                  "valueI18n": {
+                    "en-US": "Individual"
+                  }
+                },
+                {
+                  "value": "机构",
+                  "valueI18n": {
+                    "en-US": "Institutional"
+                  }
+                }
+              ]
+            },
+            "xAxis": {
+              "data": [
+                "name"
+              ]
+            }
+          },
+          "extra": [
+            {
+              "name": [
+                "merge"
+              ],
+              "type": "radio",
+              "radio": {
+                "本分级规模": 0,
+                "合计规模": 1
+              }
+            }
+          ]
+        },
+        "card": {
+          "title": "持有人结构",
+          "width": "24",
+          "height": "380px"
+        }
+      }
+    }
+  ]
+}

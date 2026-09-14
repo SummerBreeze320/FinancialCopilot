@@ -1,0 +1,2690 @@
+[
+  {
+    "mnemonic": "f_prt_totalasset",
+    "index_name": "基金资产总值",
+    "parent_name": "通用指标",
+    "description": "报告期末基金资产总值",
+    "embedding_text": "基金资产总值 f_prt_totalasset 基金资产总值 报告期末基金资产总值 总资产 资产总值 基金总资产 净资产 基金净资产 净资产规模 资产规模 总资产规模",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82701,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_return_1y",
+    "index_name": "近1年回报",
+    "parent_name": "收益指标",
+    "description": "近1年回报",
+    "embedding_text": "近1年回报 f_return_1y 近1年回报 近1年回报 近一年收益 最近一年收益 近1年收益 一年收益 近一年回报 最近一年回报 近1年表现 最近一年表现 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452113,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_1y",
+    "name": "近1年回报",
+    "aliases": [
+      "近一年收益",
+      "近一年回报",
+      "1年收益",
+      "年收益",
+      "一年收益"
+    ]
+  },
+  {
+    "mnemonic": "f_risk_maxdownside",
+    "index_name": "最大回撤",
+    "parent_name": "风险指标",
+    "description": "最大回撤",
+    "embedding_text": "最大回撤 f_risk_maxdownside 最大回撤 回撤幅度 最大亏损 最大损失 最大跌幅 回撤率 回撤修复 最大回撤率 历史最大回撤 期间最大回撤 下行风险",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 485241,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001010"
+  },
+  {
+    "mnemonic": "f_info_windcode",
+    "index_name": "Wind代码",
+    "parent_name": "通用指标",
+    "description": "基金Wind代码",
+    "embedding_text": "Wind代码 f_info_windcode 基金Wind代码 基金完整代码 基金代码 基金代码OF 基金代码后缀 带OF后缀代码",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82781,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_fullname",
+    "index_name": "基金全称",
+    "parent_name": "通用指标",
+    "description": "基金名称",
+    "embedding_text": "基金全称 f_info_fullname 基金名称 基金全称 基金名 基金名字 基金全名 完整基金名称 产品名称 基金产品名称 名称包含 基金名称包含 基金全称包含 名称中有 基金名称中有 基金全称中有",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82783,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_name",
+    "index_name": "基金简称",
+    "parent_name": "基本要素",
+    "description": "基金简称1111",
+    "embedding_text": "基金简称 f_info_name 基金简称 基金名称简称 基金名简称 ETF简称 基金短名称 产品简称 基金产品简称1111",
+    "version": 3,
+    "enabled": false,
+    "source_indicator_id": 82782,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": null,
+    "fieldName_en": "Fund Abbreviation",
+    "unit_en": null,
+    "source": "基金公告111",
+    "source_en": "Fund Filings",
+    "aliases": []
+  },
+  {
+    "mnemonic": "f_info_fundmanager",
+    "index_name": "基金经理(现任)",
+    "parent_name": "通用指标",
+    "description": "现任基金经理的名称",
+    "embedding_text": "基金经理(现任) f_info_fundmanager 现任基金经理名称 基金经理 现任基金经理 当前基金经理 在任基金经理 目前基金经理 基金经理姓名",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82795,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_nav_adjustedreturn",
+    "index_name": "复权单位净值增长率（收益率）",
+    "parent_name": "通用指标",
+    "description": "基金净值在指定区间的净增长",
+    "embedding_text": "复权单位净值增长率 f_nav_adjustedreturn 复权单位净值增长率 复权净值增长 净值增长 区间收益 复权增长率 复权净值 基金净值在指定区间的净增长",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83148,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_fundscale",
+    "index_name": "分级基金规模(公告披露,最新)",
+    "parent_name": "通用指标",
+    "description": "最新基金公告披露的下属分级基金的资产净值",
+    "embedding_text": "分级基金规模(公告披露,最新) f_info_fundscale 分级基金规模 基金规模 管理规模 资产管理规模 产品管理规模 基金管理规模 基金总规模 最新规模 规模大小 按规模排序 规模降序 规模升序 资产净值 基金资产净值 基金净资产 最新基金公告披露的下属分级基金的资产净值",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159141,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_netasset_total2",
+    "index_name": "基金规模合计",
+    "parent_name": "通用指标",
+    "description": "截止指定日期基金的最新规模，对于分级基金，则是多个基金规模的的合计。支持根据披露数据截止日期汇率进行币种换算",
+    "embedding_text": "基金规模合计 f_netasset_total2 基金规模合计 基金规模 基金总规模 基金整体规模 基金资产规模 基金市值 基金总市值 公募基金规模 产品规模",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 458989,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_relatedcode",
+    "index_name": "关联基金代码",
+    "parent_name": "通用指标",
+    "description": "分级基金的各分级方式对应的基金代码",
+    "embedding_text": "关联基金代码 f_info_relatedcode 分级基金的各分级方式对应的基金代码 分级基金的各分级方式对应的基金代码",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454410,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_sharpe",
+    "index_name": "Sharpe",
+    "parent_name": "通用指标",
+    "description": "Sharpe",
+    "embedding_text": "Sharpe f_risk_sharpe Sharpe 夏普 夏普比率 夏普值 夏普指数 夏普指标 Sharpe比率 收益率计算方法 无风险收益率",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82989,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_mgrcomp",
+    "index_name": "基金管理人",
+    "parent_name": "通用指标",
+    "description": "基金管理人名称，适合基金公司、旗下基金、某基金公司的基金这类问法。",
+    "embedding_text": "基金管理人 f_info_mgrcomp 基金管理人名称 基金公司 基金管理公司 管理人 旗下基金",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82797,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_topstockname",
+    "index_name": "重仓股股票名称",
+    "parent_name": "通用指标",
+    "description": "报告期末基金持有的第N名股票的名称",
+    "embedding_text": "重仓股股票名称 f_prt_topstockname 重仓股股票名称 重仓股名称 持仓股票名称 前N大重仓股 前几大持仓 重仓持股 重仓股票 持仓名称 报告期末基金持有的第N名股票名称 报表",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82723,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "aliases": [
+      "重仓股票",
+      "持仓股票",
+      "重仓股名称",
+      "持仓股票名称",
+      "前N大重仓股名",
+      "前几大持仓名",
+      "重仓持股名",
+      "持仓名称"
+    ]
+  },
+  {
+    "mnemonic": "f_return_3m",
+    "index_name": "近3月回报",
+    "parent_name": "收益指标",
+    "description": "近3月回报",
+    "embedding_text": "近3月回报 f_return_3m 近3月回报 近三月收益 近3月收益 近三月回报 近3月表现 近三月表现 三个月收益 季收益 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452111,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_3m",
+    "name": "近3月回报",
+    "aliases": [
+      "近三月收益",
+      "近三月回报",
+      "3月收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_5y",
+    "index_name": "近5年回报",
+    "parent_name": "收益指标",
+    "description": "近5年回报",
+    "embedding_text": "近5年回报 f_return_5y 近5年回报 近五年收益 近5年收益 近五年回报 近5年表现 近五年表现 五年收益 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452116,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_5y",
+    "name": "近5年回报",
+    "aliases": [
+      "近五年收益",
+      "近五年回报",
+      "5年收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_6m",
+    "index_name": "近6月回报",
+    "parent_name": "收益指标",
+    "description": "近6月回报",
+    "embedding_text": "近6月回报 f_return_6m 近6月回报 近6月回报 近六月收益 近6月收益 近半年收益 半年收益 近六月回报 近半年回报 近6月表现 近半年表现 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452112,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_6m",
+    "name": "近6月回报",
+    "aliases": [
+      "近六月收益",
+      "近六月回报",
+      "6月收益",
+      "半年收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_ytd",
+    "index_name": "今年以来回报",
+    "parent_name": "收益指标",
+    "description": "今年以来回报",
+    "embedding_text": "今年以来回报 f_return_ytd 今年以来回报 年初至今收益 今年收益 年初至今回报 今年表现 年内收益 年内回报 本年度收益 YTD 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452118,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_returnyearly",
+    "index_name": "年化收益率",
+    "parent_name": "收益指标",
+    "description": "年化收益率",
+    "embedding_text": "年化收益率 f_risk_returnyearly 年化收益率 年化收益率 收益率计算方法",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82993,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_mmf_annualizedyield",
+    "index_name": "7日年化收益率",
+    "parent_name": "收益指标",
+    "description": "货币市场基金指定交易日向前最近七日收益所折算的年资产收益率，适合最新7日年化、七日年化这类问法。",
+    "embedding_text": "7日年化收益率 f_mmf_annualizedyield 7日年化收益率 7日年化 七日年化 最新7日年化 最新七日年化 7日年化收益 七日年化收益 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83140,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_mmf_avgannualizedyield",
+    "index_name": "区间日年化收益率均值",
+    "parent_name": "收益指标",
+    "description": "货币市场基金从开始时间至结束时间的七日年化收益率算术平均值，适合近3月7日年化均值、区间7日年化均值这类问法。",
+    "embedding_text": "区间日年化收益率均值 f_mmf_avgannualizedyield 7日年化均值 七日年化均值 近3月7日年化均值 近三月7日年化均值 区间7日年化均值 区间七日年化均值",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83142,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_nav_periodreturnranking_ytd",
+    "index_name": "今年以来回报同类排名",
+    "parent_name": "收益指标",
+    "description": "基金今年以来回报的同类排名",
+    "embedding_text": "今年以来回报排名 f_nav_periodreturnranking_ytd 基金今年以来回报的同类排名 今年以来回报同类排名 今年以来收益同类排名 年初至今收益同类排名 年初至今回报同类排名 YTD收益排名 YTD回报排名 交易日期 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454040,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_nav_periodreturnranking_ytd",
+    "name": "今年以来回报排名",
+    "aliases": [
+      "YTD收益排名"
+    ]
+  },
+  {
+    "mnemonic": "f_nav_periodreturnranking_y",
+    "index_name": "单年度回报排名",
+    "parent_name": "收益指标",
+    "description": "基金单年度回报的同类排名，适合年度排名、某年同类排名、某年排名前20这类问法。",
+    "embedding_text": "单年度回报排名 f_nav_periodreturnranking_y 基金单年度回报的同类排名 单年度回报同类排名 年度回报排名 年度收益排名 年度同类排名 某年同类排名 某年排名 某年基金排名 某年排名前20 某年同类基金前20 2026年排名 2026年同类排名 2026年同类基金前20 2025年排名 2024年排名 年度业绩排名 年内完整年度排名 交易日期 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454039,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_stdevyearly",
+    "index_name": "年化波动率",
+    "parent_name": "收益指标",
+    "description": "年化波动率",
+    "embedding_text": "年化波动率 f_risk_stdevyearly 年化波动率 年化波动率 年化标准差 年度波动率 年波动率 年度波动 成立以来波动率 波动幅度 年化波幅 标准差 净值波动 风险指标",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82996,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_stdev",
+    "index_name": "收益标准差",
+    "parent_name": "收益指标",
+    "description": "收益标准差",
+    "embedding_text": "收益标准差 f_risk_stdev 收益标准差 收益标准差 收益率计算方法",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82995,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001010"
+  },
+  {
+    "mnemonic": "f_risk_annustdev",
+    "index_name": "收益标准差(年化)",
+    "parent_name": "收益指标",
+    "description": "收益标准差(年化)",
+    "embedding_text": "收益标准差(年化) f_risk_annustdev 收益标准差(年化) 收益标准差(年化) 收益率计算方法",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 485255,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_quot_benchreturn",
+    "index_name": "业绩比较基准增长率",
+    "parent_name": "通用指标",
+    "description": "业绩比较基准增长率",
+    "embedding_text": "业绩比较基准增长率 f_quot_benchreturn 业绩比较基准增长率 基准收益率 基准收益 基准涨幅 基准回报 业绩基准增长率 基准表现 基准增长",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83121,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_nav_navoverbenchreturn",
+    "index_name": "区间净值超越基准收益率",
+    "parent_name": "收益指标",
+    "description": "区间净值超越基准的收益率",
+    "embedding_text": "区间净值超越基准收益率 f_nav_navoverbenchreturn 区间净值超越基准的收益率 跑赢基准 超额收益 超越基准收益 超额回报 相对基准收益 阿尔法",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159036,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_navoverbenchannualreturn",
+    "index_name": "区间净值超越基准年化收益率",
+    "parent_name": "收益指标",
+    "description": "区间净值超越基准年化收益率",
+    "embedding_text": "区间净值超越基准年化收益率 f_risk_navoverbenchannualreturn 区间净值超越基准年化收益率 收益率计算方法",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159026,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_duration",
+    "index_name": "基金重仓债券组合久期",
+    "parent_name": "通用指标",
+    "description": "基金组合久期",
+    "embedding_text": "基金重仓债券组合久期 f_risk_duration 基金组合久期 债券久期 持仓久期 债券组合久期 基金久期 重仓债券久期 债券持仓久期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454390,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_foundleverage",
+    "index_name": "基金杠杆率",
+    "parent_name": "通用指标",
+    "description": "基金的杠杆比率",
+    "embedding_text": "基金杠杆率 f_prt_foundleverage 基金杠杆率 基金的杠杆比率 杠杆 杠杆水平 基金杠杆 财务杠杆 投资杠杆率 杠杆倍数",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 456327,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_managementfeeratio",
+    "index_name": "管理人管理费率",
+    "parent_name": "通用指标",
+    "description": "基金的管理费率，适合管理费率、基金管理费、管理费用率这类问法。",
+    "embedding_text": "管理人管理费率 f_info_managementfeeratio 基金管理费率 管理费率 基金管理费 管理费用率 管理费",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82791,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_custodianfeeratio",
+    "index_name": "托管费率",
+    "parent_name": "通用指标",
+    "description": "基金托管费率",
+    "embedding_text": "托管费率 f_info_custodianfeeratio 基金托管费率 托管费率 托管费 托管费用率 基金托管费 资金托管费率",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82792,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_salefeeratio",
+    "index_name": "销售服务费率",
+    "parent_name": "通用指标",
+    "description": "销售服务费率，适合销售费率、销售服务费、服务费率这类问法。",
+    "embedding_text": "销售服务费率 f_info_salefeeratio 销售服务费率 销售费率 销售服务费 服务费率 销售费用 营销费率 销售相关费率",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 494143,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_purchasefeeratio",
+    "index_name": "最高申购费率",
+    "parent_name": "通用指标",
+    "description": "基金最高一档的申购费率，适合最高申购费率、申购费率、认购申购费率这类问法。",
+    "embedding_text": "最高申购费率 f_info_purchasefeeratio 最高申购费率 申购费率 认购申购费率 申购手续费率 买入费率 申购费 认购费 购买费率",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82793,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_topstockcode",
+    "index_name": "重仓股股票代码",
+    "parent_name": "通用指标",
+    "description": "报告期末基金持有的第N名股票代码",
+    "embedding_text": "重仓股股票代码 f_prt_topstockcode 重仓股股票代码 重仓股代码 持仓股票代码 前N大重仓股 前大持仓 重仓持股 重仓股票 持仓代码 报告期末基金持有的第N名股票代码 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82724,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_topstockvalue",
+    "index_name": "重仓股持股市值",
+    "parent_name": "通用指标",
+    "description": "报告期末基金持有的第N名股票的市值",
+    "embedding_text": "重仓股持股市值 f_prt_topstockvalue 报告期末基金持有的第N名股票的市值 报告期末基金持有的第N名股票的市值 重仓股市值 持仓市值 股票持仓市值 重仓股票市值 相关持仓市值 持有市值 前十大持仓市值 前十大重仓股市值 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82726,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_topstockholdingchanging",
+    "index_name": "重仓股持仓变动",
+    "parent_name": "通用指标",
+    "description": "报告期末基金投资的第N名股票数量变动",
+    "embedding_text": "重仓股持仓变动 f_prt_topstockholdingchanging 股票数量变动 持仓变动 调仓变化 持仓数量变化 股票增减仓 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159082,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_fundnoofstocks",
+    "index_name": "重仓股票持有基金数",
+    "parent_name": "通用指标",
+    "description": "持有该重仓股票的基金总数",
+    "embedding_text": "重仓股票持有基金数 f_prt_fundnoofstocks 持有该重仓股票的基金总数 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159084,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_bondtonav",
+    "index_name": "债券市值占基金资产净值比",
+    "parent_name": "通用指标",
+    "description": "债券投资市值占基金资产净值比",
+    "embedding_text": "债券市值占基金资产净值比 f_prt_bondtonav 债券市值占基金资产净值比 债券占净值比 债券投资占比 债券占比 债券含量 债券仓位 债券投资比例 债券配置比例 债券资产净值占比",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82709,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_bondbycreditratingtonav",
+    "index_name": "按信用评级的债券投资占基金资产净值比",
+    "parent_name": "通用指标",
+    "description": "报告期按信用评级列示的债券投资市值占基金资产净值比，分为长期信用评级和短期信用评级",
+    "embedding_text": "按信用评级的债券投资占基金资产净值比 f_prt_bondbycreditratingtonav 报告期按信用评级列示的债券投资市值占基金资产净值比，分为长期信用评级和短期信用评级 报告期按信用评级列示的债券投资市值占基金资产净值比，分为长期信用评级和短期信用评级 信用债占比 债券信用评级占比 信用评级债券占比 评级债券占比 信用债投资占比 按评级债券占比 信用评级类型 计算方法",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454282,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_convertiblebondtonav",
+    "index_name": "可转债市值占基金资产净值比",
+    "parent_name": "通用指标",
+    "description": "报告期末基金投资组合中可转债市值占期末基金资产净值比",
+    "embedding_text": "可转债市值占基金资产净值比 f_prt_convertiblebondtonav 可转债市值占基金资产净值比 可转债占净值比 可转债投资占比 可转债占比 可转债含量 转债仓位 转债配置比例 可转债比例 转债投资比例",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82748,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_cashtonav",
+    "index_name": "银行存款占基金资产净值比",
+    "parent_name": "通用指标",
+    "description": "银行存款占基金资产净值比",
+    "embedding_text": "银行存款占基金资产净值比 f_prt_cashtonav 银行存款占基金资产净值比 存款占净值比 银行存款占比 存款占比 现金占比 银行存款比例 银行存款含量 现金仓位 现金资产占比",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82711,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_holder_institution_holdingpct",
+    "index_name": "机构投资者持有比例",
+    "parent_name": "通用指标",
+    "description": "机构投资者持有比例",
+    "embedding_text": "机构投资者持有比例 f_holder_institution_holdingpct 机构投资者持有比例 机构持有比例 机构占比 机构持仓比例 机构持仓占比 机构投资人比例 机构持有人比例 机构持有份额占比 机构持仓 机构持股 机构占股 报告期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83125,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_style_styleattribute",
+    "index_name": "风格属性",
+    "parent_name": "通用指标",
+    "description": "基金持有的股票价值-成长特性为基础，把基金投资股票的价值-成长风格定义为价值风格型基金、平衡风格型基金和成长风格型基金\n注：\n1、因非内地持仓股票(如港股、美国及其他海外股票)未纳入计算，故陆港通(沪港深)概念基金、QDII基金无对应数据返回",
+    "embedding_text": "风格属性 f_style_styleattribute 基金持有的股票价值-成长特性为基础，把基金投资股票的价值-成长风格定义为价值风格型基金、平衡风格型基金和成长风格型基金 注： 1、因非内地持仓股票(如港股、美国及其他海外股票)未纳入计算，故陆港通(沪港深)概念基金、QDII基金无对应数据返回",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159229,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_style_marketvaluestyleattribute",
+    "index_name": "市值-风格属性",
+    "parent_name": "通用指标",
+    "description": "市值-风格属性，即基金的风格箱，同时考虑基金的市值属性和风格属性，分为大盘价值风格型基金、大盘平衡风格型基金、大盘成长风格型基金、中盘价值风格型基金、中盘平衡风格型基金、中盘成长风格型基金、小盘价值风格型基金、小盘平衡风格型基金、小盘成长风格型基金。\n注：\n1、因非内地持仓股票(如港股、美国及其他海外股票)未纳入计算，故陆港通(沪港深)概念基金、QDII基金无对应数据返回",
+    "embedding_text": "市值-风格属性 f_style_marketvaluestyleattribute 市值风格属性 风格箱 风格属性 大中小盘风格 大盘价值风格 大盘平衡风格 大盘成长风格 中盘价值风格 中盘平衡风格 中盘成长风格 小盘价值风格 小盘平衡风格 小盘成长风格",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159227,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_style_marketvalueattribute",
+    "index_name": "市值属性",
+    "parent_name": "通用指标",
+    "description": "以基金持有的股票市值为基础，把基金投资股票的规模风格定义为大盘风格型基金、中盘风格型基金和小盘风格型基金\n注：\n1、因非内地持仓股票(如港股、美国及其他海外股票)未纳入计算，故陆港通(沪港深)概念基金、QDII基金无对应数据返回",
+    "embedding_text": "市值属性 f_style_marketvalueattribute 规模风格属性 市值风格 风格属性 大盘风格 中盘风格 小盘风格 大中小盘 大盘小盘 大盘风格型基金 中盘风格型基金 小盘风格型基金 这是风格分类属性 不是基金管理规模 不是基金总规模 不是按规模排序 不是管理规模数值",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159228,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_dq_turn",
+    "index_name": "换手率",
+    "parent_name": "交易特征",
+    "description": "证券在指定交易日内转手买卖的频率，也称买卖周转率",
+    "embedding_text": "换手率 f_dq_turn 换手率 买卖周转率 交易频率 基金换手率 持仓更换率 持仓变动率 交易活跃度 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83026,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_return_1w",
+    "index_name": "近1周回报",
+    "parent_name": "收益指标",
+    "description": "近1周回报",
+    "embedding_text": "近1周回报 f_return_1w 近1周回报 近一周收益 近1周收益 近一周回报 近1周表现 近一周表现 周收益 一周收益 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452109,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_1w",
+    "name": "近1周回报",
+    "aliases": [
+      "近一周收益",
+      "近一周回报",
+      "1周收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_1m",
+    "index_name": "近1月回报",
+    "parent_name": "收益指标",
+    "description": "近1月回报",
+    "embedding_text": "近1月回报 f_return_1m 近1月回报 近一月收益 近1月收益 近一月回报 近1月表现 近一月表现 一个月收益 一月收益 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452110,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_1m",
+    "name": "近1月回报",
+    "aliases": [
+      "近一月收益",
+      "近一月回报",
+      "1月收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_2y",
+    "index_name": "近2年回报",
+    "parent_name": "收益指标",
+    "description": "近2年回报",
+    "embedding_text": "近2年回报 f_return_2y 近2年回报 近两年收益 近2年收益 近两年回报 近2年表现 近两年表现 两年收益 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452114,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_2y",
+    "name": "近2年回报",
+    "aliases": [
+      "近两年收益",
+      "近两年回报",
+      "2年收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_3y",
+    "index_name": "近3年回报",
+    "parent_name": "收益指标",
+    "description": "近3年回报",
+    "embedding_text": "近3年回报 f_return_3y 近3年回报 近三年收益 近3年收益 近三年回报 近3年表现 近三年表现 三年收益 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452115,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_3y",
+    "name": "近3年回报",
+    "aliases": [
+      "近三年收益",
+      "近三年回报",
+      "3年收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_10y",
+    "index_name": "近10年回报",
+    "parent_name": "收益指标",
+    "description": "近10年回报",
+    "embedding_text": "近10年回报 f_return_10y 近10年回报 近十年收益 近10年收益 近十年回报 近10年表现 近十年表现 十年收益 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452117,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_10y",
+    "name": "近10年回报",
+    "aliases": [
+      "近十年收益",
+      "近十年回报",
+      "10年收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_std",
+    "index_name": "成立以来回报",
+    "parent_name": "收益指标",
+    "description": "成立以来回报",
+    "embedding_text": "成立以来回报 f_return_std 成立以来回报 成立以来收益 成立至今收益 自成立以来回报 成立至今回报 成立以来表现 成立至今表现 是否年化 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452119,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_std",
+    "name": "今年以来回报",
+    "aliases": [
+      "今年以来收益",
+      "YTD收益",
+      "本年以来收益",
+      "年初以来收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_m",
+    "index_name": "单月度回报",
+    "parent_name": "收益指标",
+    "description": "单月度回报",
+    "embedding_text": "单月度回报 f_return_m 单月度回报 月度收益 月收益 月回报 每月回报 月度收益率 当月回报 当月收益 单月回报 月度回报 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452120,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_m",
+    "name": "近1月回报",
+    "aliases": [
+      "月度收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_q",
+    "index_name": "单季度回报",
+    "parent_name": "收益指标",
+    "description": "单季度回报",
+    "embedding_text": "单季度回报 f_return_q 单季度回报 季度收益 季收益 季回报 每季回报 季度收益率 当季回报 当季收益 单季回报 季度回报 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452121,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_q",
+    "name": "近1季回报",
+    "aliases": [
+      "季度收益"
+    ]
+  },
+  {
+    "mnemonic": "f_return_y",
+    "index_name": "单年度回报",
+    "parent_name": "收益指标",
+    "description": "单年度回报",
+    "embedding_text": "单年度回报 f_return_y 单年度回报 年度收益 年收益 年回报 每年回报 年度收益率 当年回报 当年收益 单年回报 年度回报 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452122,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_return_y",
+    "name": "近1年回报",
+    "aliases": [
+      "年度收益"
+    ]
+  },
+  {
+    "mnemonic": "f_nav_periodreturnranking_1w",
+    "index_name": "近1周回报同类排名",
+    "parent_name": "收益指标",
+    "description": "基金近1周回报的同类排名",
+    "embedding_text": "近1周回报排名 f_nav_periodreturnranking_1w 近1周回报同类排名 近一周业绩排名 一周收益排名 本周业绩排名 近1周排名 本周回报 一周表现 交易日期 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454030,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_nav_periodreturnranking_1w",
+    "name": "近1周回报排名",
+    "aliases": [
+      "近一周收益排名"
+    ]
+  },
+  {
+    "mnemonic": "f_nav_periodreturnranking_1m",
+    "index_name": "近1月回报同类排名",
+    "parent_name": "收益指标",
+    "description": "基金近1月回报的同类排名",
+    "embedding_text": "近1月回报排名 f_nav_periodreturnranking_1m 基金近1月回报同类排名 近一月收益排名 近1月收益排名 近一月回报排名 近1月回报排名 交易日期 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454031,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_nav_periodreturnranking_1m",
+    "name": "近1月回报排名",
+    "aliases": [
+      "近一月收益排名"
+    ]
+  },
+  {
+    "mnemonic": "f_nav_periodreturnranking_3m",
+    "index_name": "近3月回报同类排名",
+    "parent_name": "收益指标",
+    "description": "基金近3月回报的同类排名",
+    "embedding_text": "近3月回报排名 f_nav_periodreturnranking_3m 基金近3月回报同类排名 近三月收益排名 近3月收益排名 近三月回报排名 近3月回报排名 交易日期 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454032,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_nav_periodreturnranking_3m",
+    "name": "近3月回报排名",
+    "aliases": [
+      "近三月收益排名"
+    ]
+  },
+  {
+    "mnemonic": "f_nav_periodreturnranking_6m",
+    "index_name": "近6月回报同类排名",
+    "parent_name": "收益指标",
+    "description": "基金近6月回报的同类排名",
+    "embedding_text": "近6月回报排名 f_nav_periodreturnranking_6m 基金近6月回报同类排名 近六月收益排名 近6月收益排名 近半年收益排名 半年收益排名 近六月回报排名 近6月回报排名 交易日期 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454033,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_nav_periodreturnranking_6m",
+    "name": "近6月回报排名",
+    "aliases": [
+      "近六月收益排名"
+    ]
+  },
+  {
+    "mnemonic": "f_nav_periodreturnranking_1y",
+    "index_name": "近1年回报同类排名",
+    "parent_name": "收益指标",
+    "description": "基金近1年回报的同类排名",
+    "embedding_text": "近1年回报排名 f_nav_periodreturnranking_1y 基金近1年回报同类排名 近1年回报同类排名 近一年收益同类排名 近1年收益同类排名 最近一年收益同类排名 近一年回报同类排名 交易日期 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454034,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_nav_periodreturnranking_1y",
+    "name": "近1年回报排名",
+    "aliases": [
+      "近一年收益排名"
+    ]
+  },
+  {
+    "mnemonic": "f_nav_periodreturnranking_2y",
+    "index_name": "近2年回报同类排名",
+    "parent_name": "收益指标",
+    "description": "基金近2年回报的同类排名",
+    "embedding_text": "近2年回报排名 f_nav_periodreturnranking_2y 近2年回报同类排名 近2年业绩排名 近两年收益排名 两年业绩排名 近2年排名 两年回报 交易日期 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454035,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_nav_periodreturnranking_2y",
+    "name": "近2年回报排名",
+    "aliases": [
+      "近两年收益排名"
+    ]
+  },
+  {
+    "mnemonic": "f_nav_periodreturnranking_3y",
+    "index_name": "近3年回报同类排名",
+    "parent_name": "收益指标",
+    "description": "基金近3年回报的同类排名",
+    "embedding_text": "近3年回报排名 f_nav_periodreturnranking_3y 近3年回报同类排名 近三年收益同类排名 近3年收益同类排名 三年回报同类排名 三年业绩同类排名 交易日期 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454036,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_nav_periodreturnranking_3y",
+    "name": "近3年回报排名",
+    "aliases": [
+      "近三年收益排名"
+    ]
+  },
+  {
+    "mnemonic": "f_nav_periodreturnranking_5y",
+    "index_name": "近5年回报同类排名",
+    "parent_name": "收益指标",
+    "description": "基金近5年回报的同类排名",
+    "embedding_text": "近5年回报排名 f_nav_periodreturnranking_5y 近5年回报同类排名 近五年收益同类排名 近5年收益同类排名 五年回报同类排名 五年业绩同类排名 交易日期 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454037,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "authoritative_code": "f_nav_periodreturnranking_5y",
+    "name": "近5年回报排名",
+    "aliases": [
+      "近五年收益排名"
+    ]
+  },
+  {
+    "mnemonic": "f_risk_maxdownsideranking",
+    "index_name": "最大回撤同类排名",
+    "parent_name": "风险指标",
+    "description": "最大回撤同类排名",
+    "embedding_text": "最大回撤同类排名 f_risk_maxdownsideranking 最大回撤同类排名 最大回撤排名 回撤排名 回撤同类排名 回撤排序 回撤名次 最大回撤分位 回撤同类分位",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 453412,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_maxdownside_date",
+    "index_name": "最大回撤区间日期",
+    "parent_name": "风险指标",
+    "description": "基金最大回撤的区间日期",
+    "embedding_text": "最大回撤区间日期 f_risk_maxdownside_date 最大回撤区间日期 回撤区间 最大回撤起止日期 回撤起止日期 最大回撤时间段 回撤发生日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454433,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_siml_avgmaxdownside",
+    "index_name": "最大回撤同类平均",
+    "parent_name": "风险指标",
+    "description": "最大回撤同类平均",
+    "embedding_text": "最大回撤同类平均 f_risk_siml_avgmaxdownside 最大回撤同类平均 回撤同类平均 最大回撤平均 同类平均回撤 回撤均值 同类回撤均值 平均最大回撤",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454477,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_maxdownside_recoverdays",
+    "index_name": "最大回撤恢复天数",
+    "parent_name": "风险指标",
+    "description": "最大回撤恢复天数",
+    "embedding_text": "最大回撤恢复天数 f_risk_maxdownside_recoverdays 最大回撤恢复天数 回撤恢复天数 最大回撤修复天数 回撤恢复期 回撤修复时间 回撤修复所需天数 最大回撤修复期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 455899,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_siml_avgsharpe",
+    "index_name": "Sharpe同类平均",
+    "parent_name": "通用指标",
+    "description": "Sharpe同类平均",
+    "embedding_text": "Sharpe同类平均 f_risk_siml_avgsharpe Sharpe同类平均 夏普同类平均 夏普比率同类平均 同类平均夏普 夏普均值 同类夏普平均",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454482,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_siml_avgsortino",
+    "index_name": "Sortino同类平均",
+    "parent_name": "通用指标",
+    "description": "Sortino同类平均",
+    "embedding_text": "Sortino同类平均 f_risk_siml_avgsortino Sortino同类平均 索提诺同类平均 索丁诺同类平均 同类平均索提诺 同类索提诺平均 同类平均Sortino",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454483,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_siml_avgannusharpe",
+    "index_name": "Sharpe(年化)同类平均",
+    "parent_name": "收益指标",
+    "description": "Sharpe(年化)同类平均",
+    "embedding_text": "Sharpe(年化)同类平均 f_risk_siml_avgannusharpe Sharpe(年化)同类平均 夏普年化同类平均 年化夏普同类平均 同类平均年化夏普 年化夏普均值",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454485,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_siml_avgannuSortino",
+    "index_name": "Sortino(年化)同类平均",
+    "parent_name": "收益指标",
+    "description": "Sortino(年化)同类平均",
+    "embedding_text": "Sortino(年化)同类平均 f_risk_siml_avgannuSortino 年化Sortino同类平均 年化索提诺同类平均 索提诺(年化)同类平均 索丁诺(年化)同类平均 同类平均年化索提诺 同类平均年化Sortino",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454486,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_annusharpe",
+    "index_name": "Sharpe(年化)",
+    "parent_name": "收益指标",
+    "description": "Sharpe(年化)",
+    "embedding_text": "Sharpe(年化) f_risk_annusharpe Sharpe(年化) 夏普年化 年化夏普 夏普(年化) 年化夏普比率 年化Sharpe 收益率计算方法 无风险收益率",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 485249,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_annuSortino",
+    "index_name": "Sortino(年化)",
+    "parent_name": "收益指标",
+    "description": "索丁诺比率(年化)",
+    "embedding_text": "Sortino(年化) f_risk_annuSortino Sortino年化 年化Sortino 索丁诺比率(年化) 索提诺比率(年化) 年化索提诺 年化索提诺比率 年化风险调整收益 年化区间索提诺",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 485253,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_avgfundscale",
+    "index_name": "同类基金平均规模",
+    "parent_name": "通用指标",
+    "description": "同类基金最新的平均规模（资产净值）",
+    "embedding_text": "同类基金平均规模 f_info_avgfundscale 同类基金平均规模 同类平均规模 同类型平均规模 同类基金规模均值 同类均值 同类基金最新的平均规模 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159142,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_scaleranking",
+    "index_name": "规模同类排名",
+    "parent_name": "通用指标",
+    "description": "基金最新的资产净值在同类基金中的排名",
+    "embedding_text": "规模同类排名 f_info_scaleranking 规模同类排名 规模排名 同类型规模排名 规模排位 同类规模排位 基金规模排名 基金最新的资产净值在同类基金中的排名 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159143,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_netasset_total",
+    "index_name": "基金规模合计(公告披露)",
+    "parent_name": "通用指标",
+    "description": "基金规模(合计)",
+    "embedding_text": "基金规模合计(公告披露) f_netasset_total 基金规模(合计) 基金规模 管理规模 资产管理规模 产品管理规模 基金管理规模 公募基金管理规模 基金总规模 基金整体规模 基金资产规模 产品规模 基金总资产 基金总净值 按基金规模筛选 按管理规模排序 按规模排序 规模降序 规模升序 规模最大 规模最小 这只基金规模 公募基金规模 这是规模数值不是风格属性 规模",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452161,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000",
+    "aliases": [
+      "规模"
+    ]
+  },
+  {
+    "mnemonic": "f_netasset_total_cc",
+    "index_name": "基金规模合计(公告披露,币种转换)",
+    "parent_name": "通用指标",
+    "description": "截止指定日期基金最近一次披露的资产净值，对于分级基金，则是多个基金资产净值的的合计。\r\n\r\n支持根据披露数据截止日期汇率进行币种换算",
+    "embedding_text": "基金规模合计(公告披露,币种转换) f_netasset_total_cc 截止指定日期基金最近一次披露的资产净值，对于分级基金，则是多个基金资产净值的的合计。 支持根据披露数据截止日期汇率进行币种换算 交易日期 币种",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 457466,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_annualvolranking",
+    "index_name": "年化波动率同类排名",
+    "parent_name": "收益指标",
+    "description": "年化波动率同类排名",
+    "embedding_text": "年化波动率同类排名 f_risk_annualvolranking 年化波动率同类排名 波动率排名 年化波动排名 波动率同类排名 波动率分位 年化波动分位 波动率同类分位 收益率计算方法 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 205189,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_siml_avgstdevyearly",
+    "index_name": "年化波动率同类平均",
+    "parent_name": "收益指标",
+    "description": "年化波动率同类平均",
+    "embedding_text": "年化波动率同类平均 f_risk_siml_avgstdevyearly 年化波动率同类平均 波动率同类平均 年化波动同类平均 同类平均波动率 波动率均值 同类波动率均值 收益率计算方法 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454478,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_nav_adjustedreturn_org",
+    "index_name": "自成立日起复权单位净值增长率",
+    "parent_name": "通用指标",
+    "description": "自成立日其复权单位净值增长率",
+    "embedding_text": "自成立日起复权单位净值增长率 f_nav_adjustedreturn_org 自成立日其复权单位净值增长率 自成立日其复权单位净值增长率",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83150,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_nav_adjustedreturn1",
+    "index_name": "当期复权单位净值增长率",
+    "parent_name": "通用指标",
+    "description": "当期复权单位净值增长率",
+    "embedding_text": "当期复权单位净值增长率 f_nav_adjustedreturn1 当期复权单位净值增长率 当期复权单位净值增长率 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452060,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_nav_navoverbenchreturn_freq",
+    "index_name": "区间净值超越基准收益频率",
+    "parent_name": "收益指标",
+    "description": "区间净值超越基准收益频率",
+    "embedding_text": "区间净值超越基准收益频率 f_nav_navoverbenchreturn_freq 区间净值超越基准收益频率 区间净值超越基准收益频率 年度",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452294,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_nav_navoverbenchreturn_freq2",
+    "index_name": "区间净值超越基准收益频率(百分比)",
+    "parent_name": "收益指标",
+    "description": "区间净值超越基准收益频率(百分比)",
+    "embedding_text": "区间净值超越基准收益频率(百分比) f_nav_navoverbenchreturn_freq2 区间净值超越基准收益频率(百分比) 区间净值超越基准收益频率(百分比)",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454041,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_firstinvesttype",
+    "index_name": "投资类型(一级分类)",
+    "parent_name": "通用指标",
+    "description": "基金一级投资类型，包括股票型、债券型、混合型、货币市场型、FOF、另类投资、QDII等",
+    "embedding_text": "投资类型(一级分类) f_info_firstinvesttype 一级投资类型 基金一级投资类型: 债券型基金 FOF基金 股票型基金 另类投资基金 混合型基金 货币市场型基金 国际(QDII)基金 股票型 债券型 混合型 货币型 FOF QDII 投资类型",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 166329,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_investtype",
+    "index_name": "投资类型(二级分类)",
+    "parent_name": "通用指标",
+    "description": "投资类型",
+    "embedding_text": "投资类型(二级分类) f_info_investtype 投资类型 二级投资类型: REITs 中长期纯债型基金 债券型FOF基金 偏债混合型基金 偏股混合型基金 可转换债券型基金 商品型基金 增强指数型债券基金 增强指数型基金 平衡混合型基金 普通股票型基金 混合债券型一级基金 混合债券型二级基金 混合型FOF基金 灵活配置型基金 短期纯债型基金 股票型FOF基金 股票多空 被动指数型债券基金 被动指数型基金 货币市场型基金",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82786,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_setupdate",
+    "index_name": "基金成立日",
+    "parent_name": "通用指标",
+    "description": "基金的成立日期",
+    "embedding_text": "基金成立日 f_info_setupdate 基金成立日 成立日期 成立时间 基金成立日期 设立日期 基金设立 基金成立时间 创建日期 成立日 什么时候成立 哪天成立 成立于",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82800,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_existingyear",
+    "index_name": "成立年限",
+    "parent_name": "通用指标",
+    "description": "基金的成立年限",
+    "embedding_text": "成立年限 f_info_existingyear 成立年限 基金成立年限 基金年限 存续年限 存续几年 成立多久 成立多长时间 成立满一年 成立满两年 成立满三年 成立1年以上 成立2年以上 成立3年以上",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 205155,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_etfornot",
+    "index_name": "是否ETF基金",
+    "parent_name": "指数增强",
+    "description": "是否为ETF基金",
+    "embedding_text": "是否ETF基金 f_info_etfornot 是否为ETF基金 是否ETF ETF基金 交易所交易基金 上市型基金 场内基金 场内交易基金 ETF产品",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 458476,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_alpha",
+    "index_name": "Alpha",
+    "parent_name": "超额收益",
+    "description": "Alpha",
+    "embedding_text": "Alpha f_risk_alpha Alpha 阿尔法 阿尔法值 阿尔法收益 Alpha收益 超额收益 超额回报 收益率计算方法 标的指数",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82988,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_beta",
+    "index_name": "Beta",
+    "parent_name": "通用指标",
+    "description": "Beta",
+    "embedding_text": "Beta f_risk_beta Beta 贝塔 贝塔值 贝塔系数 Beta系数 市场风险系数 收益率计算方法 标的指数",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82997,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_sortino",
+    "index_name": "Sortino",
+    "parent_name": "通用指标",
+    "description": "索丁诺比率",
+    "embedding_text": "Sortino f_risk_sortino Sortino 索丁诺比率 索提诺 索提诺比率 Sortino比率 下行风险调整收益 索丁诺指标 索提诺表现 Sortino指标 风险调整收益指标 区间索提诺 区间风险调整收益",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 205679,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_trackerror",
+    "index_name": "跟踪误差",
+    "parent_name": "指数增强",
+    "description": "跟踪误差",
+    "embedding_text": "跟踪误差 f_risk_trackerror 跟踪误差 跟踪偏离 跟踪偏差 追踪误差 跟踪偏离度 基准跟踪差异 收益率计算方法 标的指数",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83002,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_redemptionfeeratio",
+    "index_name": "最高赎回费率",
+    "parent_name": "通用指标",
+    "description": "基金最高一档的赎回费率",
+    "embedding_text": "最高赎回费率 f_info_redemptionfeeratio 最高赎回费率 赎回费率 赎回手续费率 赎回费用率 赎回费 基金赎回费 赎回手续费",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82794,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_stocktonav",
+    "index_name": "股票市值占基金资产净值比",
+    "parent_name": "通用指标",
+    "description": "股票投资市值占基金资产净值比",
+    "embedding_text": "股票市值占基金资产净值比 f_prt_stocktonav 股票市值占基金资产净值比 股票占净值比 股票投资占比 股票占比 股票含量 股票仓位 股票投资比例 股票配置比例 权益占比 权益仓位",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82708,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_themetype",
+    "index_name": "所属主题基金类别",
+    "parent_name": "通用指标",
+    "description": "根据定期报告持仓股票所属概念或行业计算的基金所属Wind主题基金类别",
+    "embedding_text": "所属主题基金类别 f_info_themetype 主题基金类别 主题分类 主题赛道 行业主题 概念主题",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 453629,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_calmar",
+    "index_name": "Calmar",
+    "parent_name": "通用指标",
+    "description": "Calmar",
+    "embedding_text": "Calmar f_risk_calmar Calmar 卡尔玛 卡尔玛比率 卡玛 卡玛比率 年化收益与最大回撤比",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452475,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_treynor",
+    "index_name": "Treynor",
+    "parent_name": "通用指标",
+    "description": "Treynor",
+    "embedding_text": "Treynor f_risk_treynor Treynor 特雷诺 特雷诺比率 特雷诺指数 Treynor比率 特雷诺指标 收益率计算方法 无风险收益率 标的指数",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82990,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_inforatio",
+    "index_name": "信息比率",
+    "parent_name": "通用指标",
+    "description": "信息比率",
+    "embedding_text": "信息比率 f_risk_inforatio 信息比率 信息比率 收益率计算方法 无风险收益率 标的指数",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83003,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_inforatioranking",
+    "index_name": "信息比率同类排名",
+    "parent_name": "通用指标",
+    "description": "信息比率同类排名",
+    "embedding_text": "信息比率同类排名 f_risk_inforatioranking 信息比率同类排名 信息比排名 信息比率排名 IR排名 信息比分位 信息比率分位 收益率计算方法 无风险收益率 标的指数 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 247940,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_downsidestdev",
+    "index_name": "下行标准差",
+    "parent_name": "收益指标",
+    "description": "市场环境转坏时基金收益下跌的风险，反映指数向下时收益下跌的大小，下跌幅度越大风险越高",
+    "embedding_text": "下行标准差 f_risk_downsidestdev 市场环境转坏时基金收益下跌的风险，反映指数向下时收益下跌的大小，下跌幅度越大风险越高 市场环境转坏时基金收益下跌的风险，反映指数向下时收益下跌的大小，下跌幅度越大风险越高 收益率计算方法 临界收益率",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 417003,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001010"
+  },
+  {
+    "mnemonic": "f_risk_annutrackerror",
+    "index_name": "跟踪误差(年化)",
+    "parent_name": "收益指标",
+    "description": "跟踪误差(年化)",
+    "embedding_text": "跟踪误差(年化) f_risk_annutrackerror 跟踪误差(年化) 年化跟踪误差 年化跟踪偏离 年化追踪误差 年化跟踪偏离度 收益率计算方法 标的指数",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 485257,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_dq_amount",
+    "index_name": "成交额",
+    "parent_name": "交易特征",
+    "description": "证券在指定交易日成交的金额。 注：A股、基金、权证等以人民币交易的品种单位为人民币，上证B股单位为美元，深证B股单位为港元。",
+    "embedding_text": "成交额 f_dq_amount 成交额 成交金额 交易额 日成交额 日成交金额 成交量 交易金额 证券在指定交易日成交的金额 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83025,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_pq_amount",
+    "index_name": "区间成交额",
+    "parent_name": "交易特征",
+    "description": "证券在指定区间内成交的金额。 注：A股、基金、权证等以人民币交易的品种单位为人民币，上证B股单位为美元，深证B股单位为港元",
+    "embedding_text": "区间成交额 f_pq_amount 证券在指定区间内成交的金额。 注：A股、基金、权证等以人民币交易的品种单位为人民币，上证B股单位为美元，深证B股单位为港元 证券在指定区间内成交的金额。 注：A股、基金、权证等以人民币交易的品种单位为人民币，上证B股单位为美元，深证B股单位为港元",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83040,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "s_pq_avgamount",
+    "index_name": "区间日均成交额",
+    "parent_name": "交易特征",
+    "description": "证券在指定区间内，日成交额的算数平均值。 注：A股、基金、权证等以人民币交易的品种单位为人民币，上证B股单位为美元，深证B股单位为港元",
+    "embedding_text": "区间日均成交额 s_pq_avgamount 证券在指定区间内，日成交额的算数平均值。 注：A股、基金、权证等以人民币交易的品种单位为人民币，上证B股单位为美元，深证B股单位为港元 证券在指定区间内，日成交额的算数平均值。 注：A股、基金、权证等以人民币交易的品种单位为人民币，上证B股单位为美元，深证B股单位为港元",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 84007,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1101000"
+  },
+  {
+    "mnemonic": "f_pq_avgturn",
+    "index_name": "区间日均换手率",
+    "parent_name": "交易特征",
+    "description": "证券在指定区间内，日均转手买卖的频率。",
+    "embedding_text": "区间日均换手率 f_pq_avgturn 区间日均换手率 换手率 区间换手率 日均换手 平均换手率 换手频率 周转率 证券在指定区间内，日均转手买卖的频率",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83044,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_stockvalue",
+    "index_name": "股票投资市值",
+    "parent_name": "通用指标",
+    "description": "报告期末基金投资股票总市值",
+    "embedding_text": "股票投资市值 f_prt_stockvalue 股票投资市值 股票市值 股票持仓市值 持股总市值 权益投资市值 股票总持仓 股票资产市值",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82703,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_stockvalue_topindustryname2",
+    "index_name": "重仓行业名称",
+    "parent_name": "通用指标",
+    "description": "重仓行业名称",
+    "embedding_text": "重仓行业名称 f_prt_stockvalue_topindustryname2 重仓行业名称 重仓行业名称 报告期 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 567146,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_bondvalue",
+    "index_name": "债券投资市值",
+    "parent_name": "通用指标",
+    "description": "报告期末基金投资债券总市值",
+    "embedding_text": "债券投资市值 f_prt_bondvalue 债券投资市值 债券市值 债券持仓市值 持债总市值 固收投资市值 债券总持仓 债券资产市值",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82704,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_stocktoasset",
+    "index_name": "股票市值占基金资产总值比",
+    "parent_name": "通用指标",
+    "description": "股票投资市值占基金资产总值比",
+    "embedding_text": "股票市值占基金资产总值比 f_prt_stocktoasset 股票市值占基金资产总值比 股票占总资产比 股票资产占比 股票资产比例 股票总资产占比 权益占总资产比 股票占总资产比例",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82713,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_bondtoasset",
+    "index_name": "债券市值占基金资产总值比",
+    "parent_name": "通用指标",
+    "description": "债券投资市值占基金资产总值比",
+    "embedding_text": "债券市值占基金资产总值比 f_prt_bondtoasset 债券市值占基金资产总值比 债券占总资产比 债券资产占比 债券资产比例 债券总资产占比 固收占总资产比 债券占总资产比例",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82714,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_heavilyheldstocktostock",
+    "index_name": "重仓股市值占股票投资市值比",
+    "parent_name": "通用指标",
+    "description": "报告期末基金持有的第N名股票的市值占基金股票投资市值百分比",
+    "embedding_text": "重仓股市值占股票投资市值比 f_prt_heavilyheldstocktostock 重仓股占比 持仓占比 股票持仓占比 重仓股票占比 重仓股含量 个股含量 股票含量 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82727,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_convertiblebondtobond",
+    "index_name": "可转债市值占债券投资市值比",
+    "parent_name": "通用指标",
+    "description": "报告期末基金投资组合中可转债市值占期末债券投资市值比",
+    "embedding_text": "可转债市值占债券投资市值比 f_prt_convertiblebondtobond 可转债市值占债券投资市值比 可转债占债券比 转债占债券比 可转债在债券中占比 转债在债券中含量 可转债占固收比例",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82743,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_redemptionfee",
+    "index_name": "赎回费率",
+    "parent_name": "通用指标",
+    "description": "基金赎回的详细费率",
+    "embedding_text": "赎回费率 f_info_redemptionfee 基金赎回的详细费率 收费类型",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159136,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_redemptionfee2",
+    "index_name": "赎回费率(支持历史)",
+    "parent_name": "通用指标",
+    "description": "赎回费率(支持历史)",
+    "embedding_text": "赎回费率(支持历史) f_info_redemptionfee2 赎回费率(支持历史) 赎回费率(支持历史) 收费类型 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454572,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_managementfeeratio2",
+    "index_name": "管理费率(支持历史)",
+    "parent_name": "通用指标",
+    "description": "基金的管理费率(支持历史)",
+    "embedding_text": "管理费率(支持历史) f_info_managementfeeratio2 基金的管理费率(支持历史) 基金的管理费率(支持历史) 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454573,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_custodianfeeratio2",
+    "index_name": "托管费率(支持历史)",
+    "parent_name": "通用指标",
+    "description": "基金托管费率(支持历史)",
+    "embedding_text": "托管费率(支持历史) f_info_custodianfeeratio2 基金托管费率(支持历史) 基金托管费率(支持历史) 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454574,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_salefeeratio2",
+    "index_name": "销售服务费率(支持历史)",
+    "parent_name": "通用指标",
+    "description": "基金公布的从基金资产中计提的一定比例的服务费率(支持历史)",
+    "embedding_text": "销售服务费率(支持历史) f_info_salefeeratio2 基金公布的从基金资产中计提的一定比例的服务费率(支持历史) 基金公布的从基金资产中计提的一定比例的服务费率(支持历史) 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454575,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_exchangeshortname",
+    "index_name": "基金场内简称",
+    "parent_name": "通用指标",
+    "description": "基金场内简称",
+    "embedding_text": "基金场内简称 f_info_exchangeshortname 基金场内简称 场内简称 ETF简称 上市简称 交易所简称 市场简称 交易简称 场内代码简称",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 451608,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_trackindexname",
+    "index_name": "跟踪指数名称",
+    "parent_name": "通用指标",
+    "description": "跟踪指数名称",
+    "embedding_text": "跟踪指数名称 f_info_trackindexname 跟踪指数名称 跟踪指数 标的指数 指数名称 跟踪标的名称 基准指数名称 对标指数 所跟踪指数 跟踪标的指数",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 456614,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_trackindexcode",
+    "index_name": "跟踪指数代码",
+    "parent_name": "通用指标",
+    "description": "跟踪指数代码",
+    "embedding_text": "跟踪指数代码 f_info_trackindexcode 跟踪指数代码 跟踪指数编号 标的指数代码 指数代码 跟踪标的代码 所跟踪指数代码",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 562011,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_topbondname",
+    "index_name": "重仓债券名称",
+    "parent_name": "通用指标",
+    "description": "报告期末基金持有的第N名债券的名称",
+    "embedding_text": "重仓债券名称 f_prt_topbondname 重仓债券名称 债券名称 持仓债券名称 重仓债券 持仓债券 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82738,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_topbondsymbol",
+    "index_name": "重仓债券代码",
+    "parent_name": "通用指标",
+    "description": "报告期末基金投资所有债券的代码",
+    "embedding_text": "重仓债券代码 f_prt_topbondsymbol 债券代码 债券编号 重仓债券代码 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159086,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_etffeeder",
+    "index_name": "是否ETF联接基金",
+    "parent_name": "指数增强",
+    "description": "是否为ETF联接基金",
+    "embedding_text": "是否ETF联接基金 f_info_etffeeder 是否为ETF联接基金 是否联接基金 ETF联接 联接基金 是否为联接基金 联接型基金 ETF联接产品",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 458478,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_etf_feedercode",
+    "index_name": "ETF关联联接基金代码",
+    "parent_name": "指数增强",
+    "description": "ETF关联的联接基金代码",
+    "embedding_text": "ETF关联联接基金代码 f_info_etf_feedercode ETF关联的联接基金代码 ETF关联的联接基金代码",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454468,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_customizedfundornot",
+    "index_name": "是否定制基金",
+    "parent_name": "通用指标",
+    "description": "如果基金在最新的报告期末存在单一投资者持有份额比例大于等于50%，以封闭运作或定期开放运作的发起式基金形式存在且不向个人投资者发售，则判定为定制基金",
+    "embedding_text": "是否定制基金 f_customizedfundornot 是否定制基金 定制基金 是否定制 机构定制 通道基金 专户基金 单一投资者 单一持有人 定制化基金 如果基金在最新的报告期末存在单一投资者持有份额比例大于等于50%，以封闭运作或定期开放运作的发起式基金形式存在且不向个人投资者发售，则判定为定制基金",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 456803,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_initial",
+    "index_name": "是否初始基金",
+    "parent_name": "通用指标",
+    "description": "是否初始基金",
+    "embedding_text": "是否初始基金 f_info_initial 是否初始基金 初始基金 原始基金 母基金 首发基金 最初设立基金 初始份额",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452140,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_investscope",
+    "index_name": "投资范围",
+    "parent_name": "通用指标",
+    "description": "投资范围",
+    "embedding_text": "投资范围 f_info_investscope 投资范围 可投资范围 标的范围 投资品种范围 投资领域 投资方向 投资对象范围 投资标的范围",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82788,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_risk_downsiderisk",
+    "index_name": "下行风险",
+    "parent_name": "收益指标",
+    "description": "衡量基金相对于无风险收益下跌时，风险的大小。该系数越高，说明基金下行风险即亏损率越高。",
+    "embedding_text": "下行风险 f_risk_downsiderisk 下行风险 下跌风险 亏损风险 下方风险 下行波动风险 下行亏损 下行标准差 下档风险 下侧风险 下行损失 下行回撤 收益率计算方法 无风险收益率",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159237,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_nav_periodreturnrankingper",
+    "index_name": "同类基金区间收益排名(百分比)",
+    "parent_name": "收益指标",
+    "description": "同类基金区间收益排名(百分比)",
+    "embedding_text": "同类基金区间收益排名(百分比) f_nav_periodreturnrankingper 同类基金区间收益排名百分比 同类基金收益排名百分比 同类排名百分位 同类百分位排名 区间收益同类排名 排名百分比 百分位排名 收益率排名百分比 收益排名百分比 收益率百分位 收益排名百分位 收益率前50% 收益排名前50% 同类收益前50% 收益率排名前50% 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 206529,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_mmf_unityield",
+    "index_name": "万份基金单位收益",
+    "parent_name": "收益指标",
+    "description": "货币市场基金指定交易日的每万份基金单位收益，适合最新万份收益、每万份收益这类问法。",
+    "embedding_text": "万份基金单位收益 f_mmf_unityield 万份基金单位收益 货币市场基金指定交易日的每万份基金单位收益，适合最新万份收益、每万份收益这类问法。 货币市场基金指定交易日的每万份基金单位收益，适合最新万份收益、每万份收益这类问法。 万份收益 最新万份收益 每万份收益 每万份基金收益 万份基金收益 万份单位收益 货币基金万份收益 货基万份收益 万份收益大于 万份收益小于 万份收益筛选 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83139,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_dq_pctchange",
+    "index_name": "涨跌幅",
+    "parent_name": "交易特征",
+    "description": "证券在指定交易日的收盘价相对前收盘价的涨跌百分比，正值为涨，负值为跌，零为持平。",
+    "embedding_text": "涨跌幅 f_dq_pctchange 涨跌幅 涨跌幅度 涨幅 跌幅 涨跌比 变动率 变动幅度 日涨跌幅 当日涨跌 证券在指定交易日的收盘价相对前收盘价的涨跌百分比 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 83023,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_pchredm_largepchmaxamt",
+    "index_name": "单日大额申购限额",
+    "parent_name": "通用指标",
+    "description": "基金单日大额申购金额上限，适合申购限额、大额申购限额、单日申购限额这类问法。",
+    "embedding_text": "单日大额申购限额 f_pchredm_largepchmaxamt 基金单日大额申购金额上限，适合申购限额、大额申购限额、单日申购限额这类问法。 基金暂停大额申购金额上限 申购限额 大额申购限额 单日申购限额 单日大额申购上限 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452800,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_maxworkingyears",
+    "index_name": "基金经理最大年限",
+    "parent_name": "通用指标",
+    "description": "该基金在任的基金经理任职年限的最大值",
+    "embedding_text": "基金经理最大年限 f_info_maxworkingyears 该基金在任的基金经理任职年限的最大值",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159158,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_investtype2",
+    "index_name": "投资类型",
+    "parent_name": "通用指标",
+    "description": "基金的投资类型",
+    "embedding_text": "投资类型 f_info_investtype2 基金的投资类型 基金的投资类型 基金分类",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 453959,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_industryvaluetonav_sw",
+    "index_name": "分行业投资市值占基金资产净值比(申万)",
+    "parent_name": "通用指标",
+    "description": "报告期末基金投资股票的申万一级行业市值占期末基金资产净值的百分比。",
+    "embedding_text": "分行业投资市值占基金资产净值比(申万) f_prt_industryvaluetonav_sw 报告期末基金投资股票的申万一级行业市值占期末基金资产净值的百分比。 报告期末基金投资股票的申万一级行业市值占期末基金资产净值的百分比。 报告期 行业名称",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454332,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_topgicsindustryname",
+    "index_name": "重仓行业名称(Wind全球行业)",
+    "parent_name": "通用指标",
+    "description": "基金重仓(Wind行业)的名称",
+    "embedding_text": "重仓行业名称(Wind全球行业) f_prt_topgicsindustryname 基金重仓(Wind行业)的名称 基金重仓(Wind行业)的名称 报告期 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 453595,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_topindustryname_citic",
+    "index_name": "重仓行业名称(中信)",
+    "parent_name": "通用指标",
+    "description": "报告期末基金股票投资的第N名中信一级行业名称。",
+    "embedding_text": "重仓行业名称(中信) f_prt_topindustryname_citic 报告期末基金股票投资的第N名中信一级行业名称。 报告期末基金股票投资的第N名中信一级行业名称。 报告期 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454341,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_topindustryname_sw2021",
+    "index_name": "重仓行业名称(申万2021)",
+    "parent_name": "通用指标",
+    "description": "报告期末基金股票投资的第N名申万一级行业(2021版)名称。",
+    "embedding_text": "重仓行业名称(申万2021) f_prt_topindustryname_sw2021 报告期末基金股票投资的第N名申万一级行业(2021版)名称。 报告期 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 456831,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_topindustryname_wind",
+    "index_name": "重仓行业名称(Wind)",
+    "parent_name": "通用指标",
+    "description": "报告期末基金股票投资的第N名Wind一级行业名称。",
+    "embedding_text": "重仓行业名称(Wind) f_prt_topindustryname_wind 报告期末基金股票投资的第N名Wind一级行业名称。 报告期 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 456248,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_issue_deputy",
+    "index_name": "基金销售代理人",
+    "parent_name": "通用指标",
+    "description": "基金销售代理人即基金销售机构，是指依法办理基金份额的认购、申购和赎回的基金管理人以及取得基金代销业务资格的其他机构，具体包括国家商业银行、城市商业银行、农村商业银行、在华外资法人银行、证券公司、期货公司、证券投资咨询机构、保险公司以及独立基金销售机构。",
+    "embedding_text": "基金销售代理人 f_issue_deputy 基金销售代理人即基金销售机构，是指依法办理基金份额的认购、申购和赎回的基金管理人以及取得基金代销业务资格的其他机构，具体包括国家商业银行、城市商业银行、农村商业银行、在华外资法人银行、证券公司、期货公司、证券投资咨询机构、保险公司以及独立基金销售机构。 代销机构 销售机构 基金销售机构 银行代销 券商代销 代销渠道",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82933,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_countryregioninvestmenttonav",
+    "index_name": "国家/地区投资市值占基金资产净值比例",
+    "parent_name": "通用指标",
+    "description": "报告期末基金投资组合在选定国家（地区）的市值占基金资产净值的比例",
+    "embedding_text": "国家/地区投资市值占基金资产净值比例 f_prt_countryregioninvestmenttonav 报告期末基金投资组合在选定国家（地区）的市值占基金资产净值的比例 报告期 国家",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 457142,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_countryregioninvestment",
+    "index_name": "国家/地区投资市值",
+    "parent_name": "通用指标",
+    "description": "报告期末基金投资组合在选定国家（地区）的市值",
+    "embedding_text": "国家/地区投资市值 f_prt_countryregioninvestment 报告期末基金投资组合在选定国家（地区）的市值 报告期 国家",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 457143,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_distributionarea",
+    "index_name": "销售地区",
+    "parent_name": "通用指标",
+    "description": "基金可销售的国家/地区",
+    "embedding_text": "销售地区 f_info_distributionarea 基金可销售的国家/地区",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 458678,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_mmf_avgptm",
+    "index_name": "报告期末投资组合平均剩余期限",
+    "parent_name": "通用指标",
+    "description": "报告期末投资组合平均剩余期限",
+    "embedding_text": "报告期末投资组合平均剩余期限 f_mmf_avgptm 报告期末投资组合平均剩余期限 报告期末投资组合平均剩余期限 报告期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82772,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_holder_institution_totalholdingpct",
+    "index_name": "机构投资者持有比例(合计)",
+    "parent_name": "通用指标",
+    "description": "机构投资者持有比例(合计)",
+    "embedding_text": "机构投资者持有比例(合计) f_holder_institution_totalholdingpct 机构投资者持有比例(合计) 机构持有比例合计 机构占比合计 机构总持有比例 机构整体持仓占比 机构持仓比例合计 报告期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 452542,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_prt_stockholding",
+    "index_name": "报告期末持有股票个数(中报、年报)",
+    "parent_name": "通用指标",
+    "description": "报告期末持有股票个数(中报、年报)",
+    "embedding_text": "报告期末持有股票个数(中报、年报) f_prt_stockholding 报告期末持有股票个数(中报、年报) 报告期末持有股票个数(中报、年报) 持股数量 持仓股票数量 持有股票只数 股票持有数量 持股只数 持仓股票数 持有股票数量 股票持仓只数 重仓股个数 报告期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82731,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_manager_awardrecord",
+    "index_name": "任职基金获奖记录",
+    "parent_name": "通用指标",
+    "description": "基金经理任期内获奖的基金记录",
+    "embedding_text": "任职基金获奖记录 f_info_manager_awardrecord 任职基金获奖记录 基金经理任期内获奖的基金记录 获奖记录 得奖记录 获得奖项 获奖情况 基金经理获奖 经理获奖记录 获奖基金 奖项记录 基金经理奖项 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454375,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_manager_awardrecordnum",
+    "index_name": "履任以来获奖总次数",
+    "parent_name": "通用指标",
+    "description": "基金经理从业以来获奖总次数",
+    "embedding_text": "履任以来获奖总次数 f_info_manager_awardrecordnum 履任以来获奖总次数 基金经理从业以来获奖总次数 获奖次数 获奖总数 得奖次数 获奖数量 累计获奖次数 历来得奖次数 获奖统计 总获奖次数 得奖总数 基金经理获奖次数 名次",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454376,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_holder_single_holdingpct",
+    "index_name": "单一投资者报告期末持有比例",
+    "parent_name": "通用指标",
+    "description": "期末各类别单一投资者(机构投资者、个人投资者)持有的比例。",
+    "embedding_text": "单一投资者报告期末持有比例 f_holder_single_holdingpct 期末各类别单一投资者(机构投资者、个人投资者)持有的比例。 单一投资者报告期末持有比例 单一持有人集中度 单一持有人占比 单一持有人比例 单一投资者持有比例 第一大持有人占比 最大持有人比例 持有人集中度 单一持有人持有比例 报告期 年度 投资者类别 序号N",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454399,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_div_times",
+    "index_name": "年度分红次数",
+    "parent_name": "通用指标",
+    "description": "基金在指定年度内分红次数",
+    "embedding_text": "年度分红次数 f_div_times 基金在指定年度内分红次数 年度分红次数 分红次数 年度分红 每年分红几次 一年分红几次 分红频率 派息次数 年度派息次数 每年派息 年内分红 年内分红次数 一年内分红 年度",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82923,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_div_accumulatedtimes",
+    "index_name": "累计分红次数",
+    "parent_name": "交易特征",
+    "description": "自基金成立至指定交易日基金分红累计次数",
+    "embedding_text": "累计分红次数 f_div_accumulatedtimes 自基金成立至指定交易日基金分红累计次数 累计分红次数 累计分红 总分红次数 历史分红次数 分红总次数 成立以来分红次数 总共分红几次 一共分红 累积分红 累积分红次数 历史上分红 累计派息次数 分红累计 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82924,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_valuationmethod",
+    "index_name": "基金估值方法",
+    "parent_name": "估值指标",
+    "description": "基金资产的估值方法，包括摊余成本法和市值法。",
+    "embedding_text": "基金估值方法 f_info_valuationmethod 基金资产的估值方法，包括摊余成本法和市值法。 基金估值方法 估值方法 估值方式 市值法估值 市值法 摊余成本法 采用市值法 估值指标",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 454278,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_ptmyear",
+    "index_name": "基金存续期",
+    "parent_name": "通用指标",
+    "description": "券商资管产品的存续期，单位为年；普通公募基金，阳光私募，信托类产品的存续期，单位为月；分级基金的分级运作期，单位为月；银行理财的委托期，单位为天。",
+    "embedding_text": "基金存续期 f_info_ptmyear 券商资管产品的存续期 基金存续期 存续期 基金成立时长 基金年限 基金存续年限 产品存续期 存续期限 年限 成立年限 通用指标",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82803,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_ptmday",
+    "index_name": "剩余存续期",
+    "parent_name": "通用指标",
+    "description": "剩余存续期",
+    "embedding_text": "剩余存续期 f_info_ptmday 剩余存续期 剩余期限 剩余天数 到期天数 存续天数 剩余存续天数 到期剩余天数 距到期天数 通用指标",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 88371,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_risklevel",
+    "index_name": "基金风险等级",
+    "parent_name": "风险指标",
+    "description": "基金的风险等级，适合风险等级、中低风险、低风险、R2、R3这类按风险偏好筛选的问法。",
+    "embedding_text": "基金风险等级 f_info_risklevel 基金的风险等级，适合风险等级、中低风险、低风险、R2、R3这类按风险偏好筛选的问法。 基金风险等级 风险等级 风险级别 中低风险 低风险 中风险 高风险 风险较低 风险偏好 R1 R2 R3 R4 R5 风险指标",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 453516,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_mmf_frequencyofdeviation",
+    "index_name": "报告期内偏离度的绝对值在0.25%(含)-0.5%间的次数",
+    "parent_name": "货币市场基金指标",
+    "description": "货币市场基金报告期内偏离度绝对值处于0.25%(含)-0.5%区间的次数，适合偏离次数、偏离度次数、报告期偏离次数这类问法。",
+    "embedding_text": "报告期内偏离度的绝对值在0.25%(含)-0.5%间的次数 f_mmf_frequencyofdeviation 货币市场基金偏离次数 偏离次数 偏离度次数 偏离发生次数 偏离度发生次数 报告期偏离次数 报告期内偏离次数 报告期内发生次数 货币基金偏离次数 货基偏离次数 偏离度绝对值次数 超过偏离阈值次数 偏离次数大于 偏离次数小于 偏离次数超过10次 偏离次数超过N次 偏离超过多少次 次数统计 发生多少次 这是次数统计 不是偏离度数值 不是区间偏离度均值 不是日跟踪偏离度 不是跟踪误差 不是偏离阈值 偏离度在0.25到0.5之间的次数 报告期内偏离度的绝对值在0.25%(含)-0.5%间的次数 货币市场基金 货币基金 货基 报告期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82775,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_pchmstatus",
+    "index_name": "申购状态",
+    "parent_name": "通用指标",
+    "description": "基金的申购状态，适合暂停申购、暂停大额申购、当前申购状态这类问法。",
+    "embedding_text": "申购状态 f_info_pchmstatus 基金的申购状态，适合暂停申购、暂停大额申购、当前申购状态这类问法。 基金的申购状态 暂停申购 暂停大额申购 当前申购状态 申购开放状态 交易日期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 453517,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_benchmark",
+    "index_name": "业绩比较基准",
+    "parent_name": "通用指标",
+    "description": "基金的业绩比较基准，用于衡量基金相对表现",
+    "embedding_text": "业绩比较基准 f_info_benchmark 业绩比较基准 基准 基金基准 基准是什么 基准说明 基准描述 业绩基准 比较基准 benchmark 对标基准 参考基准",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82789,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_custodianbank",
+    "index_name": "基金托管人",
+    "parent_name": "通用指标",
+    "description": "基金托管人名称",
+    "embedding_text": "基金托管人 f_info_custodianbank 基金托管人 托管人 托管银行 托管行 银行托管 托管机构 资金托管 招商银行托管 工商银行托管",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82798,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_investstyle",
+    "index_name": "投资风格",
+    "parent_name": "通用指标",
+    "description": "基金的投资风格，成长型、收益型、平衡型等",
+    "embedding_text": "投资风格 f_info_investstyle 投资风格 成长型 价值型 平衡型 收益型 投资风格类型",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 82785,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_lofornot",
+    "index_name": "是否LOF基金",
+    "parent_name": "通用指标",
+    "description": "是否为LOF基金",
+    "embedding_text": "是否LOF基金 f_info_lofornot 是否为LOF基金 LOF基金 LOF产品 上市型开放式基金 是否LOF",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 458477,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_foffundornot",
+    "index_name": "是否FOF基金",
+    "parent_name": "通用指标",
+    "description": "是否为FOF基金",
+    "embedding_text": "是否FOF基金 f_info_foffundornot 是否为FOF基金 FOF基金 FOF产品 基金中的基金 是否FOF",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 455757,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_t0ornot",
+    "index_name": "是否T+0交易",
+    "parent_name": "通用指标",
+    "description": "是否为T+0交易基金",
+    "embedding_text": "是否T+0交易 f_info_t0ornot 是否为T+0交易 T+0交易 T+0基金 T+0产品 当日申赎",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 459193,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_regulopenfundornot",
+    "index_name": "是否定期开放基金",
+    "parent_name": "通用指标",
+    "description": "基金是否为定期开放基金",
+    "embedding_text": "是否定期开放基金 f_info_regulopenfundornot 是否为定期开放基金 定开基金 定期开放基金 定开产品 是否定开 有封闭期",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 453957,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_structuredfundornot",
+    "index_name": "是否分级基金",
+    "parent_name": "通用指标",
+    "description": "是否分级基金",
+    "embedding_text": "是否分级基金 f_info_structuredfundornot 是否为分级基金 分级基金 分级产品 结构型基金 是否分级",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 415981,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_redmstatus",
+    "index_name": "赎回状态",
+    "parent_name": "通用指标",
+    "description": "基金的赎回状态",
+    "embedding_text": "赎回状态 f_info_redmstatus 基金赎回状态 暂停赎回 开放赎回 限制赎回 赎回中",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 453518,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  },
+  {
+    "mnemonic": "f_info_etflisteddate",
+    "index_name": "ETF上市日期",
+    "parent_name": "通用指标",
+    "description": "ETF上市日期",
+    "embedding_text": "ETF上市日期 f_info_etflisteddate ETF上市日期 上市日期 挂牌日期 上市时间 交易所挂牌日",
+    "version": 3,
+    "enabled": true,
+    "source_indicator_id": 159202,
+    "supported_usage": [
+      "filter",
+      "sort"
+    ],
+    "applicable_products": "1001000"
+  }
+]

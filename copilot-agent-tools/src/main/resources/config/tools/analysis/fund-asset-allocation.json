@@ -1,0 +1,247 @@
+{
+  "toolId": "fund_analysis_asset_allocation",
+  "name": "单基金大类与债券资产配置",
+  "scope": "ANALYSIS",
+  "toolType": "ANALYSIS_TOOL",
+  "description": "分析单只基金的资产配置比例与债券券种配置结构",
+  "provider": "http_invoke",
+  "server": null,
+  "targetTool": null,
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "reportDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: reportDate"
+    },
+    {
+      "name": "startDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: startDate"
+    },
+    {
+      "name": "endDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: endDate"
+    }
+  ],
+  "componentCount": 2,
+  "components": [
+    {
+      "componentId": "MoneyAssetAllocationChart",
+      "name": "资产配置",
+      "cardTitle": "资产配置",
+      "displayType": "chart:stackedBar",
+      "description": "展示基金资产配置堆积图",
+      "command": "report name=FactSheet2.Nav.FundAssetsOfPastYears21 windCode=[{windCodes}] date=[{reportDate}] sort=[7=asc,0=asc]",
+      "params": [
+        "windCodes",
+        "reportDate"
+      ],
+      "columns": {
+        "Column0": "reportDate",
+        "Column1": "stockRatio",
+        "Column2": "bondRatio",
+        "Column3": "fundRatio",
+        "Column5": "currencyRatio",
+        "Column6": "otherRatio",
+        "Column7": "windCode"
+      },
+      "metadata": {
+        "stackedBar": {
+          "columns": {
+            "series": {
+              "reportDate": [
+                "stockRatio",
+                "bondRatio",
+                "fundRatio",
+                "currencyRatio",
+                "otherRatio"
+              ],
+              "xAxis": [
+                {
+                  "value": "股票",
+                  "valueI18n": {
+                    "en-US": "Stocks"
+                  }
+                },
+                {
+                  "value": "债券",
+                  "valueI18n": {
+                    "en-US": "Bonds"
+                  }
+                },
+                {
+                  "value": "基金",
+                  "valueI18n": {
+                    "en-US": "Funds"
+                  }
+                },
+                {
+                  "value": "现金",
+                  "valueI18n": {
+                    "en-US": "Cash"
+                  }
+                },
+                {
+                  "value": "其他资产",
+                  "valueI18n": {
+                    "en-US": "Other Assets"
+                  }
+                }
+              ]
+            },
+            "xAxis": {
+              "data": [
+                "reportDate"
+              ]
+            }
+          }
+        },
+        "card": {
+          "title": "资产配置",
+          "width": "24",
+          "height": "380px"
+        }
+      }
+    },
+    {
+      "componentId": "MoneyBondAllocationChart",
+      "name": "债券券种配置",
+      "cardTitle": "债券券种配置",
+      "displayType": "chart:stackedBar",
+      "description": "展示基金债券券种配置堆积图",
+      "command": "report name=F9_2.Fund.BondInvePortfolio.Portfolio22 windCode=[{windCodes}] startDate=[{startDate}] endDate=[{endDate}] sort=[0=asc]",
+      "params": [
+        "windCodes",
+        "startDate",
+        "endDate"
+      ],
+      "columns": {
+        "Column1": "reportDate",
+        "Column2": "GovBondRatio",
+        "Column3": "FinBondRatio",
+        "Column4": "CorpBondRatio",
+        "Column5": "ConvertBondRatio",
+        "Column6": "CenBankBillRatio",
+        "Column7": "GovBondRatioChange",
+        "Column8": "FinBondRatioChange",
+        "Column9": "CorpBondRatioChange",
+        "Column10": "ConvertBondRatioChange",
+        "Column11": "CenBankBillRatioChange",
+        "Column12": "NCDRatio",
+        "Column13": "NCDRatioChange",
+        "Column14": "OtherBondRatio",
+        "Column15": "OtherBondRatioChange",
+        "Column16": "ABSRatio",
+        "Column17": "ABSRatioChange",
+        "Column18": "LGBRatio",
+        "Column19": "LGBRatioChange"
+      },
+      "metadata": {
+        "stackedBar": {
+          "columns": {
+            "series": {
+              "reportDate": [
+                "GovBondRatio",
+                "FinBondRatio",
+                "CorpBondRatio",
+                "ConvertBondRatio",
+                "CenBankBillRatio",
+                "NCDRatio",
+                "ABSRatio",
+                "LGBRatio",
+                "OtherBondRatio"
+              ],
+              "xAxis": [
+                {
+                  "value": "国债",
+                  "valueI18n": {
+                    "en-US": "Treasury Bonds"
+                  }
+                },
+                {
+                  "value": "金融债",
+                  "valueI18n": {
+                    "en-US": "Financial Bonds"
+                  }
+                },
+                {
+                  "value": "企业发行债券",
+                  "valueI18n": {
+                    "en-US": "Corporate Bonds"
+                  }
+                },
+                {
+                  "value": "可转债",
+                  "valueI18n": {
+                    "en-US": "Convertible Bonds"
+                  }
+                },
+                {
+                  "value": "央行票据",
+                  "valueI18n": {
+                    "en-US": "Central Bank Bills"
+                  }
+                },
+                {
+                  "value": "同业存单",
+                  "valueI18n": {
+                    "en-US": "NCDs"
+                  }
+                },
+                {
+                  "value": "资产支持证券",
+                  "valueI18n": {
+                    "en-US": "ABS"
+                  }
+                },
+                {
+                  "value": "地方政府债",
+                  "valueI18n": {
+                    "en-US": "Local Govt Bonds"
+                  }
+                },
+                {
+                  "value": "其他",
+                  "valueI18n": {
+                    "en-US": "Other"
+                  }
+                }
+              ]
+            },
+            "xAxis": {
+              "data": [
+                "reportDate"
+              ]
+            }
+          },
+          "yAxis": {
+            "max": 100,
+            "axisLabel": {
+              "formatter": "{value}%"
+            }
+          }
+        },
+        "card": {
+          "title": "债券券种配置",
+          "width": "24",
+          "height": "380px"
+        }
+      }
+    }
+  ]
+}

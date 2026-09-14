@@ -1,0 +1,106 @@
+{
+  "toolId": "fund_analysis_style",
+  "name": "单基金市值风格分析",
+  "scope": "ANALYSIS",
+  "toolType": "ANALYSIS_TOOL",
+  "description": "获取基金市值风格暴露(大盘/小盘/价值/成长)及风格拟合优度 R²",
+  "provider": "mcp",
+  "server": "wind-fund-analysis",
+  "targetTool": "fund_get_market_cap_style",
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "startDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: startDate"
+    },
+    {
+      "name": "endDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: endDate"
+    }
+  ],
+  "componentCount": 1,
+  "components": [
+    {
+      "componentId": "style",
+      "name": "市值风格分析",
+      "cardTitle": "市值风格分析",
+      "displayType": "table",
+      "description": "获取基金市值风格暴露及变化，包括大盘成长、大盘价值、小盘成长、小盘价值等风格暴露。",
+      "metadata": {
+        "dateMode": "range",
+        "table": {
+          "columns": [
+            {
+              "title": "日期",
+              "type": "date",
+              "id": "日期",
+              "width": "110px"
+            },
+            {
+              "title": "大盘价值",
+              "type": "number",
+              "id": "大盘价值(%)",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "大盘成长",
+              "type": "number",
+              "id": "大盘成长(%)",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "小盘价值",
+              "type": "number",
+              "id": "小盘价值(%)",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "小盘成长",
+              "type": "number",
+              "id": "小盘成长(%)",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "债券指数",
+              "type": "number",
+              "id": "中债-总财富(总值)指数(%)",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "R²",
+              "type": "number",
+              "id": "R²",
+              "sorter": true,
+              "fixed": 4
+            }
+          ]
+        },
+        "chart": null,
+        "width": 24
+      }
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+package com.financial.copilot.agent.tools.configured;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financial.copilot.agent.tools.configured.distiller.ComponentDataDistiller;
+import com.financial.copilot.agent.tools.configured.executor.HttpToolExecutor;
+import com.financial.copilot.agent.tools.configured.executor.LocalToolExecutor;
+import com.financial.copilot.agent.tools.configured.executor.McpToolExecutor;
+import com.financial.copilot.agent.tools.configured.model.ToolExecuteRequest;
+import com.financial.copilot.agent.tools.configured.model.ToolExecuteResult;
+import com.financial.copilot.agent.tools.configured.model.ToolSourceMode;
+import com.financial.copilot.agent.tools.configured.registry.ToolDefinitionLoader;
+import com.financial.copilot.agent.tools.configured.registry.ToolProperties;
+import com.financial.copilot.agent.tools.configured.registry.ToolRegistry;
+import com.financial.copilot.agent.tools.configured.router.ToolExecutorRouter;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.core.io.DefaultResourceLoader;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@DisplayName("两级分类 Tool 执行路由与双轨交付集成测试")
+class ToolExecutorRouterTest {
+
+    private ToolExecutorRouter router;
+
+    @BeforeEach
+    void setUp() {
+        ToolProperties properties = new ToolProperties();
+        properties.setConfigPattern("classpath*:config/tools/**/*.json");
+
+        ToolDefinitionLoader loader = new ToolDefinitionLoader(
+                new DefaultResourceLoader(),
+                new ObjectMapper(),
+                properties
+        );
+
+        ToolRegistry registry = new ToolRegistry(loader);
+        registry.init();
+
+        ComponentDataDistiller distiller = new ComponentDataDistiller();
+
+        LocalToolExecutor localExecutor = new LocalToolExecutor(distiller);
+        HttpToolExecutor httpExecutor = new HttpToolExecutor(distiller);
+        McpToolExecutor mcpExecutor = new McpToolExecutor(distiller);
+
+        router = new ToolExecutorRouter(registry, List.of(localExecutor, httpExecutor, mcpExecutor));
+    }
+
+    @Test
+    @DisplayName("验证多基金 MCP 工具 (compare_brinson) 双轨执行并产出表格+柱状图组件")
+    void testRouteMcpCompareBrinson() {
+        ToolExecuteRequest request = ToolExecuteRequest.builder()
+                .toolId("compare_brinson")
+                .arguments(Map.of("windCodes", List.of("005827.OF", "163402.OF"), "reportDate", "20240630"))
+                .sourceMode(ToolSourceMode.EXTERNAL_CONFIGURED)
+                .build();
+
+        ToolExecuteResult result = router.routeAndExecute(request);
+
+        assertTrue(result.isSuccess(), "Execution should succeed");
+        assertNotNull(result.getTextForLlm(), "LLM text should not be null");
+        assertTrue(result.getTextForLlm().contains("Brinson"), "Should contain Brinson conclusions");
+
+        // 验证产出的一组组件 (Components)
+        assertNotNull(result.getVisualComponents(), "Visual components list should not be null");
+        assertEquals(2, result.getVisualComponents().size(), "compare_brinson must produce both table and chart components");
+        assertEquals("brinson", result.getVisualComponents().get(0).getId());
+        assertEquals("brinsonChart", result.getVisualComponents().get(1).getId());
+    }
+
+    @Test
+    @DisplayName("验证多基金对比工具 (compare_asset_allocation) 双轨执行并产出7个关联配置组件")
+    void testRouteCompareAssetAllocation() {
+        ToolExecuteRequest request = ToolExecuteRequest.builder()
+                .toolId("compare_asset_allocation")
+                .arguments(Map.of("windCodes", List.of("005827.OF", "163402.OF")))
+                .sourceMode(ToolSourceMode.EXTERNAL_CONFIGURED)
+                .build();
+
+        ToolExecuteResult result = router.routeAndExecute(request);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getTextForLlm());
+        assertEquals(7, result.getVisualComponents().size(), "compare_asset_allocation must produce all 7 asset allocation components");
+    }
+
+    @Test
+    @DisplayName("验证基金深度分析工具 (fund_analysis_profile) 双轨执行并产出3个基础信息卡片")
+    void testRouteSingleFundProfile() {
+        ToolExecuteRequest request = ToolExecuteRequest.builder()
+                .toolId("fund_analysis_profile")
+                .arguments(Map.of("windCodes", List.of("005827.OF")))
+                .sourceMode(ToolSourceMode.EXTERNAL_CONFIGURED)
+                .build();
+
+        ToolExecuteResult result = router.routeAndExecute(request);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getTextForLlm());
+        assertEquals(3, result.getVisualComponents().size(), "fund_analysis_profile must produce 3 profile components");
+    }
+
+    @Test
+    @DisplayName("验证 LOCAL_PROJECT 模式路由至 LocalToolExecutor")
+    void testRouteLocalMode() {
+        ToolExecuteRequest request = ToolExecuteRequest.builder()
+                .toolId("compare_similar")
+                .arguments(Map.of("windCodes", List.of("005827.OF")))
+                .sourceMode(ToolSourceMode.LOCAL_PROJECT)
+                .build();
+
+        ToolExecuteResult result = router.routeAndExecute(request);
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getTextForLlm().contains("本地引擎执行成功"));
+    }
+}

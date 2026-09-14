@@ -1,0 +1,68 @@
+{
+  "toolId": "compare_correlation",
+  "name": "多基金收益相关系数矩阵",
+  "scope": "COMPARISON",
+  "toolType": "COMPARISON_TOOL",
+  "description": "计算多只基金之间的日收益率相关系数热力矩阵，用于多资产配置与分散度评估",
+  "provider": "http_invoke",
+  "server": null,
+  "targetTool": null,
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "startDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: startDate"
+    },
+    {
+      "name": "endDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: endDate"
+    },
+    {
+      "name": "indexCode",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: indexCode"
+    }
+  ],
+  "componentCount": 1,
+  "components": [
+    {
+      "componentId": "CorrelationMatrix",
+      "name": "相关系数矩阵",
+      "cardTitle": "今年以来相关系数矩阵",
+      "displayType": "matrix",
+      "description": "以矩阵图形式展示{windCodes}基金两两之间的收益相关系数数据，开始日期：{startDate}，截止日期：{endDate}",
+      "command": "MFCP.Report8NewPicker",
+      "params": [
+        "windCodes",
+        "startDate",
+        "endDate",
+        "indexCode"
+      ],
+      "columns": {
+        "Object": "correlationMatrix"
+      },
+      "metadata": {
+        "matrix": {},
+        "card": {
+          "title": "今年以来相关系数矩阵",
+          "width": "24"
+        }
+      }
+    }
+  ]
+}

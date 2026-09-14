@@ -1,0 +1,260 @@
+{
+  "toolId": "fund_analysis_profile",
+  "name": "单基金基本资料与投资信息",
+  "scope": "ANALYSIS",
+  "toolType": "ANALYSIS_TOOL",
+  "description": "获取单只基金的基础信息、投资目标、购买信息及基金全景画像",
+  "provider": "http_invoke",
+  "server": null,
+  "targetTool": null,
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "endDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: endDate"
+    }
+  ],
+  "componentCount": 3,
+  "components": [
+    {
+      "componentId": "MoneyBasicInfo",
+      "name": "基本信息",
+      "cardTitle": "基本信息",
+      "displayType": "table",
+      "description": "展示基金基本信息",
+      "command": "Report name=FactSheet2.Fund.FundBasicInformation24 windCode=[{windCodes}] date=[{endDate}]",
+      "params": [
+        "windCodes",
+        "endDate"
+      ],
+      "columns": {
+        "Column16": "setupDate",
+        "Column17": "companyName",
+        "Column18": "fundManager",
+        "Column19": "fundScale",
+        "Column20": "investmentType",
+        "Column21": "investmentStyle",
+        "Column22": "benchmark",
+        "Column65": "fundScaleDate"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "成立日期",
+              "type": "string",
+              "id": "setupDate"
+            },
+            {
+              "title": "基金公司",
+              "type": "string",
+              "id": "companyName"
+            },
+            {
+              "title": "基金经理",
+              "type": "string",
+              "id": "fundManager"
+            },
+            {
+              "title": "合计规模",
+              "type": "string",
+              "id": "fundScaleDisplay",
+              "source": [
+                "fundScale",
+                "fundScaleDate"
+              ],
+              "display": {
+                "type": "template",
+                "template": "{fundScale}（{fundScaleDate}）",
+                "formats": {
+                  "fundScale": {
+                    "fixed": 2,
+                    "multiply": 1e-08,
+                    "thousandSeparator": true,
+                    "unit": "亿元"
+                  }
+                }
+              }
+            },
+            {
+              "title": "投资类型",
+              "type": "string",
+              "id": "investmentType"
+            },
+            {
+              "title": "投资风格",
+              "type": "string",
+              "id": "investmentStyle"
+            },
+            {
+              "title": "比较基准",
+              "type": "string",
+              "id": "benchmark"
+            }
+          ]
+        },
+        "card": {
+          "title": "基本信息",
+          "width": "24"
+        }
+      }
+    },
+    {
+      "componentId": "MoneyInvestObject",
+      "name": "投资目标",
+      "cardTitle": "投资目标",
+      "displayType": "table",
+      "description": "展示基金投资目标",
+      "command": "Matrix2 functions=f_info_investobject(windcode) windcode={windCodes}",
+      "params": [
+        "windCodes"
+      ],
+      "columns": {
+        "Column0": "windCode",
+        "Column1": "name",
+        "Column2": "investobject"
+      },
+      "metadata": {
+        "table": {
+          "CardType": "text",
+          "name": [
+            "investobject"
+          ]
+        },
+        "card": {
+          "title": "投资目标",
+          "width": "24"
+        }
+      }
+    },
+    {
+      "componentId": "MoneyPurchaseInfo",
+      "name": "购买信息",
+      "cardTitle": "购买信息",
+      "displayType": "table",
+      "description": "展示基金购买信息",
+      "command": "Report name=FactSheet2.Fund.FundBasicInformation24 windCode=[{windCodes}] date=[{endDate}]",
+      "params": [
+        "windCodes",
+        "endDate"
+      ],
+      "columns": {
+        "Column25": "subRedStatus",
+        "Column27": "minSubRate",
+        "Column28": "maxSubRate",
+        "Column29": "minRedRate",
+        "Column30": "maxRedRate",
+        "Column31": "managementFee",
+        "Column32": "trusteeFee",
+        "Column33": "minTotalRate",
+        "Column34": "maxTotalRate",
+        "Column35": "salesFee",
+        "Column69": "minSubRedUnit"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "申购状态",
+              "type": "string",
+              "id": "subscriptionStatus",
+              "source": "subRedStatus",
+              "display": {
+                "type": "split",
+                "separator": "|",
+                "index": 0
+              }
+            },
+            {
+              "title": "赎回状态",
+              "type": "string",
+              "id": "redemptionStatus",
+              "source": "subRedStatus",
+              "display": {
+                "type": "split",
+                "separator": "|",
+                "index": 1
+              }
+            },
+            {
+              "title": "最小申赎单位",
+              "type": "string",
+              "id": "minSubRedUnit"
+            },
+            {
+              "title": "申购费率",
+              "type": "string",
+              "id": "subscriptionRate",
+              "source": [
+                "minSubRate",
+                "maxSubRate"
+              ],
+              "display": {
+                "type": "template",
+                "template": "{minSubRate}% - {maxSubRate}%"
+              }
+            },
+            {
+              "title": "赎回费率",
+              "type": "string",
+              "id": "redemptionRate",
+              "source": [
+                "minRedRate",
+                "maxRedRate"
+              ],
+              "display": {
+                "type": "template",
+                "template": "{minRedRate}% - {maxRedRate}%"
+              }
+            },
+            {
+              "title": "管理费率",
+              "type": "string",
+              "id": "managementFee",
+              "unit": "%"
+            },
+            {
+              "title": "托管费率",
+              "type": "string",
+              "id": "trusteeFee",
+              "unit": "%"
+            },
+            {
+              "title": "销售服务费率",
+              "type": "string",
+              "id": "salesFee",
+              "unit": "%"
+            },
+            {
+              "title": "总费率(持有1年)",
+              "type": "string",
+              "id": "totalRate",
+              "source": [
+                "minTotalRate",
+                "maxTotalRate"
+              ],
+              "display": {
+                "type": "template",
+                "template": "{minTotalRate}% - {maxTotalRate}%"
+              }
+            }
+          ]
+        },
+        "card": {
+          "title": "购买信息",
+          "width": "24"
+        }
+      }
+    }
+  ]
+}

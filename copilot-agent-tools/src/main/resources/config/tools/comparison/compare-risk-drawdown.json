@@ -1,0 +1,400 @@
+{
+  "toolId": "compare_risk_drawdown",
+  "name": "多基金走势与动态回撤对标",
+  "scope": "COMPARISON",
+  "toolType": "COMPARISON_TOOL",
+  "description": "横向对标多只基金的复权净值走势曲线、动态最大回撤曲线、回撤对比表及风险收益二维散点图",
+  "provider": "http_invoke",
+  "server": null,
+  "targetTool": null,
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "startDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: startDate"
+    },
+    {
+      "name": "endDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: endDate"
+    },
+    {
+      "name": "indexCode",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: indexCode"
+    },
+    {
+      "name": "mark",
+      "type": "string",
+      "required": false,
+      "defaultValue": "1",
+      "description": "入参: mark"
+    },
+    {
+      "name": "circle",
+      "type": "string",
+      "required": false,
+      "defaultValue": "0",
+      "description": "入参: circle"
+    }
+  ],
+  "componentCount": 4,
+  "components": [
+    {
+      "componentId": "NetValueTrend",
+      "name": "净值走势",
+      "cardTitle": "净值走势",
+      "displayType": "chart:line",
+      "description": "以走势图形式展示{windCodes}基金的累计收益数据，开始日期：{startDate}，截止日期：{endDate}",
+      "command": "MFCP.Report9ChartPicker.GetData",
+      "params": [
+        "windCodes",
+        "startDate",
+        "endDate",
+        "indexCode"
+      ],
+      "columns": {
+        "Object/WindCode": "windCode",
+        "Object/FundName": "name",
+        "Object/FundScaleList/Date": "date",
+        "Object/FundScaleList/Scale": "netValue"
+      },
+      "metadata": {
+        "line": {
+          "extra": [
+            {
+              "name": [
+                "startDate",
+                "endDate"
+              ],
+              "type": "datepicker",
+              "datepicker": {
+                "YTD": "YTD",
+                "近1年": "1Y",
+                "近3年": "3Y",
+                "近5年": "5Y",
+                "日期选择": "custom"
+              }
+            }
+          ],
+          "columns": {
+            "series": {
+              "name": [
+                "netValue"
+              ]
+            },
+            "xAxis": {
+              "data": [
+                "date"
+              ]
+            }
+          },
+          "options": {},
+          "legend": {
+            "show": true
+          },
+          "yAxis": {
+            "nameGap": 40,
+            "nameLocation": "middle",
+            "axisLabel": {
+              "formatter": "{value}%"
+            }
+          }
+        },
+        "card": {
+          "title": "净值走势",
+          "width": "12",
+          "height": "380px"
+        }
+      }
+    },
+    {
+      "componentId": "RiskReturn",
+      "name": "风险收益",
+      "cardTitle": "风险收益",
+      "displayType": "chart:scatter",
+      "description": "以散点图形式展示{windCodes}基金的风险收益分布数据，包括收益标准差与回报，开始日期：{startDate}，截止日期：{endDate}",
+      "command": "MFCP.Report3Picker.GetData",
+      "params": [
+        "windCodes",
+        "startDate",
+        "endDate",
+        "indexCode",
+        "mark:1"
+      ],
+      "columns": {
+        "Object/WindCode": "windCode",
+        "Object/FundName": "name",
+        "Object/Income": "return",
+        "Object/StandDev": "standDev"
+      },
+      "metadata": {
+        "scatter": {
+          "columns": {
+            "series": {
+              "name": [
+                "standDev",
+                "return"
+              ]
+            },
+            "markLine": true
+          },
+          "options": {},
+          "xAxis": {
+            "name": "标准差",
+            "axisLabel": {
+              "formatter": "{value}%"
+            }
+          },
+          "yAxis": {
+            "name": "回报",
+            "nameGap": 35,
+            "nameLocation": "middle",
+            "axisLabel": {
+              "formatter": "{value}%"
+            }
+          },
+          "extra": [
+            {
+              "name": [
+                "startDate",
+                "endDate"
+              ],
+              "type": "datepicker",
+              "datepicker": {
+                "YTD": "YTD",
+                "近1年": "1Y",
+                "近3年": "3Y",
+                "近5年": "5Y",
+                "日期选择": "custom"
+              }
+            }
+          ]
+        },
+        "card": {
+          "title": "风险收益",
+          "width": "12",
+          "height": "380px"
+        }
+      }
+    },
+    {
+      "componentId": "Drawdown",
+      "name": "回撤对比",
+      "cardTitle": "回撤",
+      "displayType": "chart:line",
+      "description": "以走势图形式展示{windCodes}基金的回撤走势数据，开始日期：{startDate}，截止日期：{endDate}",
+      "command": "MFCP.Report13Picker.GetData",
+      "params": [
+        "windCodes",
+        "startDate",
+        "endDate",
+        "indexCode",
+        "circle:0"
+      ],
+      "columns": {
+        "Object/WindCode": "windCode",
+        "Object/FundName": "name",
+        "Object/FundScaleList/Date": "date",
+        "Object/FundScaleList/Scale": "downSide"
+      },
+      "metadata": {
+        "line": {
+          "columns": {
+            "series": {
+              "name": [
+                "downSide"
+              ]
+            },
+            "xAxis": {
+              "data": [
+                "date"
+              ]
+            }
+          },
+          "options": {},
+          "legend": {
+            "show": true
+          },
+          "extra": [
+            {
+              "name": [
+                "startDate",
+                "endDate"
+              ],
+              "type": "datepicker",
+              "datepicker": {
+                "YTD": "YTD",
+                "近1年": "1Y",
+                "近3年": "3Y",
+                "近5年": "5Y",
+                "日期选择": "custom"
+              }
+            },
+            {
+              "name": [
+                "circle"
+              ],
+              "type": "dropdown",
+              "dropdown": {
+                "日": 4,
+                "周": 0,
+                "月": 1,
+                "年": 3
+              },
+              "defaultValue": 0,
+              "dropdownName": "周期"
+            }
+          ],
+          "yAxis": {
+            "axisLabel": {
+              "formatter": "{value}%"
+            }
+          }
+        },
+        "card": {
+          "title": "回撤",
+          "width": "24",
+          "height": "380px"
+        }
+      }
+    },
+    {
+      "componentId": "DrawdownTable",
+      "name": "回撤对比表",
+      "cardTitle": "回撤对比表",
+      "displayType": "table",
+      "description": "以表格形式展示{windCodes}基金的回撤对比数据，包括YTD、近三月、近六月、近一年、近两年、近三年、近五年、近十年、成立以来回撤，截止日期：{endDate}",
+      "command": "FundCompare.MaxDrawdownPicker.GetMultipleRecs",
+      "params": [
+        "windCodes",
+        "endDate"
+      ],
+      "columns": {
+        "Object/WindCode": "windCode",
+        "Object/Name": "name",
+        "Object/YTDValue": "ytdReturn",
+        "Object/ThreeMValue": "3MReturn",
+        "Object/SixMValue": "6MReturn",
+        "Object/OneYValue": "1YReturn",
+        "Object/TwoYValue": "2YReturn",
+        "Object/ThreeYValue": "3YReturn",
+        "Object/FiveYValue": "5YReturn",
+        "Object/TenYValue": "10YReturn",
+        "Object/TotalValue": "totalReturn"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "基金名称",
+              "type": "string",
+              "id": "name",
+              "width": "180px"
+            },
+            {
+              "title": "YTD",
+              "type": "number",
+              "id": "ytdReturn",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2,
+              "ColorRanking": true
+            },
+            {
+              "title": "近三月",
+              "type": "number",
+              "id": "3MReturn",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2,
+              "ColorRanking": true
+            },
+            {
+              "title": "近六月",
+              "type": "number",
+              "id": "6MReturn",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2,
+              "ColorRanking": true
+            },
+            {
+              "title": "近一年",
+              "type": "number",
+              "id": "1YReturn",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2,
+              "ColorRanking": true
+            },
+            {
+              "title": "近两年",
+              "type": "number",
+              "id": "2YReturn",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2,
+              "ColorRanking": true
+            },
+            {
+              "title": "近三年",
+              "type": "number",
+              "id": "3YReturn",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2,
+              "ColorRanking": true
+            },
+            {
+              "title": "近五年",
+              "type": "number",
+              "id": "5YReturn",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2,
+              "ColorRanking": true
+            },
+            {
+              "title": "近十年",
+              "type": "number",
+              "id": "10YReturn",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2,
+              "ColorRanking": true
+            },
+            {
+              "title": "成立以来",
+              "type": "number",
+              "id": "totalReturn",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2,
+              "ColorRanking": true
+            }
+          ],
+          "Notes": "注：红色代表当列中最高值；绿色代表当列中最低值"
+        },
+        "card": {
+          "title": "回撤对比表",
+          "width": "24"
+        }
+      }
+    }
+  ]
+}

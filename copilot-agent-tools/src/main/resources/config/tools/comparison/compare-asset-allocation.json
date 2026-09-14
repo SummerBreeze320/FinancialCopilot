@@ -1,0 +1,896 @@
+{
+  "toolId": "compare_asset_allocation",
+  "name": "多基金资产与行业配置对比",
+  "scope": "COMPARISON",
+  "toolType": "COMPARISON_TOOL",
+  "description": "横向对比多只基金的大类资产配置、FOF穿透、证监会/申万行业配置明细及 REITs 资产",
+  "provider": "http_invoke",
+  "server": null,
+  "targetTool": null,
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "reportDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: reportDate"
+    },
+    {
+      "name": "penetrate",
+      "type": "string",
+      "required": false,
+      "defaultValue": "0",
+      "description": "入参: penetrate"
+    },
+    {
+      "name": "industryType",
+      "type": "string",
+      "required": false,
+      "defaultValue": "4",
+      "description": "入参: industryType"
+    }
+  ],
+  "componentCount": 7,
+  "components": [
+    {
+      "componentId": "AssetAllocation",
+      "name": "资产配置",
+      "cardTitle": "资产配置图",
+      "displayType": "chart:stackedBar",
+      "description": "以图表形式展示{windCodes}基金的大类资产配置数据，包括股票、债券、基金、现金、其他资产占比，报告期：{reportDate}",
+      "command": "MFCP.Report14Picker",
+      "params": [
+        "windCodes",
+        "reportDate"
+      ],
+      "columns": {
+        "Object/WindCode": "windCode",
+        "Object/FundName": "name",
+        "Object/StockPortion": "stockRatio",
+        "Object/FundPortion": "fundRatio",
+        "Object/BondPortion": "bondRatio",
+        "Object/CurrencyPortion": "currencyRatio",
+        "Object/SecurityPortion": "securityRatio",
+        "Object/Other": "otherRatio"
+      },
+      "metadata": {
+        "stackedBar": {
+          "columns": {
+            "series": {
+              "name": [
+                "stockRatio",
+                "bondRatio",
+                "fundRatio",
+                "currencyRatio",
+                "otherRatio"
+              ],
+              "xAxis": [
+                {
+                  "value": "股票",
+                  "valueI18n": {
+                    "en-US": "Stocks"
+                  }
+                },
+                {
+                  "value": "债券",
+                  "valueI18n": {
+                    "en-US": "Bonds"
+                  }
+                },
+                {
+                  "value": "基金",
+                  "valueI18n": {
+                    "en-US": "Funds"
+                  }
+                },
+                {
+                  "value": "现金",
+                  "valueI18n": {
+                    "en-US": "Cash"
+                  }
+                },
+                {
+                  "value": "其他资产",
+                  "valueI18n": {
+                    "en-US": "Other Assets"
+                  }
+                }
+              ]
+            },
+            "xAxis": {
+              "data": [
+                "name"
+              ]
+            }
+          }
+        },
+        "card": {
+          "title": "资产配置图",
+          "width": "24",
+          "height": "380px"
+        }
+      }
+    },
+    {
+      "componentId": "AssetAllocationForFOF",
+      "name": "FOF资产配置",
+      "cardTitle": "资产配置图",
+      "displayType": "chart:stackedBar",
+      "description": "以图表形式展示{windCodes}FOF基金的大类资产配置数据，包括股票、债券、基金、现金、其他资产占比，可选穿透前或穿透后口径，报告期：{reportDate}",
+      "command": "MFCP.Report14Picker",
+      "params": [
+        "windCodes",
+        "reportDate",
+        "penetrate:0"
+      ],
+      "columns": {
+        "Object/WindCode": "windCode",
+        "Object/FundName": "name",
+        "Object/StockPortion": "stockRatio",
+        "Object/FundPortion": "fundRatio",
+        "Object/BondPortion": "bondRatio",
+        "Object/CurrencyPortion": "currencyRatio",
+        "Object/SecurityPortion": "securityRatio",
+        "Object/Other": "otherRatio"
+      },
+      "metadata": {
+        "stackedBar": {
+          "columns": {
+            "series": {
+              "name": [
+                "stockRatio",
+                "bondRatio",
+                "fundRatio",
+                "currencyRatio",
+                "otherRatio"
+              ],
+              "xAxis": [
+                {
+                  "value": "股票",
+                  "valueI18n": {
+                    "en-US": "Stocks"
+                  }
+                },
+                {
+                  "value": "债券",
+                  "valueI18n": {
+                    "en-US": "Bonds"
+                  }
+                },
+                {
+                  "value": "基金",
+                  "valueI18n": {
+                    "en-US": "Funds"
+                  }
+                },
+                {
+                  "value": "现金",
+                  "valueI18n": {
+                    "en-US": "Cash"
+                  }
+                },
+                {
+                  "value": "其他资产",
+                  "valueI18n": {
+                    "en-US": "Other Assets"
+                  }
+                }
+              ]
+            },
+            "xAxis": {
+              "data": [
+                "name"
+              ]
+            },
+            "extra": [
+              {
+                "name": [
+                  "penetrate"
+                ],
+                "type": "radio",
+                "radio": {
+                  "穿透前": 0,
+                  "穿透后": 1
+                }
+              }
+            ]
+          }
+        },
+        "card": {
+          "title": "资产配置图",
+          "width": "24",
+          "height": "380px"
+        }
+      }
+    },
+    {
+      "componentId": "IndustryAllocationForDefault",
+      "name": "行业配置",
+      "cardTitle": "行业配置",
+      "displayType": "table",
+      "description": "以表格形式展示{windCodes}基金的行业配置数据，包括行业名称、行业配置比例，可选证监会、Wind、申万、中信行业分类，报告期：{reportDate}",
+      "command": "F9.FundWorkBench.IndustryAllocationPicker.GetMultipleRecs2",
+      "params": [
+        "windCodes",
+        "reportDate",
+        "industryType:4"
+      ],
+      "columns": {
+        "Object/windCode": "windCode",
+        "Object/name": "name",
+        "Object/industryList/industryName": "industryName",
+        "Object/industryList/fundNetRatio": "industryRatio"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "",
+              "type": "string",
+              "id": "industryName"
+            },
+            {
+              "title": "name",
+              "type": "number",
+              "id": "industryRatio",
+              "unit": "%",
+              "NumberRanking": true,
+              "fixed": 2
+            }
+          ],
+          "Pivot": true,
+          "Notes": "注：①②③:占基金净值比前三名的排名",
+          "extra": [
+            {
+              "name": [
+                "industryType"
+              ],
+              "type": "radio",
+              "radio": {
+                "证监会行业": 1,
+                "Wind一级行业": 4,
+                "申万一级行业": 10,
+                "中信一级行业": 2
+              }
+            }
+          ]
+        },
+        "card": {
+          "title": "行业配置",
+          "width": "24"
+        }
+      }
+    },
+    {
+      "componentId": "IndustryAllocationForQDII",
+      "name": "QDII行业配置",
+      "cardTitle": "行业配置",
+      "displayType": "table",
+      "description": "以表格形式展示{windCodes}QDII基金的行业配置数据，包括行业名称、行业配置比例，报告期：{reportDate}",
+      "command": "F9.FundWorkBench.IndustryAllocationPicker.GetMultipleRecs2",
+      "params": [
+        "windCodes",
+        "reportDate",
+        "industryType:13"
+      ],
+      "columns": {
+        "Object/windCode": "windCode",
+        "Object/name": "name",
+        "Object/industryList/industryName": "industryName",
+        "Object/industryList/fundNetRatio": "industryRatio"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "",
+              "type": "string",
+              "id": "industryName"
+            },
+            {
+              "title": "name",
+              "type": "number",
+              "id": "industryRatio",
+              "unit": "%",
+              "NumberRanking": true,
+              "fixed": 2
+            }
+          ],
+          "Pivot": true,
+          "Notes": "注：①②③:占基金净值比前三名的排名，QDII使用GICS行业分类"
+        },
+        "card": {
+          "title": "行业配置",
+          "width": "24"
+        }
+      }
+    },
+    {
+      "componentId": "ReitsAssetsDetails",
+      "name": "资产明细",
+      "cardTitle": "资产明细",
+      "displayType": "table",
+      "description": "表格展示多只 REITs 底层资产明细，包括基金名称、资产名称、资产类型、区域、建筑面积、估值、原始权益人、项目公司、运营管理机构和经营期限，宽度24",
+      "command": "report name=Fund.REITs.REITsAssetsDetails21 windcodes={windCodes}",
+      "params": [
+        "windCodes"
+      ],
+      "columns": {
+        "Column0": "assetId",
+        "Column1": "assetName",
+        "Column2": "assetType",
+        "Column3": "city",
+        "Column4": "completeTime",
+        "Column5": "floorSpace",
+        "Column6": "landNature",
+        "Column7": "sourceOfIncome",
+        "Column8": "evaluation",
+        "Column9": "originator",
+        "Column10": "projectCompanyId",
+        "Column11": "projectCompany",
+        "Column12": "operationManagementAgenciesId",
+        "Column13": "operationManagementAgencies",
+        "Column14": "windCode",
+        "Column15": "name",
+        "Column16": "province",
+        "Column17": "projectAssessmentDate",
+        "Column18": "operationStartDate",
+        "Column19": "operationEndDate",
+        "Column20": "operationYears"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "基金名称",
+              "type": "string",
+              "id": "name",
+              "width": 180
+            },
+            {
+              "title": "资产名称",
+              "type": "string",
+              "id": "assetName",
+              "width": 280
+            },
+            {
+              "title": "资产类型",
+              "type": "string",
+              "id": "assetType",
+              "width": 180
+            },
+            {
+              "title": "所在城市",
+              "type": "string",
+              "id": "city",
+              "width": 150
+            },
+            {
+              "title": "所在省份",
+              "type": "string",
+              "id": "province",
+              "width": 150
+            },
+            {
+              "title": "项目评估日期",
+              "type": "string",
+              "id": "projectAssessmentDate",
+              "width": 150
+            },
+            {
+              "title": "竣工时间",
+              "type": "string",
+              "id": "completeTime",
+              "width": 140
+            },
+            {
+              "title": "经营开始时间",
+              "type": "string",
+              "id": "operationStartDate",
+              "width": 140
+            },
+            {
+              "title": "经营结束时间",
+              "type": "string",
+              "id": "operationEndDate",
+              "width": 140
+            },
+            {
+              "title": "经营年限",
+              "type": "number",
+              "id": "operationYears",
+              "width": 120
+            },
+            {
+              "title": "建筑面积(平方米)",
+              "type": "number",
+              "id": "floorSpace",
+              "fixed": 2,
+              "width": 150
+            },
+            {
+              "title": "用地性质",
+              "type": "string",
+              "id": "landNature",
+              "width": 180
+            },
+            {
+              "title": "收入来源",
+              "type": "string",
+              "id": "sourceOfIncome",
+              "width": 250
+            },
+            {
+              "title": "资产估值(万元)",
+              "type": "number",
+              "id": "evaluation",
+              "fixed": 2,
+              "width": 160
+            },
+            {
+              "title": "原始权益人",
+              "type": "string",
+              "id": "originator",
+              "width": 280
+            },
+            {
+              "title": "项目公司",
+              "type": "string",
+              "id": "projectCompany",
+              "width": 280
+            },
+            {
+              "title": "运营管理机构",
+              "type": "string",
+              "id": "operationManagementAgencies",
+              "width": 280
+            }
+          ]
+        },
+        "card": {
+          "title": "资产明细",
+          "width": "24"
+        }
+      }
+    },
+    {
+      "componentId": "ReitsProjectOperation",
+      "name": "项目运营情况",
+      "cardTitle": "项目运营情况",
+      "displayType": "table",
+      "description": "表格展示多只 REITs 项目运营情况，字段顺序参考 REITs 基金-项目运营情况主表",
+      "command": "report name=Fund.REITs.REITsProjectOperation21 windcodes={windCodes}",
+      "params": [
+        "windCodes"
+      ],
+      "columns": {
+        "Column0": "windCode",
+        "Column1": "name",
+        "Column2": "evaluation",
+        "Column3": "bookValue",
+        "Column4": "incrementRatio",
+        "Column5": "assetType",
+        "Column6": "operatingRevenue",
+        "Column7": "opeRevenueGrowth",
+        "Column8": "operatingCost",
+        "Column9": "opeCostGrowth",
+        "Column10": "profit",
+        "Column11": "profitGrowth",
+        "Column12": "dateOfCurrent",
+        "Column13": "distrAmountOfLatest",
+        "Column14": "payoutRatioOfLatest",
+        "Column15": "dateOfLatest",
+        "Column16": "distrAmountOf2nd",
+        "Column17": "payoutRatioOf2nd",
+        "Column18": "dateOf2nd",
+        "Column19": "shortName"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "基金名称",
+              "type": "string",
+              "id": "name",
+              "width": 180
+            },
+            {
+              "title": "资产类型",
+              "type": "string",
+              "id": "assetType",
+              "width": 130
+            },
+            {
+              "title": "资产估值(万元)",
+              "type": "number",
+              "id": "evaluation",
+              "width": 140,
+              "fixed": 2,
+              "sorter": true,
+              "multiply": 0.0001
+            },
+            {
+              "title": "历史经营情况",
+              "children": [
+                {
+                  "title": "截止日期",
+                  "type": "string",
+                  "id": "dateOfCurrent",
+                  "width": 130
+                },
+                {
+                  "title": "账面价值(万元)",
+                  "type": "number",
+                  "id": "bookValue",
+                  "width": 170,
+                  "fixed": 2,
+                  "multiply": 0.0001
+                },
+                {
+                  "title": "增值率",
+                  "type": "number",
+                  "id": "incrementRatio",
+                  "width": 130,
+                  "fixed": 2,
+                  "unit": "%"
+                },
+                {
+                  "title": "营业收入(万元)",
+                  "type": "number",
+                  "id": "operatingRevenue",
+                  "width": 130,
+                  "fixed": 2,
+                  "multiply": 0.0001
+                },
+                {
+                  "title": "营业收入同比增长",
+                  "type": "number",
+                  "id": "opeRevenueGrowth",
+                  "width": 200,
+                  "fixed": 2,
+                  "unit": "%"
+                },
+                {
+                  "title": "营业成本(万元)",
+                  "type": "number",
+                  "id": "operatingCost",
+                  "width": 130,
+                  "fixed": 2,
+                  "multiply": 0.0001
+                },
+                {
+                  "title": "营业成本同比增长",
+                  "type": "number",
+                  "id": "opeCostGrowth",
+                  "width": 200,
+                  "fixed": 2,
+                  "unit": "%"
+                },
+                {
+                  "title": "净利润(万元)",
+                  "type": "number",
+                  "id": "profit",
+                  "width": 130,
+                  "fixed": 2,
+                  "multiply": 0.0001
+                },
+                {
+                  "title": "净利润同比增长",
+                  "type": "number",
+                  "id": "profitGrowth",
+                  "width": 200,
+                  "fixed": 2,
+                  "unit": "%"
+                }
+              ]
+            },
+            {
+              "title": "未来现金流测算",
+              "children": [
+                {
+                  "title": "截止日期",
+                  "type": "string",
+                  "id": "dateOfLatest",
+                  "width": 110
+                },
+                {
+                  "title": "可分配金额(万元)",
+                  "type": "number",
+                  "id": "distrAmountOfLatest",
+                  "width": 150,
+                  "fixed": 2,
+                  "multiply": 0.0001
+                },
+                {
+                  "title": "派息率",
+                  "type": "number",
+                  "id": "payoutRatioOfLatest",
+                  "width": 130,
+                  "fixed": 2,
+                  "unit": "%"
+                }
+              ]
+            }
+          ]
+        },
+        "card": {
+          "title": "项目运营情况",
+          "titleI18n": {
+            "en-US": "Project Operation"
+          },
+          "width": 24
+        }
+      }
+    },
+    {
+      "componentId": "ReitsFinancialIndicators",
+      "name": "季度财务指标",
+      "cardTitle": "季度财务指标",
+      "displayType": "table",
+      "description": "表格展示 REITs 季度财务指标，包括主要财务指标、收益分配情况和业绩衡量标准",
+      "command": "report name=Fund.REITs.REITsFinancialIndicators21 reportDate=[{reportDate}] windCodes={windCodes} sort=[0=asc]",
+      "params": [
+        "windCodes",
+        "reportDate"
+      ],
+      "columns": {
+        "Column0": "windCode",
+        "Column1": "name",
+        "Column2": "assetType",
+        "Column3": "income",
+        "Column4": "netProfit",
+        "Column5": "balanceOfCashFlowFromOperatingActivities",
+        "Column6": "businessIncome",
+        "Column7": "businessCost",
+        "Column8": "reportDate",
+        "Column9": "distributionAmount",
+        "Column10": "yearOfDistributionAmount",
+        "Column11": "unitDistributionAmount",
+        "Column12": "yearOfUnitDistributionAmount",
+        "Column13": "depreciationAmortization",
+        "Column14": "interestExpense",
+        "Column15": "incomeTaxExpense",
+        "Column16": "ebitda",
+        "Column17": "totalIncreasedItems",
+        "Column18": "totalReducedItems",
+        "Column19": "grossProfit",
+        "Column20": "grossMargin",
+        "Column21": "netProfitMargin",
+        "Column22": "netProfitBeforeInterestTaxDepreciation",
+        "Column23": "netProfitBeforeAmortization",
+        "Column24": "ebitdaMargin",
+        "Column25": "currentRatio",
+        "Column26": "assetLiabilityRatio"
+      },
+      "metadata": {
+        "card": {
+          "title": "季度财务指标",
+          "titleI18n": {
+            "en-US": "Quarterly Financial Indicators"
+          },
+          "width": 24
+        },
+        "table": {
+          "columns": [
+            {
+              "title": "基金名称",
+              "type": "string",
+              "id": "name",
+              "width": 160
+            },
+            {
+              "title": "资产类型",
+              "type": "string",
+              "id": "assetType",
+              "width": 120
+            },
+            {
+              "title": "主要财务指标",
+              "children": [
+                {
+                  "title": "本期收入(元)",
+                  "type": "number",
+                  "id": "income",
+                  "width": 170,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "本期净利润(元)",
+                  "type": "number",
+                  "id": "netProfit",
+                  "width": 170,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "经营活动现金流量余额(元)",
+                  "type": "number",
+                  "id": "balanceOfCashFlowFromOperatingActivities",
+                  "width": 210,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "营业收入(元)",
+                  "type": "number",
+                  "id": "businessIncome",
+                  "width": 170,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "营业成本(元)",
+                  "type": "number",
+                  "id": "businessCost",
+                  "width": 170,
+                  "fixed": 2,
+                  "colorRanking": true
+                }
+              ]
+            },
+            {
+              "title": "收益分配情况",
+              "children": [
+                {
+                  "title": "可供分配金额(本期)(元)",
+                  "type": "number",
+                  "id": "distributionAmount",
+                  "width": 190,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "可供分配金额(本年累计)(元)",
+                  "type": "number",
+                  "id": "yearOfDistributionAmount",
+                  "width": 230,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "单位可供分配金额(本期)(元)",
+                  "type": "number",
+                  "id": "unitDistributionAmount",
+                  "width": 230,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "单位可供分配金额(本年累计)(元)",
+                  "type": "number",
+                  "id": "yearOfUnitDistributionAmount",
+                  "width": 250,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "折旧和摊销(元)",
+                  "type": "number",
+                  "id": "depreciationAmortization",
+                  "width": 170,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "利息支出(元)",
+                  "type": "number",
+                  "id": "interestExpense",
+                  "width": 170,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "所得税费用(元)",
+                  "type": "number",
+                  "id": "incomeTaxExpense",
+                  "width": 170,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "税息折旧及摊销前利润(元)",
+                  "type": "number",
+                  "id": "ebitda",
+                  "width": 210,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "调增项合计(元)",
+                  "type": "number",
+                  "id": "totalIncreasedItems",
+                  "width": 170,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "调减项合计(元)",
+                  "type": "number",
+                  "id": "totalReducedItems",
+                  "width": 170,
+                  "fixed": 2,
+                  "colorRanking": true
+                }
+              ]
+            },
+            {
+              "title": "业绩衡量标准",
+              "children": [
+                {
+                  "title": "毛利(元)",
+                  "type": "number",
+                  "id": "grossProfit",
+                  "width": 170,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "毛利率",
+                  "type": "number",
+                  "id": "grossMargin",
+                  "width": 170,
+                  "fixed": 2,
+                  "unit": "%",
+                  "colorRanking": true
+                },
+                {
+                  "title": "净利率",
+                  "type": "string",
+                  "id": "netProfitMargin",
+                  "width": 300,
+                  "unit": "%"
+                },
+                {
+                  "title": "息税折旧前净利率",
+                  "type": "string",
+                  "id": "netProfitBeforeInterestTaxDepreciation",
+                  "width": 300,
+                  "unit": "%"
+                },
+                {
+                  "title": "息税折旧摊销前净利润(元)",
+                  "type": "number",
+                  "id": "netProfitBeforeAmortization",
+                  "width": 210,
+                  "fixed": 2,
+                  "colorRanking": true
+                },
+                {
+                  "title": "息税折旧摊销前利润率",
+                  "type": "string",
+                  "id": "ebitdaMargin",
+                  "width": 300,
+                  "unit": "%"
+                },
+                {
+                  "title": "流动比率",
+                  "type": "string",
+                  "id": "currentRatio",
+                  "width": 300,
+                  "unit": "%"
+                },
+                {
+                  "title": "资产负债率",
+                  "type": "string",
+                  "id": "assetLiabilityRatio",
+                  "width": 300,
+                  "unit": "%"
+                }
+              ]
+            }
+          ],
+          "Notes": "注：红色代表当列中最高值；绿色代表当列中最低值"
+        }
+      }
+    }
+  ]
+}

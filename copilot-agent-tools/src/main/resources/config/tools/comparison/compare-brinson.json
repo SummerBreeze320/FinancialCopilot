@@ -1,0 +1,277 @@
+{
+  "toolId": "compare_brinson",
+  "name": "Brinson超额收益归因对比",
+  "scope": "COMPARISON",
+  "toolType": "COMPARISON_TOOL",
+  "description": "横向对标基金相对基准的超额收益归因，包含资产配置效应、行业选择效应与个股选择效应的表格与柱状图",
+  "provider": "mcp",
+  "server": "wind-fund-analysis",
+  "targetTool": "fund_get_brinson_attribution",
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "reportDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: reportDate"
+    }
+  ],
+  "componentCount": 2,
+  "components": [
+    {
+      "componentId": "brinson",
+      "name": "Brinson归因",
+      "cardTitle": "Brinson归因",
+      "displayType": "table",
+      "description": "获取资产配置、行业选择和交互效应等Brinson归因结果。",
+      "metadata": {
+        "dateMode": "semiAnnualReportDate",
+        "table": {
+          "columns": [
+            {
+              "title": "序号",
+              "type": "string",
+              "id": "序号",
+              "width": "55px"
+            },
+            {
+              "title": "行业名称",
+              "type": "string",
+              "id": "行业名称",
+              "width": "140px"
+            },
+            {
+              "title": "行业配置(%)",
+              "children": [
+                {
+                  "title": "基金\n①",
+                  "type": "number",
+                  "id": "基金行业配置(%)",
+                  "sorter": true,
+                  "fixed": 2,
+                  "width": "80px"
+                },
+                {
+                  "title": "比较基准\n②",
+                  "type": "number",
+                  "id": "比较基准行业配置(%)",
+                  "sorter": true,
+                  "fixed": 2,
+                  "width": "90px"
+                },
+                {
+                  "title": "+/-\n①-②",
+                  "type": "number",
+                  "id": "超额配置(%)",
+                  "sorter": true,
+                  "fixed": 2,
+                  "signColor": true,
+                  "width": "80px"
+                }
+              ]
+            },
+            {
+              "title": "收益率(%)",
+              "children": [
+                {
+                  "title": "基金\n③",
+                  "type": "number",
+                  "id": "基金收益率(%)",
+                  "sorter": true,
+                  "fixed": 2,
+                  "signColor": true,
+                  "width": "80px"
+                },
+                {
+                  "title": "比较基准\n④",
+                  "type": "number",
+                  "id": "基准收益率(%)",
+                  "sorter": true,
+                  "fixed": 2,
+                  "signColor": true,
+                  "width": "90px"
+                },
+                {
+                  "title": "+/-\n③-④",
+                  "type": "number",
+                  "id": "收益差(%)",
+                  "sorter": true,
+                  "fixed": 2,
+                  "signColor": true,
+                  "width": "80px"
+                }
+              ]
+            },
+            {
+              "title": "归因分析(%)",
+              "children": [
+                {
+                  "title": "超额收益\n①*③ - ②*④",
+                  "type": "number",
+                  "id": "归因超额收益(%)",
+                  "sorter": true,
+                  "fixed": 2,
+                  "signColor": true,
+                  "width": "110px"
+                },
+                {
+                  "title": "资产配置收益\n(①-②)*④",
+                  "type": "number",
+                  "id": "资产配置收益(%)",
+                  "sorter": true,
+                  "fixed": 2,
+                  "signColor": true,
+                  "width": "110px"
+                },
+                {
+                  "title": "个股选择收益\n②*(③-④)",
+                  "type": "number",
+                  "id": "个股选择收益(%)",
+                  "sorter": true,
+                  "fixed": 2,
+                  "signColor": true,
+                  "width": "110px"
+                },
+                {
+                  "title": "交互收益\n(①-②)*(③-④)",
+                  "type": "number",
+                  "id": "交互收益(%)",
+                  "sorter": true,
+                  "fixed": 2,
+                  "signColor": true,
+                  "width": "110px"
+                }
+              ]
+            }
+          ]
+        },
+        "chart": null,
+        "width": 24
+      }
+    },
+    {
+      "componentId": "brinsonChart",
+      "name": "Brinson归因图",
+      "cardTitle": "Brinson归因图",
+      "displayType": "chart:bar",
+      "description": "以横向多面板柱状图展示Brinson归因中的超额配置、超额收益、资产配置、个股选择和交互收益。",
+      "metadata": {
+        "dateMode": "semiAnnualReportDate",
+        "table": null,
+        "chart": {
+          "kind": "chart",
+          "chartType": "bar",
+          "Name": "Brinson归因图",
+          "source": "tableData",
+          "metadata": {
+            "bar": {
+              "orientation": "horizontal",
+              "layout": "multiGrid",
+              "categoryField": "行业名称",
+              "columns": {
+                "series": {
+                  "行业名称": [
+                    "超额配置(%)",
+                    "归因超额收益(%)",
+                    "资产配置收益(%)",
+                    "个股选择收益(%)",
+                    "交互收益(%)"
+                  ]
+                },
+                "xAxis": {
+                  "data": [
+                    "行业名称"
+                  ]
+                }
+              },
+              "fixed": 2,
+              "unit": "%",
+              "panels": [
+                {
+                  "title": "超额配置(%)",
+                  "field": "超额配置(%)"
+                },
+                {
+                  "title": "超额收益(%)",
+                  "field": "归因超额收益(%)"
+                },
+                {
+                  "title": "资产配置收益(%)",
+                  "field": "资产配置收益(%)"
+                },
+                {
+                  "title": "个股选择收益(%)",
+                  "field": "个股选择收益(%)"
+                },
+                {
+                  "title": "交互收益(%)",
+                  "field": "交互收益(%)"
+                }
+              ],
+              "options": {
+                "tooltip": {
+                  "trigger": "axis",
+                  "axisPointer": {
+                    "type": "shadow"
+                  }
+                },
+                "grid": [
+                  {
+                    "top": "8%",
+                    "left": 20,
+                    "width": "16%",
+                    "bottom": 28,
+                    "containLabel": true
+                  },
+                  {
+                    "top": "8%",
+                    "left": "21%",
+                    "width": "17%",
+                    "bottom": 28,
+                    "containLabel": true
+                  },
+                  {
+                    "top": "8%",
+                    "left": "40%",
+                    "width": "17%",
+                    "bottom": 28,
+                    "containLabel": true
+                  },
+                  {
+                    "top": "8%",
+                    "left": "59%",
+                    "width": "17%",
+                    "bottom": 28,
+                    "containLabel": true
+                  },
+                  {
+                    "top": "8%",
+                    "left": "78%",
+                    "width": "17%",
+                    "right": "2%",
+                    "bottom": 28,
+                    "containLabel": true
+                  }
+                ]
+              }
+            },
+            "card": {
+              "title": "Brinson归因图",
+              "width": "24",
+              "height": "600px"
+            }
+          }
+        },
+        "width": 24
+      }
+    }
+  ]
+}

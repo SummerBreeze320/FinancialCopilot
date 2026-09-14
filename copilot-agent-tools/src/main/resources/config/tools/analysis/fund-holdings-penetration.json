@@ -1,0 +1,366 @@
+{
+  "toolId": "fund_analysis_holdings_penetration",
+  "name": "单基金持仓穿透分析",
+  "scope": "ANALYSIS",
+  "toolType": "ANALYSIS_TOOL",
+  "description": "单只基金的持仓穿透明细，包括重仓持股、重仓持债、重仓持基列表",
+  "provider": "http_invoke",
+  "server": null,
+  "targetTool": null,
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "reportDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: reportDate"
+    },
+    {
+      "name": "industryType",
+      "type": "string",
+      "required": false,
+      "defaultValue": "7",
+      "description": "入参: industryType"
+    },
+    {
+      "name": "top",
+      "type": "string",
+      "required": false,
+      "defaultValue": "10",
+      "description": "入参: top"
+    }
+  ],
+  "componentCount": 3,
+  "components": [
+    {
+      "componentId": "MoneyHeavyHoldStockTable",
+      "name": "重仓持股",
+      "cardTitle": "重仓持股",
+      "displayType": "table",
+      "description": "展示基金重仓持股表格",
+      "command": "PublicFundF9.HeavHeldStockStock",
+      "params": [
+        "windCodes",
+        "reportDate",
+        "industryType:7"
+      ],
+      "columns": {
+        "StockCode": "stockCode",
+        "StockName": "stockName",
+        "MarketValue": "marketValue",
+        "Share": "share",
+        "StockMarketValuePer": "stockMarketValuePer",
+        "FundNetPer": "fundNetPer",
+        "TradeableSharePer": "tradeableSharePer",
+        "PreSub": "shareChange",
+        "PerChange": "stockChange",
+        "RptDate": "reportDate",
+        "IndustryName": "industryName",
+        "IndustryChange": "industryChange"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "股票名称",
+              "type": "string",
+              "sorter": true,
+              "id": "stockName"
+            },
+            {
+              "title": "持仓市值(元)",
+              "type": "number",
+              "id": "marketValue",
+              "sorter": true,
+              "fixed": 2,
+              "thousandSeparator": true,
+              "summary": "sum"
+            },
+            {
+              "title": "持仓数量",
+              "type": "number",
+              "id": "share",
+              "sorter": true,
+              "fixed": 0,
+              "thousandSeparator": true
+            },
+            {
+              "title": "相对上期增减",
+              "type": "number",
+              "id": "shareChange",
+              "sorter": true,
+              "signColor": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "占股票市值比",
+              "type": "number",
+              "id": "stockMarketValuePer",
+              "sorter": true,
+              "signColor": true,
+              "unit": "%",
+              "fixed": 2,
+              "summary": "sum"
+            },
+            {
+              "title": "占基金净值比",
+              "type": "number",
+              "id": "fundNetPer",
+              "sorter": true,
+              "signColor": true,
+              "unit": "%",
+              "fixed": 2,
+              "summary": "sum"
+            },
+            {
+              "title": "占流通股本比",
+              "type": "number",
+              "id": "tradeableSharePer",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "所属行业",
+              "type": "string",
+              "sorter": true,
+              "id": "industryName"
+            },
+            {
+              "title": "区间涨跌幅",
+              "type": "number",
+              "id": "stockChange",
+              "sorter": true,
+              "signColor": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "行业区间涨跌幅",
+              "type": "number",
+              "id": "industryChange",
+              "sorter": true,
+              "signColor": true,
+              "unit": "%",
+              "fixed": 2
+            }
+          ]
+        },
+        "card": {
+          "title": "重仓持股",
+          "width": "24"
+        }
+      }
+    },
+    {
+      "componentId": "MoneyHeavyHoldBondTable",
+      "name": "重仓持债",
+      "cardTitle": "重仓持债",
+      "displayType": "table",
+      "description": "展示基金重仓持债表格",
+      "command": "report name=F9_2.Fund.BondInvePortfolio.HeavHeldBond22 windCode=[{windCodes}] reportDate=[{reportDate}]",
+      "params": [
+        "windCodes",
+        "reportDate"
+      ],
+      "columns": {
+        "Column0": "reportDate",
+        "Column1": "bondCode",
+        "Column2": "bondName",
+        "Column3": "marketValue",
+        "Column4": "fundNetPer",
+        "Column5": "bondType",
+        "Column6": "creditRate",
+        "Column8": "corporateRate",
+        "Column9": "isMunicipal",
+        "Column10": "isPerpetual"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "证券名称",
+              "type": "string",
+              "id": "bondName"
+            },
+            {
+              "title": "持仓市值(万元)",
+              "type": "number",
+              "id": "marketValue",
+              "sorter": true,
+              "fixed": 2,
+              "multiply": 0.0001
+            },
+            {
+              "title": "占净值比",
+              "type": "number",
+              "id": "fundNetPer",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "债券类型",
+              "type": "string",
+              "id": "bondType"
+            },
+            {
+              "title": "债项类型",
+              "type": "string",
+              "id": "creditRate"
+            },
+            {
+              "title": "主体评级",
+              "type": "string",
+              "id": "corporateRate"
+            },
+            {
+              "title": "是否城投债",
+              "type": "string",
+              "id": "isMunicipal"
+            },
+            {
+              "title": "是否永续债",
+              "type": "string",
+              "id": "isPerpetual"
+            }
+          ]
+        },
+        "card": {
+          "title": "重仓持债",
+          "width": "24"
+        }
+      }
+    },
+    {
+      "componentId": "MoneyHeavyHoldFundTable",
+      "name": "重仓持基",
+      "cardTitle": "重仓持基",
+      "displayType": "table",
+      "description": "展示基金重仓持基表格",
+      "command": "PublicFundF9.HoldingFundInfoPicker",
+      "params": [
+        "windCodes",
+        "reportDate",
+        "top:10"
+      ],
+      "columns": {
+        "Object/WindCode": "fundCode",
+        "Object/FundName": "fundName",
+        "Object/HoldValue": "marketValue",
+        "Object/NavRatio": "fundNetPer",
+        "Object/ValueRatio": "fundMarketValuePer",
+        "Object/Rise": "marketValueChange",
+        "Object/Chg": "fundChange",
+        "Object/FundScale": "fundScale",
+        "Object/FundScaleRatio": "fundScalePer",
+        "Object/InvestType": "investmentType",
+        "Object/FundCompany": "fundCompany",
+        "Object/ReportDate": "reportDate"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "基金代码",
+              "type": "string",
+              "id": "fundCode"
+            },
+            {
+              "title": "基金简称",
+              "type": "string",
+              "id": "fundName"
+            },
+            {
+              "title": "持仓市值(万)",
+              "type": "number",
+              "id": "marketValue",
+              "sorter": true,
+              "thousandSeparator": true,
+              "summary": "sum",
+              "fixed": 2,
+              "multiply": 0.0001
+            },
+            {
+              "title": "占净值比",
+              "type": "number",
+              "id": "fundNetPer",
+              "sorter": true,
+              "summary": "sum",
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "占基金市值比",
+              "type": "number",
+              "id": "fundMarketValuePer",
+              "sorter": true,
+              "summary": "sum",
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "相对上期增减",
+              "type": "number",
+              "id": "marketValueChange",
+              "sorter": true,
+              "signColor": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "区间涨跌幅",
+              "type": "number",
+              "id": "fundChange",
+              "sorter": true,
+              "signColor": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "基金总规模(亿)",
+              "type": "number",
+              "id": "fundScale",
+              "sorter": true,
+              "fixed": 2,
+              "multiply": 1e-08,
+              "thousandSeparator": true,
+              "summary": "sum"
+            },
+            {
+              "title": "占基金总规模比",
+              "type": "number",
+              "id": "fundScalePer",
+              "sorter": true,
+              "unit": "%",
+              "fixed": 2
+            },
+            {
+              "title": "投资类型",
+              "type": "string",
+              "id": "investmentType"
+            },
+            {
+              "title": "基金管理人",
+              "type": "string",
+              "id": "fundCompany"
+            }
+          ]
+        },
+        "card": {
+          "title": "重仓持基",
+          "width": "24"
+        }
+      }
+    }
+  ]
+}

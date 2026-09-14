@@ -12,6 +12,7 @@ import com.financial.copilot.agent.tools.fund.*;
 import com.financial.copilot.agent.tools.graph.FinancialGraphTool;
 import io.agentscope.core.tool.*;
 import org.springframework.stereotype.Component;
+import com.financial.copilot.agent.core.prompt.FundComparatorPrompt;
 import org.springframework.lang.Nullable;
 
 import java.util.*;
@@ -19,27 +20,31 @@ import java.util.*;
 /** AgentScope ReAct role for fund comparison and deep dives. */
 @Component
 public class FundComparatorAgent {
-    private static final String SYSTEM_PROMPT = """
-            你是基金对标 ReAct Agent。自主调用 compare_metrics、compare_holdings、compare_reports；仅在可用时调用 shared_holdings，
-            观察真实结果后生成 Markdown 对标结论。至少调用 compare_metrics；双标的必须对称比较，禁止模型心算。
-            """;
     private final AgentScopeAgentFactory factory; private final FundQuantAnalysisTool quant;
     private final FundHoldingsQueryTool holdings; private final FundReportRetrieverTool reports;
+    private final com.financial.copilot.agent.tools.configured.facade.FundComparisonToolSet fundComparisonToolSet;
     private final FinancialGraphTool graph; private final ObjectMapper mapper;
 
     public FundComparatorAgent(AgentScopeAgentFactory factory, FundQuantAnalysisTool quant,
                                FundHoldingsQueryTool holdings, FundReportRetrieverTool reports,
+                               @Nullable com.financial.copilot.agent.tools.configured.facade.FundComparisonToolSet fundComparisonToolSet,
                                @Nullable FinancialGraphTool graph, ObjectMapper mapper) {
-        this.factory=factory; this.quant=quant; this.holdings=holdings; this.reports=reports; this.graph=graph; this.mapper=mapper;
+        this.factory=factory; this.quant=quant; this.holdings=holdings; this.reports=reports;
+        this.fundComparisonToolSet=fundComparisonToolSet; this.graph=graph; this.mapper=mapper;
     }
 
     public Artifact<ComparisonReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
         List<String> codes = codes(input, node);
         Toolkit toolkit = new Toolkit(); toolkit.registerTool(new ComparisonTools(quant, holdings, reports));
+        if (fundComparisonToolSet != null) {
+            toolkit.registerTool(fundComparisonToolSet);
+        }
         if (graph != null) toolkit.registerTool(new GraphComparisonTools(graph));
+        String userPrompt = FundComparatorPrompt.buildSpec(
+                context.request().prompt(), codes, context.request().profile()).renderUserPrompt();
         var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
-                "FundComparatorAgent", "基金横向对标", SYSTEM_PROMPT, toolkit, 8),
-                "用户目标=" + context.request().prompt() + "\n对标代码=" + codes, context);
+                "FundComparatorAgent", "基金横向对标", FundComparatorPrompt.SYSTEM_PROMPT, toolkit, 8),
+                userPrompt, context);
         run.requireLastText("compare_metrics");
         String codeA = codes.getFirst(); String codeB = codes.size() > 1 ? codes.get(1) : codeA;
         List<String> shared = parseShared(run.observations().containsKey("shared_holdings")

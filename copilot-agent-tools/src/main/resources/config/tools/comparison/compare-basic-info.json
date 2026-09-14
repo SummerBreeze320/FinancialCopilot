@@ -1,0 +1,478 @@
+{
+  "toolId": "compare_basic_info",
+  "name": "多基金基本资料对比",
+  "scope": "COMPARISON",
+  "toolType": "COMPARISON_TOOL",
+  "description": "以表格形式横向对比多只基金的基础资料（普通型、货币型、指数型、QDII型）",
+  "provider": "http_invoke",
+  "server": null,
+  "targetTool": null,
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "endDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: endDate"
+    },
+    {
+      "name": "amount",
+      "type": "string",
+      "required": false,
+      "defaultValue": "1",
+      "description": "入参: amount"
+    }
+  ],
+  "componentCount": 4,
+  "components": [
+    {
+      "componentId": "FundInfoForDefault",
+      "name": "基金资料",
+      "cardTitle": "基本资料",
+      "displayType": "table",
+      "description": "以表格形式展示{windCodes}基金的基础资料数据，包括基金名称、成立日、类型、规模、单位净值、基金经理、管理费率、托管费率，截止日期：{endDate}",
+      "command": "report name=Fund.FundComapre.FundBasicInfoCompare21 windCodes=[{windCodes}] endDate=[{endDate}] amount=[{amount}]",
+      "params": [
+        "windCodes",
+        "endDate",
+        "amount:1"
+      ],
+      "columns": {
+        "Column0": "windCode",
+        "Column1": "name",
+        "Column2": "setupDate",
+        "Column3": "investType",
+        "Column4": "fundScale",
+        "Column5": "unitNav",
+        "Column7": "fundManagerId",
+        "Column8": "fundManager",
+        "Column9": "managementFee",
+        "Column10": "custodianFee",
+        "Column15": "ytdReturn"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "基金名称",
+              "type": "string",
+              "id": "name",
+              "width": "180px"
+            },
+            {
+              "title": "基金成立日",
+              "type": "string",
+              "id": "setupDate",
+              "width": "90px"
+            },
+            {
+              "title": "基金类型",
+              "type": "string",
+              "id": "investType",
+              "width": "170px"
+            },
+            {
+              "title": "年初至今收益率(%)",
+              "type": "number",
+              "id": "ytdReturn",
+              "sorter": true,
+              "fixed": 2,
+              "width": "140px"
+            },
+            {
+              "title": "基金规模(亿元)",
+              "type": "number",
+              "id": "fundScale",
+              "sorter": true,
+              "multiply": 1e-08,
+              "fixed": 2,
+              "width": "115px"
+            },
+            {
+              "title": "单位净值",
+              "type": "number",
+              "id": "unitNav"
+            },
+            {
+              "title": "基金经理",
+              "type": "string",
+              "id": "fundManager"
+            },
+            {
+              "title": "管理费率(%)",
+              "type": "number",
+              "id": "managementFee",
+              "sorter": true,
+              "width": "95px"
+            },
+            {
+              "title": "托管费率(%)",
+              "type": "number",
+              "id": "custodianFee",
+              "sorter": true,
+              "width": "95px"
+            }
+          ],
+          "extra": [
+            {
+              "name": [
+                "amount"
+              ],
+              "type": "radio",
+              "radio": {
+                "本分级规模": 0,
+                "合计规模": 1
+              }
+            }
+          ]
+        },
+        "card": {
+          "show": "ui",
+          "title": "基本资料"
+        }
+      }
+    },
+    {
+      "componentId": "FundInfoForMoneyMarketFund",
+      "name": "货币型基金资料",
+      "cardTitle": "基本资料",
+      "displayType": "table",
+      "description": "以表格形式展示{windCodes}货币型基金的基础资料数据，包括基金名称、成立日、类型、规模、七日年化收益、基金经理、管理费率、托管费率，截止日期：{endDate}",
+      "command": "report name=Fund.FundComapre.FundBasicInfoCompare21 windCodes=[{windCodes}] endDate=[{endDate}] amount=[{amount}]",
+      "params": [
+        "windCodes",
+        "endDate",
+        "amount:1"
+      ],
+      "columns": {
+        "Column0": "windCode",
+        "Column1": "name",
+        "Column2": "setupDate",
+        "Column3": "investType",
+        "Column4": "fundScale",
+        "Column6": "sevenDayAnnualizedReturn",
+        "Column7": "fundManagerId",
+        "Column8": "fundManager",
+        "Column9": "managementFee",
+        "Column10": "custodianFee",
+        "Column15": "ytdReturn"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "基金名称",
+              "type": "string",
+              "id": "name",
+              "width": "180px"
+            },
+            {
+              "title": "基金成立日",
+              "type": "string",
+              "id": "setupDate",
+              "width": "90px"
+            },
+            {
+              "title": "基金类型",
+              "type": "string",
+              "id": "investType",
+              "width": "170px"
+            },
+            {
+              "title": "年初至今收益率(%)",
+              "type": "number",
+              "id": "ytdReturn",
+              "sorter": true,
+              "fixed": 2,
+              "width": "140px"
+            },
+            {
+              "title": "基金规模(亿元)",
+              "type": "number",
+              "id": "fundScale",
+              "sorter": true,
+              "multiply": 1e-08,
+              "fixed": 2,
+              "width": "115px"
+            },
+            {
+              "title": "七日年化收益",
+              "type": "number",
+              "id": "sevenDayAnnualizedReturn"
+            },
+            {
+              "title": "基金经理",
+              "type": "string",
+              "id": "fundManager"
+            },
+            {
+              "title": "管理费率(%)",
+              "type": "number",
+              "id": "managementFee",
+              "sorter": true,
+              "width": "95px"
+            },
+            {
+              "title": "托管费率(%)",
+              "type": "number",
+              "id": "custodianFee",
+              "sorter": true,
+              "width": "95px"
+            }
+          ],
+          "extra": [
+            {
+              "name": [
+                "amount"
+              ],
+              "type": "radio",
+              "radio": {
+                "本分级规模": 0,
+                "合计规模": 1
+              }
+            }
+          ]
+        },
+        "card": {
+          "show": "ui",
+          "title": "基本资料"
+        }
+      }
+    },
+    {
+      "componentId": "FundInfoForIndexFund",
+      "name": "指数型基金资料",
+      "cardTitle": "基本资料",
+      "displayType": "table",
+      "description": "以表格形式展示{windCodes}指数型基金的基础资料数据，包括基金名称、成立日、类型、规模、单位净值、基金经理、管理费率、托管费率、跟踪指数，截止日期：{endDate}",
+      "command": "report name=Fund.FundComapre.FundBasicInfoCompare21 windCodes=[{windCodes}] endDate=[{endDate}] amount=[{amount}]",
+      "params": [
+        "windCodes",
+        "endDate",
+        "amount:1"
+      ],
+      "columns": {
+        "Column0": "windCode",
+        "Column1": "name",
+        "Column2": "setupDate",
+        "Column3": "investType",
+        "Column4": "fundScale",
+        "Column5": "unitNav",
+        "Column7": "fundManagerId",
+        "Column8": "fundManager",
+        "Column9": "managementFee",
+        "Column10": "custodianFee",
+        "Column12": "trackIndexCode",
+        "Column13": "trackIndexName",
+        "Column15": "ytdReturn"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "基金名称",
+              "type": "string",
+              "id": "name",
+              "width": "180px"
+            },
+            {
+              "title": "基金成立日",
+              "type": "string",
+              "id": "setupDate",
+              "width": "90px"
+            },
+            {
+              "title": "基金类型",
+              "type": "string",
+              "id": "investType",
+              "width": "170px"
+            },
+            {
+              "title": "年初至今收益率(%)",
+              "type": "number",
+              "id": "ytdReturn",
+              "sorter": true,
+              "fixed": 2,
+              "width": "140px"
+            },
+            {
+              "title": "基金规模(亿元)",
+              "type": "number",
+              "id": "fundScale",
+              "sorter": true,
+              "multiply": 1e-08,
+              "fixed": 2,
+              "width": "115px"
+            },
+            {
+              "title": "单位净值",
+              "type": "number",
+              "id": "unitNav"
+            },
+            {
+              "title": "基金经理",
+              "type": "string",
+              "id": "fundManager"
+            },
+            {
+              "title": "管理费率(%)",
+              "type": "number",
+              "id": "managementFee",
+              "sorter": true,
+              "width": "95px"
+            },
+            {
+              "title": "托管费率(%)",
+              "type": "number",
+              "id": "custodianFee",
+              "sorter": true,
+              "width": "95px"
+            },
+            {
+              "title": "跟踪指数",
+              "type": "string",
+              "id": "trackIndexName"
+            }
+          ],
+          "extra": [
+            {
+              "name": [
+                "amount"
+              ],
+              "type": "radio",
+              "radio": {
+                "本分级规模": 0,
+                "合计规模": 1
+              }
+            }
+          ]
+        },
+        "card": {
+          "show": "ui",
+          "title": "基本资料"
+        }
+      }
+    },
+    {
+      "componentId": "FundInfoForQDII",
+      "name": "QDII基金资料",
+      "cardTitle": "基本资料",
+      "displayType": "table",
+      "description": "以表格形式展示{windCodes}QDII基金的基础资料数据，包括基金名称、成立日、类型、规模、单位净值、基金经理、管理费率、托管费率、投资区域，截止日期：{endDate}",
+      "command": "report name=Fund.FundComapre.FundBasicInfoCompare21 windCodes=[{windCodes}] endDate=[{endDate}] amount=[{amount}]",
+      "params": [
+        "windCodes",
+        "endDate",
+        "amount:1"
+      ],
+      "columns": {
+        "Column0": "windCode",
+        "Column1": "name",
+        "Column2": "setupDate",
+        "Column3": "investType",
+        "Column4": "fundScale",
+        "Column5": "unitNav",
+        "Column7": "fundManagerId",
+        "Column8": "fundManager",
+        "Column9": "managementFee",
+        "Column10": "custodianFee",
+        "Column14": "investmentRegion",
+        "Column15": "ytdReturn"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "基金名称",
+              "type": "string",
+              "id": "name",
+              "width": "180px"
+            },
+            {
+              "title": "基金成立日",
+              "type": "string",
+              "id": "setupDate",
+              "width": "90px"
+            },
+            {
+              "title": "基金类型",
+              "type": "string",
+              "id": "investType",
+              "width": "170px"
+            },
+            {
+              "title": "年初至今收益率(%)",
+              "type": "number",
+              "id": "ytdReturn",
+              "sorter": true,
+              "fixed": 2,
+              "width": "140px"
+            },
+            {
+              "title": "基金规模(亿元)",
+              "type": "number",
+              "id": "fundScale",
+              "sorter": true,
+              "multiply": 1e-08,
+              "fixed": 2,
+              "width": "115px"
+            },
+            {
+              "title": "单位净值",
+              "type": "number",
+              "id": "unitNav"
+            },
+            {
+              "title": "基金经理",
+              "type": "string",
+              "id": "fundManager"
+            },
+            {
+              "title": "管理费率(%)",
+              "type": "number",
+              "id": "managementFee",
+              "sorter": true,
+              "width": "95px"
+            },
+            {
+              "title": "托管费率(%)",
+              "type": "number",
+              "id": "custodianFee",
+              "sorter": true,
+              "width": "95px"
+            },
+            {
+              "title": "投资区域",
+              "type": "string",
+              "id": "investmentRegion"
+            }
+          ],
+          "extra": [
+            {
+              "name": [
+                "amount"
+              ],
+              "type": "radio",
+              "radio": {
+                "本分级规模": 0,
+                "合计规模": 1
+              }
+            }
+          ]
+        },
+        "card": {
+          "show": "ui",
+          "title": "基本资料"
+        }
+      }
+    }
+  ]
+}

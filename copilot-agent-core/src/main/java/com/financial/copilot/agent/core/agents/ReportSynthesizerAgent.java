@@ -19,9 +19,11 @@ public class ReportSynthesizerAgent {
     public ReportSynthesizerAgent(AgentScopeAgentFactory factory,ObjectMapper mapper){this.factory=factory;this.mapper=mapper;}
     public Artifact<FinalSynthesisReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context){
         Toolkit toolkit=new Toolkit(); toolkit.registerTool(new Tools(input,mapper));
+        String userPrompt = com.financial.copilot.agent.core.prompt.ReportSynthesizerPrompt.buildSpec(
+                context.request().prompt(), context.request().profile()).renderUserPrompt();
         var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("ReportSynthesizerAgent","投研报告终审",
-                "你是投研报告 ReAct Agent。必须先调用 read_research_artifacts，严格引用工具返回的事实，最后输出完整 Markdown 研报。",toolkit,5),
-                "用户目标="+context.request().prompt()+"\n用户画像="+context.request().profile(),context);
+                com.financial.copilot.agent.core.prompt.ReportSynthesizerPrompt.SYSTEM_PROMPT,toolkit,5),
+                userPrompt,context);
         run.requireLastText("read_research_artifacts");
         List<String> evidence=input.artifacts().values().stream().map(Artifact::evidenceContract)
                 .filter(Objects::nonNull).flatMap(contract->contract.evidenceUris().stream()).distinct().toList();

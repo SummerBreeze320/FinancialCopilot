@@ -58,4 +58,63 @@ class RTCFPromptSpecTest {
         assertTrue(user.contains("易方达蓝筹"));
     }
 
+    @Test
+    @DisplayName("测试 FundComparatorPrompt RTCF 规范与静态前缀对齐")
+    void testFundComparatorPrompt() {
+        String sysPrompt = FundComparatorPrompt.SYSTEM_PROMPT;
+        assertTrue(sysPrompt.contains("FundComparatorAgent"));
+        assertTrue(sysPrompt.contains("【对称对标原则】"));
+        assertTrue(sysPrompt.contains("【Tool-as-Truth】"));
+
+        RTCFPromptSpec spec = FundComparatorPrompt.buildSpec(
+                "对比这两只医疗基金", List.of("003095.OF", "005827.OF"), null);
+        String userPrompt = spec.renderUserPrompt();
+
+        assertTrue(userPrompt.contains("【当前任务 (Task)】"));
+        assertTrue(userPrompt.contains("003095.OF"));
+        assertTrue(userPrompt.contains("### [USER GOAL]"));
+        assertTrue(userPrompt.contains("对比这两只医疗基金"));
+        assertTrue(userPrompt.contains("### [TARGET CODES]"));
+        assertTrue(userPrompt.contains("【输出格式与约束 (Format)】"));
+    }
+
+    @Test
+    @DisplayName("测试 ReportSynthesizerPrompt RTCF 规范与静态前缀对齐")
+    void testReportSynthesizerPrompt() {
+        String sysPrompt = ReportSynthesizerPrompt.SYSTEM_PROMPT;
+        assertTrue(sysPrompt.contains("ReportSynthesizerAgent"));
+        assertTrue(sysPrompt.contains("【证据强闭环约束】"));
+        assertTrue(sysPrompt.contains("read_research_artifacts"));
+
+        RTCFPromptSpec spec = ReportSynthesizerPrompt.buildSpec("生成终审报告", null);
+        String userPrompt = spec.renderUserPrompt();
+
+        assertTrue(userPrompt.contains("【当前任务 (Task)】"));
+        assertTrue(userPrompt.contains("### [USER GOAL]"));
+        assertTrue(userPrompt.contains("生成终审报告"));
+        assertTrue(userPrompt.contains("【输出格式与约束 (Format)】"));
+    }
+
+    @Test
+    @DisplayName("测试 GraphPlannerPrompt RTCF 规范与静态前缀对齐")
+    void testGraphPlannerPrompt() {
+        String planSys = GraphPlannerPrompt.PLAN_SYSTEM_PROMPT;
+        assertTrue(planSys.contains("GraphPlannerAgent"));
+        assertTrue(planSys.contains("【能力按需发现】"));
+        assertTrue(planSys.contains("【拓扑无环契约】"));
+
+        String patchSys = GraphPlannerPrompt.PATCH_SYSTEM_PROMPT;
+        assertTrue(patchSys.contains("GraphPatchAgent"));
+        assertTrue(patchSys.contains("NO_PATCH"));
+
+        RTCFPromptSpec planSpec = GraphPlannerPrompt.buildPlanSpec("筛选消费基金", "sess-123", null);
+        String userPrompt = planSpec.renderUserPrompt();
+
+        assertTrue(userPrompt.contains("【当前任务 (Task)】"));
+        assertTrue(userPrompt.contains("### [USER GOAL]"));
+        assertTrue(userPrompt.contains("筛选消费基金"));
+        assertTrue(userPrompt.contains("### [SESSION KEY]"));
+        assertTrue(userPrompt.contains("sess-123"));
+        assertTrue(userPrompt.contains("GraphPlan"));
+    }
 }

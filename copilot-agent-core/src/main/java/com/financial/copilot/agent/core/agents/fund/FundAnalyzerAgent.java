@@ -29,18 +29,23 @@ public class FundAnalyzerAgent {
     private final FundQuantAnalysisTool quantTool;
     private final FundHoldingsQueryTool holdingsTool;
     private final FundReportRetrieverTool reportTool;
+    private final com.financial.copilot.agent.tools.configured.facade.FundAnalysisToolSet fundAnalysisToolSet;
     private final ObjectMapper mapper;
 
     public FundAnalyzerAgent(AgentScopeAgentFactory agentFactory, FundQuantAnalysisTool quantTool,
                              FundHoldingsQueryTool holdingsTool, FundReportRetrieverTool reportTool,
+                             @org.springframework.lang.Nullable com.financial.copilot.agent.tools.configured.facade.FundAnalysisToolSet fundAnalysisToolSet,
                              ObjectMapper mapper) {
         this.agentFactory = agentFactory; this.quantTool = quantTool; this.holdingsTool = holdingsTool;
-        this.reportTool = reportTool; this.mapper = mapper;
+        this.reportTool = reportTool; this.fundAnalysisToolSet = fundAnalysisToolSet; this.mapper = mapper;
     }
 
     public Artifact<FundResearchResult> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
         Toolkit toolkit = new Toolkit();
         toolkit.registerTool(new AnalysisTools(quantTool, holdingsTool, reportTool));
+        if (fundAnalysisToolSet != null) {
+            toolkit.registerTool(fundAnalysisToolSet);
+        }
         List<String> codes = candidateCodes(input, node);
         if (codes.isEmpty()) throw new IllegalStateException("FundAnalyzerAgent requires a FundPool input");
         var invocation = agentFactory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(

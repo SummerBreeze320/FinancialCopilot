@@ -11,6 +11,7 @@ import com.financial.copilot.agent.core.dag.planner.tool.*;
 import com.financial.copilot.agent.core.dag.runtime.*;
 import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
 import com.financial.copilot.common.enums.AssetCategory;
+import com.financial.copilot.agent.core.prompt.GraphPlannerPrompt;
 import io.agentscope.core.tool.*;
 import org.springframework.stereotype.Component;
 
@@ -19,18 +20,6 @@ import java.util.Map;
 /** AgentScope-native ReAct planner for initial graphs and runtime graph patches. */
 @Component
 public class GraphPlannerAgent implements RePlanAdvisor {
-    private static final String PLAN_PROMPT = """
-            你是动态图规划 ReAct Agent。先按需调用 search_metrics、list_skills、check_capability、search_documents、read_memory，
-            再以最终响应提交严格的完整 GraphPlan JSON。图必须无环；每个业务节点必须声明 taskType、outputType、inputBindings、
-            failurePolicy、资源和超时。允许的业务 taskType：SCREENING、BATCH_ANALYSIS、COMPARISON、DEEP_DIVE、SYNTHESIS。
-            基金链路的 outputType 依次使用 FUND_POOL、FUND_RESEARCH、COMPARISON_REPORT、FINAL_REPORT；
-            股票筛选、分析、比较使用 GENERAL，最终合成使用 FINAL_REPORT。每个非首节点必须通过 inputBindings 显式绑定上游产物。
-            在完成必要的能力发现前禁止结束。
-            """;
-    private static final String PATCH_PROMPT = """
-            你是动态图重规划 ReAct Agent。检查当前图、完成节点和产物。需要修改时最终输出严格 GraphPatch JSON；
-            无需修改时最终只输出 NO_PATCH。
-            """;
     private final AgentScopeAgentFactory factory; private final MetricRAGTool metrics;
     private final SkillRegistryTool skills; private final CapabilityRegistryTool capabilities;
     private final MarketMemoryTool memory; private final FinancialDocumentSearchTool documents;
@@ -46,8 +35,11 @@ public class GraphPlannerAgent implements RePlanAdvisor {
     public ExecutionGraph plan(GraphPlanningRequest request) {
         Toolkit toolkit=new Toolkit();toolkit.registerTool(new PlanningTools(metrics,skills,capabilities,memory,documents));
         NodeExecutionContext context=context(request,"__planner__");
-        var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("GraphPlannerAgent","动态图规划",PLAN_PROMPT,toolkit,8),
-                "用户目标="+request.prompt()+"\n会话="+request.sessionKey()+"\n画像="+request.profile(),context);
+        String userPrompt = GraphPlannerPrompt.buildPlanSpec(
+                request.prompt(), request.sessionKey(), request.profile()).renderUserPrompt();
+        var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
+                "GraphPlannerAgent","动态图规划", GraphPlannerPrompt.PLAN_SYSTEM_PROMPT, toolkit,8),
+                userPrompt, context);
         try {
             if(run.observations().isEmpty())throw new IllegalStateException("Planner finished without capability discovery");
             GraphPlan plan=mapper.readValue(stripFence(run.reply().getTextContent()),GraphPlan.class);
@@ -75,7 +67,7 @@ public class GraphPlannerAgent implements RePlanAdvisor {
         try {
             String prompt="graph="+mapper.writeValueAsString(ExecutionGraphSnapshot.from(graph))+"\ncompletedNode="+completedNodeId
                     +"\nartifact="+mapper.writeValueAsString(result);
-            var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("GraphPlannerAgent","动态图重规划",PATCH_PROMPT,toolkit,5),prompt,context(request,"__replanner__"));
+            var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("GraphPlannerAgent","动态图重规划",GraphPlannerPrompt.PATCH_SYSTEM_PROMPT,toolkit,5),prompt,context(request,"__replanner__"));
             String reply=stripFence(run.reply().getTextContent());
             if("NO_PATCH".equalsIgnoreCase(reply))return null;
             GraphPatch patch = mapper.readValue(reply,GraphPatch.class);

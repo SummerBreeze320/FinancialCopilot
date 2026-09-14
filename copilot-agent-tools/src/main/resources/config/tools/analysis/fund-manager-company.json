@@ -1,0 +1,479 @@
+{
+  "toolId": "fund_analysis_manager_company",
+  "name": "单基金经理与管理人分析",
+  "scope": "ANALYSIS",
+  "toolType": "ANALYSIS_TOOL",
+  "description": "分析现任基金经理背景、基金公司概况、产品结构及旗下经理团队",
+  "provider": "http_invoke",
+  "server": null,
+  "targetTool": null,
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "windCodes",
+      "type": "array[string]",
+      "required": true,
+      "defaultValue": null,
+      "description": "入参: windCodes"
+    },
+    {
+      "name": "endDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "入参: endDate"
+    }
+  ],
+  "componentCount": 4,
+  "components": [
+    {
+      "componentId": "MoneyCurrentManagerTable",
+      "name": "现任基金经理",
+      "cardTitle": "现任基金经理",
+      "displayType": "table",
+      "description": "展示基金现任基金经理基本资料表格",
+      "command": "FundCompare.FundManagerPicker.GetMultipleRecs2",
+      "params": [
+        "windCodes",
+        "endDate"
+      ],
+      "columns": {
+        "Object/WindCode": "fundCode",
+        "Object/FundName": "fundName",
+        "Object/Managers/FundManagerId": "managerId",
+        "Object/Managers/FundManagerName": "managerName",
+        "Object/Managers/FundCompanyFullNameCurrentIncumbent": "companyName",
+        "Object/Managers/Resume": "resume",
+        "Object/Managers/Sex": "sex",
+        "Object/Managers/Age": "age",
+        "Object/Managers/EducationBackground": "educationBackground",
+        "Object/Managers/InvestManagerYearLimit": "investManagerYearLimit",
+        "Object/Managers/HistoricalIncumbentFundNumber": "historicalIncumbentFundNumber",
+        "Object/Managers/HistoricalIncumbentCompanyNumber": "historicalIncumbentCompanyNumber",
+        "Object/Managers/AwardedNumber": "awardedNumber",
+        "Object/Managers/JobHoppingFrequency": "jobHoppingFrequency",
+        "Object/Managers/ManageFundNumber": "manageFundNumber",
+        "Object/Managers/ManageFundScale": "manageFundScale",
+        "Object/Managers/EmployeeDate": "employeeDate"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "",
+              "type": "string",
+              "id": "managerId"
+            },
+            {
+              "title": "基金经理",
+              "type": "string",
+              "id": "managerName"
+            },
+            {
+              "title": "现任基金公司",
+              "type": "string",
+              "id": "companyName"
+            },
+            {
+              "title": "性别",
+              "type": "string",
+              "id": "sex"
+            },
+            {
+              "title": "年龄",
+              "type": "number",
+              "id": "age",
+              "unit": "岁"
+            },
+            {
+              "title": "学历",
+              "type": "string",
+              "id": "educationBackground"
+            },
+            {
+              "title": "投资经理年限",
+              "type": "number",
+              "id": "investManagerYearLimit",
+              "fixed": 2,
+              "unit": "年"
+            },
+            {
+              "title": "历任管理基金数",
+              "type": "number",
+              "id": "historicalIncumbentFundNumber",
+              "unit": "只"
+            },
+            {
+              "title": "任基金经理的公司数",
+              "type": "number",
+              "id": "historicalIncumbentCompanyNumber",
+              "unit": "家"
+            },
+            {
+              "title": "任职期间基金获奖次数",
+              "type": "number",
+              "id": "awardedNumber",
+              "unit": "次"
+            },
+            {
+              "title": "跳槽频率",
+              "type": "number",
+              "id": "jobHoppingFrequency",
+              "fixed": 2
+            },
+            {
+              "title": "在任管理基金数",
+              "type": "number",
+              "id": "manageFundNumber",
+              "unit": "只"
+            },
+            {
+              "title": "在管理基金总规模",
+              "type": "number",
+              "id": "manageFundScale",
+              "fixed": 2,
+              "unit": "亿元"
+            },
+            {
+              "title": "证券从业日期",
+              "type": "string",
+              "id": "employeeDate"
+            },
+            {
+              "title": "简介",
+              "type": "string",
+              "id": "resume"
+            }
+          ],
+          "kindType": "manager2"
+        },
+        "card": {
+          "title": "现任基金经理",
+          "width": "24"
+        }
+      }
+    },
+    {
+      "componentId": "MoneyCompanyTable",
+      "name": "基金公司",
+      "cardTitle": "基金公司",
+      "displayType": "table",
+      "description": "展示基金管理公司基本资料表格",
+      "command": "FundCompare.FundCompanyPicker.GetMultipleRecs",
+      "params": [
+        "windCodes",
+        "endDate"
+      ],
+      "columns": {
+        "Object/_windCode": "fundCode",
+        "Object/_fundName": "fundName",
+        "Object/_companyName": "companyName",
+        "Object/_companyShortName": "companyShortName",
+        "Object/_englishName": "englishName",
+        "Object/_englishShortName": "englishShortName",
+        "Object/_countryAndRegion": "countryAndRegion",
+        "Object/_province": "province",
+        "Object/_city": "city",
+        "Object/_fundSetupDate": "fundSetupDate",
+        "Object/_registeredCapital": "registeredCapital",
+        "Object/_currencys": "currency",
+        "Object/_corpRepresentative": "corpRepresentative",
+        "Object/_genernalManager": "generalManager",
+        "Object/_totalOfEmployees": "totalOfEmployees",
+        "Object/_resignAddress": "registerAddress",
+        "Object/_businessAddress": "businessAddress",
+        "Object/_telNumber": "telNumber",
+        "Object/_fax": "fax",
+        "Object/_email": "email",
+        "Object/_zipCode": "zipCode",
+        "Object/_www": "website",
+        "Object/_scopeOfBusiness": "scopeOfBusiness",
+        "Object/_managerId": "managerId",
+        "Object/_logoId": "logoId",
+        "Object/_summary": "summary",
+        "Object/_managedFundNumber": "managedFundNumber",
+        "Object/_fundAssertScale": "fundAssertScale",
+        "Object/_fundManagerNumber": "fundManagerNumber",
+        "Object/_insuranceCount": "insuranceCount",
+        "Object/_managerAverageYearLimit": "managerAverageYearLimit"
+      },
+      "metadata": {
+        "table": {
+          "columns": [
+            {
+              "title": "基金名称",
+              "type": "string",
+              "id": "fundName"
+            },
+            {
+              "title": "基金公司",
+              "type": "string",
+              "id": "companyName"
+            },
+            {
+              "title": "公司简称",
+              "type": "string",
+              "id": "companyShortName"
+            },
+            {
+              "title": "Logo ID",
+              "type": "string",
+              "id": "logoId"
+            },
+            {
+              "title": "英文名称",
+              "type": "string",
+              "id": "englishName"
+            },
+            {
+              "title": "英文简称",
+              "type": "string",
+              "id": "englishShortName"
+            },
+            {
+              "title": "国家及地区",
+              "type": "string",
+              "id": "countryAndRegion"
+            },
+            {
+              "title": "所在省份",
+              "type": "string",
+              "id": "province"
+            },
+            {
+              "title": "所在城市",
+              "type": "string",
+              "id": "city"
+            },
+            {
+              "title": "成立日期",
+              "type": "string",
+              "id": "fundSetupDate"
+            },
+            {
+              "title": "注册资本",
+              "type": "number",
+              "id": "registeredCapital",
+              "fixed": 2,
+              "unit": "万元"
+            },
+            {
+              "title": "货币代码",
+              "type": "string",
+              "id": "currency"
+            },
+            {
+              "title": "法人代表",
+              "type": "string",
+              "id": "corpRepresentative"
+            },
+            {
+              "title": "总经理",
+              "type": "string",
+              "id": "generalManager"
+            },
+            {
+              "title": "员工总数",
+              "type": "number",
+              "id": "totalOfEmployees",
+              "unit": "人"
+            },
+            {
+              "title": "注册地址",
+              "type": "string",
+              "id": "registerAddress"
+            },
+            {
+              "title": "办公地址",
+              "type": "string",
+              "id": "businessAddress"
+            },
+            {
+              "title": "公司电话",
+              "type": "string",
+              "id": "telNumber"
+            },
+            {
+              "title": "公司传真",
+              "type": "string",
+              "id": "fax"
+            },
+            {
+              "title": "电子邮件",
+              "type": "string",
+              "id": "email"
+            },
+            {
+              "title": "公司邮编",
+              "type": "string",
+              "id": "zipCode"
+            },
+            {
+              "title": "公司主页",
+              "type": "string",
+              "id": "website"
+            },
+            {
+              "title": "经营范围",
+              "type": "string",
+              "id": "scopeOfBusiness"
+            },
+            {
+              "title": "公司简介",
+              "type": "string",
+              "id": "summary"
+            },
+            {
+              "title": "旗下基金数量",
+              "type": "number",
+              "id": "managedFundNumber",
+              "unit": "只"
+            },
+            {
+              "title": "基金资产规模",
+              "type": "number",
+              "id": "fundAssertScale",
+              "fixed": 2,
+              "unit": "亿元"
+            },
+            {
+              "title": "基金经理人数",
+              "type": "number",
+              "id": "fundManagerNumber",
+              "unit": "人"
+            },
+            {
+              "title": "集合资管产品数量",
+              "type": "number",
+              "id": "insuranceCount",
+              "unit": "只"
+            },
+            {
+              "title": "基金经理平均年限",
+              "type": "number",
+              "id": "managerAverageYearLimit",
+              "fixed": 2,
+              "unit": "年"
+            }
+          ],
+          "kindType": "company"
+        },
+        "card": {
+          "title": "基金公司",
+          "width": "24"
+        }
+      }
+    },
+    {
+      "componentId": "MoneyCompanyProductStructureTable",
+      "name": "基金公司产品结构",
+      "cardTitle": "基金公司产品结构",
+      "displayType": "MergedHeader",
+      "description": "展示基金公司产品结构表格",
+      "command": "FundCompare.FundCompanyPicker.GetProductStructureRecs",
+      "params": [
+        "windCodes",
+        "endDate"
+      ],
+      "columns": {
+        "Object/_windCode": "windCode",
+        "Object/_fundName": "fundName",
+        "Object/_companyId": "companyId",
+        "Object/_companyName": "companyName",
+        "Object/_productStructureList/_fundTypeName": "fundTypeName",
+        "Object/_productStructureList/_productNumber": "productNumber",
+        "Object/_productStructureList/_assets": "assets"
+      },
+      "metadata": {
+        "MergedHeader": {
+          "hideSingleGroupHeader": true,
+          "columns": [
+            {
+              "title": "",
+              "type": "string",
+              "id": "companyName",
+              "children": [
+                {
+                  "title": "",
+                  "type": "string",
+                  "id": "fundTypeName"
+                },
+                {
+                  "title": "产品数量(只)",
+                  "type": "number",
+                  "id": "productNumber"
+                },
+                {
+                  "title": "规模合计(亿元)",
+                  "type": "number",
+                  "id": "assets",
+                  "fixed": 2
+                }
+              ]
+            }
+          ]
+        },
+        "card": {
+          "title": "基金公司产品结构",
+          "width": "12"
+        }
+      }
+    },
+    {
+      "componentId": "MoneyCompanyFundManagerTable",
+      "name": "基金公司基金经理",
+      "cardTitle": "基金公司基金经理",
+      "displayType": "MergedHeader",
+      "description": "展示基金公司基金经理指标表格",
+      "command": "FundCompare.FundCompanyPicker.GetFundManagerRecs",
+      "params": [
+        "windCodes",
+        "endDate"
+      ],
+      "columns": {
+        "Object/_windCode": "windCode",
+        "Object/_fundName": "fundName",
+        "Object/_companyId": "companyId",
+        "Object/_companyName": "companyName",
+        "Object/_fundManagerList/_itemName": "itemName",
+        "Object/_fundManagerList/_companyValue": "companyValue",
+        "Object/_fundManagerList/_industryAverage": "industryAverage"
+      },
+      "metadata": {
+        "MergedHeader": {
+          "hideSingleGroupHeader": true,
+          "columns": [
+            {
+              "title": "",
+              "type": "string",
+              "id": "companyName",
+              "children": [
+                {
+                  "title": "",
+                  "type": "string",
+                  "id": "itemName"
+                },
+                {
+                  "title": "基金公司",
+                  "type": "number",
+                  "id": "companyValue",
+                  "fixed": 2
+                },
+                {
+                  "title": "行业平均",
+                  "type": "number",
+                  "id": "industryAverage",
+                  "fixed": 2
+                }
+              ]
+            }
+          ]
+        },
+        "card": {
+          "title": "基金公司基金经理",
+          "width": "12"
+        }
+      }
+    }
+  ]
+}
