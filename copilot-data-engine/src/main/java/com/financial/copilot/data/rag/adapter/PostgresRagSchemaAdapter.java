@@ -186,13 +186,13 @@ public class PostgresRagSchemaAdapter implements RagSchemaPort {
                    source_indicator_id, supported_usage, applicable_products, aliases, version, enabled, created_at,
                    COALESCE(1 - (embedding <=> ?::vector), 0.0) AS vec_score,
                    similarity(index_name, ?) AS txt_score,
-                   (CASE WHEN mnemonic ILIKE ? OR index_name = ? THEN 1.0 ELSE 0.0 END) AS exact_score
+                   (CASE WHEN mnemonic ILIKE ? OR index_name = ? OR ? = ANY(aliases) THEN 1.0 ELSE 0.0 END) AS exact_score
             FROM rag_fund_metric
             WHERE enabled = true
             ORDER BY (
                 COALESCE(1 - (embedding <=> ?::vector), 0.0) * 0.7 +
                 similarity(index_name, ?) * 0.3 +
-                (CASE WHEN mnemonic ILIKE ? OR index_name = ? THEN 0.5 ELSE 0.0 END)
+                (CASE WHEN mnemonic ILIKE ? OR index_name = ? OR ? = ANY(aliases) THEN 0.5 ELSE 0.0 END)
             ) DESC
             LIMIT ?;
             """;
@@ -203,11 +203,13 @@ public class PostgresRagSchemaAdapter implements RagSchemaPort {
             ps.setString(2, qClean);
             ps.setString(3, qClean);
             ps.setString(4, qClean);
-            ps.setString(5, vecStr);
-            ps.setString(6, qClean);
+            ps.setString(5, qClean);
+            ps.setString(6, vecStr);
             ps.setString(7, qClean);
             ps.setString(8, qClean);
-            ps.setInt(9, limit);
+            ps.setString(9, qClean);
+            ps.setString(10, qClean);
+            ps.setInt(11, limit);
         }, (rs, rowNum) -> {
             RagFundMetric metric = metricRowMapper.mapRow(rs, rowNum);
             double vScore = rs.getDouble("vec_score");
@@ -228,13 +230,13 @@ public class PostgresRagSchemaAdapter implements RagSchemaPort {
                    embedding_text, is_leaf, element_type, tree_level, full_path_names, enabled, created_at,
                    COALESCE(1 - (embedding <=> ?::vector), 0.0) AS vec_score,
                    similarity(name, ?) AS txt_score,
-                   (CASE WHEN name = ? OR aliases && ARRAY[?] THEN 1.0 ELSE 0.0 END) AS exact_score
+                   (CASE WHEN name = ? OR ? = ANY(aliases) THEN 1.0 ELSE 0.0 END) AS exact_score
             FROM rag_fund_sector
             WHERE enabled = true
             ORDER BY (
                 COALESCE(1 - (embedding <=> ?::vector), 0.0) * 0.7 +
                 similarity(name, ?) * 0.3 +
-                (CASE WHEN name = ? OR aliases && ARRAY[?] THEN 0.5 ELSE 0.0 END)
+                (CASE WHEN name = ? OR ? = ANY(aliases) THEN 0.5 ELSE 0.0 END)
             ) DESC
             LIMIT ?;
             """;
