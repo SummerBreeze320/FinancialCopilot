@@ -1,34 +1,92 @@
 package com.financial.copilot.data.rag.adapter;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
+import com.financial.copilot.data.rag.mapper.RagFundMetricMapper;
+import com.financial.copilot.data.rag.mapper.RagFundSectorMapper;
+import com.financial.copilot.data.rag.po.RagFundMetricPO;
+import com.financial.copilot.data.rag.po.RagFundSectorPO;
 import com.financial.copilot.domain.rag.entity.RagFundMetric;
 import com.financial.copilot.domain.rag.entity.RagFundSector;
 import com.financial.copilot.domain.rag.entity.SchemaRecallResult;
 import com.financial.copilot.domain.rag.port.RagSchemaPort;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.apache.ibatis.mapping.Environment;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Array;
-import java.sql.PreparedStatement;
+import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * <h1>PostgreSQL 16 + PGVector 存储适配器</h1>
- * 支持三路混合召回（向量相似度 + 词面三元组 + 精确代码匹配）。
+ * <h1>基于 MyBatis-Plus 与 PostgreSQL 16 + pgvector 的模式检索适配器</h1>
+ * <p>
+ * 实现领域层 {@link RagSchemaPort} 接口，依托 MyBatis-Plus 机制与 PostgreSQL 原生扩展：
+ * <ul>
+ *   <li>使用 {@link RagFundMetricMapper} 与 {@link RagFundSectorMapper} 实现强类型实体映射与持久化；</li>
+ *   <li>通过 MyBatis 的 {@link ExecutorType#BATCH} 高性能批处理机制执行百万级/千级元数据冲突合并（Upsert）；</li>
+ *   <li>基于 pgvector HNSW 余弦向量距离与 pg_trgm 相似度提供高精度的三路混合检索（语义 + 词面 + 精确匹配）。</li>
+ * </ul>
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Slf4j
 @Repository
 public class PostgresRagSchemaAdapter implements RagSchemaPort {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final RagFundMetricMapper metricMapper;
+    private final RagFundSectorMapper sectorMapper;
+    private final SqlSessionFactory sqlSessionFactory;
 
-    public PostgresRagSchemaAdapter(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    /**
+     * Spring 容器标准依赖注入构造函数
+     *
+     * @param metricMapper      指标数据访问 Mapper
+     * @param sectorMapper      板块数据访问 Mapper
+     * @param sqlSessionFactory MyBatis SqlSessionFactory
+     */
+    @Autowired
+    public PostgresRagSchemaAdapter(
+            RagFundMetricMapper metricMapper,
+            RagFundSectorMapper sectorMapper,
+            SqlSessionFactory sqlSessionFactory
+    ) {
+        this.metricMapper = metricMapper;
+        this.sectorMapper = sectorMapper;
+        this.sqlSessionFactory = sqlSessionFactory;
     }
 
+    /**
+     * 独立单元测试与非 Spring 容器环境兼容构造函数
+     *
+     * @param jdbcTemplate Spring JdbcTemplate
+     */
+    public PostgresRagSchemaAdapter(JdbcTemplate jdbcTemplate) {
+        DataSource dataSource = Objects.requireNonNull(jdbcTemplate.getDataSource(), "DataSource 不能为空");
+        Environment environment = new Environment("rag-standalone", new JdbcTransactionFactory(), dataSource);
+        MybatisConfiguration configuration = new MybatisConfiguration(environment);
+        configuration.addMapper(RagFundMetricMapper.class);
+        configuration.addMapper(RagFundSectorMapper.class);
+        this.sqlSessionFactory = new MybatisSqlSessionFactoryBuilder().build(configuration);
+        SqlSession session = this.sqlSessionFactory.openSession(true);
+        this.metricMapper = session.getMapper(RagFundMetricMapper.class);
+        this.sectorMapper = session.getMapper(RagFundSectorMapper.class);
+    }
+
+    /**
+     * 将浮点数组向量格式化为 PostgreSQL pgvector 文本形式："[0.0123,-0.0456,...]"
+     *
+     * @param vec 浮点向量数组
+     * @return 格式化后的 pgvector 字符串，若为空则返回 null
+     */
     private String formatPgVector(float[] vec) {
         if (vec == null || vec.length == 0) {
             return null;
@@ -43,256 +101,317 @@ public class PostgresRagSchemaAdapter implements RagSchemaPort {
         return sb.toString();
     }
 
-    private List<String> sqlArrayToList(Array array) throws SQLException {
-        if (array == null) return Collections.emptyList();
-        String[] arr = (String[]) array.getArray();
-        return arr != null ? Arrays.asList(arr) : Collections.emptyList();
-    }
-
-    private final RowMapper<RagFundMetric> metricRowMapper = (rs, rowNum) -> RagFundMetric.builder()
-            .mnemonic(rs.getString("mnemonic"))
-            .indexName(rs.getString("index_name"))
-            .parentName(rs.getString("parent_name"))
-            .description(rs.getString("description"))
-            .embeddingText(rs.getString("embedding_text"))
-            .sourceIndicatorId(rs.getObject("source_indicator_id", Long.class))
-            .supportedUsage(sqlArrayToList(rs.getArray("supported_usage")))
-            .applicableProducts(rs.getString("applicable_products"))
-            .aliases(sqlArrayToList(rs.getArray("aliases")))
-            .version(rs.getInt("version"))
-            .enabled(rs.getBoolean("enabled"))
-            .createdAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null)
-            .build();
-
-    private final RowMapper<RagFundSector> sectorRowMapper = (rs, rowNum) -> RagFundSector.builder()
-            .sectorId(rs.getString("sector_id"))
-            .parentId(rs.getString("parent_id"))
-            .name(rs.getString("name"))
-            .nameEn(rs.getString("name_en"))
-            .aliases(sqlArrayToList(rs.getArray("aliases")))
-            .description(rs.getString("description"))
-            .embeddingText(rs.getString("embedding_text"))
-            .isLeaf(rs.getBoolean("is_leaf"))
-            .elementType(rs.getInt("element_type"))
-            .treeLevel(rs.getInt("tree_level"))
-            .fullPathNames(rs.getString("full_path_names"))
-            .enabled(rs.getBoolean("enabled"))
-            .createdAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null)
-            .build();
-
+    /**
+     * 批量持久化/更新公募基金指标元数据及 1024 维向量
+     *
+     * @param metrics 领域指标实体列表
+     */
     @Override
     public void upsertMetrics(List<RagFundMetric> metrics) {
         if (metrics == null || metrics.isEmpty()) return;
 
-        String sql = """
-            INSERT INTO rag_fund_metric (
-                mnemonic, index_name, parent_name, description, embedding_text,
-                embedding, source_indicator_id, supported_usage, applicable_products, aliases, version, enabled
-            ) VALUES (?, ?, ?, ?, ?, ?::vector, ?, ?::varchar[], ?, ?::text[], ?, ?)
-            ON CONFLICT (mnemonic) DO UPDATE SET
-                index_name = EXCLUDED.index_name,
-                parent_name = EXCLUDED.parent_name,
-                description = EXCLUDED.description,
-                embedding_text = EXCLUDED.embedding_text,
-                embedding = EXCLUDED.embedding,
-                source_indicator_id = EXCLUDED.source_indicator_id,
-                supported_usage = EXCLUDED.supported_usage,
-                applicable_products = EXCLUDED.applicable_products,
-                aliases = EXCLUDED.aliases,
-                version = EXCLUDED.version,
-                enabled = EXCLUDED.enabled;
-            """;
+        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH, false)) {
+            RagFundMetricMapper batchMapper = session.getMapper(RagFundMetricMapper.class);
+            int batchSize = 50;
+            for (int i = 0; i < metrics.size(); i++) {
+                RagFundMetric m = metrics.get(i);
+                RagFundMetricPO po = toMetricPO(m);
+                batchMapper.upsertMetric(po);
 
-        jdbcTemplate.batchUpdate(sql, metrics, 50, (PreparedStatement ps, RagFundMetric m) -> {
-            ps.setString(1, m.getMnemonic());
-            ps.setString(2, m.getIndexName());
-            ps.setString(3, m.getParentName());
-            ps.setString(4, m.getDescription());
-            ps.setString(5, m.getEmbeddingText());
-            ps.setString(6, formatPgVector(m.getEmbedding()));
-            ps.setObject(7, m.getSourceIndicatorId());
-
-            Array usageArr = ps.getConnection().createArrayOf("varchar",
-                    m.getSupportedUsage() != null ? m.getSupportedUsage().toArray() : new String[0]);
-            ps.setArray(8, usageArr);
-
-            ps.setString(9, m.getApplicableProducts());
-
-            Array aliasArr = ps.getConnection().createArrayOf("text",
-                    m.getAliases() != null ? m.getAliases().toArray() : new String[0]);
-            ps.setArray(10, aliasArr);
-
-            ps.setInt(11, m.getVersion() != null ? m.getVersion() : 1);
-            ps.setBoolean(12, m.isEnabled());
-        });
-
-        log.info("[RAG-POSTGRES] 批量 upsert 指标完成: count={}", metrics.size());
+                if ((i + 1) % batchSize == 0 || i == metrics.size() - 1) {
+                    session.commit();
+                    session.clearCache();
+                }
+            }
+        }
+        log.info("[RAG-POSTGRES] 基于 MyBatis-Plus 批量 Upsert 指标完成: count={}", metrics.size());
     }
 
+    /**
+     * 批量持久化/更新公募基金板块多层级分类及 1024 维向量
+     *
+     * @param sectors 领域板块分类实体列表
+     */
     @Override
     public void upsertSectors(List<RagFundSector> sectors) {
         if (sectors == null || sectors.isEmpty()) return;
 
-        String sql = """
-            INSERT INTO rag_fund_sector (
-                sector_id, parent_id, name, name_en, aliases, description,
-                embedding_text, embedding, is_leaf, element_type, tree_level, full_path_names, enabled
-            ) VALUES (?, ?, ?, ?, ?::text[], ?, ?, ?::vector, ?, ?, ?, ?, ?)
-            ON CONFLICT (sector_id) DO UPDATE SET
-                parent_id = EXCLUDED.parent_id,
-                name = EXCLUDED.name,
-                name_en = EXCLUDED.name_en,
-                aliases = EXCLUDED.aliases,
-                description = EXCLUDED.description,
-                embedding_text = EXCLUDED.embedding_text,
-                embedding = EXCLUDED.embedding,
-                is_leaf = EXCLUDED.is_leaf,
-                element_type = EXCLUDED.element_type,
-                tree_level = EXCLUDED.tree_level,
-                full_path_names = EXCLUDED.full_path_names,
-                enabled = EXCLUDED.enabled;
-            """;
+        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH, false)) {
+            RagFundSectorMapper batchMapper = session.getMapper(RagFundSectorMapper.class);
+            int batchSize = 100;
+            for (int i = 0; i < sectors.size(); i++) {
+                RagFundSector s = sectors.get(i);
+                RagFundSectorPO po = toSectorPO(s);
+                batchMapper.upsertSector(po);
 
-        jdbcTemplate.batchUpdate(sql, sectors, 100, (PreparedStatement ps, RagFundSector s) -> {
-            ps.setString(1, s.getSectorId());
-            ps.setString(2, s.getParentId());
-            ps.setString(3, s.getName());
-            ps.setString(4, s.getNameEn());
-
-            Array aliasArr = ps.getConnection().createArrayOf("text",
-                    s.getAliases() != null ? s.getAliases().toArray() : new String[0]);
-            ps.setArray(5, aliasArr);
-
-            ps.setString(6, s.getDescription());
-            ps.setString(7, s.getEmbeddingText());
-            ps.setString(8, formatPgVector(s.getEmbedding()));
-            ps.setBoolean(9, s.isLeaf());
-            ps.setInt(10, s.getElementType() != null ? s.getElementType() : 6);
-            ps.setInt(11, s.getTreeLevel() != null ? s.getTreeLevel() : 0);
-            ps.setString(12, s.getFullPathNames());
-            ps.setBoolean(13, s.isEnabled());
-        });
-
-        log.info("[RAG-POSTGRES] 批量 upsert 板块完成: count={}", sectors.size());
+                if ((i + 1) % batchSize == 0 || i == sectors.size() - 1) {
+                    session.commit();
+                    session.clearCache();
+                }
+            }
+        }
+        log.info("[RAG-POSTGRES] 基于 MyBatis-Plus 批量 Upsert 板块完成: count={}", sectors.size());
     }
 
+    /**
+     * 执行公募指标三路混合检索（向量余弦 70% + 词面 Trigram 30% + 精确匹配 50% 增益）
+     *
+     * @param query    用户查询自然语言
+     * @param queryVec 用户查询对应的 1024 维 Embedding 向量
+     * @param topK     最大召回数
+     * @return 召回指标与加权得分列表
+     */
     @Override
     public List<SchemaRecallResult.MetricMatch> searchMetrics(String query, float[] queryVec, int topK) {
         String vecStr = formatPgVector(queryVec);
         int limit = Math.max(1, topK);
-
-        String sql = """
-            SELECT mnemonic, index_name, parent_name, description, embedding_text,
-                   source_indicator_id, supported_usage, applicable_products, aliases, version, enabled, created_at,
-                   COALESCE(1 - (embedding <=> ?::vector), 0.0) AS vec_score,
-                   similarity(index_name, ?) AS txt_score,
-                   (CASE WHEN mnemonic ILIKE ? OR index_name = ? OR ? = ANY(aliases) THEN 1.0 ELSE 0.0 END) AS exact_score
-            FROM rag_fund_metric
-            WHERE enabled = true
-            ORDER BY (
-                COALESCE(1 - (embedding <=> ?::vector), 0.0) * 0.7 +
-                similarity(index_name, ?) * 0.3 +
-                (CASE WHEN mnemonic ILIKE ? OR index_name = ? OR ? = ANY(aliases) THEN 0.5 ELSE 0.0 END)
-            ) DESC
-            LIMIT ?;
-            """;
-
         String qClean = query != null ? query.trim() : "";
-        return jdbcTemplate.query(sql, ps -> {
-            ps.setString(1, vecStr);
-            ps.setString(2, qClean);
-            ps.setString(3, qClean);
-            ps.setString(4, qClean);
-            ps.setString(5, qClean);
-            ps.setString(6, vecStr);
-            ps.setString(7, qClean);
-            ps.setString(8, qClean);
-            ps.setString(9, qClean);
-            ps.setString(10, qClean);
-            ps.setInt(11, limit);
-        }, (rs, rowNum) -> {
-            RagFundMetric metric = metricRowMapper.mapRow(rs, rowNum);
-            double vScore = rs.getDouble("vec_score");
-            double tScore = rs.getDouble("txt_score");
-            double eScore = rs.getDouble("exact_score");
-            double finalScore = vScore * 0.7 + tScore * 0.3 + eScore * 0.5;
-            return new SchemaRecallResult.MetricMatch(metric, finalScore, metric.getParentName());
-        });
+
+        List<Map<String, Object>> rows = metricMapper.searchHybridMetrics(vecStr, qClean, limit);
+        List<SchemaRecallResult.MetricMatch> results = new ArrayList<>(rows.size());
+
+        for (Map<String, Object> row : rows) {
+            RagFundMetric metric = mapToMetricDomain(row);
+            double totalScore = row.get("total_score") != null ? ((Number) row.get("total_score")).doubleValue() : 0.0;
+            results.add(new SchemaRecallResult.MetricMatch(metric, totalScore, metric.getParentName()));
+        }
+
+        return results;
     }
 
+    /**
+     * 执行公募板块三路混合检索（向量余弦 70% + 词面 Trigram 30% + 精确匹配 50% 增益）
+     *
+     * @param query    用户查询自然语言
+     * @param queryVec 用户查询对应的 1024 维 Embedding 向量
+     * @param topK     最大召回数
+     * @return 召回板块与加权得分列表
+     */
     @Override
     public List<SchemaRecallResult.SectorMatch> searchSectors(String query, float[] queryVec, int topK) {
         String vecStr = formatPgVector(queryVec);
         int limit = Math.max(1, topK);
-
-        String sql = """
-            SELECT sector_id, parent_id, name, name_en, aliases, description,
-                   embedding_text, is_leaf, element_type, tree_level, full_path_names, enabled, created_at,
-                   COALESCE(1 - (embedding <=> ?::vector), 0.0) AS vec_score,
-                   similarity(name, ?) AS txt_score,
-                   (CASE WHEN name = ? OR ? = ANY(aliases) THEN 1.0 ELSE 0.0 END) AS exact_score
-            FROM rag_fund_sector
-            WHERE enabled = true
-            ORDER BY (
-                COALESCE(1 - (embedding <=> ?::vector), 0.0) * 0.7 +
-                similarity(name, ?) * 0.3 +
-                (CASE WHEN name = ? OR ? = ANY(aliases) THEN 0.5 ELSE 0.0 END)
-            ) DESC
-            LIMIT ?;
-            """;
-
         String qClean = query != null ? query.trim() : "";
-        return jdbcTemplate.query(sql, ps -> {
-            ps.setString(1, vecStr);
-            ps.setString(2, qClean);
-            ps.setString(3, qClean);
-            ps.setString(4, qClean);
-            ps.setString(5, vecStr);
-            ps.setString(6, qClean);
-            ps.setString(7, qClean);
-            ps.setString(8, qClean);
-            ps.setInt(9, limit);
-        }, (rs, rowNum) -> {
-            RagFundSector sector = sectorRowMapper.mapRow(rs, rowNum);
-            double vScore = rs.getDouble("vec_score");
-            double tScore = rs.getDouble("txt_score");
-            double eScore = rs.getDouble("exact_score");
-            double finalScore = vScore * 0.7 + tScore * 0.3 + eScore * 0.5;
-            return new SchemaRecallResult.SectorMatch(sector, finalScore, Collections.emptyList());
-        });
+
+        List<Map<String, Object>> rows = sectorMapper.searchHybridSectors(vecStr, qClean, limit);
+        List<SchemaRecallResult.SectorMatch> results = new ArrayList<>(rows.size());
+
+        for (Map<String, Object> row : rows) {
+            RagFundSector sector = mapToSectorDomain(row);
+            double totalScore = row.get("total_score") != null ? ((Number) row.get("total_score")).doubleValue() : 0.0;
+            results.add(new SchemaRecallResult.SectorMatch(sector, totalScore, Collections.emptyList()));
+        }
+
+        return results;
     }
 
+    /**
+     * 根据指标唯一助记符查询指标明细
+     *
+     * @param mnemonic 指标助记符（如 f_return_1y）
+     * @return 指标实体 Optional
+     */
     @Override
     public Optional<RagFundMetric> findMetricByMnemonic(String mnemonic) {
         if (mnemonic == null || mnemonic.isBlank()) return Optional.empty();
-        String sql = "SELECT * FROM rag_fund_metric WHERE mnemonic = ?";
-        try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, metricRowMapper, mnemonic));
-        } catch (EmptyResultDataAccessException e) {
-            return Optional.empty();
-        }
+        RagFundMetricPO po = metricMapper.selectById(mnemonic);
+        return Optional.ofNullable(po).map(this::toMetricDomain);
     }
 
+    /**
+     * 根据板块 16 位唯一编码查询板块明细
+     *
+     * @param sectorId 板块编码
+     * @return 板块实体 Optional
+     */
     @Override
     public Optional<RagFundSector> findSectorById(String sectorId) {
         if (sectorId == null || sectorId.isBlank()) return Optional.empty();
-        String sql = "SELECT * FROM rag_fund_sector WHERE sector_id = ?";
-        try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, sectorRowMapper, sectorId));
-        } catch (EmptyResultDataAccessException e) {
-            return Optional.empty();
-        }
+        RagFundSectorPO po = sectorMapper.selectById(sectorId);
+        return Optional.ofNullable(po).map(this::toSectorDomain);
     }
 
+    /**
+     * 统计当前数据库中已注册指标总数
+     *
+     * @return 指标数量
+     */
     @Override
     public long countMetrics() {
-        Long count = jdbcTemplate.queryForObject("SELECT count(*) FROM rag_fund_metric", Long.class);
+        Long count = metricMapper.selectCount(null);
         return count != null ? count : 0L;
     }
 
+    /**
+     * 统计当前数据库中已注册板块分类总数
+     *
+     * @return 板块数量
+     */
     @Override
     public long countSectors() {
-        Long count = jdbcTemplate.queryForObject("SELECT count(*) FROM rag_fund_sector", Long.class);
+        Long count = sectorMapper.selectCount(null);
         return count != null ? count : 0L;
+    }
+
+    // ================== PO 与领域实体转换器 ==================
+
+    /**
+     * 领域指标实体转 MyBatis-Plus 持久化对象
+     */
+    private RagFundMetricPO toMetricPO(RagFundMetric m) {
+        return RagFundMetricPO.builder()
+                .mnemonic(m.getMnemonic())
+                .indexName(m.getIndexName())
+                .parentName(m.getParentName())
+                .description(m.getDescription())
+                .embeddingText(m.getEmbeddingText())
+                .embedding(formatPgVector(m.getEmbedding()))
+                .sourceIndicatorId(m.getSourceIndicatorId())
+                .supportedUsage(m.getSupportedUsage())
+                .applicableProducts(m.getApplicableProducts())
+                .aliases(m.getAliases())
+                .version(m.getVersion() != null ? m.getVersion() : 1)
+                .enabled(m.isEnabled())
+                .build();
+    }
+
+    /**
+     * 领域板块实体转 MyBatis-Plus 持久化对象
+     */
+    private RagFundSectorPO toSectorPO(RagFundSector s) {
+        return RagFundSectorPO.builder()
+                .sectorId(s.getSectorId())
+                .parentId(s.getParentId())
+                .name(s.getName())
+                .nameEn(s.getNameEn())
+                .aliases(s.getAliases())
+                .description(s.getDescription())
+                .embeddingText(s.getEmbeddingText())
+                .embedding(formatPgVector(s.getEmbedding()))
+                .isLeaf(s.isLeaf())
+                .elementType(s.getElementType() != null ? s.getElementType() : 6)
+                .treeLevel(s.getTreeLevel() != null ? s.getTreeLevel() : 0)
+                .fullPathNames(s.getFullPathNames())
+                .enabled(s.isEnabled())
+                .build();
+    }
+
+    /**
+     * MyBatis-Plus 持久化对象转领域指标实体
+     */
+    private RagFundMetric toMetricDomain(RagFundMetricPO po) {
+        return RagFundMetric.builder()
+                .mnemonic(po.getMnemonic())
+                .indexName(po.getIndexName())
+                .parentName(po.getParentName())
+                .description(po.getDescription())
+                .embeddingText(po.getEmbeddingText())
+                .sourceIndicatorId(po.getSourceIndicatorId())
+                .supportedUsage(po.getSupportedUsage())
+                .applicableProducts(po.getApplicableProducts())
+                .aliases(po.getAliases())
+                .version(po.getVersion())
+                .enabled(Boolean.TRUE.equals(po.getEnabled()))
+                .createdAt(po.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * MyBatis-Plus 持久化对象转领域板块实体
+     */
+    private RagFundSector toSectorDomain(RagFundSectorPO po) {
+        return RagFundSector.builder()
+                .sectorId(po.getSectorId())
+                .parentId(po.getParentId())
+                .name(po.getName())
+                .nameEn(po.getNameEn())
+                .aliases(po.getAliases())
+                .description(po.getDescription())
+                .embeddingText(po.getEmbeddingText())
+                .isLeaf(Boolean.TRUE.equals(po.getIsLeaf()))
+                .elementType(po.getElementType())
+                .treeLevel(po.getTreeLevel())
+                .fullPathNames(po.getFullPathNames())
+                .enabled(Boolean.TRUE.equals(po.getEnabled()))
+                .createdAt(po.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * 混合检索 Map 结果转换为领域指标实体
+     */
+    private RagFundMetric mapToMetricDomain(Map<String, Object> map) {
+        List<String> usageList = parseArrayField(map.get("supported_usage"));
+        List<String> aliasList = parseArrayField(map.get("aliases"));
+        Object tsObj = map.get("created_at");
+        LocalDateTime createdAt = null;
+        if (tsObj instanceof java.sql.Timestamp ts) {
+            createdAt = ts.toLocalDateTime();
+        } else if (tsObj instanceof LocalDateTime ldt) {
+            createdAt = ldt;
+        }
+
+        return RagFundMetric.builder()
+                .mnemonic((String) map.get("mnemonic"))
+                .indexName((String) map.get("index_name"))
+                .parentName((String) map.get("parent_name"))
+                .description((String) map.get("description"))
+                .embeddingText((String) map.get("embedding_text"))
+                .sourceIndicatorId(map.get("source_indicator_id") != null ? ((Number) map.get("source_indicator_id")).longValue() : null)
+                .supportedUsage(usageList)
+                .applicableProducts((String) map.get("applicable_products"))
+                .aliases(aliasList)
+                .version(map.get("version") != null ? ((Number) map.get("version")).intValue() : 1)
+                .enabled(Boolean.TRUE.equals(map.get("enabled")))
+                .createdAt(createdAt)
+                .build();
+    }
+
+    /**
+     * 混合检索 Map 结果转换为领域板块实体
+     */
+    private RagFundSector mapToSectorDomain(Map<String, Object> map) {
+        List<String> aliasList = parseArrayField(map.get("aliases"));
+        Object tsObj = map.get("created_at");
+        LocalDateTime createdAt = null;
+        if (tsObj instanceof java.sql.Timestamp ts) {
+            createdAt = ts.toLocalDateTime();
+        } else if (tsObj instanceof LocalDateTime ldt) {
+            createdAt = ldt;
+        }
+
+        return RagFundSector.builder()
+                .sectorId((String) map.get("sector_id"))
+                .parentId((String) map.get("parent_id"))
+                .name((String) map.get("name"))
+                .nameEn((String) map.get("name_en"))
+                .aliases(aliasList)
+                .description((String) map.get("description"))
+                .embeddingText((String) map.get("embedding_text"))
+                .isLeaf(Boolean.TRUE.equals(map.get("is_leaf")))
+                .elementType(map.get("element_type") != null ? ((Number) map.get("element_type")).intValue() : 6)
+                .treeLevel(map.get("tree_level") != null ? ((Number) map.get("tree_level")).intValue() : 0)
+                .fullPathNames((String) map.get("full_path_names"))
+                .enabled(Boolean.TRUE.equals(map.get("enabled")))
+                .createdAt(createdAt)
+                .build();
+    }
+
+    /**
+     * 解析数据库返回的数组对象为 List&lt;String&gt;
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> parseArrayField(Object obj) {
+        if (obj == null) return Collections.emptyList();
+        if (obj instanceof String[] arr) return Arrays.asList(arr);
+        if (obj instanceof List) return (List<String>) obj;
+        if (obj instanceof java.sql.Array sqlArr) {
+            try {
+                Object inner = sqlArr.getArray();
+                if (inner instanceof String[] arr) return Arrays.asList(arr);
+            } catch (SQLException ignored) {
+            }
+        }
+        return Collections.emptyList();
     }
 }

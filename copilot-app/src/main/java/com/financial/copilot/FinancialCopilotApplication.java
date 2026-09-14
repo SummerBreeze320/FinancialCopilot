@@ -23,6 +23,7 @@ import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
                 "com.financial.copilot.data.billing.mapper",
                 "com.financial.copilot.data.user.mapper",
                 "com.financial.copilot.data.conversation.mapper",
+                "com.financial.copilot.data.rag.mapper",
                 "com.financial.copilot.agent.core.memory"
         },
         annotationClass = Mapper.class

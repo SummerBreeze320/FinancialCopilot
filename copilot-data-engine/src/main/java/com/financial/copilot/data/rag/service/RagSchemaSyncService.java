@@ -6,6 +6,7 @@ import com.financial.copilot.domain.rag.entity.RagFundSector;
 import com.financial.copilot.domain.rag.port.RagEmbeddingPort;
 import com.financial.copilot.domain.rag.port.RagGraphPort;
 import com.financial.copilot.domain.rag.port.RagSchemaPort;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -18,11 +19,31 @@ import java.util.Optional;
 
 /**
  * <h1>指标与板块全量数据注入与向量化同步流水线服务</h1>
+ * <p>
+ * 串联数据预处理、本地 1024 维模型批量推理、PostgreSQL + pgvector 关系向量持久化以及 Neo4j 拓扑树同步：
+ * <ul>
+ *   <li>解析 <code>metrics.json</code> 与 <code>sectors.json</code>；</li>
+ *   <li>调用 Ollama API 批量生成 1024 维 Embedding；</li>
+ *   <li>使用 MyBatis-Plus 批量 Upsert 写入 PostgreSQL 表；</li>
+ *   <li>在 Neo4j 中幂等创建 <code>:FundSector</code> 树与 <code>:FundMetric</code> 分类网。</li>
+ * </ul>
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class RagSchemaSyncService {
 
+    /**
+     * 同步任务执行结果报告
+     *
+     * @param metricsCount 成功处理的指标总数
+     * @param sectorsCount 成功处理的板块总数
+     * @param durationMs   全流水线执行耗时（毫秒）
+     * @param neo4jSynced  是否成功同步至 Neo4j
+     */
     public record SyncReport(
             int metricsCount,
             int sectorsCount,
@@ -35,18 +56,14 @@ public class RagSchemaSyncService {
     private final RagSchemaPort schemaPort;
     private final Optional<RagGraphPort> graphPort;
 
-    public RagSchemaSyncService(
-            MetricSectorDataParser parser,
-            RagEmbeddingPort embeddingPort,
-            RagSchemaPort schemaPort,
-            Optional<RagGraphPort> graphPort
-    ) {
-        this.parser = parser;
-        this.embeddingPort = embeddingPort;
-        this.schemaPort = schemaPort;
-        this.graphPort = graphPort;
-    }
-
+    /**
+     * 基于本地磁盘 JSON 文件执行全量向量化与双库同步
+     *
+     * @param metricsFile 指标数据文件 (metrics.json)
+     * @param sectorsFile 板块分类数据文件 (sectors.json)
+     * @return 同步统计报告
+     * @throws IOException 读取文件失败时抛出
+     */
     public SyncReport syncFromFiles(File metricsFile, File sectorsFile) throws IOException {
         try (InputStream mIs = new FileInputStream(metricsFile);
              InputStream sIs = new FileInputStream(sectorsFile)) {
@@ -54,6 +71,14 @@ public class RagSchemaSyncService {
         }
     }
 
+    /**
+     * 从输入流执行端到端全量向量化与双库同步
+     *
+     * @param metricsStream 指标数据输入流
+     * @param sectorsStream 板块分类数据输入流
+     * @return 同步统计报告
+     * @throws IOException 数据反序列化失败时抛出
+     */
     public SyncReport syncAll(InputStream metricsStream, InputStream sectorsStream) throws IOException {
         long start = System.currentTimeMillis();
         log.info("[RAG-SYNC] 开始全量数据同步与向量化入库流水线...");
@@ -78,8 +103,8 @@ public class RagSchemaSyncService {
             sectors.get(i).setEmbedding(sectorVectors.get(i));
         }
 
-        // 4. 批量写入 PostgreSQL
-        log.info("[RAG-SYNC] 正在批量写入 PostgreSQL (pgvector)...");
+        // 4. 基于 MyBatis-Plus 批量写入 PostgreSQL
+        log.info("[RAG-SYNC] 正在通过 MyBatis-Plus 批量写入 PostgreSQL (pgvector)...");
         schemaPort.upsertMetrics(metrics);
         schemaPort.upsertSectors(sectors);
 

@@ -3,6 +3,7 @@ package com.financial.copilot.data.rag.adapter;
 import com.financial.copilot.domain.rag.entity.RagFundMetric;
 import com.financial.copilot.domain.rag.entity.RagFundSector;
 import com.financial.copilot.domain.rag.port.RagGraphPort;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.neo4j.core.Neo4jClient;
@@ -11,20 +12,32 @@ import org.springframework.stereotype.Repository;
 import java.util.*;
 
 /**
- * <h1>Neo4j 5.x 知识图谱拓扑适配器</h1>
- * 管理板块分类树与指标分类网络，执行叶子下钻展开与同族指标发现。
+ * <h1>基于 Neo4j 5.x 的基金指标与板块拓扑图适配器</h1>
+ * <p>
+ * 实现领域层 {@link RagGraphPort} 接口：
+ * <ul>
+ *   <li>同步板块分类树：创建 <code>:FundSector</code> 节点及 <code>[:PARENT_OF]</code> 有向层次关系；</li>
+ *   <li>同步指标分类网络：创建 <code>:MetricCategory</code> 与 <code>:FundMetric</code> 及 <code>[:CONTAINS_METRIC]</code> 关联；</li>
+ *   <li>多跳递归下钻：利用 Cypher <code>[:PARENT_OF*1..4]</code> 将任一中间父级板块穿透展开为具体底层可交易的叶子板块 ID 清单；</li>
+ *   <li>同族指标发现：在知识图谱中根据指标分类推荐关联的同族评价指标。</li>
+ * </ul>
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Slf4j
 @Repository
+@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "copilot.neo4j", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class Neo4jRagGraphAdapter implements RagGraphPort {
 
     private final Neo4jClient neo4jClient;
 
-    public Neo4jRagGraphAdapter(Neo4jClient neo4jClient) {
-        this.neo4jClient = neo4jClient;
-    }
-
+    /**
+     * 同步全量公募板块分类树至 Neo4j 图数据库
+     *
+     * @param sectors 板块领域实体列表
+     */
     @Override
     public void syncSectorGraph(List<RagFundSector> sectors) {
         if (sectors == null || sectors.isEmpty()) return;
@@ -75,6 +88,11 @@ public class Neo4jRagGraphAdapter implements RagGraphPort {
         log.info("[RAG-NEO4J] 成功同步板块分类树节点与拓扑关系: count={}", sectors.size());
     }
 
+    /**
+     * 同步全量公募指标及其分类体系至 Neo4j 图数据库
+     *
+     * @param metrics 指标领域实体列表
+     */
     @Override
     public void syncMetricGraph(List<RagFundMetric> metrics) {
         if (metrics == null || metrics.isEmpty()) return;
@@ -113,6 +131,12 @@ public class Neo4jRagGraphAdapter implements RagGraphPort {
         log.info("[RAG-NEO4J] 成功同步指标分类与指标节点: count={}", metrics.size());
     }
 
+    /**
+     * 向下递归穿透指定板块树，获取其覆盖的所有底层叶子板块编码（供下游 SQL IN 过滤）
+     *
+     * @param sectorId 目标板块编码
+     * @return 叶子板块 ID 列表；若该板块本身为叶子，则返回自身 ID
+     */
     @Override
     public List<String> expandLeafSectors(String sectorId) {
         if (sectorId == null || sectorId.isBlank()) return Collections.emptyList();
@@ -143,6 +167,13 @@ public class Neo4jRagGraphAdapter implements RagGraphPort {
         return leafIds;
     }
 
+    /**
+     * 查询同分类下的相关指标（同族推荐）
+     *
+     * @param mnemonic 指标助记符
+     * @param limit    返回上限
+     * @return 同分类指标中文名称列表
+     */
     @Override
     public List<String> findMetricSiblings(String mnemonic, int limit) {
         if (mnemonic == null || mnemonic.isBlank()) return Collections.emptyList();
@@ -164,6 +195,11 @@ public class Neo4jRagGraphAdapter implements RagGraphPort {
         return new ArrayList<>(names);
     }
 
+    /**
+     * 统计当前图谱中板块分类节点总数
+     *
+     * @return 板块节点数
+     */
     @Override
     public long countSectorNodes() {
         return neo4jClient.query("MATCH (s:FundSector) RETURN count(s) AS total")
@@ -173,6 +209,11 @@ public class Neo4jRagGraphAdapter implements RagGraphPort {
                 .orElse(0L);
     }
 
+    /**
+     * 统计当前图谱中公募指标节点总数
+     *
+     * @return 指标节点数
+     */
     @Override
     public long countMetricNodes() {
         return neo4jClient.query("MATCH (m:FundMetric) RETURN count(m) AS total")

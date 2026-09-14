@@ -6,6 +6,7 @@ import com.financial.copilot.data.rag.dto.MetricRawJsonDto;
 import com.financial.copilot.data.rag.dto.SectorRawJsonDto;
 import com.financial.copilot.domain.rag.entity.RagFundMetric;
 import com.financial.copilot.domain.rag.entity.RagFundSector;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -14,17 +15,31 @@ import java.io.InputStream;
 import java.util.*;
 
 /**
- * <h1>指标与板块分类树 JSON 数据预处理器</h1>
- * 负责反序列化 JSON，并构建板块多叉树计算深度与全层级路径 (full_path_names)。
+ * <h1>基金指标与板块分类树 JSON 数据预处理器</h1>
+ * <p>
+ * 核心功能：
+ * <ul>
+ *   <li>解析 <code>metrics.json</code>（169 项指标），标准化别名、支持用途与 Embedding 拼接文本；</li>
+ *   <li>解析 <code>sectors.json</code>（1,712 项板块），在内存中基于广度优先遍历 (BFS) 动态计算树层级深度 (<code>tree_level</code>) 并拼接完整祖先面包屑路径 (<code>full_path_names</code>)；</li>
+ *   <li>增强向量特征文本，将多层级上下级路径注入向量表达，极大提高语义召回准确率。</li>
+ * </ul>
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class MetricSectorDataParser {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 解析 metrics.json 并转换为 RagFundMetric 实体列表
+     * 解析 metrics.json 输入流并转换为领域实体 {@link RagFundMetric} 列表
+     *
+     * @param inputStream 指标 JSON 数据流
+     * @return 预处理后的指标实体列表
+     * @throws IOException 数据读取或反序列化失败时抛出
      */
     public List<RagFundMetric> parseMetrics(InputStream inputStream) throws IOException {
         List<MetricRawJsonDto> rawList = objectMapper.readValue(inputStream, new TypeReference<>() {});
@@ -64,7 +79,11 @@ public class MetricSectorDataParser {
     }
 
     /**
-     * 解析 sectors.json，在内存构建拓扑树，计算 tree_level 和 full_path_names
+     * 解析 sectors.json 输入流，在内存构建拓扑树，计算 tree_level 和 full_path_names
+     *
+     * @param inputStream 板块 JSON 数据流
+     * @return 增强层级与祖先面包屑路径后的板块实体列表
+     * @throws IOException 数据读取或反序列化失败时抛出
      */
     public List<RagFundSector> parseSectors(InputStream inputStream) throws IOException {
         List<SectorRawJsonDto> rawList = objectMapper.readValue(inputStream, new TypeReference<>() {});
