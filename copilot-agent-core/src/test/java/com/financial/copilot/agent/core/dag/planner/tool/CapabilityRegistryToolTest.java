@@ -3,6 +3,7 @@ package com.financial.copilot.agent.core.dag.planner.tool;
 import com.financial.copilot.common.enums.AssetCategory;
 import com.financial.copilot.domain.fund.port.FundDataPort;
 import com.financial.copilot.domain.graph.port.FinancialGraphPort;
+import com.financial.copilot.domain.rag.port.RagSchemaPort;
 import com.financial.copilot.domain.stock.port.StockDataPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ class CapabilityRegistryToolTest {
         CapabilityRegistryTool tool = new CapabilityRegistryTool();
         List<CapabilityRegistryTool.CapabilityDescriptor> list = tool.listActiveCapabilities();
 
-        assertThat(list).hasSize(3);
+        assertThat(list).hasSize(4);
         assertThat(list).allMatch(c -> !c.isAvailable());
         assertFalse(tool.isAssetCategorySupported(AssetCategory.FUND));
         assertFalse(tool.isAssetCategorySupported(AssetCategory.STOCK));
@@ -39,20 +40,21 @@ class CapabilityRegistryToolTest {
         FundDataPort fundPort = Mockito.mock(FundDataPort.class);
         FinancialGraphPort graphPort = Mockito.mock(FinancialGraphPort.class);
         StockDataPort stockPort = Mockito.mock(StockDataPort.class);
+        RagSchemaPort ragPort = Mockito.mock(RagSchemaPort.class);
 
-        CapabilityRegistryTool tool = new CapabilityRegistryTool(fundPort, graphPort, stockPort);
+        CapabilityRegistryTool tool = new CapabilityRegistryTool(fundPort, graphPort, stockPort, ragPort);
         List<CapabilityRegistryTool.CapabilityDescriptor> list = tool.listActiveCapabilities();
 
-        assertThat(list).hasSize(3);
+        assertThat(list).hasSize(4);
         assertThat(list).allMatch(CapabilityRegistryTool.CapabilityDescriptor::isAvailable);
         assertTrue(tool.isAssetCategorySupported(AssetCategory.FUND));
         assertTrue(tool.isAssetCategorySupported(AssetCategory.STOCK));
         assertFalse(tool.isAssetCategorySupported(AssetCategory.FUTURES));
 
-        CapabilityRegistryTool.CapabilityDescriptor fundDesc = list.stream()
-                .filter(c -> "FundDataPort".equals(c.capabilityName()))
+        CapabilityRegistryTool.CapabilityDescriptor ragDesc = list.stream()
+                .filter(c -> "RagSchemaPort".equals(c.capabilityName()))
                 .findFirst()
                 .orElseThrow();
-        assertThat(fundDesc.supportedOperations()).contains("SCREENING", "NAV_HISTORY");
+        assertThat(ragDesc.supportedOperations()).contains("VECTOR_SEARCH", "SCHEMA_ALIGNMENT");
     }
 }

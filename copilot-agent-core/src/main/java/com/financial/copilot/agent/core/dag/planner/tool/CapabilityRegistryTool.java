@@ -3,6 +3,7 @@ package com.financial.copilot.agent.core.dag.planner.tool;
 import com.financial.copilot.common.enums.AssetCategory;
 import com.financial.copilot.domain.fund.port.FundDataPort;
 import com.financial.copilot.domain.graph.port.FinancialGraphPort;
+import com.financial.copilot.domain.rag.port.RagSchemaPort;
 import com.financial.copilot.domain.stock.port.StockDataPort;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,7 @@ import java.util.List;
  * <h1>系统底层金融数据能力探测与注册工具 (CapabilityRegistryTool)</h1>
  * <p>
  * 遵循四层架构隔离规范，供 {@code GraphPlanner} 在建图与动态自适应阶段探测当前系统
- * 挂载的底层数据端口（如公募基金端口、知识图谱端口、股票/衍生品端口）及算力支持，
+ * 挂载的底层数据端口（如公募基金端口、知识图谱端口、股票/衍生品端口、指标板块RAG端口）及算力支持，
  * 避免规划器生成底层无法执行的空中楼阁节点。
  * </p>
  *
@@ -48,20 +49,31 @@ public class CapabilityRegistryTool {
     private final FundDataPort fundDataPort;
     private final FinancialGraphPort financialGraphPort;
     private final StockDataPort stockDataPort;
+    private final RagSchemaPort ragSchemaPort;
 
     public CapabilityRegistryTool() {
-        this(null, null, null);
+        this(null, null, null, null);
+    }
+
+    public CapabilityRegistryTool(
+            FundDataPort fundDataPort,
+            FinancialGraphPort financialGraphPort,
+            StockDataPort stockDataPort
+    ) {
+        this(fundDataPort, financialGraphPort, stockDataPort, null);
     }
 
     @Autowired
     public CapabilityRegistryTool(
             @Autowired(required = false) FundDataPort fundDataPort,
             @Autowired(required = false) FinancialGraphPort financialGraphPort,
-            @Autowired(required = false) StockDataPort stockDataPort
+            @Autowired(required = false) StockDataPort stockDataPort,
+            @Autowired(required = false) RagSchemaPort ragSchemaPort
     ) {
         this.fundDataPort = fundDataPort;
         this.financialGraphPort = financialGraphPort;
         this.stockDataPort = stockDataPort;
+        this.ragSchemaPort = ragSchemaPort;
     }
 
     /**
@@ -97,6 +109,15 @@ public class CapabilityRegistryTool {
                 .isAvailable(stockDataPort != null)
                 .supportedOperations(List.of("STOCK_SCREENING", "FINANCIAL_METRICS", "VALUATION"))
                 .description("提供A股/港股标的指标与基本面财务数据能力")
+                .build());
+
+        // 4. 金融指标与板块混合 RAG 底座
+        capabilities.add(CapabilityDescriptor.builder()
+                .assetCategory(AssetCategory.FUND)
+                .capabilityName("RagSchemaPort")
+                .isAvailable(ragSchemaPort != null)
+                .supportedOperations(List.of("VECTOR_SEARCH", "SCHEMA_ALIGNMENT", "SECTOR_EXPANSION", "METRIC_EXPLAIN"))
+                .description("提供基于 pgvector 与 Neo4j 的金融指标助记码与板块分类树混合语义检索与拓扑展开")
                 .build());
 
         return Collections.unmodifiableList(capabilities);

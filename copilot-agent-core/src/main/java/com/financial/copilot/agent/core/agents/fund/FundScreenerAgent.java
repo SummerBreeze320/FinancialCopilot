@@ -8,11 +8,14 @@ import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.dag.runtime.NodeInput;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
+import com.financial.copilot.agent.tools.rag.FinancialSchemaRagTool;
 import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
 import com.financial.copilot.domain.fund.entity.FundInfo;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.core.tool.ToolParam;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -22,17 +25,28 @@ import java.util.UUID;
 @Component
 public class FundScreenerAgent {
     private static final String SYSTEM_PROMPT = """
-            你是基金筛选 ReAct Agent。必须调用 screen_funds 获取真实数据，观察结果后再结束。
+            你是基金筛选 ReAct Agent。
+            若用户问题中包含行业主题、模糊板块或专业金融指标（如芯片、医疗、夏普比率、卡玛比率），可先调用 match_metrics_and_sectors 或 expand_sector 对齐指标助记码与板块 ID。
+            必须调用 screen_funds 获取真实数据，观察结果后再结束。
             将用户条件完整转换成 FundScreeningCriteria。禁止编造基金，最终只简述工具结果。
             """;
     private final AgentScopeAgentFactory agentFactory;
     private final FundScreeningTool screeningTool;
+    private final FinancialSchemaRagTool schemaRagTool;
     private final ObjectMapper objectMapper;
 
     public FundScreenerAgent(AgentScopeAgentFactory agentFactory, FundScreeningTool screeningTool,
                              ObjectMapper objectMapper) {
+        this(agentFactory, screeningTool, null, objectMapper);
+    }
+
+    @Autowired
+    public FundScreenerAgent(AgentScopeAgentFactory agentFactory, FundScreeningTool screeningTool,
+                             @Nullable FinancialSchemaRagTool schemaRagTool,
+                             ObjectMapper objectMapper) {
         this.agentFactory = agentFactory;
         this.screeningTool = screeningTool;
+        this.schemaRagTool = schemaRagTool;
         this.objectMapper = objectMapper;
     }
 
@@ -40,6 +54,9 @@ public class FundScreenerAgent {
         ScreeningTools tools = new ScreeningTools(screeningTool);
         Toolkit toolkit = new Toolkit();
         toolkit.registerTool(tools);
+        if (schemaRagTool != null) {
+            toolkit.registerTool(schemaRagTool);
+        }
         String prompt = context.request() == null ? String.valueOf(node.getParams())
                 : context.request().prompt() + "\n节点参数=" + node.getParams();
         var invocation = agentFactory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(

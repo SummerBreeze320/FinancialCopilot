@@ -7,6 +7,8 @@ import com.financial.copilot.domain.rag.entity.SchemaRecallResult;
 import com.financial.copilot.domain.rag.port.RagEmbeddingPort;
 import com.financial.copilot.domain.rag.port.RagGraphPort;
 import com.financial.copilot.domain.rag.port.RagSchemaPort;
+import io.agentscope.core.tool.Tool;
+import io.agentscope.core.tool.ToolParam;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -55,7 +57,10 @@ public class FinancialSchemaRagTool {
      * @param topK      每类最多召回数量，默认 5
      * @return 结构化 JSON 字符串
      */
-    public String matchMetricsAndSectors(String userQuery, Integer topK) {
+    @Tool(name = "match_metrics_and_sectors", description = "基于向量与全文三路检索自然语言匹配金融指标助记码与分类板块", readOnly = true)
+    public String matchMetricsAndSectors(
+            @ToolParam(name = "userQuery", description = "用户自然语言诉求，例如'近1年收益大于20%的消费行业ETF'") String userQuery,
+            @ToolParam(name = "topK", description = "每类最多召回数量，默认 5", required = false) Integer topK) {
         log.info("[TOOL CALL-RAG] 联合召回指标与板块: query={}, topK={}", userQuery, topK);
         try {
             int k = (topK == null || topK <= 0) ? 5 : topK;
@@ -127,7 +132,9 @@ public class FinancialSchemaRagTool {
      * @param metricMnemonicOrName 指标助记符（如 f_return_1y）或指标名称（如 近1年回报）
      * @return 结构化 JSON 字符串
      */
-    public String explainMetric(String metricMnemonicOrName) {
+    @Tool(name = "explain_metric", description = "基于指标知识库与Neo4j知识图谱解释金融指标定义与计算公式，并推荐同类衍生指标", readOnly = true)
+    public String explainMetric(
+            @ToolParam(name = "metricMnemonicOrName", description = "指标助记符（如 f_return_1y）或指标名称（如 近1年回报）") String metricMnemonicOrName) {
         log.info("[TOOL CALL-RAG] 解释指标及推荐同类: metric={}", metricMnemonicOrName);
         try {
             Optional<RagFundMetric> optMetric = schemaPort.findMetricByMnemonic(metricMnemonicOrName);
@@ -176,7 +183,9 @@ public class FinancialSchemaRagTool {
      * @param sectorIdOrName 板块ID（如 1000009160000000）或板块名称
      * @return 结构化 JSON 字符串
      */
-    public String expandSector(String sectorIdOrName) {
+    @Tool(name = "expand_sector", description = "基于Neo4j板块分类树向下递归展开底层所有叶子板块编码列表", readOnly = true)
+    public String expandSector(
+            @ToolParam(name = "sectorIdOrName", description = "板块ID（如 1000009160000000）或板块名称，支持模糊检索板块") String sectorIdOrName) {
         log.info("[TOOL CALL-RAG] 展开板块叶子节点: sector={}", sectorIdOrName);
         try {
             String targetSectorId = sectorIdOrName;
