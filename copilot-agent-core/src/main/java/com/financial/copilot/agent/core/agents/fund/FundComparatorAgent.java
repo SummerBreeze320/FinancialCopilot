@@ -15,7 +15,6 @@ import com.financial.copilot.agent.tools.configured.facade.FundComparisonToolSet
 import com.financial.copilot.agent.tools.configured.model.ToolExecuteResult;
 import com.financial.copilot.agent.tools.configured.runtime.ConfiguredToolExecutionCollector;
 import com.financial.copilot.agent.tools.fund.*;
-import com.financial.copilot.agent.tools.graph.FinancialGraphTool;
 import io.agentscope.core.tool.*;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -29,16 +28,16 @@ public class FundComparatorAgent {
     private final FundHoldingsQueryTool holdings; private final FundReportRetrieverTool reports;
     private final FundComparisonToolSet fundComparisonToolSet;
     private final ConfiguredToolWorkspacePublisher workspacePublisher;
-    private final FinancialGraphTool graph; private final ObjectMapper mapper;
+    private final ObjectMapper mapper;
 
     public FundComparatorAgent(AgentScopeAgentFactory factory, FundQuantAnalysisTool quant,
                                FundHoldingsQueryTool holdings, FundReportRetrieverTool reports,
                                @Nullable FundComparisonToolSet fundComparisonToolSet,
                                @Nullable ConfiguredToolWorkspacePublisher workspacePublisher,
-                               @Nullable FinancialGraphTool graph, ObjectMapper mapper) {
+                               ObjectMapper mapper) {
         this.factory=factory; this.quant=quant; this.holdings=holdings; this.reports=reports;
         this.fundComparisonToolSet=fundComparisonToolSet; this.workspacePublisher=workspacePublisher;
-        this.graph=graph; this.mapper=mapper;
+        this.mapper=mapper;
     }
 
     public Artifact<ComparisonReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
@@ -47,7 +46,6 @@ public class FundComparatorAgent {
         if (fundComparisonToolSet != null) {
             toolkit.registerTool(fundComparisonToolSet);
         }
-        if (graph != null) toolkit.registerTool(new GraphComparisonTools(graph));
         String userPrompt = FundComparatorPrompt.buildSpec(
                 context.request().prompt(), codes, context.request().profile()).renderUserPrompt();
 
@@ -114,18 +112,5 @@ public class FundComparatorAgent {
         public String holdings(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+h.getTopHoldings(a,null)+"\nB="+h.getTopHoldings(b,null);}
         @Tool(name="compare_reports", description="对称查询两只基金季报", readOnly=true)
         public String reports(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+r.getLatestQuarterlyReportView(a)+"\nB="+r.getLatestQuarterlyReportView(b);}
-    }
-
-    /** 仅在图谱启用时向模型提供重合持仓查询。 */
-    static final class GraphComparisonTools {
-        private final FinancialGraphTool graph;
-        GraphComparisonTools(FinancialGraphTool graph) { this.graph = graph; }
-
-        /** 查询两只基金在图谱中的共同持仓。 */
-        @Tool(name="shared_holdings", description="查询两只基金的重合持仓", readOnly=true)
-        public String shared(@ToolParam(name="code_a",description="基金A") String a,
-                             @ToolParam(name="code_b",description="基金B") String b) {
-            return graph.getSharedHoldings(a, b);
-        }
     }
 }

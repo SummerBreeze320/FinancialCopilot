@@ -63,7 +63,6 @@ class FundComparatorAgentTest {
                 reportTool,
                 fundComparisonToolSet,
                 workspacePublisher,
-                null,
                 objectMapper
         );
     }
