@@ -11,10 +11,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * <h1>基金定期报告定性文本及高维向量持久化实体 (Fund Report Vector PO)</h1>
+ * <h1>基金定期报告定性文本持久化实体 (Fund Report PO)</h1>
  * <p>
- * 对应数据库物理表: {@code fund_report_vector}
- * 存储基金经理在季报、年报中披露的定性市场展望与运作回顾切片及其对应的语义高维嵌入向量 (PGVector: vector(1536))。
+ * 对应 MySQL 数据库物理表: {@code fund_report}
+ * 存储基金经理在季报、年报中披露的定性市场展望与运作回顾文本。
  * </p>
  *
  * @author FinancialCopilot
@@ -23,8 +23,8 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("fund_report_vector")
-public class FundReportVectorPO {
+@TableName("fund_report")
+public class FundReportPO {
 
     /**
      * 自增主键 ID
@@ -58,13 +58,7 @@ public class FundReportVectorPO {
     private String content;
 
     /**
-     * 文本高维向量切片 (PGVector: vector(1536))
-     * 存储格式形如: "[0.0123,-0.0456,...]"
-     */
-    private String embedding;
-
-    /**
-     * 向量切片入库时间戳
+     * 切片入库时间戳
      */
     private LocalDateTime createdAt;
 }

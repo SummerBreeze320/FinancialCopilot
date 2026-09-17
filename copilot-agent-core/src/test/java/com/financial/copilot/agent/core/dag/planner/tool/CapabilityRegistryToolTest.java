@@ -2,7 +2,6 @@ package com.financial.copilot.agent.core.dag.planner.tool;
 
 import com.financial.copilot.common.enums.AssetCategory;
 import com.financial.copilot.domain.fund.port.FundDataPort;
-import com.financial.copilot.domain.graph.port.FinancialGraphPort;
 import com.financial.copilot.domain.stock.port.StockDataPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * <h1>金融能力探测注册工具单元测试</h1>
+ * <h1>金融能力探测注册工具单元测试 (lite-mysql 版)</h1>
  *
  * @author FinancialCopilot
  */
@@ -26,7 +25,7 @@ class CapabilityRegistryToolTest {
         CapabilityRegistryTool tool = new CapabilityRegistryTool();
         List<CapabilityRegistryTool.CapabilityDescriptor> list = tool.listActiveCapabilities();
 
-        assertThat(list).hasSize(3);
+        assertThat(list).hasSize(2);
         assertThat(list).allMatch(c -> !c.isAvailable());
         assertFalse(tool.isAssetCategorySupported(AssetCategory.FUND));
         assertFalse(tool.isAssetCategorySupported(AssetCategory.STOCK));
@@ -37,13 +36,12 @@ class CapabilityRegistryToolTest {
     @DisplayName("测试注入活跃端口时正确识别就绪状态与支持操作")
     void testListActiveCapabilitiesWithMockedPorts() {
         FundDataPort fundPort = Mockito.mock(FundDataPort.class);
-        FinancialGraphPort graphPort = Mockito.mock(FinancialGraphPort.class);
         StockDataPort stockPort = Mockito.mock(StockDataPort.class);
 
-        CapabilityRegistryTool tool = new CapabilityRegistryTool(fundPort, graphPort, stockPort);
+        CapabilityRegistryTool tool = new CapabilityRegistryTool(fundPort, stockPort);
         List<CapabilityRegistryTool.CapabilityDescriptor> list = tool.listActiveCapabilities();
 
-        assertThat(list).hasSize(3);
+        assertThat(list).hasSize(2);
         assertThat(list).allMatch(CapabilityRegistryTool.CapabilityDescriptor::isAvailable);
         assertTrue(tool.isAssetCategorySupported(AssetCategory.FUND));
         assertTrue(tool.isAssetCategorySupported(AssetCategory.STOCK));

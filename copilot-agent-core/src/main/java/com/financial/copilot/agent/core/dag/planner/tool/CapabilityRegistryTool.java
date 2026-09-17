@@ -2,7 +2,6 @@ package com.financial.copilot.agent.core.dag.planner.tool;
 
 import com.financial.copilot.common.enums.AssetCategory;
 import com.financial.copilot.domain.fund.port.FundDataPort;
-import com.financial.copilot.domain.graph.port.FinancialGraphPort;
 import com.financial.copilot.domain.stock.port.StockDataPort;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +15,8 @@ import java.util.List;
 /**
  * <h1>系统底层金融数据能力探测与注册工具 (CapabilityRegistryTool)</h1>
  * <p>
- * 遵循四层架构隔离规范，供 {@code GraphPlanner} 在建图与动态自适应阶段探测当前系统
- * 挂载的底层数据端口（如公募基金端口、知识图谱端口、股票/衍生品端口）及算力支持，
- * 避免规划器生成底层无法执行的空中楼阁节点。
+ * 供 {@code GraphPlanner} 在建图与动态自适应阶段探测当前系统挂载的底层数据端口及算力支持，
+ * 避免规划器生成底层无法执行的节点。
  * </p>
  *
  * @author FinancialCopilot
@@ -46,21 +44,18 @@ public class CapabilityRegistryTool {
     ) {}
 
     private final FundDataPort fundDataPort;
-    private final FinancialGraphPort financialGraphPort;
     private final StockDataPort stockDataPort;
 
     public CapabilityRegistryTool() {
-        this(null, null, null);
+        this(null, null);
     }
 
     @Autowired
     public CapabilityRegistryTool(
             @Autowired(required = false) FundDataPort fundDataPort,
-            @Autowired(required = false) FinancialGraphPort financialGraphPort,
             @Autowired(required = false) StockDataPort stockDataPort
     ) {
         this.fundDataPort = fundDataPort;
-        this.financialGraphPort = financialGraphPort;
         this.stockDataPort = stockDataPort;
     }
 
@@ -81,16 +76,7 @@ public class CapabilityRegistryTool {
                 .description("提供公募基金多维选基、净值序列、定期报告与基金经理画像底层能力")
                 .build());
 
-        // 2. 金融知识图谱底座
-        capabilities.add(CapabilityDescriptor.builder()
-                .assetCategory(AssetCategory.FUND)
-                .capabilityName("FinancialGraphPort")
-                .isAvailable(financialGraphPort != null)
-                .supportedOperations(List.of("SHARED_HOLDINGS", "MANAGER_NETWORK", "INDUSTRY_EXPOSURE"))
-                .description("提供基金重仓股票穿透、关联基金图谱与行业暴露深度穿透")
-                .build());
-
-        // 3. 股票与多资产扩展底座
+        // 2. 股票与多资产扩展底座
         capabilities.add(CapabilityDescriptor.builder()
                 .assetCategory(AssetCategory.STOCK)
                 .capabilityName("StockDataPort")
