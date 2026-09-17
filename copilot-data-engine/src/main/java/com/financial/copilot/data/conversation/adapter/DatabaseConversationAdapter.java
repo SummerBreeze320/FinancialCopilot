@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.function.Function;
 
 /**
- * <h1>基于 PostgreSQL 的金融投研会话与工具调用审计持久化适配器</h1>
+ * <h1>关系型数据库金融投研会话与工具调用审计持久化适配器</h1>
  * <p>
  * 实现领域层 {@link ConversationPort} 与 {@link AgentToolAuditPort} SPI 端口，
  * 基于 MyBatis-Plus Mapper 操作关系表，完成复杂多智能体协同运行流的消息归档、行级排他锁、游标翻页及调用轨迹审计。
@@ -44,7 +44,7 @@ import java.util.function.Function;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PostgresConversationAdapter implements ConversationPort, AgentToolAuditPort {
+public class DatabaseConversationAdapter implements ConversationPort, AgentToolAuditPort {
 
     private final ResearchConversationMapper conversations;
     private final ConversationMessageMapper messages;
