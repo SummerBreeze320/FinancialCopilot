@@ -17,9 +17,6 @@ import com.financial.copilot.agent.core.workspace.ConfiguredToolWorkspacePublish
 import com.financial.copilot.agent.tools.configured.facade.FundComparisonToolSet;
 import com.financial.copilot.agent.tools.configured.model.ToolExecuteResult;
 import com.financial.copilot.agent.tools.configured.runtime.ConfiguredToolExecutionCollector;
-import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
-import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
-import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.core.message.ToolResultBlock;
@@ -38,9 +35,6 @@ import static org.mockito.Mockito.*;
 class FundComparatorAgentTest {
 
     private AgentScopeAgentFactory agentFactory;
-    private FundQuantAnalysisTool quantTool;
-    private FundHoldingsQueryTool holdingsTool;
-    private FundReportRetrieverTool reportTool;
     private FundComparisonToolSet fundComparisonToolSet;
     private ConfiguredToolWorkspacePublisher workspacePublisher;
     private ObjectMapper objectMapper;
@@ -49,18 +43,12 @@ class FundComparatorAgentTest {
     @BeforeEach
     void setUp() {
         agentFactory = mock(AgentScopeAgentFactory.class);
-        quantTool = mock(FundQuantAnalysisTool.class);
-        holdingsTool = mock(FundHoldingsQueryTool.class);
-        reportTool = mock(FundReportRetrieverTool.class);
         fundComparisonToolSet = mock(FundComparisonToolSet.class);
         workspacePublisher = mock(ConfiguredToolWorkspacePublisher.class);
         objectMapper = new ObjectMapper();
 
         comparatorAgent = new FundComparatorAgent(
                 agentFactory,
-                quantTool,
-                holdingsTool,
-                reportTool,
                 fundComparisonToolSet,
                 workspacePublisher,
                 objectMapper

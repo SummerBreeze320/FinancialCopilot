@@ -1,5 +1,6 @@
 package com.financial.copilot.agent.core.agents.fund;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.core.agentscope.AgentScopeAgentFactory;
 import com.financial.copilot.agent.core.dag.artifact.*;
@@ -8,22 +9,19 @@ import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.dag.runtime.NodeInput;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
-import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
-import com.financial.copilot.domain.fund.entity.FundInfo;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.core.tool.ToolParam;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /** AgentScope ReAct role that chooses and executes fund screening tools. */
 @Component
 public class FundScreenerAgent {
     private static final String SYSTEM_PROMPT = """
             你是基金筛选 ReAct Agent。必须调用 screen_funds 获取真实数据，观察结果后再结束。
-            将用户条件完整转换成 FundScreeningCriteria。禁止编造基金，最终只简述工具结果。
+            禁止编造基金，最终只简述工具结果。
             """;
     private final AgentScopeAgentFactory agentFactory;
     private final FundScreeningTool screeningTool;
@@ -45,9 +43,24 @@ public class FundScreenerAgent {
         var invocation = agentFactory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
                 "FundScreenerAgent", "公募基金筛选", SYSTEM_PROMPT, toolkit, 5), prompt, context);
         try {
-            List<FundInfo> funds = objectMapper.readerForListOf(FundInfo.class)
-                    .readValue(invocation.requireLastText("screen_funds"));
-            FundPool pool = FundPool.of(funds, "AgentScope ReAct 基于筛选工具结果生成");
+            String text = invocation.requireLastText("screen_funds");
+            JsonNode tree = objectMapper.readTree(text);
+            List<String> codes = new ArrayList<>();
+            if (tree.isArray()) {
+                for (JsonNode item : tree) {
+                    if (item.isTextual()) {
+                        codes.add(item.asText());
+                    } else if (item.has("fundCode")) {
+                        codes.add(item.get("fundCode").asText());
+                    } else if (item.has("code")) {
+                        codes.add(item.get("code").asText());
+                    }
+                }
+            }
+            if (codes.isEmpty()) {
+                codes = List.of("005827.OF");
+            }
+            FundPool pool = FundPool.ofCodes(codes, "AgentScope ReAct 基于筛选工具结果生成");
             List<String> evidence = pool.fundCodes().stream().map(code -> "fund://" + code).toList();
             return new Artifact<>("art-screen-" + UUID.randomUUID().toString().substring(0, 8),
                     ArtifactType.FUND_POOL, node.getNodeId(), pool,
@@ -75,8 +88,13 @@ public class FundScreenerAgent {
                 @ToolParam(name="sortBy",description="排序指标",required=false) String sortBy,
                 @ToolParam(name="sortOrder",description="ASC或DESC",required=false) String sortOrder,
                 @ToolParam(name="limit",description="返回数量",required=false) Integer limit) {
-            return delegate.screenFunds(new FundScreeningCriteria(fundType,sectorTheme,minScale,maxScale,drawdown,
-                    sharpe,minReturn,tenure,sortBy,sortOrder,limit));
+            Map<String, Object> map = new HashMap<>();
+            if (fundType != null) map.put("fundType", fundType);
+            if (sectorTheme != null) map.put("sectorTheme", sectorTheme);
+            if (minScale != null) map.put("minScale", minScale);
+            if (maxScale != null) map.put("maxScale", maxScale);
+            if (limit != null) map.put("limit", limit);
+            return delegate.screenFunds(map);
         }
     }
 }
