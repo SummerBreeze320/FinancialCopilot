@@ -7,6 +7,7 @@ import com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisRepor
 import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.dag.runtime.NodeInput;
+import com.financial.copilot.agent.core.prompt.ReportSynthesizerPrompt;
 import io.agentscope.core.tool.*;
 import org.springframework.stereotype.Component;
 
@@ -19,10 +20,10 @@ public class ReportSynthesizerAgent {
     public ReportSynthesizerAgent(AgentScopeAgentFactory factory,ObjectMapper mapper){this.factory=factory;this.mapper=mapper;}
     public Artifact<FinalSynthesisReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context){
         Toolkit toolkit=new Toolkit(); toolkit.registerTool(new Tools(input,mapper));
-        String userPrompt = com.financial.copilot.agent.core.prompt.ReportSynthesizerPrompt.buildSpec(
+        String userPrompt = ReportSynthesizerPrompt.buildSpec(
                 context.request().prompt(), context.request().profile()).renderUserPrompt();
         var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("ReportSynthesizerAgent","投研报告终审",
-                com.financial.copilot.agent.core.prompt.ReportSynthesizerPrompt.SYSTEM_PROMPT,toolkit,5),
+                ReportSynthesizerPrompt.SYSTEM_PROMPT,toolkit,5),
                 userPrompt,context);
         run.requireLastText("read_research_artifacts");
         List<String> evidence=input.artifacts().values().stream().map(Artifact::evidenceContract)

@@ -1,5 +1,7 @@
 package com.financial.copilot.agent.tools.configured.model;
 
+import com.financial.copilot.agent.tools.configured.workspace.ToolWorkspacePayload;
+import com.financial.copilot.agent.tools.configured.workspace.ToolWorkspaceReference;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -41,6 +43,12 @@ public class ToolExecuteResult {
 
     /** 错误信息 (若失败) */
     private String errorMessage;
+
+    /** 工作台聚合载荷 */
+    private ToolWorkspacePayload workspacePayload;
+
+    /** 供 LLM/Agent 引用的组件索引 */
+    private List<ToolWorkspaceReference> references;
 
     public static ToolExecuteResult ofSuccess(String textForLlm, UITreeComponent component, Map<String, Object> rawData) {
         return ToolExecuteResult.builder()

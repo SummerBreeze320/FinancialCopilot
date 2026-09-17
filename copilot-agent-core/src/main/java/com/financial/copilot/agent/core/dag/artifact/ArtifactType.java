@@ -16,6 +16,8 @@ public enum ArtifactType {
     DOCUMENT_EVIDENCE,
     /** 终审合成投研研报与配置建议 */
     FINAL_REPORT,
+    /** 交互式工作台组件与视图载荷 */
+    WORKSPACE,
     /** 通用结构化产物 */
     GENERAL
 }

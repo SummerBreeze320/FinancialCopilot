@@ -76,6 +76,10 @@ public class NodeEventBus {
         emit(ResearchStreamEvent.contentChunk(runId, nodeId, chunk));
     }
 
+    public void publishWorkspace(String runId, String nodeId, Object workspace) {
+        emit(ResearchStreamEvent.workspaceUpdated(runId, nodeId, workspace));
+    }
+
     public void publishRunCompleted(String runId, String status, Long durationMs) {
         emit(ResearchStreamEvent.runCompleted(runId, status, durationMs));
     }

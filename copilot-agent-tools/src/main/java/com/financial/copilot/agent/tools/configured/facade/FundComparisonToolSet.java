@@ -4,6 +4,7 @@ import com.financial.copilot.agent.tools.configured.model.ToolExecuteRequest;
 import com.financial.copilot.agent.tools.configured.model.ToolExecuteResult;
 import com.financial.copilot.agent.tools.configured.model.ToolSourceMode;
 import com.financial.copilot.agent.tools.configured.router.ToolExecutorRouter;
+import com.financial.copilot.agent.tools.configured.runtime.ConfiguredToolExecutionCollector;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.ToolParam;
 import lombok.RequiredArgsConstructor;
@@ -172,6 +173,7 @@ public class FundComparisonToolSet {
                 .sourceMode(ToolSourceMode.EXTERNAL_CONFIGURED)
                 .build();
         ToolExecuteResult result = router.routeAndExecute(request);
+        ConfiguredToolExecutionCollector.record(result);
         return result.getTextForLlm();
     }
 

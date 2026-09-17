@@ -2,18 +2,23 @@ package com.financial.copilot.agent.core.agents.fund;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.core.agentscope.AgentScopeAgentFactory;
+import com.financial.copilot.agent.core.agentscope.AgentScopeInvocation;
 import com.financial.copilot.agent.core.dag.artifact.*;
 import com.financial.copilot.agent.core.dag.artifact.payload.ComparisonReport;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundResearchResult;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.dag.runtime.NodeInput;
+import com.financial.copilot.agent.core.prompt.FundComparatorPrompt;
+import com.financial.copilot.agent.core.workspace.ConfiguredToolWorkspacePublisher;
+import com.financial.copilot.agent.tools.configured.facade.FundComparisonToolSet;
+import com.financial.copilot.agent.tools.configured.model.ToolExecuteResult;
+import com.financial.copilot.agent.tools.configured.runtime.ConfiguredToolExecutionCollector;
 import com.financial.copilot.agent.tools.fund.*;
 import com.financial.copilot.agent.tools.graph.FinancialGraphTool;
 import io.agentscope.core.tool.*;
-import org.springframework.stereotype.Component;
-import com.financial.copilot.agent.core.prompt.FundComparatorPrompt;
 import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 
@@ -22,15 +27,18 @@ import java.util.*;
 public class FundComparatorAgent {
     private final AgentScopeAgentFactory factory; private final FundQuantAnalysisTool quant;
     private final FundHoldingsQueryTool holdings; private final FundReportRetrieverTool reports;
-    private final com.financial.copilot.agent.tools.configured.facade.FundComparisonToolSet fundComparisonToolSet;
+    private final FundComparisonToolSet fundComparisonToolSet;
+    private final ConfiguredToolWorkspacePublisher workspacePublisher;
     private final FinancialGraphTool graph; private final ObjectMapper mapper;
 
     public FundComparatorAgent(AgentScopeAgentFactory factory, FundQuantAnalysisTool quant,
                                FundHoldingsQueryTool holdings, FundReportRetrieverTool reports,
-                               @Nullable com.financial.copilot.agent.tools.configured.facade.FundComparisonToolSet fundComparisonToolSet,
+                               @Nullable FundComparisonToolSet fundComparisonToolSet,
+                               @Nullable ConfiguredToolWorkspacePublisher workspacePublisher,
                                @Nullable FinancialGraphTool graph, ObjectMapper mapper) {
         this.factory=factory; this.quant=quant; this.holdings=holdings; this.reports=reports;
-        this.fundComparisonToolSet=fundComparisonToolSet; this.graph=graph; this.mapper=mapper;
+        this.fundComparisonToolSet=fundComparisonToolSet; this.workspacePublisher=workspacePublisher;
+        this.graph=graph; this.mapper=mapper;
     }
 
     public Artifact<ComparisonReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
@@ -42,19 +50,42 @@ public class FundComparatorAgent {
         if (graph != null) toolkit.registerTool(new GraphComparisonTools(graph));
         String userPrompt = FundComparatorPrompt.buildSpec(
                 context.request().prompt(), codes, context.request().profile()).renderUserPrompt();
-        var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
-                "FundComparatorAgent", "基金横向对标", FundComparatorPrompt.SYSTEM_PROMPT, toolkit, 8),
-                userPrompt, context);
-        run.requireLastText("compare_metrics");
+
+        ConfiguredToolExecutionCollector.clear();
+        AgentScopeInvocation run;
+        List<String> workspaceArtifactIds = List.of();
+        try {
+            run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
+                    "FundComparatorAgent", "基金横向对标", FundComparatorPrompt.SYSTEM_PROMPT, toolkit, 8),
+                    userPrompt, context);
+        } finally {
+            List<ToolExecuteResult> toolResults = ConfiguredToolExecutionCollector.drain();
+            if (workspacePublisher != null) {
+                workspaceArtifactIds = workspacePublisher.publish(context, toolResults);
+            }
+        }
+
+        boolean hasLegacyMetrics = run.observations().containsKey("compare_metrics");
+        boolean hasWorkspaceEvidence = !workspaceArtifactIds.isEmpty();
+        boolean hasConfiguredObservations = run.observations().keySet().stream()
+                .anyMatch(key -> key.startsWith("compare_"));
+        if (!hasLegacyMetrics && !hasWorkspaceEvidence && !hasConfiguredObservations) {
+            throw new IllegalStateException("FundComparatorAgent finished without comparison evidence");
+        }
+
         String codeA = codes.getFirst(); String codeB = codes.size() > 1 ? codes.get(1) : codeA;
         List<String> shared = parseShared(run.observations().containsKey("shared_holdings")
                 ? run.requireLastText("shared_holdings") : "{}");
         ComparisonReport payload = ComparisonReport.of(codeA, codeA.equals(codeB) ? "" : codeB,
                 run.reply().getTextContent(), shared);
+
+        List<String> evidenceUris = new ArrayList<>(codes.stream().map(code -> "fund://" + code).toList());
+        workspaceArtifactIds.forEach(id -> evidenceUris.add("artifact://" + id));
+
         return new Artifact<>("art-comp-" + UUID.randomUUID().toString().substring(0,8),
                 ArtifactType.COMPARISON_REPORT, node.getNodeId(), payload,
                 ArtifactMetadata.standard("FundComparatorAgent"), EvidenceContract.sufficient(
-                "AgentScope 对标工具已执行", codes.stream().map(code -> "fund://" + code).toList()));
+                "AgentScope 对标工具已执行", evidenceUris));
     }
 
     private List<String> codes(NodeInput input, GraphNode node) {

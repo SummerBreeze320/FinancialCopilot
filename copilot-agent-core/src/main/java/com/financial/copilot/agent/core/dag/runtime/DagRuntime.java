@@ -19,6 +19,10 @@ import com.financial.copilot.agent.core.dag.runtime.resource.ResourceManager;
 import com.financial.copilot.agent.core.dag.model.patch.GraphOperation;
 import com.financial.copilot.agent.core.dag.model.patch.GraphPatch;
 import com.financial.copilot.agent.core.dag.model.patch.PatchOp;
+import com.financial.copilot.agent.core.dag.event.NodeEventBus;
+import com.financial.copilot.agent.core.dag.event.NodeEventBus.NodeDescriptor;
+import com.financial.copilot.agent.core.llm.dto.LlmResponse;
+import com.financial.copilot.common.event.ResearchStreamEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +55,7 @@ public class DagRuntime implements AutoCloseable {
     private final ReplanPolicy replanPolicy;
     private final RePlanAdvisor rePlanAdvisor;
     private final GraphRunRequest runRequest;
+    private final NodeEventBus eventBus;
     private final Object replanLock = new Object();
 
     public DagRuntime(NodeExecutor nodeExecutor) {
@@ -84,6 +89,14 @@ public class DagRuntime implements AutoCloseable {
                        DagCheckpointStore checkpointStore, NodeQualityGate qualityGate, ReplanPolicy replanPolicy,
                        RePlanAdvisor rePlanAdvisor, GraphRunRequest runRequest,
                        ExecutorService virtualThreadExecutor) {
+        this(nodeExecutor, resourceManager, checkpointStore, qualityGate, replanPolicy, rePlanAdvisor,
+                runRequest, virtualThreadExecutor, null);
+    }
+
+    private DagRuntime(NodeExecutor nodeExecutor, ResourceManager resourceManager,
+                       DagCheckpointStore checkpointStore, NodeQualityGate qualityGate, ReplanPolicy replanPolicy,
+                       RePlanAdvisor rePlanAdvisor, GraphRunRequest runRequest,
+                       ExecutorService virtualThreadExecutor, NodeEventBus eventBus) {
         this.nodeExecutor = Objects.requireNonNull(nodeExecutor, "nodeExecutor cannot be null");
         this.resourceManager = resourceManager != null ? resourceManager : ResourceManager.defaultManager();
         this.checkpointStore = checkpointStore != null ? checkpointStore : new InMemoryDagCheckpointStore();
@@ -92,6 +105,7 @@ public class DagRuntime implements AutoCloseable {
         this.rePlanAdvisor = rePlanAdvisor;
         this.runRequest = runRequest;
         this.virtualThreadExecutor = Objects.requireNonNull(virtualThreadExecutor, "virtualThreadExecutor cannot be null");
+        this.eventBus = eventBus;
     }
 
     public GraphRunHandle run(GraphRunRequest request, ExecutionGraph graph) {
@@ -108,10 +122,10 @@ public class DagRuntime implements AutoCloseable {
         }
 
         DagRuntime isolated = new DagRuntime(nodeExecutor, resourceManager,
-                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request, virtualThreadExecutor);
+                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request, virtualThreadExecutor, context.events);
         CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
         context.events.publishGraphInitialized(request.runId(), request.conversationId().toString(), graph.getRevision(), graph.getNodes().values().stream()
-                .map(node -> new com.financial.copilot.agent.core.dag.event.NodeEventBus.NodeDescriptor(
+                .map(node -> new NodeDescriptor(
                         node.getNodeId(), node.getName(), node.getTaskType(), List.copyOf(graph.getUpstream(node.getNodeId()))))
                 .toList());
         isolated.executeGraphInternal(request.runId(), graph, context.artifacts, context.cancellation, event -> {
@@ -122,9 +136,9 @@ public class DagRuntime implements AutoCloseable {
         }).whenComplete((ignored, error) -> {
             if (error != null) {
                 if (error instanceof CancellationException || error.getCause() instanceof CancellationException) {
-                    context.events.emit(com.financial.copilot.common.event.ResearchStreamEvent.runCancelled(request.runId(), error.getMessage()));
+                    context.events.emit(ResearchStreamEvent.runCancelled(request.runId(), error.getMessage()));
                 } else {
-                    context.events.emit(com.financial.copilot.common.event.ResearchStreamEvent.runFailed(request.runId(), error.getMessage()));
+                    context.events.emit(ResearchStreamEvent.runFailed(request.runId(), error.getMessage()));
                 }
                 context.events.complete();
                 completion.completeExceptionally(error);
@@ -185,7 +199,7 @@ public class DagRuntime implements AutoCloseable {
 
     /** Restores an owned run from durable state in a fresh runtime instance. */
     public GraphRunHandle resume(Long userId, String runId,
-                                 Consumer<com.financial.copilot.agent.core.llm.dto.LlmResponse> usageConsumer) {
+                                 Consumer<LlmResponse> usageConsumer) {
         Optional<DagCheckpoint> checkpoint = checkpointStore.load(userId, runId);
         if (checkpoint.isEmpty() || checkpoint.get().graph() == null) {
             CompletableFuture<GraphRunResult> missing = CompletableFuture.failedFuture(
@@ -201,10 +215,10 @@ public class DagRuntime implements AutoCloseable {
         saved.nodeStatuses().forEach((id, status) -> context.statuses.put(id, normalizeRestoredStatus(status)));
 
         DagRuntime isolated = new DagRuntime(nodeExecutor, resourceManager,
-                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request, virtualThreadExecutor);
+                checkpointStore, qualityGate, replanPolicy, rePlanAdvisor, request, virtualThreadExecutor, context.events);
         CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
         context.events.publishGraphInitialized(runId, request.conversationId().toString(), graph.getRevision(), graph.getNodes().values().stream()
-                .map(node -> new com.financial.copilot.agent.core.dag.event.NodeEventBus.NodeDescriptor(
+                .map(node -> new NodeDescriptor(
                         node.getNodeId(), node.getName(), node.getTaskType(), List.copyOf(graph.getUpstream(node.getNodeId()))))
                 .toList());
         isolated.resumeFromCheckpoint(saved, graph, context.artifacts, context.cancellation, event -> {
@@ -215,9 +229,9 @@ public class DagRuntime implements AutoCloseable {
         }).whenComplete((ignored, error) -> {
             if (error != null) {
                 if (error instanceof CancellationException || error.getCause() instanceof CancellationException) {
-                    context.events.emit(com.financial.copilot.common.event.ResearchStreamEvent.runCancelled(runId, error.getMessage()));
+                    context.events.emit(ResearchStreamEvent.runCancelled(runId, error.getMessage()));
                 } else {
-                    context.events.emit(com.financial.copilot.common.event.ResearchStreamEvent.runFailed(runId, error.getMessage()));
+                    context.events.emit(ResearchStreamEvent.runFailed(runId, error.getMessage()));
                 }
                 context.events.complete();
                 completion.completeExceptionally(error);
@@ -371,7 +385,7 @@ public class DagRuntime implements AutoCloseable {
         Future<Artifact<?>> future = virtualThreadExecutor.submit(() -> {
             try (AutoCloseable ignored = token.bindCurrentThread()) {
                 NodeInput input = DependencyResolver.resolve(node, store);
-                return nodeExecutor.execute(node, input, new NodeExecutionContext(runRequest, node.getNodeId(), store, token));
+                return nodeExecutor.execute(node, input, new NodeExecutionContext(runRequest, node.getNodeId(), store, token, eventBus));
             }
         });
         try {

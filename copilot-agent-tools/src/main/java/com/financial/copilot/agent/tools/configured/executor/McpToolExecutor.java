@@ -2,6 +2,9 @@ package com.financial.copilot.agent.tools.configured.executor;
 
 import com.financial.copilot.agent.tools.configured.distiller.ComponentDataDistiller;
 import com.financial.copilot.agent.tools.configured.model.*;
+import com.financial.copilot.agent.tools.configured.workspace.ConfiguredToolWorkspaceBuilder;
+import com.financial.copilot.agent.tools.configured.workspace.ToolWorkspacePayload;
+import com.financial.copilot.agent.tools.configured.workspace.ToolWorkspaceReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,6 +23,7 @@ import java.util.*;
 public class McpToolExecutor implements ToolExecutor {
 
     private final ComponentDataDistiller distiller;
+    private final ConfiguredToolWorkspaceBuilder workspaceBuilder;
 
     @Override
     public boolean supports(ToolDefinition definition, ToolExecuteRequest request) {
@@ -45,17 +49,27 @@ public class McpToolExecutor implements ToolExecutor {
             llmTextBuilder.append("【").append(definition.getName()).append(" MCP 分析结论】:\n");
 
             for (UITreeComponent comp : components) {
-                String distilled = distiller.distill(comp);
-                llmTextBuilder.append(distilled).append("\n\n");
+                try {
+                    String distilled = distiller.distill(comp);
+                    llmTextBuilder.append(distilled).append("\n\n");
+                } catch (Exception ex) {
+                    log.warn("Distillation failed for component: {}", comp.getId(), ex);
+                    String compName = comp.getName() != null ? comp.getName() : comp.getId();
+                    llmTextBuilder.append("【组件 ").append(compName).append(" 数据暂不可用】\n\n");
+                }
             }
 
             UITreeComponent primary = components.isEmpty() ? null : components.getFirst();
+            ToolWorkspacePayload workspace = workspaceBuilder.build(definition, request, components);
+            List<ToolWorkspaceReference> references = workspaceBuilder.references(workspace);
 
             return ToolExecuteResult.builder()
                     .success(true)
                     .textForLlm(llmTextBuilder.toString().trim())
                     .visualComponent(primary)
                     .visualComponents(components)
+                    .workspacePayload(workspace)
+                    .references(references)
                     .rawData(rawData)
                     .build();
         } catch (Exception e) {

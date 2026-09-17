@@ -108,6 +108,16 @@ public class ResearchStreamEvent {
                 .build();
     }
 
+    public static ResearchStreamEvent workspaceUpdated(String runId, String nodeId, Object workspace) {
+        return ResearchStreamEvent.builder()
+                .type("workspace")
+                .runId(runId)
+                .nodeId(nodeId)
+                .payload(workspace)
+                .components(workspace)
+                .build();
+    }
+
     public static ResearchStreamEvent runCompleted(String runId, String status, Long durationMs) {
         return ResearchStreamEvent.builder()
                 .type("run_completed")

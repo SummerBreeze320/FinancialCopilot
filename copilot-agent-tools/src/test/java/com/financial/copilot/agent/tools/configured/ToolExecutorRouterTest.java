@@ -12,6 +12,8 @@ import com.financial.copilot.agent.tools.configured.registry.ToolDefinitionLoade
 import com.financial.copilot.agent.tools.configured.registry.ToolProperties;
 import com.financial.copilot.agent.tools.configured.registry.ToolRegistry;
 import com.financial.copilot.agent.tools.configured.router.ToolExecutorRouter;
+import com.financial.copilot.agent.tools.configured.workspace.ComponentInstanceIdFactory;
+import com.financial.copilot.agent.tools.configured.workspace.ConfiguredToolWorkspaceBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,10 +44,12 @@ class ToolExecutorRouterTest {
         registry.init();
 
         ComponentDataDistiller distiller = new ComponentDataDistiller();
+        ComponentInstanceIdFactory idFactory = new ComponentInstanceIdFactory();
+        ConfiguredToolWorkspaceBuilder workspaceBuilder = new ConfiguredToolWorkspaceBuilder(idFactory);
 
-        LocalToolExecutor localExecutor = new LocalToolExecutor(distiller);
-        HttpToolExecutor httpExecutor = new HttpToolExecutor(distiller);
-        McpToolExecutor mcpExecutor = new McpToolExecutor(distiller);
+        LocalToolExecutor localExecutor = new LocalToolExecutor(distiller, workspaceBuilder);
+        HttpToolExecutor httpExecutor = new HttpToolExecutor(distiller, workspaceBuilder);
+        McpToolExecutor mcpExecutor = new McpToolExecutor(distiller, workspaceBuilder);
 
         router = new ToolExecutorRouter(registry, List.of(localExecutor, httpExecutor, mcpExecutor));
     }
@@ -70,6 +74,13 @@ class ToolExecutorRouterTest {
         assertEquals(2, result.getVisualComponents().size(), "compare_brinson must produce both table and chart components");
         assertEquals("brinson", result.getVisualComponents().get(0).getId());
         assertEquals("brinsonChart", result.getVisualComponents().get(1).getId());
+
+        // 验证工作台 Payload 与 References
+        assertNotNull(result.getWorkspacePayload(), "Workspace payload should not be null");
+        assertEquals("FUND_COMPARISON", result.getWorkspacePayload().type());
+        assertEquals(2, result.getWorkspacePayload().components().size());
+        assertNotNull(result.getReferences(), "References should not be null");
+        assertFalse(result.getReferences().isEmpty());
     }
 
     @Test

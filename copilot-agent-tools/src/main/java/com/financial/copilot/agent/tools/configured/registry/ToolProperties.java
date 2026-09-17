@@ -20,4 +20,7 @@ public class ToolProperties {
 
     /** 是否开启内存数据蒸馏 (方案 A) */
     private boolean enableDistillation = true;
+
+    /** Wind 组件按需调用服务基地址 (如 WIND_FUNDRESEARCH_SERVICE_URL) */
+    private String componentInvokeServiceUrl;
 }

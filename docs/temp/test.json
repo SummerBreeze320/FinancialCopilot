@@ -1,0 +1,2512 @@
+{
+    "name": "基金简报",
+    "sort": 13,
+    "description": "展示基金简报",
+    "spec": "Default",
+    "tools": [
+        {
+            "id": "MoneyFactSheetIframe",
+            "name": "基金简报",
+            "description": "展示基金简报",
+            "url": "https://exp.wind.com.cn/FundStaticWeb/PublicFundF9/index.html#/FactSheetFund?windcode={windcode}",
+            "linkId": [
+                "MoneyBasicInfo",
+                "MoneyInvestObject",
+                "MoneyPerformanceTable",
+                "MoneyYearlyReturnTable"
+            ]
+        },
+        {
+            "id": "MoneySevenDayYieldChart",
+            "name": "七日年化",
+            "description": "展示基金七日年化走势图",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FactSheet.Performance.FundReturnPicker.GetMultipleRecs",
+                        "params": [
+                            "windCodes",
+                            "startDate",
+                            "endDate",
+                            "circle:0",
+                            "rolling:0",
+                            "benchCode:[]",
+                            "indexs:[]",
+                            "type:0",
+                            "showMedian:1"
+                        ],
+                        "columns": {
+                            "Object/windCode": "windCode",
+                            "Object/name": "name",
+                            "Object/yieldList/date": "date",
+                            "Object/yieldList/value": "value"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "line",
+                            "Name": "七日年化",
+                            "metadata": {
+                                "line": {
+                                    "columns": {
+                                        "series": {
+                                            "name": [
+                                                "value"
+                                            ]
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "date"
+                                            ]
+                                        }
+                                    },
+                                    "options": {},
+                                    "legend": {
+                                        "show": true
+                                    },
+                                    "yAxis": {
+                                        "axisLabel": {
+                                            "formatter": "{value}%"
+                                        }
+                                    }
+                                },
+                                "card": {
+                                    "title": "七日年化",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyMMFChart",
+            "name": "万份收益",
+            "description": "展示基金万份收益走势图",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FactSheet.Performance.FundReturnPicker.GetMultipleRecs",
+                        "params": [
+                            "windCodes",
+                            "startDate",
+                            "endDate",
+                            "circle:0",
+                            "rolling:0",
+                            "benchCode:[]",
+                            "indexs:[]",
+                            "type:1",
+                            "showMedian:1"
+                        ],
+                        "columns": {
+                            "Object/windCode": "windCode",
+                            "Object/name": "name",
+                            "Object/yieldList/date": "date",
+                            "Object/yieldList/value": "value"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "line",
+                            "Name": "万份收益",
+                            "metadata": {
+                                "line": {
+                                    "columns": {
+                                        "series": {
+                                            "name": [
+                                                "value"
+                                            ]
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "date"
+                                            ]
+                                        }
+                                    },
+                                    "options": {},
+                                    "legend": {
+                                        "show": true
+                                    },
+                                    "yAxis": {
+                                        "axisLabel": {
+                                            "formatter": "{value}%"
+                                        }
+                                    }
+                                },
+                                "card": {
+                                    "title": "万份收益",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyPerformanceChart",
+            "name": "业绩表现",
+            "description": "展示基金业绩表现走势图",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FundCompare.FundPerformanceChartPicker.GetData",
+                        "params": [
+                            "windCodes",
+                            "startDate",
+                            "endDate",
+                            "hasPreTransitionFund:0",
+                            "frequency:4",
+                            "indexCode"
+                        ],
+                        "columns": {
+                            "Object/windCode": "windCode",
+                            "Object/name": "name",
+                            "Object/yieldList/date": "date",
+                            "Object/yieldList/value": "value"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "line",
+                            "Name": "业绩表现",
+                            "metadata": {
+                                "line": {
+                                    "transform": {
+                                        "type": "highestLowest",
+                                        "keyField": "windCode",
+                                        "nameField": "name",
+                                        "dateField": "date",
+                                        "valueField": "value",
+                                        "highestKey": "highest6",
+                                        "lowestKey": "lowest6",
+                                        "durationDays": 180,
+                                        "formatterSuffix": "%",
+                                        "fixed": 2
+                                    },
+                                    "columns": {
+                                        "series": {
+                                            "name": [
+                                                "value"
+                                            ]
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "date"
+                                            ]
+                                        }
+                                    },
+                                    "options": {},
+                                    "legend": {
+                                        "show": true
+                                    },
+                                    "yAxis": {
+                                        "axisLabel": {
+                                            "formatter": "{value}%"
+                                        }
+                                    }
+                                },
+                                "card": {
+                                    "title": "业绩表现",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyPerformanceTable",
+            "name": "业绩表现表",
+            "description": "展示基金业绩表现表格",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "report name=FactSheet2.Fund.FundPerformanceNetValueTable21 windCode=[{windCodes}] date=[{endDate}] hasPreTransitionFund=[0] indexCode=[{indexCode}]",
+                        "params": [
+                            "windCodes",
+                            "endDate",
+                            "indexCode"
+                        ],
+                        "columns": {
+                            "Column0": "windCode",
+                            "Column1": "name",
+                            "Column2": "YTD",
+                            "Column4": "6MReturn",
+                            "Column5": "1YReturn",
+                            "Column6": "2YReturn",
+                            "Column7": "3YReturn",
+                            "Column8": "5YReturn",
+                            "Column9": "totalReturn",
+                            "Column10": "annualReturn",
+                            "Column12": "10YReturn"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "业绩表现表",
+                            "metadata": {
+                                "table": {
+                                    "columns": [
+                                        {
+                                            "title": "基金名称",
+                                            "type": "string",
+                                            "id": "name"
+                                        },
+                                        {
+                                            "title": "YTD",
+                                            "type": "number",
+                                            "id": "ytdReturn",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "近六月",
+                                            "type": "number",
+                                            "id": "6MReturn",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "近一年",
+                                            "type": "number",
+                                            "id": "1YReturn",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "近两年",
+                                            "type": "number",
+                                            "id": "2YReturn",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "近三年",
+                                            "type": "number",
+                                            "id": "3YReturn",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "近五年",
+                                            "type": "number",
+                                            "id": "5YReturn",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "近十年",
+                                            "type": "number",
+                                            "id": "10YReturn",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "总回报",
+                                            "type": "number",
+                                            "id": "totalReturn",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "年化回报",
+                                            "type": "number",
+                                            "id": "annualReturn",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        }
+                                    ]
+                                },
+                                "card": {
+                                    "title": "业绩表现表",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyYearlyReturnChart",
+            "name": "年度回报",
+            "description": "以柱状图展示近五年及YTD年度收益。",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FundCompare.FundAnnualReturnPicker.GetData",
+                        "params": [
+                            "windCodes",
+                            "endDate",
+                            "indexCode",
+                            "hasPreTransitionFund:0"
+                        ],
+                        "columns": {
+                            "Object/windCode": "windCode",
+                            "Object/name": "name",
+                            "Object/annualReturnList/year": "year",
+                            "Object/annualReturnList/annualReturn": "annualReturn",
+                            "Object/annualReturnList/rank": "3YRank",
+                            "Object/annualReturnList/order": "sameTypeRank",
+                            "Object/annualReturnList/windThreeYears": "wind3YRank"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "bar",
+                            "Name": "年度回报",
+                            "metadata": {
+                                "bar": {
+                                    "columns": {
+                                        "series": {
+                                            "name": [
+                                                "annualReturn"
+                                            ]
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "year"
+                                            ]
+                                        }
+                                    },
+                                    "yAxis": {
+                                        "axisLabel": {
+                                            "formatter": "{value}%"
+                                        }
+                                    },
+                                    "options": {}
+                                },
+                                "card": {
+                                    "title": "年度回报",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyYearlyReturnTable",
+            "name": "年度回报表",
+            "description": "以表格展示近五年及YTD年度收益。",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FundCompare.FundAnnualReturnPicker.GetData",
+                        "params": [
+                            "windCodes",
+                            "endDate",
+                            "indexCode",
+                            "hasPreTransitionFund:0"
+                        ],
+                        "columns": {
+                            "Object/windCode": "windCode",
+                            "Object/name": "name",
+                            "Object/annualReturnList/year": "year",
+                            "Object/annualReturnList/annualReturn": "annualReturn",
+                            "Object/annualReturnList/rank": "3YRank",
+                            "Object/annualReturnList/order": "sameTypeRank",
+                            "Object/annualReturnList/windThreeYears": "wind3YRank"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "年度回报表",
+                            "metadata": {
+                                "table": {
+                                    "transform": {
+                                        "type": "pivot",
+                                        "rowField": "year",
+                                        "columnField": "name",
+                                        "valueField": "annualReturn",
+                                        "sort": {
+                                            "field": "year",
+                                            "order": "desc"
+                                        },
+                                        "extraFields": [
+                                            {
+                                                "field": "wind3YRank",
+                                                "source": "firstNonEmpty"
+                                            },
+                                            {
+                                                "field": "sameTypeRank",
+                                                "source": "firstNonEmpty"
+                                            }
+                                        ]
+                                    },
+                                    "columns": [
+                                        {
+                                            "title": "年份",
+                                            "type": "string",
+                                            "id": "year"
+                                        },
+                                        {
+                                            "title": "年化回报",
+                                            "type": "number",
+                                            "id": "annualReturn",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "Wind三年评级",
+                                            "type": "number",
+                                            "id": "wind3YRank",
+                                            "sorter": true,
+                                            "starRender": true
+                                        },
+                                        {
+                                            "title": "同类排名",
+                                            "type": "number",
+                                            "id": "sameTypeRank",
+                                            "sorter": true
+                                        }
+                                    ]
+                                },
+                                "card": {
+                                    "title": "年度回报表",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyHistoryScaleChange",
+            "name": "历年规模变化",
+            "description": "展示基金历年规模变化柱状图",
+            "process": [
+                {
+                    "spec": "fundInfra",
+                    "cloud": {
+                        "command": "FundCompare.FundHistoryChangePicker.GetData",
+                        "params": [
+                            "windCodes",
+                            "startDate",
+                            "endDate",
+                            "type:1"
+                        ],
+                        "columns": {
+                            "Object/windCode": "windCode",
+                            "Object/name": "name",
+                            "Object/list/reportDate": "reportDate",
+                            "Object/list/value": "value"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "bar",
+                            "Name": "历年规模变化",
+                            "metadata": {
+                                "bar": {
+                                    "columns": {
+                                        "series": {
+                                            "reportDate": [
+                                                "value"
+                                            ]
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "reportDate"
+                                            ]
+                                        }
+                                    },
+                                    "options": {},
+                                    "legend": {
+                                        "show": false
+                                    },
+                                    "yAxis": {
+                                        "name": "亿元",
+                                        "nameLocation": "middle"
+                                    },
+                                    "extra": [
+                                        {
+                                            "name": [
+                                                "merge"
+                                            ],
+                                            "type": "radio",
+                                            "radio": {
+                                                "合计规模": 0,
+                                                "合计份额": 1
+                                            }
+                                        }
+                                    ]
+                                },
+                                "card": {
+                                    "title": "历年规模变化",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyHistoryATMChart",
+            "name": "历年平均剩余期限",
+            "description": "展示基金历年平均剩余期限",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "report name=Fund.AssetPortfolio.PortfolioResidualPeriod21 windCodes=[{windCodes}] startDate=[{startDate}] endDate=[{endDate}]",
+                        "params": [
+                            "windCodes",
+                            "startDate",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Column2": "reportDate",
+                            "Column3": "endData",
+                            "Column4": "maxData",
+                            "Column5": "minData",
+                            "Column6": "similarData"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "mixed",
+                            "Name": "历年平均剩余期限",
+                            "metadata": {
+                                "mixed": {
+                                    "columns": {
+                                        "series": {
+                                            "reportDate": [
+                                                "endData",
+                                                "similarData"
+                                            ],
+                                            "xAxis": [
+                                                {
+                                                    "value": "期末",
+                                                    "valueI18n": {
+                                                        "en-US": "Period End"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "同类",
+                                                    "valueI18n": {
+                                                        "en-US": "Peer Group"
+                                                    }
+                                                }
+                                            ],
+                                            "fixed": 0,
+                                            "unit": "天"
+                                        },
+                                        "rangeSeries": {
+                                            "name": "期内最低和最高",
+                                            "min": "minData",
+                                            "max": "maxData",
+                                            "fixed": 0,
+                                            "render": "errorBar",
+                                            "lineWidth": 1
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "reportDate"
+                                            ],
+                                            "format": "quarter"
+                                        }
+                                    },
+                                    "color": [
+                                        "#2a7fa8",
+                                        "#f68717",
+                                        "#5fbebf"
+                                    ],
+                                    "legend": {
+                                        "show": true,
+                                        "bottom": 0,
+                                        "left": "center",
+                                        "icon": "circle"
+                                    },
+                                    "options": {
+                                        "grid": {
+                                            "bottom": 0
+                                        },
+                                        "yAxis": [
+                                            {
+                                                "type": "value",
+                                                "position": "left",
+                                                "name": "天",
+                                                "nameLocation": "middle",
+                                                "axisLabel": {
+                                                    "fontSize": 12
+                                                }
+                                            },
+                                            {
+                                                "type": "value",
+                                                "position": "right",
+                                                "show": false
+                                            }
+                                        ]
+                                    }
+                                },
+                                "card": {
+                                    "title": "历年平均剩余期限",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyHistoryRMDChart",
+            "name": "历年剩余期限分布",
+            "description": "展示基金历年剩余期限分布",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FundCompare.HistoryRMDPicker",
+                        "params": [
+                            "windCodes",
+                            "startDate",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Object/_Period": "reportDate",
+                            "Object/_NetAssetPercent01": "below30",
+                            "Object/_NetAssetPercent03": "30to60",
+                            "Object/_NetAssetPercent05": "60to90",
+                            "Object/_NetAssetPercent07": "90-120",
+                            "Object/_NetAssetPercent09": "above120"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "stackedBar",
+                            "Name": "历年剩余期限分布",
+                            "metadata": {
+                                "stackedBar": {
+                                    "columns": {
+                                        "series": {
+                                            "reportDate": [
+                                                "below30",
+                                                "30to60",
+                                                "60to90",
+                                                "90-120",
+                                                "above120"
+                                            ],
+                                            "xAxis": [
+                                                {
+                                                    "value": "30天以内",
+                                                    "valueI18n": {
+                                                        "en-US": "Within 30D"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "30-60天",
+                                                    "valueI18n": {
+                                                        "en-US": "30-60D"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "60-90天",
+                                                    "valueI18n": {
+                                                        "en-US": "60-90D"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "90-120天",
+                                                    "valueI18n": {
+                                                        "en-US": "90-120D"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "120-397天",
+                                                    "valueI18n": {
+                                                        "en-US": "120-397D"
+                                                    }
+                                                }
+                                            ],
+                                            "fixed": 2
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "reportDate"
+                                            ],
+                                            "format": "quarter"
+                                        }
+                                    },
+                                    "legend": {
+                                        "show": true
+                                    },
+                                    "options": {
+                                        "grid": {
+                                            "bottom": 0
+                                        },
+                                        "yAxis": {
+                                            "min": 0,
+                                            "max": 100,
+                                            "interval": 20,
+                                            "axisLabel": {
+                                                "formatter": "{value}%"
+                                            }
+                                        }
+                                    }
+                                },
+                                "card": {
+                                    "title": "历年剩余期限分布",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyHistoryLRChart",
+            "name": "历年杠杆率",
+            "description": "展示基金历年杠杆率",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "report name=FactSheet2.Fund.MonetaryFundLeverage21 windcode=[{windCodes}] endDate=[{endDate}]",
+                        "params": [
+                            "windCodes",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Column1": "reportDate",
+                            "Column2": "leverage",
+                            "Column3": "avgLeverage"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "mixed",
+                            "Name": "历年杠杆率",
+                            "metadata": {
+                                "mixed": {
+                                    "columns": {
+                                        "series": {
+                                            "reportDate": [
+                                                "leverage",
+                                                "avgLeverage"
+                                            ],
+                                            "xAxis": [
+                                                {
+                                                    "value": "杠杆率",
+                                                    "valueI18n": {
+                                                        "en-US": "Leverage Ratio"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "市场平均杠杆率",
+                                                    "valueI18n": {
+                                                        "en-US": "Market Avg. Leverage"
+                                                    }
+                                                }
+                                            ],
+                                            "fixed": 2
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "reportDate"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "card": {
+                                    "title": "历年杠杆率",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyHistoryTEChart",
+            "name": "历年偏离度变化",
+            "description": "展示基金历年偏离度变化",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "report name=Fund.AssetPortfolio.NetAssetDepartureNew21 windCodes=[{windCodes}] startDate=[{startDate}] endDate=[{endDate}]",
+                        "params": [
+                            "windCodes",
+                            "startDate",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Column2": "reportDate",
+                            "Column4": "maxData",
+                            "Column5": "minData",
+                            "Column7": "similarMaxData",
+                            "Column8": "similarMinData"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "mixed",
+                            "Name": "历年偏离度变化",
+                            "metadata": {
+                                "mixed": {
+                                    "columns": {
+                                        "series": {
+                                            "reportDate": [
+                                                "similarMaxData",
+                                                "similarMinData"
+                                            ],
+                                            "xAxis": [
+                                                {
+                                                    "value": "同类最高",
+                                                    "valueI18n": {
+                                                        "en-US": "Peer High"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "同类最低",
+                                                    "valueI18n": {
+                                                        "en-US": "Peer Low"
+                                                    }
+                                                }
+                                            ],
+                                            "fixed": 4,
+                                            "unit": "%"
+                                        },
+                                        "rangeSeries": {
+                                            "name": "最低和最高",
+                                            "min": "minData",
+                                            "max": "maxData",
+                                            "fixed": 4
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "reportDate"
+                                            ],
+                                            "format": "quarter"
+                                        }
+                                    },
+                                    "color": [
+                                        "#2a7fa8",
+                                        "#f68717",
+                                        "#5fbebf"
+                                    ],
+                                    "legend": {
+                                        "show": true,
+                                        "bottom": 0,
+                                        "left": "center",
+                                        "icon": "circle"
+                                    },
+                                    "options": {
+                                        "yAxis": [
+                                            {
+                                                "type": "value",
+                                                "position": "left",
+                                                "scale": true,
+                                                "splitNumber": 6,
+                                                "axisLabel": {
+                                                    "formatter": "{value}%",
+                                                    "fontSize": 12
+                                                }
+                                            },
+                                            {
+                                                "type": "value",
+                                                "position": "right",
+                                                "show": false
+                                            }
+                                        ]
+                                    }
+                                },
+                                "card": {
+                                    "title": "历年偏离度变化",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyAssetAllocationChart",
+            "name": "资产配置",
+            "description": "展示基金资产配置堆积图",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "report name=FactSheet2.Nav.FundAssetsOfPastYears21 windCode=[{windCodes}] date=[{reportDate}] sort=[7=asc,0=asc]",
+                        "params": [
+                            "windCodes",
+                            "reportDate"
+                        ],
+                        "columns": {
+                            "Column0": "reportDate",
+                            "Column1": "stockRatio",
+                            "Column2": "bondRatio",
+                            "Column3": "fundRatio",
+                            "Column5": "currencyRatio",
+                            "Column6": "otherRatio",
+                            "Column7": "windCode"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "stackedBar",
+                            "Name": "资产配置",
+                            "metadata": {
+                                "stackedBar": {
+                                    "columns": {
+                                        "series": {
+                                            "reportDate": [
+                                                "stockRatio",
+                                                "bondRatio",
+                                                "fundRatio",
+                                                "currencyRatio",
+                                                "otherRatio"
+                                            ],
+                                            "xAxis": [
+                                                {
+                                                    "value": "股票",
+                                                    "valueI18n": {
+                                                        "en-US": "Stocks"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "债券",
+                                                    "valueI18n": {
+                                                        "en-US": "Bonds"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "基金",
+                                                    "valueI18n": {
+                                                        "en-US": "Funds"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "现金",
+                                                    "valueI18n": {
+                                                        "en-US": "Cash"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "其他资产",
+                                                    "valueI18n": {
+                                                        "en-US": "Other Assets"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "reportDate"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "card": {
+                                    "title": "资产配置",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyRMDChart",
+            "name": "剩余期限分布",
+            "description": "展示基金剩余期限分布",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "report name=FactSheet2.Fund.FundHoldingDateDistribution21 windCode=[{windCodes}] endDate=[{reportDate}] type=[2]",
+                        "params": [
+                            "windCodes",
+                            "reportDate"
+                        ],
+                        "columns": {
+                            "Column0": "reportDate",
+                            "Column1": "below30",
+                            "Column2": "30to60",
+                            "Column3": "60to90",
+                            "Column4": "90to120",
+                            "Column5": "above120"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "bar",
+                            "Name": "剩余期限分布",
+                            "metadata": {
+                                "bar": {
+                                    "orientation": "horizontal",
+                                    "columns": {
+                                        "series": {
+                                            "reportDate": [
+                                                "below30",
+                                                "30to60",
+                                                "60to90",
+                                                "90to120",
+                                                "above120"
+                                            ],
+                                            "xAxis": [
+                                                {
+                                                    "value": "30天以内",
+                                                    "valueI18n": {
+                                                        "en-US": "Within 30D"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "30-60天",
+                                                    "valueI18n": {
+                                                        "en-US": "30-60D"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "60-90天",
+                                                    "valueI18n": {
+                                                        "en-US": "60-90D"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "90-120天",
+                                                    "valueI18n": {
+                                                        "en-US": "90-120D"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "120天以上",
+                                                    "valueI18n": {
+                                                        "en-US": "Over 120D"
+                                                    }
+                                                }
+                                            ],
+                                            "fixed": 2,
+                                            "unit": "%"
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "reportDate"
+                                            ]
+                                        }
+                                    },
+                                    "color": [
+                                        "#2a7fa8",
+                                        "#f68717",
+                                        "#5fbebf",
+                                        "#e05d5d",
+                                        "#4a588e"
+                                    ],
+                                    "legend": {
+                                        "show": true,
+                                        "bottom": 0,
+                                        "left": "center",
+                                        "icon": "circle"
+                                    },
+                                    "options": {
+                                        "grid": {
+                                            "left": "12",
+                                            "right": "30",
+                                            "top": "2%",
+                                            "bottom": 0,
+                                            "containLabel": true
+                                        }
+                                    }
+                                },
+                                "card": {
+                                    "title": "剩余期限分布",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyBondAllocationChart",
+            "name": "债券券种配置",
+            "description": "展示基金债券券种配置堆积图",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "report name=F9_2.Fund.BondInvePortfolio.Portfolio22 windCode=[{windCodes}] startDate=[{startDate}] endDate=[{endDate}] sort=[0=asc]",
+                        "params": [
+                            "windCodes",
+                            "startDate",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Column1": "reportDate",
+                            "Column2": "GovBondRatio",
+                            "Column3": "FinBondRatio",
+                            "Column4": "CorpBondRatio",
+                            "Column5": "ConvertBondRatio",
+                            "Column6": "CenBankBillRatio",
+                            "Column7": "GovBondRatioChange",
+                            "Column8": "FinBondRatioChange",
+                            "Column9": "CorpBondRatioChange",
+                            "Column10": "ConvertBondRatioChange",
+                            "Column11": "CenBankBillRatioChange",
+                            "Column12": "NCDRatio",
+                            "Column13": "NCDRatioChange",
+                            "Column14": "OtherBondRatio",
+                            "Column15": "OtherBondRatioChange",
+                            "Column16": "ABSRatio",
+                            "Column17": "ABSRatioChange",
+                            "Column18": "LGBRatio",
+                            "Column19": "LGBRatioChange"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "chart",
+                            "chartType": "stackedBar",
+                            "Name": "债券券种配置",
+                            "metadata": {
+                                "stackedBar": {
+                                    "columns": {
+                                        "series": {
+                                            "reportDate": [
+                                                "GovBondRatio",
+                                                "FinBondRatio",
+                                                "CorpBondRatio",
+                                                "ConvertBondRatio",
+                                                "CenBankBillRatio",
+                                                "NCDRatio",
+                                                "ABSRatio",
+                                                "LGBRatio",
+                                                "OtherBondRatio"
+                                            ],
+                                            "xAxis": [
+                                                {
+                                                    "value": "国债",
+                                                    "valueI18n": {
+                                                        "en-US": "Treasury Bonds"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "金融债",
+                                                    "valueI18n": {
+                                                        "en-US": "Financial Bonds"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "企业发行债券",
+                                                    "valueI18n": {
+                                                        "en-US": "Corporate Bonds"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "可转债",
+                                                    "valueI18n": {
+                                                        "en-US": "Convertible Bonds"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "央行票据",
+                                                    "valueI18n": {
+                                                        "en-US": "Central Bank Bills"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "同业存单",
+                                                    "valueI18n": {
+                                                        "en-US": "NCDs"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "资产支持证券",
+                                                    "valueI18n": {
+                                                        "en-US": "ABS"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "地方政府债",
+                                                    "valueI18n": {
+                                                        "en-US": "Local Govt Bonds"
+                                                    }
+                                                },
+                                                {
+                                                    "value": "其他",
+                                                    "valueI18n": {
+                                                        "en-US": "Other"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "xAxis": {
+                                            "data": [
+                                                "reportDate"
+                                            ]
+                                        }
+                                    },
+                                    "yAxis": {
+                                        "max": 100,
+                                        "axisLabel": {
+                                            "formatter": "{value}%"
+                                        }
+                                    }
+                                },
+                                "card": {
+                                    "title": "债券券种配置",
+                                    "width": "24",
+                                    "height": "380px"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyHeavyHoldStockTable",
+            "name": "重仓持股",
+            "description": "展示基金重仓持股表格",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "PublicFundF9.HeavHeldStockStock",
+                        "params": [
+                            "windCodes",
+                            "reportDate",
+                            "industryType:7"
+                        ],
+                        "columns": {
+                            "StockCode": "stockCode",
+                            "StockName": "stockName",
+                            "MarketValue": "marketValue",
+                            "Share": "share",
+                            "StockMarketValuePer": "stockMarketValuePer",
+                            "FundNetPer": "fundNetPer",
+                            "TradeableSharePer": "tradeableSharePer",
+                            "PreSub": "shareChange",
+                            "PerChange": "stockChange",
+                            "RptDate": "reportDate",
+                            "IndustryName": "industryName",
+                            "IndustryChange": "industryChange"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "重仓持股",
+                            "metadata": {
+                                "table": {
+                                    "columns": [
+                                        {
+                                            "title": "股票名称",
+                                            "type": "string",
+                                            "sorter": true,
+                                            "id": "stockName"
+                                        },
+                                        {
+                                            "title": "持仓市值(元)",
+                                            "type": "number",
+                                            "id": "marketValue",
+                                            "sorter": true,
+                                            "fixed": 2,
+                                            "thousandSeparator": true,
+                                            "summary": "sum"
+                                        },
+                                        {
+                                            "title": "持仓数量",
+                                            "type": "number",
+                                            "id": "share",
+                                            "sorter": true,
+                                            "fixed": 0,
+                                            "thousandSeparator": true
+                                        },
+                                        {
+                                            "title": "相对上期增减",
+                                            "type": "number",
+                                            "id": "shareChange",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "占股票市值比",
+                                            "type": "number",
+                                            "id": "stockMarketValuePer",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2,
+                                            "summary": "sum"
+                                        },
+                                        {
+                                            "title": "占基金净值比",
+                                            "type": "number",
+                                            "id": "fundNetPer",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2,
+                                            "summary": "sum"
+                                        },
+                                        {
+                                            "title": "占流通股本比",
+                                            "type": "number",
+                                            "id": "tradeableSharePer",
+                                            "sorter": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "所属行业",
+                                            "type": "string",
+                                            "sorter": true,
+                                            "id": "industryName"
+                                        },
+                                        {
+                                            "title": "区间涨跌幅",
+                                            "type": "number",
+                                            "id": "stockChange",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "行业区间涨跌幅",
+                                            "type": "number",
+                                            "id": "industryChange",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        }
+                                    ]
+                                },
+                                "card": {
+                                    "title": "重仓持股",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyHeavyHoldFundTable",
+            "name": "重仓持基",
+            "description": "展示基金重仓持基表格",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "PublicFundF9.HoldingFundInfoPicker",
+                        "params": [
+                            "windCodes",
+                            "reportDate",
+                            "top:10"
+                        ],
+                        "columns": {
+                            "Object/WindCode": "fundCode",
+                            "Object/FundName": "fundName",
+                            "Object/HoldValue": "marketValue",
+                            "Object/NavRatio": "fundNetPer",
+                            "Object/ValueRatio": "fundMarketValuePer",
+                            "Object/Rise": "marketValueChange",
+                            "Object/Chg": "fundChange",
+                            "Object/FundScale": "fundScale",
+                            "Object/FundScaleRatio": "fundScalePer",
+                            "Object/InvestType": "investmentType",
+                            "Object/FundCompany": "fundCompany",
+                            "Object/ReportDate": "reportDate"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "重仓持基",
+                            "metadata": {
+                                "table": {
+                                    "columns": [
+                                        {
+                                            "title": "基金代码",
+                                            "type": "string",
+                                            "id": "fundCode"
+                                        },
+                                        {
+                                            "title": "基金简称",
+                                            "type": "string",
+                                            "id": "fundName"
+                                        },
+                                        {
+                                            "title": "持仓市值(万)",
+                                            "type": "number",
+                                            "id": "marketValue",
+                                            "sorter": true,
+                                            "thousandSeparator": true,
+                                            "summary": "sum",
+                                            "fixed": 2,
+                                            "multiply": 0.0001
+                                        },
+                                        {
+                                            "title": "占净值比",
+                                            "type": "number",
+                                            "id": "fundNetPer",
+                                            "sorter": true,
+                                            "summary": "sum",
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "占基金市值比",
+                                            "type": "number",
+                                            "id": "fundMarketValuePer",
+                                            "sorter": true,
+                                            "summary": "sum",
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "相对上期增减",
+                                            "type": "number",
+                                            "id": "marketValueChange",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "区间涨跌幅",
+                                            "type": "number",
+                                            "id": "fundChange",
+                                            "sorter": true,
+                                            "signColor": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "基金总规模(亿)",
+                                            "type": "number",
+                                            "id": "fundScale",
+                                            "sorter": true,
+                                            "fixed": 2,
+                                            "multiply": 1e-08,
+                                            "thousandSeparator": true,
+                                            "summary": "sum"
+                                        },
+                                        {
+                                            "title": "占基金总规模比",
+                                            "type": "number",
+                                            "id": "fundScalePer",
+                                            "sorter": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "投资类型",
+                                            "type": "string",
+                                            "id": "investmentType"
+                                        },
+                                        {
+                                            "title": "基金管理人",
+                                            "type": "string",
+                                            "id": "fundCompany"
+                                        }
+                                    ]
+                                },
+                                "card": {
+                                    "title": "重仓持基",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyHeavyHoldBondTable",
+            "name": "重仓持债",
+            "description": "展示基金重仓持债表格",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "report name=F9_2.Fund.BondInvePortfolio.HeavHeldBond22 windCode=[{windCodes}] reportDate=[{reportDate}]",
+                        "params": [
+                            "windCodes",
+                            "reportDate"
+                        ],
+                        "columns": {
+                            "Column0": "reportDate",
+                            "Column1": "bondCode",
+                            "Column2": "bondName",
+                            "Column3": "marketValue",
+                            "Column4": "fundNetPer",
+                            "Column5": "bondType",
+                            "Column6": "creditRate",
+                            "Column8": "corporateRate",
+                            "Column9": "isMunicipal",
+                            "Column10": "isPerpetual"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "重仓持债",
+                            "metadata": {
+                                "table": {
+                                    "columns": [
+                                        {
+                                            "title": "证券名称",
+                                            "type": "string",
+                                            "id": "bondName"
+                                        },
+                                        {
+                                            "title": "持仓市值(万元)",
+                                            "type": "number",
+                                            "id": "marketValue",
+                                            "sorter": true,
+                                            "fixed": 2,
+                                            "multiply": 0.0001
+                                        },
+                                        {
+                                            "title": "占净值比",
+                                            "type": "number",
+                                            "id": "fundNetPer",
+                                            "sorter": true,
+                                            "unit": "%",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "债券类型",
+                                            "type": "string",
+                                            "id": "bondType"
+                                        },
+                                        {
+                                            "title": "债项类型",
+                                            "type": "string",
+                                            "id": "creditRate"
+                                        },
+                                        {
+                                            "title": "主体评级",
+                                            "type": "string",
+                                            "id": "corporateRate"
+                                        },
+                                        {
+                                            "title": "是否城投债",
+                                            "type": "string",
+                                            "id": "isMunicipal"
+                                        },
+                                        {
+                                            "title": "是否永续债",
+                                            "type": "string",
+                                            "id": "isPerpetual"
+                                        }
+                                    ]
+                                },
+                                "card": {
+                                    "title": "重仓持债",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyMarketOutlook",
+            "name": "市场展望",
+            "description": "展示基金市场展望",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FundCompare.MarketOutlookPicker.GetMultipleRecs",
+                        "params": [
+                            "windCodes",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Object/windCode": "windCode",
+                            "Object/name": "name",
+                            "Object/outlookContent": "outlook"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "市场展望",
+                            "metadata": {
+                                "table": {
+                                    "CardType": "text",
+                                    "name": [
+                                        "outlook"
+                                    ]
+                                },
+                                "card": {
+                                    "title": "市场展望",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyCurrentManagerTable",
+            "name": "现任基金经理",
+            "description": "展示基金现任基金经理基本资料表格",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FundCompare.FundManagerPicker.GetMultipleRecs2",
+                        "params": [
+                            "windCodes",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Object/WindCode": "fundCode",
+                            "Object/FundName": "fundName",
+                            "Object/Managers/FundManagerId": "managerId",
+                            "Object/Managers/FundManagerName": "managerName",
+                            "Object/Managers/FundCompanyFullNameCurrentIncumbent": "companyName",
+                            "Object/Managers/Resume": "resume",
+                            "Object/Managers/Sex": "sex",
+                            "Object/Managers/Age": "age",
+                            "Object/Managers/EducationBackground": "educationBackground",
+                            "Object/Managers/InvestManagerYearLimit": "investManagerYearLimit",
+                            "Object/Managers/HistoricalIncumbentFundNumber": "historicalIncumbentFundNumber",
+                            "Object/Managers/HistoricalIncumbentCompanyNumber": "historicalIncumbentCompanyNumber",
+                            "Object/Managers/AwardedNumber": "awardedNumber",
+                            "Object/Managers/JobHoppingFrequency": "jobHoppingFrequency",
+                            "Object/Managers/ManageFundNumber": "manageFundNumber",
+                            "Object/Managers/ManageFundScale": "manageFundScale",
+                            "Object/Managers/EmployeeDate": "employeeDate"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "现任基金经理",
+                            "metadata": {
+                                "table": {
+                                    "columns": [
+                                        {
+                                            "title": "",
+                                            "type": "string",
+                                            "id": "managerId"
+                                        },
+                                        {
+                                            "title": "基金经理",
+                                            "type": "string",
+                                            "id": "managerName"
+                                        },
+                                        {
+                                            "title": "现任基金公司",
+                                            "type": "string",
+                                            "id": "companyName"
+                                        },
+                                        {
+                                            "title": "性别",
+                                            "type": "string",
+                                            "id": "sex"
+                                        },
+                                        {
+                                            "title": "年龄",
+                                            "type": "number",
+                                            "id": "age",
+                                            "unit": "岁"
+                                        },
+                                        {
+                                            "title": "学历",
+                                            "type": "string",
+                                            "id": "educationBackground"
+                                        },
+                                        {
+                                            "title": "投资经理年限",
+                                            "type": "number",
+                                            "id": "investManagerYearLimit",
+                                            "fixed": 2,
+                                            "unit": "年"
+                                        },
+                                        {
+                                            "title": "历任管理基金数",
+                                            "type": "number",
+                                            "id": "historicalIncumbentFundNumber",
+                                            "unit": "只"
+                                        },
+                                        {
+                                            "title": "任基金经理的公司数",
+                                            "type": "number",
+                                            "id": "historicalIncumbentCompanyNumber",
+                                            "unit": "家"
+                                        },
+                                        {
+                                            "title": "任职期间基金获奖次数",
+                                            "type": "number",
+                                            "id": "awardedNumber",
+                                            "unit": "次"
+                                        },
+                                        {
+                                            "title": "跳槽频率",
+                                            "type": "number",
+                                            "id": "jobHoppingFrequency",
+                                            "fixed": 2
+                                        },
+                                        {
+                                            "title": "在任管理基金数",
+                                            "type": "number",
+                                            "id": "manageFundNumber",
+                                            "unit": "只"
+                                        },
+                                        {
+                                            "title": "在管理基金总规模",
+                                            "type": "number",
+                                            "id": "manageFundScale",
+                                            "fixed": 2,
+                                            "unit": "亿元"
+                                        },
+                                        {
+                                            "title": "证券从业日期",
+                                            "type": "string",
+                                            "id": "employeeDate"
+                                        },
+                                        {
+                                            "title": "简介",
+                                            "type": "string",
+                                            "id": "resume"
+                                        }
+                                    ],
+                                    "kindType": "manager2"
+                                },
+                                "card": {
+                                    "title": "现任基金经理",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyCompanyTable",
+            "name": "基金公司",
+            "description": "展示基金管理公司基本资料表格",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FundCompare.FundCompanyPicker.GetMultipleRecs",
+                        "params": [
+                            "windCodes",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Object/_windCode": "fundCode",
+                            "Object/_fundName": "fundName",
+                            "Object/_companyName": "companyName",
+                            "Object/_companyShortName": "companyShortName",
+                            "Object/_englishName": "englishName",
+                            "Object/_englishShortName": "englishShortName",
+                            "Object/_countryAndRegion": "countryAndRegion",
+                            "Object/_province": "province",
+                            "Object/_city": "city",
+                            "Object/_fundSetupDate": "fundSetupDate",
+                            "Object/_registeredCapital": "registeredCapital",
+                            "Object/_currencys": "currency",
+                            "Object/_corpRepresentative": "corpRepresentative",
+                            "Object/_genernalManager": "generalManager",
+                            "Object/_totalOfEmployees": "totalOfEmployees",
+                            "Object/_resignAddress": "registerAddress",
+                            "Object/_businessAddress": "businessAddress",
+                            "Object/_telNumber": "telNumber",
+                            "Object/_fax": "fax",
+                            "Object/_email": "email",
+                            "Object/_zipCode": "zipCode",
+                            "Object/_www": "website",
+                            "Object/_scopeOfBusiness": "scopeOfBusiness",
+                            "Object/_managerId": "managerId",
+                            "Object/_logoId": "logoId",
+                            "Object/_summary": "summary",
+                            "Object/_managedFundNumber": "managedFundNumber",
+                            "Object/_fundAssertScale": "fundAssertScale",
+                            "Object/_fundManagerNumber": "fundManagerNumber",
+                            "Object/_insuranceCount": "insuranceCount",
+                            "Object/_managerAverageYearLimit": "managerAverageYearLimit"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "基金公司",
+                            "metadata": {
+                                "table": {
+                                    "columns": [
+                                        {
+                                            "title": "基金名称",
+                                            "type": "string",
+                                            "id": "fundName"
+                                        },
+                                        {
+                                            "title": "基金公司",
+                                            "type": "string",
+                                            "id": "companyName"
+                                        },
+                                        {
+                                            "title": "公司简称",
+                                            "type": "string",
+                                            "id": "companyShortName"
+                                        },
+                                        {
+                                            "title": "Logo ID",
+                                            "type": "string",
+                                            "id": "logoId"
+                                        },
+                                        {
+                                            "title": "英文名称",
+                                            "type": "string",
+                                            "id": "englishName"
+                                        },
+                                        {
+                                            "title": "英文简称",
+                                            "type": "string",
+                                            "id": "englishShortName"
+                                        },
+                                        {
+                                            "title": "国家及地区",
+                                            "type": "string",
+                                            "id": "countryAndRegion"
+                                        },
+                                        {
+                                            "title": "所在省份",
+                                            "type": "string",
+                                            "id": "province"
+                                        },
+                                        {
+                                            "title": "所在城市",
+                                            "type": "string",
+                                            "id": "city"
+                                        },
+                                        {
+                                            "title": "成立日期",
+                                            "type": "string",
+                                            "id": "fundSetupDate"
+                                        },
+                                        {
+                                            "title": "注册资本",
+                                            "type": "number",
+                                            "id": "registeredCapital",
+                                            "fixed": 2,
+                                            "unit": "万元"
+                                        },
+                                        {
+                                            "title": "货币代码",
+                                            "type": "string",
+                                            "id": "currency"
+                                        },
+                                        {
+                                            "title": "法人代表",
+                                            "type": "string",
+                                            "id": "corpRepresentative"
+                                        },
+                                        {
+                                            "title": "总经理",
+                                            "type": "string",
+                                            "id": "generalManager"
+                                        },
+                                        {
+                                            "title": "员工总数",
+                                            "type": "number",
+                                            "id": "totalOfEmployees",
+                                            "unit": "人"
+                                        },
+                                        {
+                                            "title": "注册地址",
+                                            "type": "string",
+                                            "id": "registerAddress"
+                                        },
+                                        {
+                                            "title": "办公地址",
+                                            "type": "string",
+                                            "id": "businessAddress"
+                                        },
+                                        {
+                                            "title": "公司电话",
+                                            "type": "string",
+                                            "id": "telNumber"
+                                        },
+                                        {
+                                            "title": "公司传真",
+                                            "type": "string",
+                                            "id": "fax"
+                                        },
+                                        {
+                                            "title": "电子邮件",
+                                            "type": "string",
+                                            "id": "email"
+                                        },
+                                        {
+                                            "title": "公司邮编",
+                                            "type": "string",
+                                            "id": "zipCode"
+                                        },
+                                        {
+                                            "title": "公司主页",
+                                            "type": "string",
+                                            "id": "website"
+                                        },
+                                        {
+                                            "title": "经营范围",
+                                            "type": "string",
+                                            "id": "scopeOfBusiness"
+                                        },
+                                        {
+                                            "title": "公司简介",
+                                            "type": "string",
+                                            "id": "summary"
+                                        },
+                                        {
+                                            "title": "旗下基金数量",
+                                            "type": "number",
+                                            "id": "managedFundNumber",
+                                            "unit": "只"
+                                        },
+                                        {
+                                            "title": "基金资产规模",
+                                            "type": "number",
+                                            "id": "fundAssertScale",
+                                            "fixed": 2,
+                                            "unit": "亿元"
+                                        },
+                                        {
+                                            "title": "基金经理人数",
+                                            "type": "number",
+                                            "id": "fundManagerNumber",
+                                            "unit": "人"
+                                        },
+                                        {
+                                            "title": "集合资管产品数量",
+                                            "type": "number",
+                                            "id": "insuranceCount",
+                                            "unit": "只"
+                                        },
+                                        {
+                                            "title": "基金经理平均年限",
+                                            "type": "number",
+                                            "id": "managerAverageYearLimit",
+                                            "fixed": 2,
+                                            "unit": "年"
+                                        }
+                                    ],
+                                    "kindType": "company"
+                                },
+                                "card": {
+                                    "title": "基金公司",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyCompanyProductStructureTable",
+            "name": "基金公司产品结构",
+            "description": "展示基金公司产品结构表格",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FundCompare.FundCompanyPicker.GetProductStructureRecs",
+                        "params": [
+                            "windCodes",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Object/_windCode": "windCode",
+                            "Object/_fundName": "fundName",
+                            "Object/_companyId": "companyId",
+                            "Object/_companyName": "companyName",
+                            "Object/_productStructureList/_fundTypeName": "fundTypeName",
+                            "Object/_productStructureList/_productNumber": "productNumber",
+                            "Object/_productStructureList/_assets": "assets"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "MergedHeader",
+                            "Name": "基金公司产品结构",
+                            "metadata": {
+                                "MergedHeader": {
+                                    "hideSingleGroupHeader": true,
+                                    "columns": [
+                                        {
+                                            "title": "",
+                                            "type": "string",
+                                            "id": "companyName",
+                                            "children": [
+                                                {
+                                                    "title": "",
+                                                    "type": "string",
+                                                    "id": "fundTypeName"
+                                                },
+                                                {
+                                                    "title": "产品数量(只)",
+                                                    "type": "number",
+                                                    "id": "productNumber"
+                                                },
+                                                {
+                                                    "title": "规模合计(亿元)",
+                                                    "type": "number",
+                                                    "id": "assets",
+                                                    "fixed": 2
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "card": {
+                                    "title": "基金公司产品结构",
+                                    "width": "12"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyCompanyFundManagerTable",
+            "name": "基金公司基金经理",
+            "description": "展示基金公司基金经理指标表格",
+            "process": [
+                {
+                    "spec": "fundinfra",
+                    "cloud": {
+                        "command": "FundCompare.FundCompanyPicker.GetFundManagerRecs",
+                        "params": [
+                            "windCodes",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Object/_windCode": "windCode",
+                            "Object/_fundName": "fundName",
+                            "Object/_companyId": "companyId",
+                            "Object/_companyName": "companyName",
+                            "Object/_fundManagerList/_itemName": "itemName",
+                            "Object/_fundManagerList/_companyValue": "companyValue",
+                            "Object/_fundManagerList/_industryAverage": "industryAverage"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "MergedHeader",
+                            "Name": "基金公司基金经理",
+                            "metadata": {
+                                "MergedHeader": {
+                                    "hideSingleGroupHeader": true,
+                                    "columns": [
+                                        {
+                                            "title": "",
+                                            "type": "string",
+                                            "id": "companyName",
+                                            "children": [
+                                                {
+                                                    "title": "",
+                                                    "type": "string",
+                                                    "id": "itemName"
+                                                },
+                                                {
+                                                    "title": "基金公司",
+                                                    "type": "number",
+                                                    "id": "companyValue",
+                                                    "fixed": 2
+                                                },
+                                                {
+                                                    "title": "行业平均",
+                                                    "type": "number",
+                                                    "id": "industryAverage",
+                                                    "fixed": 2
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "card": {
+                                    "title": "基金公司基金经理",
+                                    "width": "12"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyBasicInfo",
+            "name": "基本信息",
+            "description": "展示基金基本信息",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "Report name=FactSheet2.Fund.FundBasicInformation24 windCode=[{windCodes}] date=[{endDate}]",
+                        "params": [
+                            "windCodes",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Column16": "setupDate",
+                            "Column17": "companyName",
+                            "Column18": "fundManager",
+                            "Column19": "fundScale",
+                            "Column20": "investmentType",
+                            "Column21": "investmentStyle",
+                            "Column22": "benchmark",
+                            "Column65": "fundScaleDate"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "基本信息",
+                            "metadata": {
+                                "table": {
+                                    "columns": [
+                                        {
+                                            "title": "成立日期",
+                                            "type": "string",
+                                            "id": "setupDate"
+                                        },
+                                        {
+                                            "title": "基金公司",
+                                            "type": "string",
+                                            "id": "companyName"
+                                        },
+                                        {
+                                            "title": "基金经理",
+                                            "type": "string",
+                                            "id": "fundManager"
+                                        },
+                                        {
+                                            "title": "合计规模",
+                                            "type": "string",
+                                            "id": "fundScaleDisplay",
+                                            "source": [
+                                                "fundScale",
+                                                "fundScaleDate"
+                                            ],
+                                            "display": {
+                                                "type": "template",
+                                                "template": "{fundScale}（{fundScaleDate}）",
+                                                "formats": {
+                                                    "fundScale": {
+                                                        "fixed": 2,
+                                                        "multiply": 1e-08,
+                                                        "thousandSeparator": true,
+                                                        "unit": "亿元"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "title": "投资类型",
+                                            "type": "string",
+                                            "id": "investmentType"
+                                        },
+                                        {
+                                            "title": "投资风格",
+                                            "type": "string",
+                                            "id": "investmentStyle"
+                                        },
+                                        {
+                                            "title": "比较基准",
+                                            "type": "string",
+                                            "id": "benchmark"
+                                        }
+                                    ]
+                                },
+                                "card": {
+                                    "title": "基本信息",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyInvestObject",
+            "name": "投资目标",
+            "description": "展示基金投资目标",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "Matrix2 functions=f_info_investobject(windcode) windcode={windCodes}",
+                        "params": [
+                            "windCodes"
+                        ],
+                        "columns": {
+                            "Column0": "windCode",
+                            "Column1": "name",
+                            "Column2": "investobject"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "投资目标",
+                            "metadata": {
+                                "table": {
+                                    "CardType": "text",
+                                    "name": [
+                                        "investobject"
+                                    ]
+                                },
+                                "card": {
+                                    "title": "投资目标",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "MoneyPurchaseInfo",
+            "name": "购买信息",
+            "description": "展示基金购买信息",
+            "process": [
+                {
+                    "spec": "cloud",
+                    "cloud": {
+                        "command": "Report name=FactSheet2.Fund.FundBasicInformation24 windCode=[{windCodes}] date=[{endDate}]",
+                        "params": [
+                            "windCodes",
+                            "endDate"
+                        ],
+                        "columns": {
+                            "Column25": "subRedStatus",
+                            "Column27": "minSubRate",
+                            "Column28": "maxSubRate",
+                            "Column29": "minRedRate",
+                            "Column30": "maxRedRate",
+                            "Column31": "managementFee",
+                            "Column32": "trusteeFee",
+                            "Column33": "minTotalRate",
+                            "Column34": "maxTotalRate",
+                            "Column35": "salesFee",
+                            "Column69": "minSubRedUnit"
+                        }
+                    },
+                    "output": [
+                        {
+                            "kind": "data",
+                            "dataType": "table",
+                            "Name": "购买信息",
+                            "metadata": {
+                                "table": {
+                                    "columns": [
+                                        {
+                                            "title": "申购状态",
+                                            "type": "string",
+                                            "id": "subscriptionStatus",
+                                            "source": "subRedStatus",
+                                            "display": {
+                                                "type": "split",
+                                                "separator": "|",
+                                                "index": 0
+                                            }
+                                        },
+                                        {
+                                            "title": "赎回状态",
+                                            "type": "string",
+                                            "id": "redemptionStatus",
+                                            "source": "subRedStatus",
+                                            "display": {
+                                                "type": "split",
+                                                "separator": "|",
+                                                "index": 1
+                                            }
+                                        },
+                                        {
+                                            "title": "最小申赎单位",
+                                            "type": "string",
+                                            "id": "minSubRedUnit"
+                                        },
+                                        {
+                                            "title": "申购费率",
+                                            "type": "string",
+                                            "id": "subscriptionRate",
+                                            "source": [
+                                                "minSubRate",
+                                                "maxSubRate"
+                                            ],
+                                            "display": {
+                                                "type": "template",
+                                                "template": "{minSubRate}% - {maxSubRate}%"
+                                            }
+                                        },
+                                        {
+                                            "title": "赎回费率",
+                                            "type": "string",
+                                            "id": "redemptionRate",
+                                            "source": [
+                                                "minRedRate",
+                                                "maxRedRate"
+                                            ],
+                                            "display": {
+                                                "type": "template",
+                                                "template": "{minRedRate}% - {maxRedRate}%"
+                                            }
+                                        },
+                                        {
+                                            "title": "管理费率",
+                                            "type": "string",
+                                            "id": "managementFee",
+                                            "unit": "%"
+                                        },
+                                        {
+                                            "title": "托管费率",
+                                            "type": "string",
+                                            "id": "trusteeFee",
+                                            "unit": "%"
+                                        },
+                                        {
+                                            "title": "销售服务费率",
+                                            "type": "string",
+                                            "id": "salesFee",
+                                            "unit": "%"
+                                        },
+                                        {
+                                            "title": "总费率(持有1年)",
+                                            "type": "string",
+                                            "id": "totalRate",
+                                            "source": [
+                                                "minTotalRate",
+                                                "maxTotalRate"
+                                            ],
+                                            "display": {
+                                                "type": "template",
+                                                "template": "{minTotalRate}% - {maxTotalRate}%"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "card": {
+                                    "title": "购买信息",
+                                    "width": "24"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+{
+    "name": "基金简报",
+    "sort": 12,
+    "description": "展示基金简报",
+    "spec": "Default",
+    "tools": [
+        {
+            "id": "NonMoneyFactSheetIframe",
+            "name": "基金简报",
+            "description": "展示基金简报",
+            "url": "https://exp.wind.com.cn/FundStaticWeb/PublicFundF9/index.html#/FactSheetFund?windcode={windcode}",
+            "linkId": [
+                "NonMoneyBasicInfo",
+                "NonMoneyInvestObject",
+                "NonMoneyAwardTable",
+                "NonMoneyPerformanceTable",
+                "NonMoneyIndustryAllocationChart",
+                "NonMoneyRiskAnalysisTable",
+                "NonMoneyHeavyHoldStockTable"
+            ]
+        },
+        {
+            "id": "NonMoneyPerformanceChart",
+            "name": "业绩表现",
+            "description": "展示基金业绩表现走势图",
+            "process": [
