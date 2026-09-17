@@ -1,18 +1,12 @@
 package com.financial.copilot.agent.tools.fund;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.financial.copilot.data.fund.mapper.FundReportMapper;
-import com.financial.copilot.data.fund.po.FundReportPO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
- * <h1>基金定期报告定性策略观点检索工具 (基于 MySQL 关系表)</h1>
+ * <h1>基金定期报告定性策略观点检索工具</h1>
  * <p>
- * 从 MySQL 关系表中检索基金经理在各期季报中对宏观经济、行业轮动与投资哲学的定性表态，
- * 供 ComparatorAgent 和 AnalyzerAgent 评估其知行合一性与风格稳定性。
+ * 遵循 HTTP 外部调用设计规范，后续待外部 HTTP 季报接口确定后接入实现。
  * </p>
  *
  * @author FinancialCopilot
@@ -21,10 +15,7 @@ import java.util.List;
 @Component
 public class FundReportRetrieverTool {
 
-    private final FundReportMapper reportMapper;
-
-    public FundReportRetrieverTool(FundReportMapper reportMapper) {
-        this.reportMapper = reportMapper;
+    public FundReportRetrieverTool() {
     }
 
     /**
@@ -35,27 +26,6 @@ public class FundReportRetrieverTool {
      */
     public String getLatestQuarterlyReportView(String fundCode) {
         log.info("[TOOL CALL-FUND] 查询基金定性季报策略观点: fundCode={}", fundCode);
-        try {
-            List<FundReportPO> list = reportMapper.selectList(
-                    new LambdaQueryWrapper<FundReportPO>()
-                            .eq(FundReportPO::getFundCode, fundCode)
-                            .orderByDesc(FundReportPO::getReportQuarter)
-            );
-
-            if (list == null || list.isEmpty()) {
-                return "暂无该基金已录入的季报定性投资策略观点。";
-            }
-
-            StringBuilder sb = new StringBuilder();
-            for (FundReportPO po : list) {
-                sb.append("【").append(po.getReportQuarter()).append(" 季报策略观点 - ")
-                        .append(po.getManagerName()).append("】:\n")
-                        .append(po.getContent()).append("\n\n");
-            }
-            return sb.toString();
-        } catch (Exception e) {
-            log.error("查询季报策略观点异常: fundCode={}", fundCode, e);
-            return "检索季报定性内容失败: " + e.getMessage();
-        }
+        return "【" + fundCode + " 季报策略观点】: 基金定性观点数据源待配置外部 HTTP 服务接口。";
     }
 }
