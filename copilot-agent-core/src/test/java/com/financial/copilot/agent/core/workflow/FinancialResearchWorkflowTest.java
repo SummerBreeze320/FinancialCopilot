@@ -6,7 +6,7 @@ import com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisRepor
 import com.financial.copilot.agent.core.dag.model.*;
 import com.financial.copilot.agent.core.dag.planner.GraphPlannerAgent;
 import com.financial.copilot.agent.core.dag.runtime.*;
-import com.financial.copilot.agent.tools.configured.workspace.ToolWorkspacePayload;
+import com.financial.copilot.agent.tools.workspace.ToolWorkspacePayload;
 import com.financial.copilot.common.event.ResearchStreamEvent;
 import org.junit.jupiter.api.Test;
 

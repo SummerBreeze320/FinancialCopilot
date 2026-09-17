@@ -11,7 +11,6 @@ import com.financial.copilot.agent.core.dag.runtime.NodeInput;
 import com.financial.copilot.agent.core.dag.runtime.RunMode;
 import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
 import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
-import com.financial.copilot.agent.tools.stock.StockQuantAnalysisTool;
 import io.agentscope.core.message.ContentBlock;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.TextBlock;
@@ -30,8 +29,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class NativeStockComparatorAgentTest {
 
@@ -58,12 +55,10 @@ class NativeStockComparatorAgentTest {
                 return "scripted";
             }
         };
-        StockQuantAnalysisTool tool = mock(StockQuantAnalysisTool.class);
-        when(tool.getStockMetrics("600519.SH")).thenReturn("{\"pe\":25}");
-        when(tool.getStockMetrics("000858.SZ")).thenReturn("{\"pe\":18}");
         AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
                 () -> LlmSettingsDTO.builder().model("scripted").build(), ignored -> model);
-        StockComparatorAgent agent = new StockComparatorAgent(factory, tool);
+        StockComparatorAgent agent = new StockComparatorAgent(factory,
+                code -> "600519.SH".equals(code) ? "{\"pe\":25}" : "{\"pe\":18}");
         GraphRunRequest request = new GraphRunRequest("run", 1L,java.util.UUID.randomUUID(), null,  "session", "比较两只股票", false,
                 null, ignored -> {}, RunMode.SYNC);
         GraphNode node = GraphNode.builder().nodeId("compare").taskType("COMPARISON")

@@ -10,10 +10,9 @@ import com.financial.copilot.agent.core.dag.runtime.GraphRunRequest;
 import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.dag.runtime.RunMode;
 import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
-import com.financial.copilot.agent.tools.configured.model.ToolExecuteResult;
-import com.financial.copilot.agent.tools.configured.workspace.ToolWorkspaceComponent;
-import com.financial.copilot.agent.tools.configured.workspace.ToolWorkspacePayload;
-import com.financial.copilot.common.event.ResearchStreamEvent;
+import com.financial.copilot.agent.tools.model.ToolExecuteResult;
+import com.financial.copilot.agent.tools.workspace.ToolWorkspaceComponent;
+import com.financial.copilot.agent.tools.workspace.ToolWorkspacePayload;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

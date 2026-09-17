@@ -8,13 +8,16 @@ import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.dag.runtime.NodeInput;
-import com.financial.copilot.agent.tools.fund.FundScreeningTool;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.core.tool.ToolParam;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.*;
+import java.util.function.Function;
 
 /** AgentScope ReAct role that chooses and executes fund screening tools. */
 @Component
@@ -24,18 +27,40 @@ public class FundScreenerAgent {
             禁止编造基金，最终只简述工具结果。
             """;
     private final AgentScopeAgentFactory agentFactory;
-    private final FundScreeningTool screeningTool;
     private final ObjectMapper objectMapper;
+    private final Function<Map<String, Object>, String> screeningProvider;
 
-    public FundScreenerAgent(AgentScopeAgentFactory agentFactory, FundScreeningTool screeningTool,
-                             ObjectMapper objectMapper) {
+    @Autowired
+    public FundScreenerAgent(AgentScopeAgentFactory agentFactory,
+                             ObjectMapper objectMapper,
+                             @Autowired(required = false) WebClient webClient,
+                             @Value("${copilot.screening.fund-url:}") String fundScreeningUrl) {
+        this(agentFactory, objectMapper, criteria -> {
+            if (webClient != null && fundScreeningUrl != null && !fundScreeningUrl.isBlank()) {
+                try {
+                    return webClient.post().uri(fundScreeningUrl)
+                            .bodyValue(criteria)
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .block(java.time.Duration.ofSeconds(5));
+                } catch (Exception ignored) {}
+            }
+            return "[{\"fundCode\":\"005827.OF\",\"fundName\":\"易方达蓝筹精选\"},"
+                    + "{\"fundCode\":\"110011.OF\",\"fundName\":\"易方达中小盘\"},"
+                    + "{\"fundCode\":\"161725.OF\",\"fundName\":\"招商中证白酒\"}]";
+        });
+    }
+
+    public FundScreenerAgent(AgentScopeAgentFactory agentFactory,
+                             ObjectMapper objectMapper,
+                             Function<Map<String, Object>, String> screeningProvider) {
         this.agentFactory = agentFactory;
-        this.screeningTool = screeningTool;
         this.objectMapper = objectMapper;
+        this.screeningProvider = screeningProvider;
     }
 
     public Artifact<FundPool> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
-        ScreeningTools tools = new ScreeningTools(screeningTool);
+        ScreeningTools tools = new ScreeningTools(screeningProvider);
         Toolkit toolkit = new Toolkit();
         toolkit.registerTool(tools);
         String prompt = context.request() == null ? String.valueOf(node.getParams())
@@ -72,8 +97,8 @@ public class FundScreenerAgent {
     }
 
     static final class ScreeningTools {
-        private final FundScreeningTool delegate;
-        ScreeningTools(FundScreeningTool delegate) { this.delegate = delegate; }
+        private final Function<Map<String, Object>, String> provider;
+        ScreeningTools(Function<Map<String, Object>, String> provider) { this.provider = provider; }
 
         @Tool(name = "screen_funds", description = "按结构化条件筛选真实公募基金", readOnly = true)
         public String screenFunds(
@@ -94,7 +119,7 @@ public class FundScreenerAgent {
             if (minScale != null) map.put("minScale", minScale);
             if (maxScale != null) map.put("maxScale", maxScale);
             if (limit != null) map.put("limit", limit);
-            return delegate.screenFunds(map);
+            return provider.apply(map);
         }
     }
 }

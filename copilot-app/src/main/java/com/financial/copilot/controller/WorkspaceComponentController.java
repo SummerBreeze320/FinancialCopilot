@@ -1,7 +1,7 @@
 package com.financial.copilot.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.tools.configured.client.ComponentDataClient;
+import com.financial.copilot.agent.tools.client.ComponentDataClient;
 import com.financial.copilot.common.result.ApiResult;
 import com.financial.copilot.config.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;

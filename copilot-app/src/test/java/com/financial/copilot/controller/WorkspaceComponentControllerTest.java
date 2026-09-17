@@ -2,7 +2,7 @@ package com.financial.copilot.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.core.security.UserPrincipal;
-import com.financial.copilot.agent.tools.configured.client.ComponentDataClient;
+import com.financial.copilot.agent.tools.client.ComponentDataClient;
 import com.financial.copilot.common.result.ApiResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

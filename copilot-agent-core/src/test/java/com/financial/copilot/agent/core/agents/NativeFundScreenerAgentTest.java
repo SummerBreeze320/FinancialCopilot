@@ -10,7 +10,6 @@ import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.runtime.*;
 import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
 import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
-import com.financial.copilot.agent.tools.fund.FundScreeningTool;
 import io.agentscope.core.message.*;
 import io.agentscope.core.model.*;
 import org.junit.jupiter.api.Test;
@@ -21,9 +20,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class NativeFundScreenerAgentTest {
 
@@ -48,11 +44,10 @@ class NativeFundScreenerAgentTest {
 
             @Override public String getModelName() { return "scripted"; }
         };
-        FundScreeningTool tool = mock(FundScreeningTool.class);
-        when(tool.screenFunds(any())).thenReturn("[{\"fundCode\":\"003095\",\"fundName\":\"中欧医疗健康\"}]");
         AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
                 () -> LlmSettingsDTO.builder().model("scripted").build(), ignored -> model);
-        FundScreenerAgent agent = new FundScreenerAgent(factory, tool, new ObjectMapper());
+        FundScreenerAgent agent = new FundScreenerAgent(factory, new ObjectMapper(),
+                criteria -> "[{\"fundCode\":\"003095\",\"fundName\":\"中欧医疗健康\"}]");
         GraphRunRequest request = new GraphRunRequest("run", 1L,java.util.UUID.randomUUID(), null,  "session", "筛选医药基金", false,
                 null, ignored -> {}, RunMode.SYNC);
 

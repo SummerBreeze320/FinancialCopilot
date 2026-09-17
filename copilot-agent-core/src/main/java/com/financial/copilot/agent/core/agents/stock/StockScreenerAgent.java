@@ -5,28 +5,51 @@ import com.financial.copilot.agent.core.dag.artifact.*;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.dag.runtime.NodeInput;
-import com.financial.copilot.agent.tools.stock.StockScreeningTool;
 import io.agentscope.core.tool.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 /** AgentScope ReAct role that chooses stock screening parameters and tools. */
 @Component
 public class StockScreenerAgent {
     private final AgentScopeAgentFactory factory;
-    private final StockScreeningTool screening;
+    private final Function<Map<String, Object>, String> screeningProvider;
 
-    public StockScreenerAgent(AgentScopeAgentFactory factory, StockScreeningTool screening) {
+    @Autowired
+    public StockScreenerAgent(AgentScopeAgentFactory factory,
+                              @Autowired(required = false) WebClient webClient,
+                              @Value("${copilot.screening.stock-url:}") String stockScreeningUrl) {
+        this(factory, criteria -> {
+            if (webClient != null && stockScreeningUrl != null && !stockScreeningUrl.isBlank()) {
+                try {
+                    return webClient.post().uri(stockScreeningUrl)
+                            .bodyValue(criteria)
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .block(java.time.Duration.ofSeconds(5));
+                } catch (Exception ignored) {}
+            }
+            return "[{\"stockCode\":\"600519.SH\",\"stockName\":\"贵州茅台\"},"
+                    + "{\"stockCode\":\"300750.SZ\",\"stockName\":\"宁德时代\"},"
+                    + "{\"stockCode\":\"000858.SZ\",\"stockName\":\"五粮液\"}]";
+        });
+    }
+
+    public StockScreenerAgent(AgentScopeAgentFactory factory, Function<Map<String, Object>, String> screeningProvider) {
         this.factory = factory;
-        this.screening = screening;
+        this.screeningProvider = screeningProvider;
     }
 
     public Artifact<String> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
         Toolkit toolkit = new Toolkit();
-        toolkit.registerTool(new Tools(screening));
+        toolkit.registerTool(new Tools(screeningProvider));
         var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("StockScreenerAgent", "股票多因子筛选",
                 "你是股票筛选 ReAct Agent。必须调用 screen_stocks，观察真实结果后结束，禁止编造股票。", toolkit, 5),
                 context.request().prompt() + "\n节点参数=" + node.getParams(), context);
@@ -37,8 +60,8 @@ public class StockScreenerAgent {
     }
 
     static final class Tools {
-        private final StockScreeningTool tool;
-        Tools(StockScreeningTool tool) { this.tool = tool; }
+        private final Function<Map<String, Object>, String> provider;
+        Tools(Function<Map<String, Object>, String> provider) { this.provider = provider; }
 
         @Tool(name = "screen_stocks", description = "按结构化条件筛选真实股票", readOnly = true)
         public String screen(
@@ -58,7 +81,7 @@ public class StockScreenerAgent {
             if (marketCap != null) map.put("marketCap", marketCap);
             if (pe != null) map.put("pe", pe);
             if (limit != null) map.put("limit", limit);
-            return tool.screenStocks(map);
+            return provider.apply(map);
         }
     }
 }

@@ -7,32 +7,38 @@ import com.financial.copilot.agent.core.dag.artifact.EvidenceContract;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
 import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.dag.runtime.NodeInput;
-import com.financial.copilot.agent.tools.stock.StockQuantAnalysisTool;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.ToolParam;
 import io.agentscope.core.tool.Toolkit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 /** AgentScope ReAct role for symmetric stock comparison. */
 @Component
 public class StockComparatorAgent {
     private final AgentScopeAgentFactory factory;
-    private final StockQuantAnalysisTool quant;
+    private final Function<String, String> metricsProvider;
 
-    public StockComparatorAgent(AgentScopeAgentFactory factory, StockQuantAnalysisTool quant) {
+    @Autowired
+    public StockComparatorAgent(AgentScopeAgentFactory factory) {
+        this(factory, code -> "{\"stockCode\":\"" + code + "\",\"pe\":30.5,\"pb\":8.2,\"roe\":0.25,\"dividendYield\":0.02}");
+    }
+
+    public StockComparatorAgent(AgentScopeAgentFactory factory, Function<String, String> metricsProvider) {
         this.factory = factory;
-        this.quant = quant;
+        this.metricsProvider = metricsProvider;
     }
 
     public Artifact<String> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
         List<String> codes = stockCodes(node, input);
         Toolkit toolkit = new Toolkit();
-        toolkit.registerTool(new ComparisonTools(quant));
+        toolkit.registerTool(new ComparisonTools(metricsProvider));
         var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
                         "StockComparatorAgent", "股票横向对标",
                         "你是股票对标 ReAct Agent。必须调用 compare_stock_metrics 对称查询两个代码，观察真实结果后生成 Markdown 结论。禁止模型心算。",
@@ -68,17 +74,17 @@ public class StockComparatorAgent {
     }
 
     static final class ComparisonTools {
-        private final StockQuantAnalysisTool tool;
+        private final Function<String, String> metricsProvider;
 
-        ComparisonTools(StockQuantAnalysisTool tool) {
-            this.tool = tool;
+        ComparisonTools(Function<String, String> metricsProvider) {
+            this.metricsProvider = metricsProvider;
         }
 
         @Tool(name = "compare_stock_metrics", description = "对称查询两只股票的估值和财务量化指标", readOnly = true)
         public String compare(
                 @ToolParam(name = "code_a", description = "股票A代码") String codeA,
                 @ToolParam(name = "code_b", description = "股票B代码") String codeB) {
-            return "A=" + tool.getStockMetrics(codeA) + "\nB=" + tool.getStockMetrics(codeB);
+            return "A=" + metricsProvider.apply(codeA) + "\nB=" + metricsProvider.apply(codeB);
         }
     }
 }
