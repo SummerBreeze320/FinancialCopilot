@@ -16,7 +16,6 @@
     <modules>
         <module>copilot-common</module>
         <module>copilot-domain</module>
-        <module>copilot-math-core</module>
         <module>copilot-data-engine</module>
         <module>copilot-agent-tools</module>
         <module>copilot-agent-core</module>
@@ -67,11 +66,6 @@
             <dependency>
                 <groupId>com.financial.copilot</groupId>
                 <artifactId>copilot-domain</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.financial.copilot</groupId>
-                <artifactId>copilot-math-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

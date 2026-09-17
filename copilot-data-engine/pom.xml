@@ -19,10 +19,6 @@
             <groupId>com.financial.copilot</groupId>
             <artifactId>copilot-domain</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.financial.copilot</groupId>
-            <artifactId>copilot-math-core</artifactId>
-        </dependency>
 
         <!-- MyBatis-Plus Spring Boot 3 Starter -->
         <dependency>
