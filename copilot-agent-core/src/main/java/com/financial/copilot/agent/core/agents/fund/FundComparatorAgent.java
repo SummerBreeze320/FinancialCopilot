@@ -22,23 +22,18 @@ import java.util.*;
 public class FundComparatorAgent {
     private final AgentScopeAgentFactory factory; private final FundQuantAnalysisTool quant;
     private final FundHoldingsQueryTool holdings; private final FundReportRetrieverTool reports;
-    private final com.financial.copilot.agent.tools.configured.facade.FundComparisonToolSet fundComparisonToolSet;
     private final FinancialGraphTool graph; private final ObjectMapper mapper;
 
     public FundComparatorAgent(AgentScopeAgentFactory factory, FundQuantAnalysisTool quant,
                                FundHoldingsQueryTool holdings, FundReportRetrieverTool reports,
-                               @Nullable com.financial.copilot.agent.tools.configured.facade.FundComparisonToolSet fundComparisonToolSet,
                                @Nullable FinancialGraphTool graph, ObjectMapper mapper) {
         this.factory=factory; this.quant=quant; this.holdings=holdings; this.reports=reports;
-        this.fundComparisonToolSet=fundComparisonToolSet; this.graph=graph; this.mapper=mapper;
+        this.graph=graph; this.mapper=mapper;
     }
 
     public Artifact<ComparisonReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
         List<String> codes = codes(input, node);
         Toolkit toolkit = new Toolkit(); toolkit.registerTool(new ComparisonTools(quant, holdings, reports));
-        if (fundComparisonToolSet != null) {
-            toolkit.registerTool(fundComparisonToolSet);
-        }
         if (graph != null) toolkit.registerTool(new GraphComparisonTools(graph));
         String userPrompt = FundComparatorPrompt.buildSpec(
                 context.request().prompt(), codes, context.request().profile()).renderUserPrompt();
