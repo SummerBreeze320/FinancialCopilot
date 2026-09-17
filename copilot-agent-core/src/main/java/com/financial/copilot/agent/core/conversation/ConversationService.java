@@ -118,9 +118,10 @@ public class ConversationService {
         if (messages.isEmpty()) {
             return List.of();
         }
-        Collections.reverse(messages);
+        List<ConversationMessage> ordered = new ArrayList<>(messages);
+        Collections.reverse(ordered);
         List<String> context = new ArrayList<>();
-        for (ConversationMessage msg : messages) {
+        for (ConversationMessage msg : ordered) {
             String prefix = msg.role() == MessageRole.USER ? "USER: " : "ASSISTANT: ";
             context.add(prefix + msg.content());
         }

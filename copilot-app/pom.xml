@@ -19,6 +19,15 @@
             <groupId>com.financial.copilot</groupId>
             <artifactId>copilot-agent-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.financial.copilot</groupId>
+            <artifactId>copilot-data-engine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- Spring Boot WebFlux (响应式与 SSE 引擎) -->
         <dependency>

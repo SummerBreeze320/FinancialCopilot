@@ -27,13 +27,13 @@ class ApplicationStartupTest {
     @Autowired JdbcTemplate jdbc;
 
     @Test
-    void applicationStartsAndMemoryRoundTripsThroughPostgresAndRedis() {
+    void applicationStartsAndMemoryRoundTripsThroughDatabaseAndRedis() {
         WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build()
                 .get().uri("/api/v1/research/health").exchange()
                 .expectStatus().isOk().expectBody().jsonPath("$.data.status").isEqualTo("UP");
 
         assertThat(jdbc.queryForObject(
-                "SELECT COUNT(*) FROM information_schema.tables WHERE table_name IN ('research_conversation','conversation_message','agent_tool_audit')",
+                "SELECT COUNT(*) FROM information_schema.tables WHERE table_name IN ('research_conversation','conversation_message','agent_tool_audit') AND (table_schema = DATABASE() OR table_schema = 'public')",
                 Integer.class)).isEqualTo(3);
 
         String session = "startup-test-" + UUID.randomUUID();

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.financial.copilot.data.conversation.po.ConversationMessagePO;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -34,13 +35,14 @@ public interface ConversationMessageMapper extends BaseMapper<ConversationMessag
     Long nextSequence(@Param("conversationId") UUID conversationId);
 
     /**
-     * 插入新的会话消息记录（支持 JSONB 格式元数据绑定）
+     * 插入新的会话消息记录（支持 JSON 格式元数据绑定）
      *
      * @param po 消息实体
      * @return 影响行数
      */
+    @Options(useGeneratedKeys = true, keyProperty = "id")
     @Insert("INSERT INTO conversation_message (conversation_id, user_id, run_id, sequence_no, role, status, content, metadata, created_at, completed_at) " +
-            "VALUES (#{conversationId}, #{userId}, #{runId}, #{sequenceNo}, #{role}, #{status}, #{content}, CAST(#{metadata} AS jsonb), #{createdAt}, #{completedAt})")
+            "VALUES (#{conversationId}, #{userId}, #{runId}, #{sequenceNo}, #{role}, #{status}, #{content}, CAST(#{metadata} AS JSON), #{createdAt}, #{completedAt})")
     int insertMessage(ConversationMessagePO po);
 
     /**
@@ -49,11 +51,11 @@ public interface ConversationMessageMapper extends BaseMapper<ConversationMessag
      * @param userId   系统用户 ID
      * @param runId    运行批次 Run ID
      * @param content  最终生成的回答文本
-     * @param metadata 结构化执行元数据（JSONB）
+     * @param metadata 结构化执行元数据（JSON）
      * @param at       完成时间戳
      * @return 影响行数
      */
-    @Update("UPDATE conversation_message SET status = 'COMPLETED', content = #{content}, metadata = CAST(#{metadata} AS jsonb), completed_at = #{at} " +
+    @Update("UPDATE conversation_message SET status = 'COMPLETED', content = #{content}, metadata = CAST(#{metadata} AS JSON), completed_at = #{at} " +
             "WHERE user_id = #{userId} AND run_id = #{runId} AND role = 'ASSISTANT' AND status = 'RUNNING'")
     int completeAssistant(@Param("userId") Long userId, @Param("runId") UUID runId,
                          @Param("content") String content, @Param("metadata") String metadata, @Param("at") LocalDateTime at);

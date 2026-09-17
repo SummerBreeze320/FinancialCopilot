@@ -164,7 +164,7 @@ public class DatabaseConversationAdapter implements ConversationPort, AgentToolA
     @Override
     public List<ConversationMessage> recentCompletedMessages(Long userId, UUID conversationId, int limit) {
         List<ConversationMessagePO> rows = messages.recentCompletedMessages(userId, conversationId, limit);
-        return rows.stream().map(this::toMessageDomain).toList();
+        return new ArrayList<>(rows.stream().map(this::toMessageDomain).toList());
     }
 
     @Override

@@ -22,7 +22,7 @@ public interface UserWalletMapper extends BaseMapper<UserWalletPO> {
      */
     @org.apache.ibatis.annotations.Insert("INSERT INTO sys_user_wallet " +
             "(user_id, tenant_id, balance_points, frozen_points, total_recharged_points, total_consumed_points, wallet_status, version, updated_at) " +
-            "VALUES (#{userId}, #{tenantId}, 0, 0, 0, 0, 'NORMAL', 0, NOW()) ON CONFLICT (user_id) DO NOTHING")
+            "VALUES (#{userId}, #{tenantId}, 0, 0, 0, 0, 'NORMAL', 0, NOW()) ON DUPLICATE KEY UPDATE user_id = user_id")
     int createIfAbsent(@Param("userId") Long userId, @Param("tenantId") String tenantId);
 
     /**

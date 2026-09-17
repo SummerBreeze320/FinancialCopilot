@@ -25,13 +25,13 @@ public interface TokenUsageLedgerMapper extends BaseMapper<TokenUsageLedgerPO> {
      * @param startDate 起始统计时间
      * @return 每日聚合点数据映射列表
      */
-    @Select("SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS stat_date, " +
+    @Select("SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS stat_date, " +
             "       COALESCE(SUM(total_tokens), 0) AS total_tokens, " +
             "       COALESCE(SUM(consumed_points), 0) AS consumed_points, " +
             "       COUNT(id) AS request_count " +
             "FROM llm_token_usage_ledger " +
             "WHERE user_id = #{userId} AND created_at >= #{startDate} " +
-            "GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD') " +
+            "GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d') " +
             "ORDER BY stat_date ASC")
     List<Map<String, Object>> queryDailyTrend(@Param("userId") Long userId,
                                               @Param("startDate") LocalDateTime startDate);

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.financial.copilot.data.conversation.po.AgentToolAuditPO;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -24,14 +25,15 @@ import java.util.UUID;
 public interface AgentToolAuditMapper extends BaseMapper<AgentToolAuditPO> {
 
     /**
-     * 记录工具调用开始执行事件（包含入参 JSONB 及幂等去重）
+     * 记录工具调用开始执行事件（包含入参 JSON 及幂等去重）
      *
      * @param po 审计实体
      * @return 影响行数
      */
+    @Options(useGeneratedKeys = true, keyProperty = "id")
     @Insert("INSERT INTO agent_tool_audit (conversation_id, assistant_message_id, user_id, run_id, node_id, agent_name, tool_call_id, tool_name, status, arguments, started_at) " +
-            "VALUES (#{conversationId}, #{assistantMessageId}, #{userId}, #{runId}, #{nodeId}, #{agentName}, #{toolCallId}, #{toolName}, #{status}, CAST(#{arguments} AS jsonb), #{startedAt}) " +
-            "ON CONFLICT (user_id, run_id, tool_call_id) DO NOTHING")
+            "VALUES (#{conversationId}, #{assistantMessageId}, #{userId}, #{runId}, #{nodeId}, #{agentName}, #{toolCallId}, #{toolName}, #{status}, CAST(#{arguments} AS JSON), #{startedAt}) " +
+            "ON DUPLICATE KEY UPDATE tool_call_id = tool_call_id")
     int start(AgentToolAuditPO po);
 
     /**
@@ -43,7 +45,7 @@ public interface AgentToolAuditMapper extends BaseMapper<AgentToolAuditPO> {
      * @param status       最终状态 (SUCCESS / FAILED)
      * @param summary      执行结果精简摘要
      * @param hash         结果数据哈希值
-     * @param artifactIds  关联的可视化产物 ID 列表 (JSONB)
+     * @param artifactIds  关联的可视化产物 ID 列表 (JSON)
      * @param errorCode    错误代码
      * @param errorMessage 详细错误信息
      * @param at           完成时间点
@@ -51,7 +53,7 @@ public interface AgentToolAuditMapper extends BaseMapper<AgentToolAuditPO> {
      * @return 影响行数
      */
     @Update("UPDATE agent_tool_audit SET status = #{status}, result_summary = #{summary}, result_hash = #{hash}, " +
-            "artifact_ids = CAST(#{artifactIds} AS jsonb), error_code = #{errorCode}, error_message = #{errorMessage}, " +
+            "artifact_ids = CAST(#{artifactIds} AS JSON), error_code = #{errorCode}, error_message = #{errorMessage}, " +
             "completed_at = #{at}, duration_ms = #{durationMs} " +
             "WHERE user_id = #{userId} AND run_id = #{runId} AND tool_call_id = #{toolCallId} AND status = 'RUNNING'")
     int complete(@Param("userId") Long userId, @Param("runId") UUID runId, @Param("toolCallId") String toolCallId,
