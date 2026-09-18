@@ -168,9 +168,48 @@ public class FundAnalysisToolSet {
         return executeSingle("fund_analysis_timing", fundCode, extra);
     }
 
-    private String executeSingle(String toolId, String fundCode, Map<String, Object> extra) {
-        Map<String, Object> args = new HashMap<>(extra);
-        args.put("windCodes", List.of(normalizeCode(fundCode)));
+    /**
+     * 券商研报与公告语义检索 (AIMarket fin_doc_searchV3)。
+     */
+    @Tool(name = "fund_doc_search", description = "基于 Wind AIMarket 语义检索全市场券商研报、公司公告、新闻政策及宏观资料", readOnly = true)
+    public String searchResearchDocs(
+            @ToolParam(name = "query", description = "检索关键词或语义提问，例如 '半导体基金经理调仓观点'") String query,
+            @ToolParam(name = "knowledgeGroups", description = "资料类型(research_report, announcement, news)，可选", required = false) List<String> knowledgeGroups) {
+        Map<String, Object> args = new HashMap<>();
+        args.put("query", query);
+        if (knowledgeGroups != null && !knowledgeGroups.isEmpty()) {
+            args.put("knowledgeGroups", knowledgeGroups);
+        }
+        return executeGeneric("fund_doc_search", args);
+    }
+
+    /**
+     * 金融综合资料与资讯聚合检索 (AIMarket aggregate_search)。
+     */
+    @Tool(name = "aggregate_search", description = "基于 Wind AIMarket 聚合查询新闻、公告、研报、政策及宏观金融资料", readOnly = true)
+    public String aggregateSearch(
+            @ToolParam(name = "query", description = "检索关键词或语义提问") String query,
+            @ToolParam(name = "knowledgeGroups", description = "资料分类，可选", required = false) List<String> knowledgeGroups,
+            @ToolParam(name = "startDate", description = "起始日期 YYYY-MM-DD，可选", required = false) String startDate,
+            @ToolParam(name = "endDate", description = "截止日期 YYYY-MM-DD，可选", required = false) String endDate) {
+        Map<String, Object> args = new HashMap<>();
+        args.put("query", query);
+        if (knowledgeGroups != null && !knowledgeGroups.isEmpty()) args.put("knowledgeGroups", knowledgeGroups);
+        if (startDate != null) args.put("startDate", startDate);
+        if (endDate != null) args.put("endDate", endDate);
+        return executeGeneric("aggregate_search", args);
+    }
+
+    /**
+     * 指数编制方案与规则查询 (AIMarket index_query_description)。
+     */
+    @Tool(name = "index_query_description", description = "基于 Wind AIMarket 查询金融指数的定义、编制方案、选样规则与加权方式", readOnly = true)
+    public String queryIndexDescription(
+            @ToolParam(name = "indexName", description = "指数名称或代码，例如 '沪深300'、'中证红利'") String indexName) {
+        return executeGeneric("index_query_description", Map.of("indexName", indexName));
+    }
+
+    private String executeGeneric(String toolId, Map<String, Object> args) {
         ToolExecuteRequest request = ToolExecuteRequest.builder()
                 .toolId(toolId)
                 .arguments(args)
@@ -179,6 +218,12 @@ public class FundAnalysisToolSet {
         ToolExecuteResult result = router.routeAndExecute(request);
         ConfiguredToolExecutionCollector.record(result);
         return result.getTextForLlm();
+    }
+
+    private String executeSingle(String toolId, String fundCode, Map<String, Object> extra) {
+        Map<String, Object> args = new HashMap<>(extra);
+        args.put("windCodes", List.of(normalizeCode(fundCode)));
+        return executeGeneric(toolId, args);
     }
 
     private String normalizeCode(String code) {

@@ -149,4 +149,38 @@ class ToolExecutorRouterTest {
         assertEquals(1, result.getVisualComponents().size());
         assertEquals("docSearchResult", result.getVisualComponents().get(0).getId());
     }
+
+    @Test
+    @DisplayName("验证综合资讯检索 (aggregate_search) 成功路由并构建资讯卡片")
+    void testRouteAggregateSearch() {
+        ToolExecuteRequest request = ToolExecuteRequest.builder()
+                .toolId("aggregate_search")
+                .arguments(Map.of("query", "公募基金费率改革最新进展"))
+                .sourceMode(ToolSourceMode.EXTERNAL_CONFIGURED)
+                .build();
+
+        ToolExecuteResult result = router.routeAndExecute(request);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getTextForLlm());
+        assertEquals(1, result.getVisualComponents().size());
+        assertEquals("aggregateSearchResult", result.getVisualComponents().get(0).getId());
+    }
+
+    @Test
+    @DisplayName("验证指数编制规则查询 (index_query_description) 成功路由并构建规则卡片")
+    void testRouteIndexQueryDescription() {
+        ToolExecuteRequest request = ToolExecuteRequest.builder()
+                .toolId("index_query_description")
+                .arguments(Map.of("indexName", "中证红利"))
+                .sourceMode(ToolSourceMode.EXTERNAL_CONFIGURED)
+                .build();
+
+        ToolExecuteResult result = router.routeAndExecute(request);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getTextForLlm());
+        assertEquals(1, result.getVisualComponents().size());
+        assertEquals("indexDescriptionResult", result.getVisualComponents().get(0).getId());
+    }
 }

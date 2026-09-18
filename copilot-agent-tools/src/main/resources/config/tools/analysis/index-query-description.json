@@ -1,0 +1,33 @@
+{
+  "toolId": "index_query_description",
+  "name": "指数编制方案与规则查询",
+  "scope": "ANALYSIS",
+  "toolType": "ANALYSIS_TOOL",
+  "description": "基于 Wind AIMarket 查询金融指数的定义、选样规则、权重计算方法及编制方案说明",
+  "provider": "http_aimarket",
+  "server": null,
+  "targetTool": "index_query_description",
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "indexName",
+      "type": "string",
+      "required": true,
+      "defaultValue": null,
+      "description": "指数名称或指数代码，如 沪深300、000300.SH、中证红利"
+    }
+  ],
+  "componentCount": 1,
+  "components": [
+    {
+      "componentId": "indexDescriptionResult",
+      "name": "指数编制规则卡",
+      "cardTitle": "指数定义与编制说明",
+      "displayType": "markdown",
+      "description": "展示该指数的编制目标、选样空间、流动性筛选门槛、加权方式及定期调整机制",
+      "metadata": {
+        "width": 24
+      }
+    }
+  ]
+}

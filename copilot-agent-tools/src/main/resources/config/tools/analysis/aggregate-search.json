@@ -1,0 +1,54 @@
+{
+  "toolId": "aggregate_search",
+  "name": "金融综合资讯与资料检索",
+  "scope": "ANALYSIS",
+  "toolType": "ANALYSIS_TOOL",
+  "description": "基于 Wind AIMarket 查询新闻、公告、研报、政策及宏观金融资料",
+  "provider": "http_aimarket",
+  "server": null,
+  "targetTool": "aggregate_search",
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "query",
+      "type": "string",
+      "required": true,
+      "defaultValue": null,
+      "description": "检索关键词或语义提问"
+    },
+    {
+      "name": "knowledgeGroups",
+      "type": "array[string]",
+      "required": false,
+      "defaultValue": null,
+      "description": "资料分类: research_report, announcement, news, policy"
+    },
+    {
+      "name": "startDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "检索起始日期 YYYY-MM-DD"
+    },
+    {
+      "name": "endDate",
+      "type": "string",
+      "required": false,
+      "defaultValue": null,
+      "description": "检索截止日期 YYYY-MM-DD"
+    }
+  ],
+  "componentCount": 1,
+  "components": [
+    {
+      "componentId": "aggregateSearchResult",
+      "name": "综合资讯检索列表",
+      "cardTitle": "金融综合资料与新闻资讯",
+      "displayType": "markdown",
+      "description": "展示聚合检索匹配的新闻、公告、研报与政策原文摘要及链接",
+      "metadata": {
+        "width": 24
+      }
+    }
+  ]
+}
