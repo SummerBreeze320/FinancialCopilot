@@ -1,6 +1,5 @@
 package com.financial.copilot.agent.core.user.service;
 
-import com.financial.copilot.agent.core.billing.WalletBillingService;
 import com.financial.copilot.agent.core.security.JwtUtils;
 import com.financial.copilot.agent.core.security.UserPrincipal;
 import com.financial.copilot.agent.core.user.dto.*;
@@ -39,15 +38,12 @@ import java.util.List;
 public class DefaultUserService implements UserService {
 
     private final UserPort userPort;
-    private final WalletBillingService walletBillingService;
     private final JwtUtils jwtUtils;
     private final PasswordEncoder passwordEncoder;
 
     public DefaultUserService(UserPort userPort,
-                              WalletBillingService walletBillingService,
                               JwtUtils jwtUtils) {
         this.userPort = userPort;
-        this.walletBillingService = walletBillingService;
         this.jwtUtils = jwtUtils;
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
@@ -114,10 +110,7 @@ public class DefaultUserService implements UserService {
                 .build();
         userPort.saveInvestmentProfile(investmentProfile);
 
-        // 5. 跨系统业务联动：自动创建积分钱包并赠送 10,000 体验积分
-        walletBillingService.grantInitialTrialPoints(savedUser.getId(), 10000L);
-
-        log.info("[USER-REGISTER] 新用户注册成功并初始化钱包及投资画像: userId={}, username={}",
+        log.info("[USER-REGISTER] 新用户注册成功并初始化投资画像: userId={}, username={}",
                 savedUser.getId(), username);
 
         // 6. 构造登录态凭据

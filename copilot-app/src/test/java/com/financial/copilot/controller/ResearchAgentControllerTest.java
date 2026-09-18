@@ -1,6 +1,5 @@
 package com.financial.copilot.controller;
 
-import com.financial.copilot.agent.core.billing.WalletBillingService;
 import com.financial.copilot.agent.core.conversation.ConversationService;
 import com.financial.copilot.agent.core.dag.artifact.Artifact;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
@@ -30,9 +29,8 @@ import static org.mockito.Mockito.*;
 /** 验证 JSON 与 SSE 共用先持久化、后运行的消息生命周期。 */
 class ResearchAgentControllerTest {
     final FinancialResearchWorkflow workflow = mock(FinancialResearchWorkflow.class);
-    final WalletBillingService billing = mock(WalletBillingService.class);
     final ConversationService conversations = mock(ConversationService.class);
-    final ResearchAgentController controller = new ResearchAgentController(workflow, billing,
+    final ResearchAgentController controller = new ResearchAgentController(workflow,
             mock(UserService.class), conversations, new ResearchRunLifecycle(conversations));
     final UUID conversationId = UUID.randomUUID();
     final UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(

@@ -1,6 +1,5 @@
 package com.financial.copilot.controller;
 
-import com.financial.copilot.agent.core.billing.WalletBillingService;
 import com.financial.copilot.agent.core.conversation.ConversationPersistenceDisabledException;
 import com.financial.copilot.agent.core.conversation.ConversationService;
 import com.financial.copilot.agent.core.workflow.FinancialResearchWorkflow;
@@ -21,14 +20,11 @@ import java.util.UUID;
 @RequestMapping("/api/v1/research/runs")
 public class ResearchRunController {
     private final FinancialResearchWorkflow workflow;
-    private final WalletBillingService billing;
     private final ConversationService conversationService;
 
     public ResearchRunController(FinancialResearchWorkflow workflow,
-                                 WalletBillingService billing,
                                  ConversationService conversationService) {
         this.workflow = workflow;
-        this.billing = billing;
         this.conversationService = conversationService;
     }
 
@@ -95,8 +91,7 @@ public class ResearchRunController {
             // 持久化启用时，先验证 run 归属
             verifyRunOwnership(uid, runUuid);
             var checkpoint = workflow.findCheckpoint(uid, runId).orElseThrow(this::notFound);
-            workflow.resume(uid, runId, usage -> billing.deductTokenPoints(uid, checkpoint.sessionKey(), "LLM_CALL",
-                    usage.getProvider().name(), usage.getModel(), usage.getPromptTokens(), usage.getCompletionTokens(), usage.getLatencyMs()));
+            workflow.resume(uid, runId, usage -> {});
             return ApiResult.success(Map.of("runId", runId, "status", "RESUMED"));
         });
     }

@@ -32,14 +32,6 @@ copilot:
     enabled: ${REDIS_ENABLED:true}
   conversation:
     persistence-enabled: ${CONVERSATION_PERSISTENCE_ENABLED:true}
-  alipay:
-    enabled: ${ALIPAY_ENABLED:false}
-    sandbox: ${ALIPAY_SANDBOX:true}
-    app-id: ${ALIPAY_APP_ID:}
-    seller-id: ${ALIPAY_SELLER_ID:}
-    private-key: ${ALIPAY_PRIVATE_KEY:}
-    public-key: ${ALIPAY_PUBLIC_KEY:}
-    notify-url: ${ALIPAY_NOTIFY_URL:}
   jwt:
     secret: ${JWT_SECRET:FinancialCopilotSecretKeyForJwtAuthentication2026SecureKeyWithAtLeast256BitsLong!}
     access-token-expiration-ms: 7200000

@@ -16,7 +16,7 @@
     <modules>
         <module>copilot-common</module>
         <module>copilot-domain</module>
-        <module>copilot-infrastructure</module>
+        <module>copilot-infra</module>
         <module>copilot-agent-tools</module>
         <module>copilot-agent-core</module>
         <module>copilot-app</module>
@@ -70,7 +70,7 @@
             </dependency>
             <dependency>
                 <groupId>com.financial.copilot</groupId>
-                <artifactId>copilot-infrastructure</artifactId>
+                <artifactId>copilot-infra</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -1,7 +1,6 @@
 package com.financial.copilot.controller;
 
 import com.financial.copilot.agent.core.agents.AgentRoleCatalog;
-import com.financial.copilot.agent.core.billing.WalletBillingService;
 import com.financial.copilot.agent.core.conversation.ConversationService;
 import com.financial.copilot.agent.core.dag.runtime.GraphRunHandle;
 import com.financial.copilot.agent.core.dag.runtime.GraphRunRequest;
@@ -11,7 +10,6 @@ import com.financial.copilot.agent.core.llm.dto.LlmResponse;
 import com.financial.copilot.agent.core.user.service.UserService;
 import com.financial.copilot.agent.core.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.common.event.ResearchStreamEvent;
-import com.financial.copilot.common.exception.WalletInsufficientException;
 import com.financial.copilot.common.result.ApiResult;
 import com.financial.copilot.config.security.SecurityUtils;
 import com.financial.copilot.domain.conversation.entity.ConversationRun;
@@ -38,15 +36,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RequestMapping("/api/v1/research")
 public class ResearchAgentController {
     private final FinancialResearchWorkflow workflow;
-    private final WalletBillingService billingService;
     private final UserService userService;
     private final ConversationService conversations;
     private final ResearchRunLifecycle lifecycle;
 
-    public ResearchAgentController(FinancialResearchWorkflow workflow, WalletBillingService billingService,
+    public ResearchAgentController(FinancialResearchWorkflow workflow,
             UserService userService, ConversationService conversations, ResearchRunLifecycle lifecycle) {
         this.workflow = workflow;
-        this.billingService = billingService;
         this.userService = userService;
         this.conversations = conversations;
         this.lifecycle = lifecycle;
@@ -116,7 +112,6 @@ public class ResearchAgentController {
         if (request.getPrompt() == null || request.getPrompt().isBlank() || request.getPrompt().length() > 20000) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid prompt");
         }
-        billingService.checkBalance(uid, 100L);
         ConversationRun run = conversations.beginRun(uid, request.getConversationId(), UUID.randomUUID(), request.getPrompt());
         String key = SecurityUtils.sessionKey(uid, run.conversationId().toString());
         List<LlmResponse> usages = new CopyOnWriteArrayList<>();
@@ -124,11 +119,7 @@ public class ResearchAgentController {
             conversations.recentContext(uid, run.conversationId(), key, 20);
             GraphRunHandle handle = workflow.run(new GraphRunRequest(run.runId().toString(), uid, run.conversationId(),
                     run.assistantMessageId(), key, request.getPrompt(), Boolean.TRUE.equals(request.getEnableThinking()),
-                    userService.getInvestmentProfile(uid), usage -> {
-                        billingService.deductTokenPoints(uid, key, "LLM_CALL", usage.getProvider().name(), usage.getModel(),
-                                usage.getPromptTokens(), usage.getCompletionTokens(), usage.getLatencyMs());
-                        usages.add(usage);
-                    }, mode));
+                    userService.getInvestmentProfile(uid), usages::add, mode));
             return new StartedRun(run, handle, lifecycle.observe(uid, run, key, request.getPrompt(), handle), usages);
         } catch (RuntimeException error) {
             conversations.fail(uid, run.runId(), error);
@@ -139,15 +130,6 @@ public class ResearchAgentController {
     private record StartedRun(ConversationRun run, GraphRunHandle handle,
                               CompletableFuture<GraphRunResult> completion, List<LlmResponse> usages) {}
 
-    /** 积分余额不足时返回充值引导所需信息。 */
-    @ExceptionHandler(WalletInsufficientException.class)
-    @ResponseStatus(HttpStatus.PAYMENT_REQUIRED)
-    public ApiResult<Map<String, Object>> handleWalletInsufficient(WalletInsufficientException e) {
-        return ApiResult.<Map<String, Object>>builder().code(402).message(e.getMessage())
-                .data(Map.of("userId", e.getUserId(), "currentBalance",
-                        e.getCurrentBalance() == null ? 0L : e.getCurrentBalance(), "requiredPoints", e.getRequiredPoints()))
-                .timestamp(System.currentTimeMillis()).build();
-    }
 
     /** 返回公开健康状态与已注册的研究角色。 */
     @GetMapping("/health")

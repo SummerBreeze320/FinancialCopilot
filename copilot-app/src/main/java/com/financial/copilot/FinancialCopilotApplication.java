@@ -15,7 +15,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication(scanBasePackages = "com.financial.copilot")
 @MapperScan(
         basePackages = {
-                "com.financial.copilot.data.billing.mapper",
                 "com.financial.copilot.data.user.mapper",
                 "com.financial.copilot.data.conversation.mapper",
                 "com.financial.copilot.agent.core.memory"

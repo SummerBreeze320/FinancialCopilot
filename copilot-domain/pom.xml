@@ -12,7 +12,7 @@
 
     <artifactId>copilot-domain</artifactId>
     <name>copilot-domain</name>
-    <description>核心领域实体模型与解耦的 SPI 端口契约 (BillingPort, ConversationPort, UserPort)</description>
+    <description>核心领域实体模型与解耦的 SPI 端口契约 (ConversationPort, UserPort)</description>
 
     <dependencies>
         <dependency>

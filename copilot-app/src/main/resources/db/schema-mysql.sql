@@ -113,90 +113,6 @@ CREATE TABLE `sys_role_permission` (
     UNIQUE KEY `uk_role_permission` (`role_id`, `permission_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色权限关联表';
 
--- ----------------------------
--- 2. 计费与积分域 (Billing Domain)
--- ----------------------------
-
-DROP TABLE IF EXISTS `sys_user_wallet`;
-CREATE TABLE `sys_user_wallet` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '自增主键ID',
-    `user_id` BIGINT NOT NULL COMMENT '系统用户ID',
-    `tenant_id` VARCHAR(64) DEFAULT NULL COMMENT '多租户隔离标识',
-    `balance_points` BIGINT NOT NULL DEFAULT 0 COMMENT '可用算力积分余额',
-    `frozen_points` BIGINT NOT NULL DEFAULT 0 COMMENT '冻结积分(执行中会话预扣)',
-    `total_recharged_points` BIGINT NOT NULL DEFAULT 0 COMMENT '历史累计充值积分',
-    `total_consumed_points` BIGINT NOT NULL DEFAULT 0 COMMENT '历史累计消耗积分',
-    `wallet_status` VARCHAR(32) NOT NULL DEFAULT 'NORMAL' COMMENT '钱包状态: NORMAL, FROZEN',
-    `version` BIGINT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号(CAS 防超扣)',
-    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_wallet_user` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户算力积分钱包表';
-
-DROP TABLE IF EXISTS `llm_model_pricing`;
-CREATE TABLE `llm_model_pricing` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '自增主键ID',
-    `provider_type` VARCHAR(64) NOT NULL COMMENT '模型供应商类型: DEEPSEEK, OPENAI, QWEN等',
-    `model_name` VARCHAR(128) NOT NULL COMMENT '大模型具体标识名称: deepseek-reasoner, qwen-plus等',
-    `input_price_per_k` DECIMAL(10, 4) NOT NULL COMMENT '每千输入Token消耗算力积分',
-    `output_price_per_k` DECIMAL(10, 4) NOT NULL COMMENT '每千输出Token消耗算力积分',
-    `cache_hit_price_per_k` DECIMAL(10, 4) NOT NULL DEFAULT 0.0000 COMMENT '上下文缓存命中优惠每千Token积分',
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '定价规则是否生效激活: 1=生效, 0=停用',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_pricing_model` (`model_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='大模型Token计价矩阵表';
-
-DROP TABLE IF EXISTS `sys_recharge_package`;
-CREATE TABLE `sys_recharge_package` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '自增主键ID',
-    `package_name` VARCHAR(128) NOT NULL COMMENT '套餐显示名称',
-    `price_cny` DECIMAL(10, 2) NOT NULL COMMENT '套餐销售定价(单位:元)',
-    `granted_points` BIGINT NOT NULL COMMENT '购买获得的基础算力积分',
-    `bonus_points` BIGINT NOT NULL DEFAULT 0 COMMENT '限时赠送/促销奖励积分',
-    `badge` VARCHAR(64) DEFAULT NULL COMMENT 'UI促销角标文本',
-    `sort_order` INT NOT NULL DEFAULT 0 COMMENT '前台界面展示排序权重',
-    `is_active` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '套餐是否在售: 1=在售, 0=下架',
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='充值套餐规格表';
-
-DROP TABLE IF EXISTS `sys_recharge_order`;
-CREATE TABLE `sys_recharge_order` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '自增主键ID',
-    `order_no` VARCHAR(64) NOT NULL COMMENT '系统业务充值订单号(唯一防重流水号)',
-    `user_id` BIGINT NOT NULL COMMENT '充值用户ID',
-    `package_id` BIGINT DEFAULT NULL COMMENT '购买的充值套餐ID',
-    `pay_amount_cny` DECIMAL(10, 2) NOT NULL COMMENT '实际支付人民币金额(单位:元)',
-    `target_points` BIGINT NOT NULL COMMENT '充值到账目标总算力积分(含赠送)',
-    `pay_channel` VARCHAR(32) NOT NULL COMMENT '支付渠道: ALIPAY, WECHAT, MANUAL',
-    `order_status` VARCHAR(32) NOT NULL DEFAULT 'CREATED' COMMENT '订单状态: CREATED, PENDING, PAID, CANCELLED, EXPIRED',
-    `third_party_trade_no` VARCHAR(128) DEFAULT NULL COMMENT '第三方支付流水号',
-    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '订单生成时间戳',
-    `paid_at` DATETIME DEFAULT NULL COMMENT '实际到账支付时间戳',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_order_no` (`order_no`),
-    KEY `idx_recharge_user` (`user_id`, `created_at`),
-    UNIQUE KEY `uk_paid_trade` (`pay_channel`, `third_party_trade_no`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户充值订单流水表';
-
-DROP TABLE IF EXISTS `llm_token_usage_ledger`;
-CREATE TABLE `llm_token_usage_ledger` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '自增主键ID',
-    `user_id` BIGINT NOT NULL COMMENT '消费用户ID',
-    `session_id` VARCHAR(128) NOT NULL COMMENT '会话或投研批次SessionId',
-    `task_type` VARCHAR(50) NOT NULL COMMENT '业务任务类型(RESEARCH, SCREENING等)',
-    `provider` VARCHAR(64) NOT NULL COMMENT '模型供应商代码(DEEPSEEK, OPENAI等)',
-    `model` VARCHAR(128) NOT NULL COMMENT '调用的具体大模型名称',
-    `prompt_tokens` INT NOT NULL COMMENT '输入提示词Token消耗数',
-    `completion_tokens` INT NOT NULL COMMENT '补全回答Token消耗数',
-    `total_tokens` INT NOT NULL COMMENT '交互累计Token总数',
-    `consumed_points` BIGINT NOT NULL COMMENT '折算扣减的算力积分数额',
-    `latency_ms` INT DEFAULT NULL COMMENT '大模型网络往返耗时(毫秒)',
-    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '账单流水记录时间戳',
-    PRIMARY KEY (`id`),
-    KEY `idx_ledger_user_date` (`user_id`, `created_at`),
-    KEY `idx_ledger_session` (`session_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Token消费与积分对账明细账本表';
 
 -- ----------------------------
 -- 3. 对话与智能体审计域 (Conversation Domain)
@@ -313,11 +229,6 @@ INSERT INTO `sys_user_role` (`user_id`, `role_id`) VALUES
 (2, 2),
 (3, 3);
 
--- 初始化用户钱包（默认送 500,000 体验算力积分）
-INSERT INTO `sys_user_wallet` (`user_id`, `balance_points`, `frozen_points`, `total_recharged_points`, `total_consumed_points`, `wallet_status`, `version`) VALUES
-(1, 10000000, 0, 10000000, 0, 'NORMAL', 0),
-(2, 2000000, 0, 2000000, 0, 'NORMAL', 0),
-(3, 500000, 0, 500000, 0, 'NORMAL', 0);
 
 -- 初始化投资者画像
 INSERT INTO `sys_user_investment_profile` (`user_id`, `risk_tolerance_level`, `investment_horizon`, `preferred_asset_classes`, `preferred_sectors`, `max_drawdown_tolerance`, `target_annual_return`, `investment_style`, `single_position_limit`) VALUES
@@ -325,18 +236,5 @@ INSERT INTO `sys_user_investment_profile` (`user_id`, `risk_tolerance_level`, `i
 (2, 'C4', 'MEDIUM_TERM', '["EQUITY","BOND"]', '["高股息红利","新能源","消费电子"]', 20.0000, 15.0000, 'BALANCED', 20.0000),
 (3, 'C3', 'MEDIUM_TERM', '["BOND","MONEY_MARKET"]', '["银行","公用事业","沪深300"]', 12.0000, 10.0000, 'VALUE', 15.0000);
 
--- 初始化大模型计价矩阵
-INSERT INTO `llm_model_pricing` (`provider_type`, `model_name`, `input_price_per_k`, `output_price_per_k`, `cache_hit_price_per_k`, `is_active`) VALUES
-('DEEPSEEK', 'deepseek-chat', 10.0000, 20.0000, 2.0000, 1),
-('DEEPSEEK', 'deepseek-reasoner', 25.0000, 50.0000, 5.0000, 1),
-('QWEN', 'qwen-plus', 15.0000, 30.0000, 3.0000, 1),
-('QWEN', 'qwen-max', 35.0000, 70.0000, 7.0000, 1),
-('DOUBAO', 'doubao-pro', 12.0000, 24.0000, 2.4000, 1);
-
--- 初始化充值套餐包
-INSERT INTO `sys_recharge_package` (`package_name`, `price_cny`, `granted_points`, `bonus_points`, `badge`, `sort_order`, `is_active`) VALUES
-('新手尝鲜包', 19.90, 200000, 20000, '限时首充特惠', 1, 1),
-('月度投研专业包', 99.00, 1200000, 200000, '性价比最高', 2, 1),
-('年度机构尊享包', 999.00, 15000000, 3000000, '机构专属', 3, 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

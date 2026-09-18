@@ -16,11 +16,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.alipay.sdk</groupId>
-            <artifactId>alipay-sdk-java</artifactId>
-            <version>4.40.934.ALL</version>
-        </dependency>
-        <dependency>
             <groupId>com.financial.copilot</groupId>
             <artifactId>copilot-agent-tools</artifactId>
         </dependency>

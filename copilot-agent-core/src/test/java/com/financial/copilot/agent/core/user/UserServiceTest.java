@@ -1,6 +1,5 @@
 package com.financial.copilot.agent.core.user;
 
-import com.financial.copilot.agent.core.billing.WalletBillingService;
 import com.financial.copilot.agent.core.security.JwtUtils;
 import com.financial.copilot.agent.core.user.dto.*;
 import com.financial.copilot.agent.core.user.service.DefaultUserService;
@@ -32,17 +31,15 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     private UserPort mockUserPort;
-    private WalletBillingService mockBillingService;
     private JwtUtils jwtUtils;
     private UserService userService;
 
     @BeforeEach
     void setUp() {
         mockUserPort = Mockito.mock(UserPort.class);
-        mockBillingService = Mockito.mock(WalletBillingService.class);
         // 使用合规 256 位测试密钥初始化 JwtUtils
         jwtUtils = new JwtUtils("SecretKeyForTestAntigravityFinancialCopilot2026SecureKey!", 7200000, 604800000);
-        userService = new DefaultUserService(mockUserPort, mockBillingService, jwtUtils);
+        userService = new DefaultUserService(mockUserPort, jwtUtils);
     }
 
     @Test
@@ -90,8 +87,6 @@ class UserServiceTest {
         assertNotNull(authResponse.getRefreshToken());
         assertTrue(authResponse.getRoles().contains("ROLE_USER"));
 
-        // 验证自动调用钱包充值赠送 10,000 积分
-        verify(mockBillingService, times(1)).grantInitialTrialPoints(eq(1001L), eq(10000L));
 
         // 验证初始化资料与投资画像已持久化及角色分配
         verify(mockUserPort, times(1)).saveProfile(any(UserProfile.class));
@@ -110,7 +105,6 @@ class UserServiceTest {
         when(mockUserPort.findByUsername("existing_user")).thenReturn(Optional.of(User.builder().id(99L).build()));
 
         assertThrows(IllegalArgumentException.class, () -> userService.register(request));
-        verify(mockBillingService, never()).grantInitialTrialPoints(anyLong(), anyLong());
     }
 
     @Test

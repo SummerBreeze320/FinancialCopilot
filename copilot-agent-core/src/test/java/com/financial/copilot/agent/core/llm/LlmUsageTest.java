@@ -69,12 +69,12 @@ class LlmUsageTest {
         assertTrue(usages.isEmpty());
     }
     @Test
-    void billingFailurePreservesItsTypeAndFractionalUsageIsRejected() {
+    void usageConsumerFailurePreservesItsTypeAndFractionalUsageIsRejected() {
         var request = LlmRequest.of("system", "prompt");
-        var failure = new com.financial.copilot.common.exception.WalletInsufficientException(1L, 0L, 1L);
+        var failure = new IllegalStateException("Usage deduction failed");
         request.setUsageConsumer(usage -> { throw failure; });
         String body = "{\"choices\":[{\"message\":{\"content\":\"ok\"}}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1}}";
-        assertSame(failure, assertThrows(com.financial.copilot.common.exception.WalletInsufficientException.class,
+        assertSame(failure, assertThrows(IllegalStateException.class,
                 () -> service(body, "application/json", false).chat(request)));
         request.setUsageConsumer(usage -> fail("Fractional tokens must not be billed"));
         assertThrows(IllegalStateException.class, () -> service(body.replace("tokens\":1", "tokens\":1.5"),
