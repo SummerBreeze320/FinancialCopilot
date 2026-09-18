@@ -2,8 +2,8 @@ package com.financial.copilot.data.user.po;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.financial.copilot.domain.user.entity.UserIdentity;
-import com.financial.copilot.domain.user.enums.KycStatus;
+import com.financial.copilot.domain.platform.user.entity.UserIdentity;
+import com.financial.copilot.domain.platform.user.enums.KycStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

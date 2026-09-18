@@ -1,7 +1,7 @@
 package com.financial.copilot.data.rag.embedding;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.domain.rag.port.RagEmbeddingPort;
+import com.financial.copilot.domain.shared.rag.port.RagEmbeddingPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

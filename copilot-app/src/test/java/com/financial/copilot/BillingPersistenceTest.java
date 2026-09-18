@@ -1,8 +1,8 @@
 package com.financial.copilot;
 
-import com.financial.copilot.agent.core.billing.WalletBillingService;
-import com.financial.copilot.domain.billing.entity.RechargeOrder;
-import com.financial.copilot.domain.billing.port.BillingPort;
+import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
+import com.financial.copilot.domain.platform.billing.entity.RechargeOrder;
+import com.financial.copilot.domain.platform.billing.port.BillingPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;

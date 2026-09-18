@@ -1,12 +1,12 @@
 package com.financial.copilot;
 
-import com.financial.copilot.agent.core.conversation.ConversationService;
-import com.financial.copilot.agent.core.memory.MemoryClient;
+import com.financial.copilot.agent.core.platform.conversation.ConversationService;
+import com.financial.copilot.agent.core.infra.memory.MemoryClient;
 import com.financial.copilot.config.security.SecurityUtils;
-import com.financial.copilot.domain.conversation.entity.ConversationMessage;
-import com.financial.copilot.domain.conversation.entity.ConversationRun;
-import com.financial.copilot.domain.conversation.exception.ConversationNotFoundException;
-import com.financial.copilot.domain.conversation.port.ConversationPort;
+import com.financial.copilot.domain.platform.conversation.entity.ConversationMessage;
+import com.financial.copilot.domain.platform.conversation.entity.ConversationRun;
+import com.financial.copilot.domain.platform.conversation.exception.ConversationNotFoundException;
+import com.financial.copilot.domain.platform.conversation.port.ConversationPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;

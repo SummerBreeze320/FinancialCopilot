@@ -1,6 +1,6 @@
 package com.financial.copilot;
 
-import com.financial.copilot.agent.core.memory.MemoryClient;
+import com.financial.copilot.agent.core.infra.memory.MemoryClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;

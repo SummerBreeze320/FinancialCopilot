@@ -1,6 +1,6 @@
 package com.financial.copilot.config.security;
 
-import com.financial.copilot.agent.core.security.UserPrincipal;
+import com.financial.copilot.agent.core.infra.security.UserPrincipal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;

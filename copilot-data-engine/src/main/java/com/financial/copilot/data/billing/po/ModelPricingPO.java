@@ -3,7 +3,7 @@ package com.financial.copilot.data.billing.po;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.financial.copilot.domain.billing.entity.ModelPricing;
+import com.financial.copilot.domain.platform.billing.entity.ModelPricing;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -1,7 +1,7 @@
 package com.financial.copilot.data.rag.parser;
 
-import com.financial.copilot.domain.rag.entity.RagFundMetric;
-import com.financial.copilot.domain.rag.entity.RagFundSector;
+import com.financial.copilot.domain.shared.rag.entity.RagFundMetric;
+import com.financial.copilot.domain.shared.rag.entity.RagFundSector;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

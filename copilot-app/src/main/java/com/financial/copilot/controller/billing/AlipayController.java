@@ -1,6 +1,6 @@
 package com.financial.copilot.controller.billing;
 
-import com.financial.copilot.agent.core.billing.AlipayPaymentService;
+import com.financial.copilot.agent.core.platform.billing.AlipayPaymentService;
 import com.financial.copilot.common.result.ApiResult;
 import com.financial.copilot.config.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;

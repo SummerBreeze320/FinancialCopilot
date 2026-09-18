@@ -1,12 +1,12 @@
 package com.financial.copilot.controller.user;
 
-import com.financial.copilot.agent.core.security.UserPrincipal;
-import com.financial.copilot.agent.core.user.dto.*;
-import com.financial.copilot.agent.core.user.service.UserService;
+import com.financial.copilot.agent.core.infra.security.UserPrincipal;
+import com.financial.copilot.agent.core.platform.user.dto.*;
+import com.financial.copilot.agent.core.platform.user.service.UserService;
 import com.financial.copilot.common.result.ApiResult;
 import com.financial.copilot.controller.admin.UserAdminController;
-import com.financial.copilot.domain.user.entity.*;
-import com.financial.copilot.domain.user.enums.*;
+import com.financial.copilot.domain.platform.user.entity.*;
+import com.financial.copilot.domain.platform.user.enums.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

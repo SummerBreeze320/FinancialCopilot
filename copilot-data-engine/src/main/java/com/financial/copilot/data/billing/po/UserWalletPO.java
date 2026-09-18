@@ -1,7 +1,7 @@
 package com.financial.copilot.data.billing.po;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.financial.copilot.domain.billing.entity.UserWallet;
+import com.financial.copilot.domain.platform.billing.entity.UserWallet;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

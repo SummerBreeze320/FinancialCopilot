@@ -1,13 +1,13 @@
 package com.financial.copilot.controller.billing;
 
-import com.financial.copilot.agent.core.billing.WalletBillingService;
+import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
 import com.financial.copilot.common.result.ApiResult;
-import com.financial.copilot.domain.billing.dto.RechargeOrderCreateDTO;
-import com.financial.copilot.domain.billing.dto.UsageTrendPointDTO;
-import com.financial.copilot.domain.billing.dto.WalletDTO;
-import com.financial.copilot.domain.billing.entity.ModelPricing;
-import com.financial.copilot.domain.billing.entity.RechargeOrder;
-import com.financial.copilot.domain.billing.entity.RechargePackage;
+import com.financial.copilot.domain.platform.billing.dto.RechargeOrderCreateDTO;
+import com.financial.copilot.domain.platform.billing.dto.UsageTrendPointDTO;
+import com.financial.copilot.domain.platform.billing.dto.WalletDTO;
+import com.financial.copilot.domain.platform.billing.entity.ModelPricing;
+import com.financial.copilot.domain.platform.billing.entity.RechargeOrder;
+import com.financial.copilot.domain.platform.billing.entity.RechargePackage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
-import com.financial.copilot.agent.core.security.UserPrincipal;
+import com.financial.copilot.agent.core.infra.security.UserPrincipal;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;

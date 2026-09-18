@@ -1,14 +1,14 @@
 package com.financial.copilot.controller.user;
 
-import com.financial.copilot.agent.core.user.dto.IdentityVerificationRequest;
-import com.financial.copilot.agent.core.user.dto.InvestmentProfileUpdateRequest;
-import com.financial.copilot.agent.core.user.dto.UserProfileUpdateRequest;
-import com.financial.copilot.agent.core.user.service.UserService;
+import com.financial.copilot.agent.core.platform.user.dto.IdentityVerificationRequest;
+import com.financial.copilot.agent.core.platform.user.dto.InvestmentProfileUpdateRequest;
+import com.financial.copilot.agent.core.platform.user.dto.UserProfileUpdateRequest;
+import com.financial.copilot.agent.core.platform.user.service.UserService;
 import com.financial.copilot.common.result.ApiResult;
 import com.financial.copilot.config.security.SecurityUtils;
-import com.financial.copilot.domain.user.entity.UserIdentity;
-import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
-import com.financial.copilot.domain.user.entity.UserProfile;
+import com.financial.copilot.domain.platform.user.entity.UserIdentity;
+import com.financial.copilot.domain.platform.user.entity.UserInvestmentProfile;
+import com.financial.copilot.domain.platform.user.entity.UserProfile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;

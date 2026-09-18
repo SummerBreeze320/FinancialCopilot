@@ -4,7 +4,7 @@ import com.financial.copilot.data.rag.adapter.Neo4jRagGraphAdapter;
 import com.financial.copilot.data.rag.adapter.PostgresRagSchemaAdapter;
 import com.financial.copilot.data.rag.embedding.OllamaEmbeddingAdapter;
 import com.financial.copilot.data.rag.parser.MetricSectorDataParser;
-import com.financial.copilot.domain.rag.entity.SchemaRecallResult;
+import com.financial.copilot.domain.shared.rag.entity.SchemaRecallResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AuthTokens;

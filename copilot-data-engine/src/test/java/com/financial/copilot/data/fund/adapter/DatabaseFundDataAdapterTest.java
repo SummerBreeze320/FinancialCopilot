@@ -4,7 +4,7 @@ import com.financial.copilot.common.fund.dto.FundMetricsDTO;
 import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
 import com.financial.copilot.data.fund.mapper.*;
 import com.financial.copilot.data.fund.po.*;
-import com.financial.copilot.domain.fund.entity.*;
+import com.financial.copilot.domain.business.fund.entity.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

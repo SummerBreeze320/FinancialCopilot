@@ -1,7 +1,7 @@
 package com.financial.copilot.security;
 
-import com.financial.copilot.agent.core.billing.WalletBillingService;
-import com.financial.copilot.agent.core.security.UserPrincipal;
+import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
+import com.financial.copilot.agent.core.infra.security.UserPrincipal;
 import com.financial.copilot.controller.billing.BillingController;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

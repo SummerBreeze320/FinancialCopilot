@@ -1,8 +1,8 @@
 package com.financial.copilot.agent.tools.fund;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.domain.fund.entity.FundQuarterlyHolding;
-import com.financial.copilot.domain.fund.port.FundDataPort;
+import com.financial.copilot.domain.business.fund.entity.FundQuarterlyHolding;
+import com.financial.copilot.domain.business.fund.port.FundDataPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

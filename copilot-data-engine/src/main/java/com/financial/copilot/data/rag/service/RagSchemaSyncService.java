@@ -1,11 +1,11 @@
 package com.financial.copilot.data.rag.service;
 
 import com.financial.copilot.data.rag.parser.MetricSectorDataParser;
-import com.financial.copilot.domain.rag.entity.RagFundMetric;
-import com.financial.copilot.domain.rag.entity.RagFundSector;
-import com.financial.copilot.domain.rag.port.RagEmbeddingPort;
-import com.financial.copilot.domain.rag.port.RagGraphPort;
-import com.financial.copilot.domain.rag.port.RagSchemaPort;
+import com.financial.copilot.domain.shared.rag.entity.RagFundMetric;
+import com.financial.copilot.domain.shared.rag.entity.RagFundSector;
+import com.financial.copilot.domain.shared.rag.port.RagEmbeddingPort;
+import com.financial.copilot.domain.shared.rag.port.RagGraphPort;
+import com.financial.copilot.domain.shared.rag.port.RagSchemaPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

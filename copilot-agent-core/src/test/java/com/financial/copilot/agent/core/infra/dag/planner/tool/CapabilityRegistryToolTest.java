@@ -1,0 +1,60 @@
+package com.financial.copilot.agent.core.infra.dag.planner.tool;
+
+import com.financial.copilot.common.enums.AssetCategory;
+import com.financial.copilot.domain.business.fund.port.FundDataPort;
+import com.financial.copilot.domain.shared.graph.port.FinancialGraphPort;
+import com.financial.copilot.domain.shared.rag.port.RagSchemaPort;
+import com.financial.copilot.domain.business.stock.port.StockDataPort;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * <h1>金融能力探测注册工具单元测试</h1>
+ *
+ * @author FinancialCopilot
+ */
+class CapabilityRegistryToolTest {
+
+    @Test
+    @DisplayName("测试无端口注入时降级容错并标记端口不可用")
+    void testListActiveCapabilitiesWithNoPorts() {
+        CapabilityRegistryTool tool = new CapabilityRegistryTool();
+        List<CapabilityRegistryTool.CapabilityDescriptor> list = tool.listActiveCapabilities();
+
+        assertThat(list).hasSize(4);
+        assertThat(list).allMatch(c -> !c.isAvailable());
+        assertFalse(tool.isAssetCategorySupported(AssetCategory.FUND));
+        assertFalse(tool.isAssetCategorySupported(AssetCategory.STOCK));
+        assertFalse(tool.isAssetCategorySupported(AssetCategory.FUTURES));
+    }
+
+    @Test
+    @DisplayName("测试注入活跃端口时正确识别就绪状态与支持操作")
+    void testListActiveCapabilitiesWithMockedPorts() {
+        FundDataPort fundPort = Mockito.mock(FundDataPort.class);
+        FinancialGraphPort graphPort = Mockito.mock(FinancialGraphPort.class);
+        StockDataPort stockPort = Mockito.mock(StockDataPort.class);
+        RagSchemaPort ragPort = Mockito.mock(RagSchemaPort.class);
+
+        CapabilityRegistryTool tool = new CapabilityRegistryTool(fundPort, graphPort, stockPort, ragPort);
+        List<CapabilityRegistryTool.CapabilityDescriptor> list = tool.listActiveCapabilities();
+
+        assertThat(list).hasSize(4);
+        assertThat(list).allMatch(CapabilityRegistryTool.CapabilityDescriptor::isAvailable);
+        assertTrue(tool.isAssetCategorySupported(AssetCategory.FUND));
+        assertTrue(tool.isAssetCategorySupported(AssetCategory.STOCK));
+        assertFalse(tool.isAssetCategorySupported(AssetCategory.FUTURES));
+
+        CapabilityRegistryTool.CapabilityDescriptor ragDesc = list.stream()
+                .filter(c -> "RagSchemaPort".equals(c.capabilityName()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(ragDesc.supportedOperations()).contains("VECTOR_SEARCH", "SCHEMA_ALIGNMENT");
+    }
+}

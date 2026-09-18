@@ -1,14 +1,14 @@
 package com.financial.copilot;
 
-import com.financial.copilot.agent.core.conversation.ConversationPersistenceDisabledException;
-import com.financial.copilot.agent.core.conversation.ConversationService;
-import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpoint;
-import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpointStore;
-import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
-import com.financial.copilot.agent.core.dag.model.ExecutionGraphSnapshot;
-import com.financial.copilot.agent.core.memory.MemoryClient;
+import com.financial.copilot.agent.core.platform.conversation.ConversationPersistenceDisabledException;
+import com.financial.copilot.agent.core.platform.conversation.ConversationService;
+import com.financial.copilot.agent.core.infra.dag.runtime.checkpoint.DagCheckpoint;
+import com.financial.copilot.agent.core.infra.dag.runtime.checkpoint.DagCheckpointStore;
+import com.financial.copilot.agent.core.infra.dag.model.ExecutionGraph;
+import com.financial.copilot.agent.core.infra.dag.model.ExecutionGraphSnapshot;
+import com.financial.copilot.agent.core.infra.memory.MemoryClient;
 import com.financial.copilot.config.security.SecurityUtils;
-import com.financial.copilot.domain.conversation.entity.ConversationRun;
+import com.financial.copilot.domain.platform.conversation.entity.ConversationRun;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +44,7 @@ class ConversationPersistenceDisabledTest {
 
         assertThat(run.assistantMessageId()).isNull();
         assertThat(checkpointStore).isInstanceOf(
-                com.financial.copilot.agent.core.dag.runtime.checkpoint.InMemoryDagCheckpointStore.class);
+                com.financial.copilot.agent.core.infra.dag.runtime.checkpoint.InMemoryDagCheckpointStore.class);
         assertThat(memoryClient.getContext(key)).containsExactly("USER: prompt", "ASSISTANT: report");
         // MemoryClient 无 retrieve 方法，长期记忆检索改用 searchMemory(query, maxResults)
         // assertThat(longMemory.retrieve(key, 10)).contains("report");

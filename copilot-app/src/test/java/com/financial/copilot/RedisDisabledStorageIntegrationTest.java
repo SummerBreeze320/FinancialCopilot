@@ -1,11 +1,11 @@
 package com.financial.copilot;
 
-import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpoint;
-import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpointStore;
-import com.financial.copilot.agent.core.dag.runtime.checkpoint.InMemoryDagCheckpointStore;
-import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
-import com.financial.copilot.agent.core.dag.model.ExecutionGraphSnapshot;
-import com.financial.copilot.agent.core.memory.MemoryClient;
+import com.financial.copilot.agent.core.infra.dag.runtime.checkpoint.DagCheckpoint;
+import com.financial.copilot.agent.core.infra.dag.runtime.checkpoint.DagCheckpointStore;
+import com.financial.copilot.agent.core.infra.dag.runtime.checkpoint.InMemoryDagCheckpointStore;
+import com.financial.copilot.agent.core.infra.dag.model.ExecutionGraph;
+import com.financial.copilot.agent.core.infra.dag.model.ExecutionGraphSnapshot;
+import com.financial.copilot.agent.core.infra.memory.MemoryClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;

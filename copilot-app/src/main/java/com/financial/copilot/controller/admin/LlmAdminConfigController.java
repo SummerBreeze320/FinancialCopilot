@@ -1,12 +1,12 @@
 package com.financial.copilot.controller.admin;
 
-import com.financial.copilot.agent.core.llm.config.LlmConfigManager;
-import com.financial.copilot.agent.core.llm.dto.LlmConnectionTestRequest;
-import com.financial.copilot.agent.core.llm.dto.LlmConnectionTestResult;
-import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
-import com.financial.copilot.agent.core.llm.provider.LlmProviderMetadata;
-import com.financial.copilot.agent.core.llm.provider.LlmProviderRegistry;
-import com.financial.copilot.agent.core.llm.service.LlmService;
+import com.financial.copilot.agent.core.infra.llm.config.LlmConfigManager;
+import com.financial.copilot.agent.core.infra.llm.dto.LlmConnectionTestRequest;
+import com.financial.copilot.agent.core.infra.llm.dto.LlmConnectionTestResult;
+import com.financial.copilot.agent.core.infra.llm.dto.LlmSettingsDTO;
+import com.financial.copilot.agent.core.infra.llm.provider.LlmProviderMetadata;
+import com.financial.copilot.agent.core.infra.llm.provider.LlmProviderRegistry;
+import com.financial.copilot.agent.core.infra.llm.service.LlmService;
 import com.financial.copilot.common.result.ApiResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;

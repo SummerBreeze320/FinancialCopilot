@@ -1,11 +1,11 @@
 package com.financial.copilot.controller;
 
-import com.financial.copilot.agent.core.conversation.ConversationService;
-import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
-import com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisReport;
-import com.financial.copilot.agent.core.dag.runtime.GraphRunHandle;
-import com.financial.copilot.agent.core.dag.runtime.GraphRunResult;
-import com.financial.copilot.domain.conversation.entity.ConversationRun;
+import com.financial.copilot.agent.core.platform.conversation.ConversationService;
+import com.financial.copilot.agent.core.infra.dag.artifact.ArtifactType;
+import com.financial.copilot.agent.core.infra.dag.artifact.payload.FinalSynthesisReport;
+import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunHandle;
+import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunResult;
+import com.financial.copilot.domain.platform.conversation.entity.ConversationRun;
 import org.springframework.stereotype.Component;
 import java.util.Map;
 import java.util.concurrent.CancellationException;

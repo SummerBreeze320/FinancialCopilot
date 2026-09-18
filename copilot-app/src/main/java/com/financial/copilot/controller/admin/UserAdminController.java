@@ -1,10 +1,10 @@
 package com.financial.copilot.controller.admin;
 
-import com.financial.copilot.agent.core.user.dto.IdentityReviewRequest;
-import com.financial.copilot.agent.core.user.service.UserService;
+import com.financial.copilot.agent.core.platform.user.dto.IdentityReviewRequest;
+import com.financial.copilot.agent.core.platform.user.service.UserService;
 import com.financial.copilot.common.result.ApiResult;
-import com.financial.copilot.domain.user.entity.User;
-import com.financial.copilot.domain.user.entity.UserIdentity;
+import com.financial.copilot.domain.platform.user.entity.User;
+import com.financial.copilot.domain.platform.user.entity.UserIdentity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;

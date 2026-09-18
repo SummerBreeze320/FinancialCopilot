@@ -1,14 +1,14 @@
 package com.financial.copilot.controller;
 
-import com.financial.copilot.agent.core.billing.WalletBillingService;
-import com.financial.copilot.agent.core.conversation.ConversationPersistenceDisabledException;
-import com.financial.copilot.agent.core.conversation.ConversationService;
-import com.financial.copilot.agent.core.workflow.FinancialResearchWorkflow;
+import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
+import com.financial.copilot.agent.core.platform.conversation.ConversationPersistenceDisabledException;
+import com.financial.copilot.agent.core.platform.conversation.ConversationService;
+import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.common.result.ApiResult;
 import com.financial.copilot.config.security.SecurityUtils;
-import com.financial.copilot.domain.conversation.entity.AgentToolAudit;
-import com.financial.copilot.domain.conversation.entity.ConversationRun;
-import com.financial.copilot.domain.conversation.model.CursorPage;
+import com.financial.copilot.domain.platform.conversation.entity.AgentToolAudit;
+import com.financial.copilot.domain.platform.conversation.entity.ConversationRun;
+import com.financial.copilot.domain.platform.conversation.model.CursorPage;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;

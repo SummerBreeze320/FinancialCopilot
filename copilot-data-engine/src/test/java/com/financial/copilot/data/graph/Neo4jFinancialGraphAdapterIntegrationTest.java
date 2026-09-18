@@ -1,10 +1,10 @@
 package com.financial.copilot.data.graph;
 
 import com.financial.copilot.data.graph.adapter.Neo4jFinancialGraphAdapter;
-import com.financial.copilot.domain.graph.entity.FundGraphNode;
-import com.financial.copilot.domain.graph.entity.HoldingRelation;
-import com.financial.copilot.domain.graph.entity.ManagerGraphNode;
-import com.financial.copilot.domain.graph.entity.StockGraphNode;
+import com.financial.copilot.domain.shared.graph.entity.FundGraphNode;
+import com.financial.copilot.domain.shared.graph.entity.HoldingRelation;
+import com.financial.copilot.domain.shared.graph.entity.ManagerGraphNode;
+import com.financial.copilot.domain.shared.graph.entity.StockGraphNode;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;

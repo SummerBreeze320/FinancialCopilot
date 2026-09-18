@@ -1,7 +1,7 @@
 package com.financial.copilot.security;
 
-import com.financial.copilot.agent.core.security.JwtUtils;
-import com.financial.copilot.agent.core.security.UserPrincipal;
+import com.financial.copilot.agent.core.infra.security.JwtUtils;
+import com.financial.copilot.agent.core.infra.security.UserPrincipal;
 import com.financial.copilot.config.security.JwtAuthenticationWebFilter;
 import com.financial.copilot.config.security.SecurityUtils;
 import org.junit.jupiter.api.BeforeEach;

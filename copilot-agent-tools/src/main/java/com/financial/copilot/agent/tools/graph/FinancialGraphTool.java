@@ -1,8 +1,8 @@
 package com.financial.copilot.agent.tools.graph;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.domain.graph.entity.HoldingRelation;
-import com.financial.copilot.domain.graph.port.FinancialGraphPort;
+import com.financial.copilot.domain.shared.graph.entity.HoldingRelation;
+import com.financial.copilot.domain.shared.graph.port.FinancialGraphPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;

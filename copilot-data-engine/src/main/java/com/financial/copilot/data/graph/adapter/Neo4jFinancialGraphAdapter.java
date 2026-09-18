@@ -1,10 +1,10 @@
 package com.financial.copilot.data.graph.adapter;
 
-import com.financial.copilot.domain.graph.entity.FundGraphNode;
-import com.financial.copilot.domain.graph.entity.HoldingRelation;
-import com.financial.copilot.domain.graph.entity.ManagerGraphNode;
-import com.financial.copilot.domain.graph.entity.StockGraphNode;
-import com.financial.copilot.domain.graph.port.FinancialGraphPort;
+import com.financial.copilot.domain.shared.graph.entity.FundGraphNode;
+import com.financial.copilot.domain.shared.graph.entity.HoldingRelation;
+import com.financial.copilot.domain.shared.graph.entity.ManagerGraphNode;
+import com.financial.copilot.domain.shared.graph.entity.StockGraphNode;
+import com.financial.copilot.domain.shared.graph.port.FinancialGraphPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.neo4j.core.Neo4jClient;

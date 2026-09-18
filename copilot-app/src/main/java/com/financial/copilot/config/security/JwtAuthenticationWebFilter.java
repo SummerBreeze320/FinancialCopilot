@@ -1,7 +1,7 @@
 package com.financial.copilot.config.security;
 
-import com.financial.copilot.agent.core.security.JwtUtils;
-import com.financial.copilot.agent.core.security.UserPrincipal;
+import com.financial.copilot.agent.core.infra.security.JwtUtils;
+import com.financial.copilot.agent.core.infra.security.UserPrincipal;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

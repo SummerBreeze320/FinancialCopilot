@@ -3,7 +3,7 @@ package com.financial.copilot.data.stock.adapter;
 import com.financial.copilot.common.stock.dto.StockMetricsDTO;
 import com.financial.copilot.common.stock.dto.StockScreeningCriteria;
 import com.financial.copilot.data.stock.mapper.StockInfoMapper;
-import com.financial.copilot.domain.stock.entity.StockInfo;
+import com.financial.copilot.domain.business.stock.entity.StockInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

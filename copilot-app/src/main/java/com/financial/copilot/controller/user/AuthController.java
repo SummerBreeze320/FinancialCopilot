@@ -1,10 +1,10 @@
 package com.financial.copilot.controller.user;
 
-import com.financial.copilot.agent.core.security.UserPrincipal;
-import com.financial.copilot.agent.core.user.dto.AuthResponse;
-import com.financial.copilot.agent.core.user.dto.UserLoginRequest;
-import com.financial.copilot.agent.core.user.dto.UserRegisterRequest;
-import com.financial.copilot.agent.core.user.service.UserService;
+import com.financial.copilot.agent.core.infra.security.UserPrincipal;
+import com.financial.copilot.agent.core.platform.user.dto.AuthResponse;
+import com.financial.copilot.agent.core.platform.user.dto.UserLoginRequest;
+import com.financial.copilot.agent.core.platform.user.dto.UserRegisterRequest;
+import com.financial.copilot.agent.core.platform.user.service.UserService;
 import com.financial.copilot.common.result.ApiResult;
 import com.financial.copilot.config.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;

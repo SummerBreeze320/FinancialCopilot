@@ -2,12 +2,12 @@ package com.financial.copilot.agent.tools.rag;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.domain.rag.entity.RagFundMetric;
-import com.financial.copilot.domain.rag.entity.RagFundSector;
-import com.financial.copilot.domain.rag.entity.SchemaRecallResult;
-import com.financial.copilot.domain.rag.port.RagEmbeddingPort;
-import com.financial.copilot.domain.rag.port.RagGraphPort;
-import com.financial.copilot.domain.rag.port.RagSchemaPort;
+import com.financial.copilot.domain.shared.rag.entity.RagFundMetric;
+import com.financial.copilot.domain.shared.rag.entity.RagFundSector;
+import com.financial.copilot.domain.shared.rag.entity.SchemaRecallResult;
+import com.financial.copilot.domain.shared.rag.port.RagEmbeddingPort;
+import com.financial.copilot.domain.shared.rag.port.RagGraphPort;
+import com.financial.copilot.domain.shared.rag.port.RagSchemaPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

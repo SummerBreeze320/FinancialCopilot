@@ -2,8 +2,8 @@ package com.financial.copilot.agent.tools.stock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.common.stock.dto.StockScreeningCriteria;
-import com.financial.copilot.domain.stock.entity.StockInfo;
-import com.financial.copilot.domain.stock.port.StockDataPort;
+import com.financial.copilot.domain.business.stock.entity.StockInfo;
+import com.financial.copilot.domain.business.stock.port.StockDataPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
