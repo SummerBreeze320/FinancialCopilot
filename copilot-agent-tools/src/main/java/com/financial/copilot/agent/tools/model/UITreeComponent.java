@@ -53,4 +53,10 @@ public class UITreeComponent {
 
     /** 外部嵌入页面 URL (如果是 iframe) */
     private String url;
+
+    /** 绑定的远程调用指令 (如 MFCP.Report16Picker2.GetData) */
+    private String command;
+
+    /** 组件入参名称列表 (如 windCodes, reportDate) */
+    private List<String> params;
 }

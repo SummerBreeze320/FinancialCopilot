@@ -51,6 +51,29 @@ copilot:
     api-key: ${DEEPSEEK_API_KEY:sk-placeholder}
     base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com/v1}
 
+# 外部投研工具与 MCP 网关配置
+financial:
+  copilot:
+    tools:
+      component-invoke-service-url: ${WIND_FUNDRESEARCH_SERVICE_URL:https://exp.wind.com.cn/FundStaticWeb}
+      infra-web:
+        service-url: ${WIND_FUNDINFRAWEB_SERVICE_URL:https://exp.wind.com.cn/FundInfraWeb/invoke}
+        timeout-seconds: ${WIND_FUNDINFRAWEB_TIMEOUT_SECONDS:60}
+        verify-tls: ${WIND_FUNDINFRAWEB_VERIFY_TLS:false}
+      mcp:
+        base-url: ${WIND_MCP_BASE_URL:https://114.80.154.45/Wind.MCP.Server/vserver}
+        timeout-seconds: ${WIND_MCP_TIMEOUT_SECONDS:60}
+        verify-tls: ${WIND_MCP_VERIFY_TLS:false}
+        servers:
+          wind-fund-data: ${WIND_MCP_WIND_FUND_DATA_URL:https://114.80.154.45/Wind.MCP.Server/vserver/vserver_fund_datatest/mcp}
+          wind-fund-holdings: ${WIND_MCP_WIND_FUND_HOLDINGS_URL:https://114.80.154.45/Wind.MCP.Server/vserver/vserver_fund_holdtest/mcp}
+          wind-fund-analysis: ${WIND_MCP_WIND_FUND_ANALYSIS_URL:https://114.80.154.45/Wind.MCP.Server/vserver/vserver_fund_analysistest/mcp}
+      aimarket:
+        service-url: ${WIND_AIMARKET_SERVICE_URL:https://exp.wind.com.cn/aimarket/mcp}
+        timeout-seconds: ${WIND_AIMARKET_TIMEOUT_SECONDS:60}
+        verify-tls: ${WIND_AIMARKET_VERIFY_TLS:true}
+
 logging:
   level:
     com.financial.copilot: INFO
+

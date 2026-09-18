@@ -136,6 +136,12 @@ public class ToolDefinitionLoader {
         String displayType = node.path("displayType").asText("table");
         String desc = node.path("description").asText("");
         String url = node.path("url").isNull() ? null : node.path("url").asText(null);
+        String command = node.path("command").isNull() ? null : node.path("command").asText(null);
+
+        List<String> params = new ArrayList<>();
+        if (node.has("params") && node.get("params").isArray()) {
+            node.get("params").forEach(item -> params.add(item.asText()));
+        }
 
         List<String> linkId = new ArrayList<>();
         if (node.has("linkId") && node.get("linkId").isArray()) {
@@ -156,6 +162,8 @@ public class ToolDefinitionLoader {
                 .metadata(meta)
                 .linkId(linkId)
                 .url(url)
+                .command(command)
+                .params(params)
                 .build();
     }
 }
