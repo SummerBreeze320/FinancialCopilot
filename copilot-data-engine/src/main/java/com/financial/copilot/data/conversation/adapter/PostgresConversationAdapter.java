@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -153,7 +154,7 @@ public class PostgresConversationAdapter implements ConversationPort, AgentToolA
 
     @Override
     public CursorPage<ConversationMessage> listMessages(Long userId, UUID conversationId,
-                                                         Long beforeSequence, int limit) {
+                                                        Long beforeSequence, int limit) {
         if (conversations.findOwned(userId, conversationId) == null) {
             throw new ConversationNotFoundException();
         }
@@ -219,8 +220,8 @@ public class PostgresConversationAdapter implements ConversationPort, AgentToolA
     }
 
     private <T, P> CursorPage<T> toCursorPage(List<P> rows, int limit,
-                                             Function<P, T> mapper,
-                                             Function<P, String> cursorFn) {
+                                              Function<P, T> mapper,
+                                              Function<P, String> cursorFn) {
         boolean hasNext = rows.size() > limit;
         List<P> page = hasNext ? rows.subList(0, limit) : rows;
         String nextCursor = hasNext ? cursorFn.apply(page.get(page.size() - 1)) : null;
@@ -262,27 +263,39 @@ public class PostgresConversationAdapter implements ConversationPort, AgentToolA
     }
 
     private String toJson(Map<String, Object> map) {
-        try { return json.writeValueAsString(map == null ? Map.of() : map); }
-        catch (Exception e) { return "{}"; }
+        try {
+            return json.writeValueAsString(map == null ? Map.of() : map);
+        } catch (Exception e) {
+            return "{}";
+        }
     }
 
     private String toJsonList(List<String> list) {
-        try { return json.writeValueAsString(list == null ? List.of() : list); }
-        catch (Exception e) { return "[]"; }
+        try {
+            return json.writeValueAsString(list == null ? List.of() : list);
+        } catch (Exception e) {
+            return "[]";
+        }
     }
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> fromJson(String jsonStr) {
         if (jsonStr == null || jsonStr.isBlank()) return Map.of();
-        try { return json.readValue(jsonStr, Map.class); }
-        catch (Exception e) { return Map.of(); }
+        try {
+            return json.readValue(jsonStr, Map.class);
+        } catch (Exception e) {
+            return Map.of();
+        }
     }
 
     @SuppressWarnings("unchecked")
     private List<String> fromJsonList(String jsonStr) {
         if (jsonStr == null || jsonStr.isBlank()) return List.of();
-        try { return json.readValue(jsonStr, List.class); }
-        catch (Exception e) { return List.of(); }
+        try {
+            return json.readValue(jsonStr, List.class);
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     private static LocalDateTime toLocalDateTime(Instant instant) {
@@ -302,9 +315,9 @@ public class PostgresConversationAdapter implements ConversationPort, AgentToolA
     }
 
     private static ConversationMessagePO messagePO(UUID conversationId, Long userId, UUID runId,
-                                                    long seq, String role, String status,
-                                                    String content, String metadata,
-                                                    LocalDateTime createdAt, LocalDateTime completedAt) {
+                                                   long seq, String role, String status,
+                                                   String content, String metadata,
+                                                   LocalDateTime createdAt, LocalDateTime completedAt) {
         return ConversationMessagePO.builder()
                 .conversationId(conversationId).userId(userId).runId(runId).sequenceNo(seq)
                 .role(role).status(status).content(content).metadata(metadata)
