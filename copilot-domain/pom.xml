@@ -12,7 +12,7 @@
 
     <artifactId>copilot-domain</artifactId>
     <name>copilot-domain</name>
-    <description>核心领域实体模型与解耦的 SPI 端口契约 (FundDataPort)</description>
+    <description>核心领域实体模型、SPI 端口契约与 MySQL 关系型持久化适配器</description>
 
     <dependencies>
         <dependency>
@@ -22,6 +22,25 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
+        </dependency>
+
+        <!-- MyBatis-Plus Spring Boot 3 Starter -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+
+        <!-- MySQL 驱动 -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+        </dependency>
+
+        <!-- 测试支持 (JUnit 5 + Mockito + Spring Test) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

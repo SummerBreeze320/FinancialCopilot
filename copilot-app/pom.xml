@@ -21,7 +21,7 @@
         </dependency>
         <dependency>
             <groupId>com.financial.copilot</groupId>
-            <artifactId>copilot-data-engine</artifactId>
+            <artifactId>copilot-domain</artifactId>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
