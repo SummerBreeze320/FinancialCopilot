@@ -1,0 +1,40 @@
+{
+  "toolId": "fund_doc_search",
+  "name": "金融研报与资讯语义检索",
+  "scope": "ANALYSIS",
+  "toolType": "ANALYSIS_TOOL",
+  "description": "基于 Wind AIMarket 语义检索全市场券商研报、公司公告、新闻政策及宏观资料",
+  "provider": "http_aimarket",
+  "server": null,
+  "targetTool": "fin_doc_searchV3",
+  "templateId": null,
+  "parameters": [
+    {
+      "name": "query",
+      "type": "string",
+      "required": true,
+      "defaultValue": null,
+      "description": "检索关键词或语义提问"
+    },
+    {
+      "name": "knowledgeGroups",
+      "type": "array[string]",
+      "required": false,
+      "defaultValue": null,
+      "description": "资料分类: research_report(研报), announcement(公告), news(新闻)"
+    }
+  ],
+  "componentCount": 1,
+  "components": [
+    {
+      "componentId": "docSearchResult",
+      "name": "研报检索列表",
+      "cardTitle": "研报与非结构化资讯",
+      "displayType": "markdown",
+      "description": "展示语义检索匹配的研报摘要、作者、发布日期及核心观点",
+      "metadata": {
+        "width": 24
+      }
+    }
+  ]
+}

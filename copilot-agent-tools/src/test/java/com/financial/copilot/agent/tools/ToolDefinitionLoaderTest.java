@@ -37,13 +37,13 @@ class ToolDefinitionLoaderTest {
     }
 
     @Test
-    @DisplayName("验证两级分类: 13个深度分析工具 + 11个横向对比工具全部成功加载")
+    @DisplayName("验证两级分类: 14个深度分析工具 + 11个横向对比工具全部成功加载")
     void testLoadModularToolsHierarchy() {
-        assertEquals(24, toolRegistry.size(), "Should load exactly 24 modular tool files across two scopes");
+        assertEquals(25, toolRegistry.size(), "Should load exactly 25 modular tool files across two scopes");
 
-        // 验证深度分析体系 (13个工具)
+        // 验证深度分析体系 (14个工具，含研报/非结构化资料检索)
         List<ToolDefinition> analysisTools = toolRegistry.getAnalysisTools();
-        assertEquals(13, analysisTools.size(), "Should contain 13 deep analysis tools");
+        assertEquals(14, analysisTools.size(), "Should contain 14 deep analysis tools");
 
         // 验证横向对标体系 (11个工具)
         List<ToolDefinition> comparisonTools = toolRegistry.getComparisonTools();

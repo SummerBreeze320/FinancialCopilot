@@ -2,6 +2,7 @@ package com.financial.copilot.agent.tools;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.tools.distiller.ComponentDataDistiller;
+import com.financial.copilot.agent.tools.executor.AiMarketToolExecutor;
 import com.financial.copilot.agent.tools.executor.HttpToolExecutor;
 import com.financial.copilot.agent.tools.executor.LocalToolExecutor;
 import com.financial.copilot.agent.tools.executor.McpToolExecutor;
@@ -50,8 +51,9 @@ class ToolExecutorRouterTest {
         LocalToolExecutor localExecutor = new LocalToolExecutor(distiller, workspaceBuilder);
         HttpToolExecutor httpExecutor = new HttpToolExecutor(distiller, workspaceBuilder);
         McpToolExecutor mcpExecutor = new McpToolExecutor(distiller, workspaceBuilder);
+        AiMarketToolExecutor aiMarketExecutor = new AiMarketToolExecutor(distiller, workspaceBuilder);
 
-        router = new ToolExecutorRouter(registry, List.of(localExecutor, httpExecutor, mcpExecutor));
+        router = new ToolExecutorRouter(registry, List.of(localExecutor, httpExecutor, mcpExecutor, aiMarketExecutor));
     }
 
     @Test
@@ -128,5 +130,23 @@ class ToolExecutorRouterTest {
 
         assertTrue(result.isSuccess());
         assertTrue(result.getTextForLlm().contains("本地引擎执行成功"));
+    }
+
+    @Test
+    @DisplayName("验证 AIMarket 工具 (fund_doc_search) 路由至 AiMarketToolExecutor 并产出研报检索结果")
+    void testRouteAiMarketDocSearch() {
+        ToolExecuteRequest request = ToolExecuteRequest.builder()
+                .toolId("fund_doc_search")
+                .arguments(Map.of("query", "高股息红利资产研报展望"))
+                .sourceMode(ToolSourceMode.EXTERNAL_CONFIGURED)
+                .build();
+
+        ToolExecuteResult result = router.routeAndExecute(request);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getTextForLlm());
+        assertTrue(result.getTextForLlm().contains("研报/知识检索结果"));
+        assertEquals(1, result.getVisualComponents().size());
+        assertEquals("docSearchResult", result.getVisualComponents().get(0).getId());
     }
 }
