@@ -41,6 +41,12 @@
             <artifactId>agentscope</artifactId>
         </dependency>
 
+        <!-- MyBatis-Plus (用于智能体记忆库持久化) -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+
         <!-- Spring Boot Security (用于密码加密与安全工具) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
