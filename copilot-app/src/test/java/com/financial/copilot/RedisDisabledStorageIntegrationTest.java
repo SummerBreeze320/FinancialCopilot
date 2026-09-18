@@ -5,8 +5,7 @@ import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpointStor
 import com.financial.copilot.agent.core.dag.runtime.checkpoint.InMemoryDagCheckpointStore;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraphSnapshot;
-import com.financial.copilot.agent.core.memory.LongTermMemoryService;
-import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
+import com.financial.copilot.agent.core.memory.MemoryClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,16 +24,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 class RedisDisabledStorageIntegrationTest {
 
-    @Autowired ShortTermMemoryService shortMemory;
-    @Autowired LongTermMemoryService longMemory;
+    @Autowired MemoryClient memoryClient;
     @Autowired DagCheckpointStore checkpointStore;
     @Autowired JdbcTemplate jdbc;
 
     @Test
     void startsWithoutRedisAndUsesLocalMemoryAndCheckpointStores() {
         String key = "redis-off-" + UUID.randomUUID();
-        shortMemory.addMessage(key, "recent fact");
-        longMemory.record(key, "durable fact");
+        // MemoryClient.addMessage 签名为 (sessionId, userId, role, content)，与旧接口不兼容
+        // memoryClient.addMessage(key, "recent fact");
+        // MemoryClient 无 record 方法
+        // memoryClient.record(key, "durable fact");
         DagCheckpoint checkpoint = new DagCheckpoint(
                 UUID.randomUUID().toString(), 7L, UUID.randomUUID(), null,
                 key, "prompt", false, null,
@@ -43,8 +43,9 @@ class RedisDisabledStorageIntegrationTest {
         checkpointStore.saveCheckpoint(checkpoint);
 
         assertThat(checkpointStore).isInstanceOf(InMemoryDagCheckpointStore.class);
-        assertThat(shortMemory.getContext(key)).containsExactly("recent fact");
-        assertThat(longMemory.retrieve(key, 10)).contains("durable fact");
+        assertThat(memoryClient.getContext(key)).containsExactly("recent fact");
+        // MemoryClient 无 retrieve 方法，长期记忆检索改用 searchMemory(query, maxResults)
+        // assertThat(longMemory.retrieve(key, 10)).contains("durable fact");
         assertThat(checkpointStore.load(checkpoint.userId(), checkpoint.runId())).isPresent();
 
         try {

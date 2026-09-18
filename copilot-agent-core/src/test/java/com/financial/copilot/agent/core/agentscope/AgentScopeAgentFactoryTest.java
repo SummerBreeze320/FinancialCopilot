@@ -7,6 +7,7 @@ import com.financial.copilot.agent.core.dag.runtime.RunMode;
 import com.financial.copilot.agent.core.dag.runtime.context.CancellationToken;
 import com.financial.copilot.agent.core.llm.dto.LlmResponse;
 import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
+import com.financial.copilot.agent.core.memory.MemoryClient;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.core.message.ToolResultBlock;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class AgentScopeAgentFactoryTest {
 
@@ -36,7 +38,7 @@ class AgentScopeAgentFactoryTest {
     void nativeReactAgentCallsToolThenUsesObservationAndMetersEveryModelTurn() {
         ScriptedModel model = new ScriptedModel();
         AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
-                () -> LlmSettingsDTO.builder().model("scripted").build(), ignored -> model);
+                () -> LlmSettingsDTO.builder().model("scripted").build(), ignored -> model, mock(MemoryClient.class));
         Toolkit toolkit = new Toolkit();
         toolkit.registerTool(new EchoTool());
         AtomicInteger meteredTokens = new AtomicInteger();

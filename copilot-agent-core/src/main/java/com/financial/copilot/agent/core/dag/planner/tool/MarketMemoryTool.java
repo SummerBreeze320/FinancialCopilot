@@ -1,6 +1,6 @@
 package com.financial.copilot.agent.core.dag.planner.tool;
 
-import com.financial.copilot.agent.core.memory.LongTermMemoryService;
+import com.financial.copilot.agent.core.memory.MemoryClient;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,25 +10,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * <h1>市场与长期记忆检索工具 (MarketMemoryTool)</h1>
- * <p>
- * 供 {@code GraphPlanner} 在构建初始 DAG 或执行动态重规划时，跨会话检索用户的长期事实记忆、
- * 历史投资决策与风险画像约束，确保图规划不仅依赖当前单轮 Prompt，更能结合历史共识进行定制化节点生成。
- * </p>
- *
- * @author FinancialCopilot
+ * 市场与长期记忆检索工具 — 通过 MemoryClient 调用 Python 记忆服务，
+ * 检索用户画像、相关事实和历史决策，供 GraphPlanner 定制化节点生成。
  */
 @Slf4j
 @Component
 public class MarketMemoryTool {
 
-    /**
-     * 记忆检索结果载荷
-     *
-     * @param sessionKey           会话标识
-     * @param relevantFacts       与当前查询高度相关的提纯事实命题
-     * @param historicalDecisions 历史已完成的决策或研报摘要
-     */
     @Builder
     public record MemoryRetrievalResult(
             String sessionKey,
@@ -36,35 +24,28 @@ public class MarketMemoryTool {
             List<String> historicalDecisions
     ) {}
 
-    private final LongTermMemoryService longTermMemoryService;
+    private final MemoryClient memoryClient;
 
     public MarketMemoryTool() {
         this(null);
     }
 
     @Autowired
-    public MarketMemoryTool(@Autowired(required = false) LongTermMemoryService longTermMemoryService) {
-        this.longTermMemoryService = longTermMemoryService;
+    public MarketMemoryTool(@Autowired(required = false) MemoryClient memoryClient) {
+        this.memoryClient = memoryClient;
     }
 
-    /**
-     * 依据当前用户提问和会话，检索最相关的长期投研偏好与历史决策
-     *
-     * @param sessionKey 当前会话唯一标识
-     * @param query     用户当轮投研需求
-     * @param maxCount  最大召回条数
-     * @return 记忆检索结果
-     */
     public MemoryRetrievalResult retrieveMemory(String sessionKey, String query, int maxCount) {
-        if (longTermMemoryService == null || sessionKey == null || sessionKey.isBlank()) {
+        if (memoryClient == null || sessionKey == null || sessionKey.isBlank()) {
             return new MemoryRetrievalResult(sessionKey, Collections.emptyList(), Collections.emptyList());
         }
 
         int limit = maxCount > 0 ? maxCount : 5;
-        List<String> relevantFacts = longTermMemoryService.retrieveRelevantFacts(sessionKey, query, limit);
-        List<String> historicalDecisions = longTermMemoryService.retrieve(sessionKey, limit);
+        List<String> relevantFacts = memoryClient.searchMemory(query, limit);
+        List<String> historicalDecisions = memoryClient.searchMemory(
+                "历史投资决策 研报摘要 " + query, limit);
 
-        log.debug("[MARKET-MEMORY-TOOL] 成功召回记忆: session={}, facts={}, decisions={}",
+        log.debug("[MARKET-MEMORY-TOOL] session={}, facts={}, decisions={}",
                 sessionKey, relevantFacts.size(), historicalDecisions.size());
 
         return MemoryRetrievalResult.builder()

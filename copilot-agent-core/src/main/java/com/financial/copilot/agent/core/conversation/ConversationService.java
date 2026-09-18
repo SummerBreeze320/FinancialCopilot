@@ -1,8 +1,7 @@
 package com.financial.copilot.agent.core.conversation;
 
 import com.financial.copilot.agent.core.event.WorkflowFinishedEvent;
-import com.financial.copilot.agent.core.memory.LongTermMemoryService;
-import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
+import com.financial.copilot.agent.core.memory.MemoryClient;
 import com.financial.copilot.domain.conversation.entity.AgentToolAudit;
 import com.financial.copilot.domain.conversation.entity.ConversationMessage;
 import com.financial.copilot.domain.conversation.entity.ConversationRun;
@@ -34,8 +33,7 @@ public class ConversationService {
 
     private final ConversationPort port;
     private final AgentToolAuditPort audits;
-    private final ShortTermMemoryService shortMemory;
-    private final LongTermMemoryService longMemory;
+    private final MemoryClient memoryClient;
     private final ConversationPersistenceProperties properties;
     private final ApplicationEventPublisher publisher;
     private final MeterRegistry metrics;
@@ -43,15 +41,13 @@ public class ConversationService {
     public ConversationService(
             ConversationPort port,
             AgentToolAuditPort audits,
-            ShortTermMemoryService shortMemory,
-            LongTermMemoryService longMemory,
+            MemoryClient memoryClient,
             ConversationPersistenceProperties properties,
             ApplicationEventPublisher publisher,
             @Autowired(required = false) MeterRegistry metrics) {
         this.port = port;
         this.audits = audits;
-        this.shortMemory = shortMemory;
-        this.longMemory = longMemory;
+        this.memoryClient = memoryClient;
         this.properties = properties;
         this.publisher = publisher;
         this.metrics = metrics;
@@ -76,10 +72,9 @@ public class ConversationService {
         if (properties.isPersistenceEnabled() && run.assistantMessageId() != null) {
             retryTerminal(() -> port.completeAssistant(userId, run.runId(), report, metadata, Instant.now()));
         }
-        List<String> context = List.of("USER: " + prompt, "ASSISTANT: " + report);
-        shortMemory.replaceContext(sessionKey, context);
-        longMemory.record(sessionKey, report);
-        publisher.publishEvent(new WorkflowFinishedEvent(this, sessionKey));
+        memoryClient.addMessage(sessionKey, String.valueOf(userId), "user", prompt);
+        memoryClient.addMessage(sessionKey, String.valueOf(userId), "assistant", report);
+        publisher.publishEvent(new WorkflowFinishedEvent(this, sessionKey, userId));
     }
 
     public void fail(Long userId, UUID runId, Throwable error) {
@@ -107,7 +102,7 @@ public class ConversationService {
     }
 
     public List<String> recentContext(Long userId, UUID conversationId, String sessionKey, int limit) {
-        List<String> cached = shortMemory.getContext(sessionKey);
+        List<String> cached = memoryClient.getContext(sessionKey);
         if (cached != null && !cached.isEmpty()) {
             return cached;
         }
@@ -124,7 +119,6 @@ public class ConversationService {
             String prefix = msg.role() == MessageRole.USER ? "USER: " : "ASSISTANT: ";
             context.add(prefix + msg.content());
         }
-        shortMemory.replaceContext(sessionKey, context);
         if (metrics != null) {
             metrics.counter("conversation_cache_rebuild_total").increment();
         }

@@ -3,6 +3,7 @@ package com.financial.copilot.agent.core.agents;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.core.agents.fund.FundScreenerAgent;
 import com.financial.copilot.agent.core.agentscope.AgentScopeAgentFactory;
+import com.financial.copilot.agent.core.memory.MemoryClient;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
 import com.financial.copilot.agent.core.dag.artifact.payload.FundPool;
@@ -51,7 +52,7 @@ class NativeFundScreenerAgentTest {
         FundScreeningTool tool = mock(FundScreeningTool.class);
         when(tool.screenFunds(any())).thenReturn("[{\"fundCode\":\"003095\",\"fundName\":\"中欧医疗健康\"}]");
         AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
-                () -> LlmSettingsDTO.builder().model("scripted").build(), ignored -> model);
+                () -> LlmSettingsDTO.builder().model("scripted").build(), ignored -> model, mock(MemoryClient.class));
         FundScreenerAgent agent = new FundScreenerAgent(factory, tool, new ObjectMapper());
         GraphRunRequest request = new GraphRunRequest("run", 1L,java.util.UUID.randomUUID(), null,  "session", "筛选医药基金", false,
                 null, ignored -> {}, RunMode.SYNC);

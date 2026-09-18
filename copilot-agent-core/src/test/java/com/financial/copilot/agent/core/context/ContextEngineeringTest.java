@@ -1,7 +1,6 @@
 package com.financial.copilot.agent.core.context;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.core.memory.ContextReducer;
 import com.financial.copilot.domain.user.entity.UserInvestmentProfile;
 import com.financial.copilot.domain.user.enums.RiskToleranceLevel;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,7 +8,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,14 +16,12 @@ class ContextEngineeringTest {
 
     private ObservationSanitizer sanitizer;
     private ContextBudgetManager budgetManager;
-    private ContextReducer contextReducer;
 
     @BeforeEach
     void setUp() {
         ObjectMapper objectMapper = new ObjectMapper();
         sanitizer = new ObservationSanitizer(objectMapper);
         budgetManager = new ContextBudgetManager();
-        contextReducer = new ContextReducer();
     }
 
     @Test
@@ -101,22 +97,6 @@ class ContextEngineeringTest {
         assertTrue(prompt.contains("中欧医疗健康混合"));
         assertTrue(prompt.contains("【附加纪律与约束】:"));
         assertTrue(prompt.contains("严禁推荐成立不满3年的次新基金"));
-    }
-
-    @Test
-    @DisplayName("测试 ContextReducer 滚动摘要压缩机制")
-    void testContextReducerRollingSummary() {
-        List<String> messages = new ArrayList<>();
-        for (int i = 1; i <= 10; i++) {
-            messages.add("Executed step " + i + ": 完成模块 " + i + " 分析，输出结论事实详细说明内容...");
-        }
-
-        // 设置较小阈值迫使前 5 条被压缩 (总共约 87 tokens, 阈值 50 会触发压缩)
-        List<String> reduced = contextReducer.compressAndReduce(messages, 50);
-
-        assertTrue(reduced.size() < messages.size());
-        assertTrue(reduced.get(0).contains("【前期历史交互摘要】"));
-        assertTrue(reduced.get(0).contains("步骤/轮次1"));
     }
 
     @Test

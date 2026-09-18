@@ -1,8 +1,7 @@
 package com.financial.copilot;
 
 import com.financial.copilot.agent.core.conversation.ConversationService;
-import com.financial.copilot.agent.core.memory.LongTermMemoryService;
-import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
+import com.financial.copilot.agent.core.memory.MemoryClient;
 import com.financial.copilot.config.security.SecurityUtils;
 import com.financial.copilot.domain.conversation.entity.ConversationMessage;
 import com.financial.copilot.domain.conversation.entity.ConversationRun;
@@ -31,8 +30,7 @@ class ConversationPersistenceTest {
 
     @Autowired ConversationService service;
     @Autowired ConversationPort port;
-    @Autowired ShortTermMemoryService shortMemory;
-    @Autowired LongTermMemoryService longMemory;
+    @Autowired MemoryClient memoryClient;
     @Autowired StringRedisTemplate redis;
     @Autowired JdbcTemplate jdbc;
 

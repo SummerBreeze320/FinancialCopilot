@@ -2,6 +2,7 @@ package com.financial.copilot.agent.core.agentscope;
 
 import com.financial.copilot.agent.core.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.llm.config.LlmConfigManager;
+import com.financial.copilot.agent.core.memory.MemoryClient;
 import com.financial.copilot.agent.core.llm.dto.LlmResponse;
 import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
 import io.agentscope.core.ReActAgent;
@@ -31,16 +32,19 @@ public class AgentScopeAgentFactory {
 
     private final Supplier<LlmSettingsDTO> settingsSupplier;
     private final Function<LlmSettingsDTO, Model> modelProvider;
+    private final MemoryClient memoryClient;
 
     @Autowired
-    public AgentScopeAgentFactory(LlmConfigManager configManager) {
-        this(configManager::getActiveSettings, AgentScopeAgentFactory::openAiCompatibleModel);
+    public AgentScopeAgentFactory(LlmConfigManager configManager, MemoryClient memoryClient) {
+        this(configManager::getActiveSettings, AgentScopeAgentFactory::openAiCompatibleModel, memoryClient);
     }
 
     public AgentScopeAgentFactory(Supplier<LlmSettingsDTO> settingsSupplier,
-                                  Function<LlmSettingsDTO, Model> modelProvider) {
+                                  Function<LlmSettingsDTO, Model> modelProvider,
+                                  MemoryClient memoryClient) {
         this.settingsSupplier = Objects.requireNonNull(settingsSupplier);
         this.modelProvider = Objects.requireNonNull(modelProvider);
+        this.memoryClient = memoryClient;
     }
 
     public Msg invoke(AgentDefinition definition, String prompt, NodeExecutionContext executionContext) {
@@ -57,10 +61,11 @@ public class AgentScopeAgentFactory {
         RuntimeContext runtimeContext = runtimeContext(executionContext);
         Map<String, List<io.agentscope.core.message.ToolResultBlock>> observations = new ConcurrentHashMap<>();
         Model meteredModel = new MeteredModel(modelProvider.apply(settings), settings, executionContext, observations);
+        String enhancedSystemPrompt = enhanceWithProfile(definition.systemPrompt(), executionContext);
         ReActAgent agent = ReActAgent.builder()
                 .name(definition.name())
                 .description(definition.description())
-                .sysPrompt(definition.systemPrompt())
+                .sysPrompt(enhancedSystemPrompt)
                 .model(meteredModel)
                 .toolkit(definition.toolkit())
                 .maxIters(definition.maxIterations())
@@ -86,6 +91,21 @@ public class AgentScopeAgentFactory {
             builder.sessionId(request.sessionKey()).userId(String.valueOf(request.userId()));
         }
         return builder.build();
+    }
+
+    private String enhanceWithProfile(String baseSystemPrompt, NodeExecutionContext context) {
+        if (context.request() == null || context.request().userId() == null) {
+            return baseSystemPrompt;
+        }
+        try {
+            String profilePrompt = memoryClient.getProfilePrompt(String.valueOf(context.request().userId()));
+            if (profilePrompt == null || profilePrompt.isBlank()) {
+                return baseSystemPrompt;
+            }
+            return baseSystemPrompt + "\n\n" + profilePrompt;
+        } catch (Exception e) {
+            return baseSystemPrompt;
+        }
     }
 
     private static GenerateOptions generateOptions(LlmSettingsDTO settings) {

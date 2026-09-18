@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: financial_copilot
       TZ: Asia/Shanghai
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-15432}:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
       - ./initdb:/docker-entrypoint-initdb.d
@@ -33,6 +33,32 @@ services:
       - ./data/neo4j:/data
       - ./neo4j/import:/var/lib/neo4j/import
       - ./neo4j/plugins:/var/lib/neo4j/plugins
+    restart: always
+    networks:
+      - myservice_network
+
+  memory-service:
+    build: ../../memory-service
+    container_name: docker_memory_service
+    environment:
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: financial_copilot
+      REDIS_HOST: host.docker.internal
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 123456
+      LLM_API_KEY: ${DEEPSEEK_API_KEY:-sk-placeholder}
+      LLM_BASE_URL: https://api.deepseek.com/v1
+      LLM_MODEL: deepseek-chat
+      EMBEDDING_BASE_URL: http://host.docker.internal:11434/v1
+      EMBEDDING_MODEL: qwen3-embedding:0.6b
+      EMBEDDING_DIM: "1024"
+      HOST: "0.0.0.0"
+      PORT: "8700"
+    ports:
+      - "8700:8700"
+    depends_on:
+      - neo4j
     restart: always
     networks:
       - myservice_network

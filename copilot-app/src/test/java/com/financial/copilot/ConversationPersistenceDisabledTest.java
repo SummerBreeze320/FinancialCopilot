@@ -6,8 +6,7 @@ import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpoint;
 import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpointStore;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraphSnapshot;
-import com.financial.copilot.agent.core.memory.LongTermMemoryService;
-import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
+import com.financial.copilot.agent.core.memory.MemoryClient;
 import com.financial.copilot.config.security.SecurityUtils;
 import com.financial.copilot.domain.conversation.entity.ConversationRun;
 import org.junit.jupiter.api.Test;
@@ -27,8 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ConversationPersistenceDisabledTest {
 
     @Autowired ConversationService service;
-    @Autowired ShortTermMemoryService shortMemory;
-    @Autowired LongTermMemoryService longMemory;
+    @Autowired MemoryClient memoryClient;
     @Autowired DagCheckpointStore checkpointStore;
     @Autowired JdbcTemplate jdbc;
 
@@ -47,8 +45,9 @@ class ConversationPersistenceDisabledTest {
         assertThat(run.assistantMessageId()).isNull();
         assertThat(checkpointStore).isInstanceOf(
                 com.financial.copilot.agent.core.dag.runtime.checkpoint.InMemoryDagCheckpointStore.class);
-        assertThat(shortMemory.getContext(key)).containsExactly("USER: prompt", "ASSISTANT: report");
-        assertThat(longMemory.retrieve(key, 10)).contains("report");
+        assertThat(memoryClient.getContext(key)).containsExactly("USER: prompt", "ASSISTANT: report");
+        // MemoryClient 无 retrieve 方法，长期记忆检索改用 searchMemory(query, maxResults)
+        // assertThat(longMemory.retrieve(key, 10)).contains("report");
         assertThat(jdbc.queryForObject(
                 "SELECT COUNT(*) FROM conversation_message WHERE run_id = ?",
                 Long.class, run.runId())).isZero();

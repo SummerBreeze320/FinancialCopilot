@@ -6,6 +6,7 @@ import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
 import com.financial.copilot.agent.core.dag.model.*;
 import com.financial.copilot.agent.core.dag.planner.tool.*;
 import com.financial.copilot.agent.core.llm.dto.LlmSettingsDTO;
+import com.financial.copilot.agent.core.memory.MemoryClient;
 import io.agentscope.core.message.*;
 import io.agentscope.core.model.*;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 class GraphPlannerAgentTest {
     @Test
@@ -37,7 +39,7 @@ class GraphPlannerAgentTest {
             }
             @Override public String getModelName(){return "scripted";}
         };
-        AgentScopeAgentFactory factory=new AgentScopeAgentFactory(()->LlmSettingsDTO.builder().model("scripted").build(),ignored->model);
+        AgentScopeAgentFactory factory=new AgentScopeAgentFactory(()->LlmSettingsDTO.builder().model("scripted").build(),ignored->model,mock(MemoryClient.class));
         GraphPlannerAgent planner=new GraphPlannerAgent(factory,new MetricRAGTool(),new SkillRegistryTool(),
                 new CapabilityRegistryTool(),new MarketMemoryTool(),new FinancialDocumentSearchTool(),new ObjectMapper());
 
@@ -67,7 +69,7 @@ class GraphPlannerAgentTest {
             }
             @Override public String getModelName(){return "scripted";}
         };
-        AgentScopeAgentFactory factory=new AgentScopeAgentFactory(()->LlmSettingsDTO.builder().model("scripted").build(),ignored->model);
+        AgentScopeAgentFactory factory=new AgentScopeAgentFactory(()->LlmSettingsDTO.builder().model("scripted").build(),ignored->model,mock(MemoryClient.class));
         GraphPlannerAgent planner=new GraphPlannerAgent(factory,new MetricRAGTool(),new SkillRegistryTool(),
                 new CapabilityRegistryTool(),new MarketMemoryTool(),new FinancialDocumentSearchTool(),new ObjectMapper());
 

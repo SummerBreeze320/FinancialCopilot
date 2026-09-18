@@ -47,18 +47,6 @@ class RTCFPromptSpecTest {
     }
 
     @Test
-    @DisplayName("测试 MemoryRefinementPrompt 生成规范")
-    void testMemoryRefinementPrompt() {
-        RTCFPromptSpec spec = MemoryRefinementPrompt.buildSpec("User: 我要看易方达蓝筹\nAgent: 005827近三年年化12%");
-        String sys = spec.renderSystemPrompt();
-        String user = spec.renderUserPrompt();
-
-        assertTrue(sys.contains("MemoryRefinementAgent"));
-        assertTrue(user.contains("### [SESSION RAW LOGS & MESSAGES]"));
-        assertTrue(user.contains("易方达蓝筹"));
-    }
-
-    @Test
     @DisplayName("测试 FundComparatorPrompt RTCF 规范与静态前缀对齐")
     void testFundComparatorPrompt() {
         String sysPrompt = FundComparatorPrompt.SYSTEM_PROMPT;

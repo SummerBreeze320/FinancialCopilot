@@ -2,6 +2,7 @@ package com.financial.copilot.agent.core.agents;
 
 import com.financial.copilot.agent.core.agents.stock.StockComparatorAgent;
 import com.financial.copilot.agent.core.agentscope.AgentScopeAgentFactory;
+import com.financial.copilot.agent.core.memory.MemoryClient;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactStore;
 import com.financial.copilot.agent.core.dag.artifact.ArtifactType;
 import com.financial.copilot.agent.core.dag.model.GraphNode;
@@ -62,7 +63,7 @@ class NativeStockComparatorAgentTest {
         when(tool.getStockMetrics("600519.SH")).thenReturn("{\"pe\":25}");
         when(tool.getStockMetrics("000858.SZ")).thenReturn("{\"pe\":18}");
         AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
-                () -> LlmSettingsDTO.builder().model("scripted").build(), ignored -> model);
+                () -> LlmSettingsDTO.builder().model("scripted").build(), ignored -> model, mock(MemoryClient.class));
         StockComparatorAgent agent = new StockComparatorAgent(factory, tool);
         GraphRunRequest request = new GraphRunRequest("run", 1L,java.util.UUID.randomUUID(), null,  "session", "比较两只股票", false,
                 null, ignored -> {}, RunMode.SYNC);
