@@ -1,7 +1,5 @@
 package com.financial.copilot.agent.core.dag.runtime.checkpoint;
 
-import com.financial.copilot.agent.core.memory.store.local.BoundedExpiringStore;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
