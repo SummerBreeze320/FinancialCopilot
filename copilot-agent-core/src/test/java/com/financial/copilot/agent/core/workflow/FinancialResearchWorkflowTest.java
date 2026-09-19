@@ -6,6 +6,7 @@ import com.financial.copilot.agent.core.dag.artifact.payload.FinalSynthesisRepor
 import com.financial.copilot.agent.core.dag.model.*;
 import com.financial.copilot.agent.core.dag.planner.GraphPlannerAgent;
 import com.financial.copilot.agent.core.dag.runtime.*;
+import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
 import com.financial.copilot.agent.tools.workspace.ToolWorkspacePayload;
 import com.financial.copilot.common.event.ResearchStreamEvent;
 import org.junit.jupiter.api.Test;
@@ -85,5 +86,44 @@ class FinancialResearchWorkflowTest {
                 && event.getPayload() instanceof ToolWorkspacePayload payload
                 && "FUND_ANALYSIS".equals(payload.type())
         );
+    }
+
+    @Test
+    void workflowPassesRecentShortTermContextToPlanner() throws Exception {
+        AgentNodeRouter router = mock(AgentNodeRouter.class);
+        GraphPlannerAgent planner = mock(GraphPlannerAgent.class);
+        ShortTermMemoryService memoryService = mock(ShortTermMemoryService.class);
+        when(memoryService.getContext("session-ctx-1")).thenReturn(List.of("USER: 分析易方达蓝筹", "ASSISTANT: 005827 报告概览"));
+
+        ExecutionGraph graph = new ExecutionGraph("ctx-graph");
+        graph.addNode(GraphNode.builder().nodeId("report").taskType("SYNTHESIS").outputType(ArtifactType.FINAL_REPORT).build());
+        when(planner.plan(any())).thenReturn(graph);
+        when(router.execute(any(), any(), any())).thenAnswer(call -> Artifact.of("report", ArtifactType.FINAL_REPORT, "report", FinalSynthesisReport.of("summary", "done")));
+
+        FinancialResearchWorkflow workflow = new FinancialResearchWorkflow(
+                router, planner, null, null, null, ReplanPolicy.never(), null, memoryService
+        );
+
+        GraphRunRequest request = new GraphRunRequest(
+                "run-ctx-1",
+                9L,
+                UUID.randomUUID(),
+                null,
+                "session-ctx-1",
+                "对比刚才那只基金与广发稳健",
+                false,
+                null,
+                ignored -> {},
+                RunMode.SYNC
+        );
+
+        GraphRunResult result = workflow.run(request).completion().get(2, TimeUnit.SECONDS);
+
+        assertThat(result.artifacts().values()).extracting(Artifact::type).contains(ArtifactType.FINAL_REPORT);
+        verify(planner).plan(argThat(req ->
+                req.recentContext() != null
+                && req.recentContext().size() == 2
+                && req.recentContext().contains("USER: 分析易方达蓝筹")
+        ));
     }
 }
