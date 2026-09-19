@@ -1,7 +1,6 @@
 package com.financial.copilot.agent.core.conversation;
 
 import com.financial.copilot.agent.core.event.WorkflowFinishedEvent;
-import com.financial.copilot.agent.core.memory.LongTermMemoryService;
 import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
 import com.financial.copilot.domain.conversation.entity.AgentToolAudit;
 import com.financial.copilot.domain.conversation.entity.ConversationMessage;
@@ -35,7 +34,6 @@ public class ConversationService {
     private final ConversationPort port;
     private final AgentToolAuditPort audits;
     private final ShortTermMemoryService shortMemory;
-    private final LongTermMemoryService longMemory;
     private final ConversationPersistenceProperties properties;
     private final ApplicationEventPublisher publisher;
     private final MeterRegistry metrics;
@@ -44,14 +42,12 @@ public class ConversationService {
             ConversationPort port,
             AgentToolAuditPort audits,
             ShortTermMemoryService shortMemory,
-            LongTermMemoryService longMemory,
             ConversationPersistenceProperties properties,
             ApplicationEventPublisher publisher,
             @Autowired(required = false) MeterRegistry metrics) {
         this.port = port;
         this.audits = audits;
         this.shortMemory = shortMemory;
-        this.longMemory = longMemory;
         this.properties = properties;
         this.publisher = publisher;
         this.metrics = metrics;
@@ -78,7 +74,6 @@ public class ConversationService {
         }
         List<String> context = List.of("USER: " + prompt, "ASSISTANT: " + report);
         shortMemory.replaceContext(sessionKey, context);
-        longMemory.record(sessionKey, report);
         publisher.publishEvent(new WorkflowFinishedEvent(this, sessionKey));
     }
 

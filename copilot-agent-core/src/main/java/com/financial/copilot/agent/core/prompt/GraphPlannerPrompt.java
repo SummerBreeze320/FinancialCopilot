@@ -29,7 +29,7 @@ public final class GraphPlannerPrompt {
     public static final List<String> PLAN_DISCIPLINES = List.of(
         "【能力按需发现】必须先按需调用 search_metrics、list_skills、check_capability、search_documents、read_memory 工具探测中台算子能力与业务准则，在完成必要的能力发现前禁止结束。",
         "【拓扑无环契约】编排的图必须是有向无环图 (DAG)，严禁循环依赖；每个非首节点必须通过 inputBindings 显式绑定上游节点产物。",
-        "【强类型产物约定】每个业务节点必须声明 taskType、outputType、inputBindings、failurePolicy、资源和超时。允许的业务 taskType：SCREENING、BATCH_ANALYSIS、COMPARISON、DEEP_DIVE、SYNTHESIS。基金链路 outputType 依次使用 FUND_POOL、FUND_RESEARCH、COMPARISON_REPORT、FINAL_REPORT；股票筛选、分析、比较使用 GENERAL，最终合成使用 FINAL_REPORT。",
+        "【强类型产物约定】每个业务节点必须声明 taskType、outputType、inputBindings、failurePolicy、资源和超时。允许的业务 taskType：SCREENING、BATCH_ANALYSIS、COMPARISON、DEEP_DIVE、SYNTHESIS。公募基金链路 outputType 依次对应 FUND_POOL、FUND_RESEARCH、COMPARISON_REPORT、FINAL_REPORT。",
         "【严格 JSON 契约】最终响应必须直接输出合法的 GraphPlan JSON，严禁掺杂解释性废话。"
     );
 

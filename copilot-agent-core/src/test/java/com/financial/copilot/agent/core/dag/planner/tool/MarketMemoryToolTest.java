@@ -1,11 +1,11 @@
 package com.financial.copilot.agent.core.dag.planner.tool;
 
-import com.financial.copilot.agent.core.memory.LongTermMemoryService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,26 +32,6 @@ class MarketMemoryToolTest {
     }
 
     @Test
-    @DisplayName("测试注入 LongTermMemoryService 时成功召回事实与历史决策")
-    void testRetrieveMemoryWithMockedService() {
-        LongTermMemoryService memoryService = Mockito.mock(LongTermMemoryService.class);
-        Mockito.when(memoryService.retrieveRelevantFacts("session-100", "稳健理财", 3))
-                .thenReturn(List.of("用户风险偏好为稳健型R2", "偏好近三年最大回撤<15%"));
-        Mockito.when(memoryService.retrieve("session-100", 3))
-                .thenReturn(List.of("上周生成易方达蓝筹研报"));
-
-        MarketMemoryTool tool = new MarketMemoryTool(memoryService);
-        MarketMemoryTool.MemoryRetrievalResult result = tool.retrieveMemory("session-100", "稳健理财", 3);
-
-        assertNotNull(result);
-        assertEquals("session-100", result.sessionKey());
-        assertThat(result.relevantFacts()).hasSize(2)
-                .contains("用户风险偏好为稳健型R2", "偏好近三年最大回撤<15%");
-        assertThat(result.historicalDecisions()).hasSize(1)
-                .contains("上周生成易方达蓝筹研报");
-    }
-
-    @Test
     @DisplayName("测试启用远程记忆客户端时优先使用远程召回结果")
     void testRetrieveMemoryWithRemoteClient() {
         com.financial.copilot.agent.core.memory.remote.RemoteMemoryServiceClient remoteClient =
@@ -65,9 +45,9 @@ class MarketMemoryToolTest {
                                 "m1", 1, "重仓新能源与光伏", "偏好新能源", 10)),
                         10, 500
                 );
-        Mockito.when(remoteClient.recall(Mockito.any())).thenReturn(java.util.Optional.of(bundle));
+        Mockito.when(remoteClient.recall(Mockito.any())).thenReturn(Optional.of(bundle));
 
-        MarketMemoryTool tool = new MarketMemoryTool(null, remoteClient);
+        MarketMemoryTool tool = new MarketMemoryTool(remoteClient);
         MarketMemoryTool.MemoryRetrievalResult result = tool.retrieveMemory("u123:session-1", "新能源", 5);
 
         assertNotNull(result);
@@ -76,23 +56,18 @@ class MarketMemoryToolTest {
     }
 
     @Test
-    @DisplayName("测试远程记忆客户端未启用或超时时平滑降级至本地记忆库")
-    void testRetrieveMemoryFallbackToLocalWhenRemoteFails() {
-        LongTermMemoryService memoryService = Mockito.mock(LongTermMemoryService.class);
-        Mockito.when(memoryService.retrieveRelevantFacts("session-fallback", "芯片", 5))
-                .thenReturn(List.of("关注半导体国产化"));
-        Mockito.when(memoryService.retrieve("session-fallback", 5))
-                .thenReturn(List.of());
-
+    @DisplayName("测试远程记忆客户端未启用或响应为空时安全返回空结果")
+    void testRetrieveMemoryWhenRemoteDisabledOrEmpty() {
         com.financial.copilot.agent.core.memory.remote.RemoteMemoryServiceClient remoteClient =
                 Mockito.mock(com.financial.copilot.agent.core.memory.remote.RemoteMemoryServiceClient.class);
         Mockito.when(remoteClient.isEnabled()).thenReturn(true);
-        Mockito.when(remoteClient.recall(Mockito.any())).thenReturn(java.util.Optional.empty()); // 模拟超时降级
+        Mockito.when(remoteClient.recall(Mockito.any())).thenReturn(Optional.empty());
 
-        MarketMemoryTool tool = new MarketMemoryTool(memoryService, remoteClient);
-        MarketMemoryTool.MemoryRetrievalResult result = tool.retrieveMemory("session-fallback", "芯片", 5);
+        MarketMemoryTool tool = new MarketMemoryTool(remoteClient);
+        MarketMemoryTool.MemoryRetrievalResult result = tool.retrieveMemory("session-empty", "芯片", 5);
 
         assertNotNull(result);
-        assertThat(result.relevantFacts()).contains("关注半导体国产化");
+        assertThat(result.relevantFacts()).isEmpty();
+        assertThat(result.historicalDecisions()).isEmpty();
     }
 }

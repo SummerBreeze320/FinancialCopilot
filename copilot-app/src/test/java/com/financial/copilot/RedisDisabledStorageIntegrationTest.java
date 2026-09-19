@@ -5,7 +5,6 @@ import com.financial.copilot.agent.core.dag.runtime.checkpoint.DagCheckpointStor
 import com.financial.copilot.agent.core.dag.runtime.checkpoint.InMemoryDagCheckpointStore;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraph;
 import com.financial.copilot.agent.core.dag.model.ExecutionGraphSnapshot;
-import com.financial.copilot.agent.core.memory.LongTermMemoryService;
 import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -26,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RedisDisabledStorageIntegrationTest {
 
     @Autowired ShortTermMemoryService shortMemory;
-    @Autowired LongTermMemoryService longMemory;
     @Autowired DagCheckpointStore checkpointStore;
     @Autowired JdbcTemplate jdbc;
 
@@ -34,7 +32,6 @@ class RedisDisabledStorageIntegrationTest {
     void startsWithoutRedisAndUsesLocalMemoryAndCheckpointStores() {
         String key = "redis-off-" + UUID.randomUUID();
         shortMemory.addMessage(key, "recent fact");
-        longMemory.record(key, "durable fact");
         DagCheckpoint checkpoint = new DagCheckpoint(
                 UUID.randomUUID().toString(), 7L, UUID.randomUUID(), null,
                 key, "prompt", false, null,
@@ -44,12 +41,6 @@ class RedisDisabledStorageIntegrationTest {
 
         assertThat(checkpointStore).isInstanceOf(InMemoryDagCheckpointStore.class);
         assertThat(shortMemory.getContext(key)).containsExactly("recent fact");
-        assertThat(longMemory.retrieve(key, 10)).contains("durable fact");
         assertThat(checkpointStore.load(checkpoint.userId(), checkpoint.runId())).isPresent();
-
-        try {
-            jdbc.update("DELETE FROM long_term_memory WHERE session_id = ?", key);
-        } catch (Exception ignored) {
-        }
     }
 }

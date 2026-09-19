@@ -1,6 +1,5 @@
 package com.financial.copilot;
 
-import com.financial.copilot.agent.core.memory.LongTermMemoryService;
 import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -22,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ApplicationStartupTest {
     @LocalServerPort int port;
     @Autowired ShortTermMemoryService shortTerm;
-    @Autowired LongTermMemoryService longTerm;
     @Autowired StringRedisTemplate redis;
     @Autowired JdbcTemplate jdbc;
 
@@ -42,21 +40,8 @@ class ApplicationStartupTest {
             shortTerm.addMessage(session, "recent fact");
             shortTerm.pruneIfNeeded(session);
             assertThat(shortTerm.getContext(session)).containsExactly("recent fact");
-
-            longTerm.record(session, "persisted fact");
-            redis.delete("ltm:" + session); // Force the real database read, not a cache-only round trip.
-            assertThat(longTerm.retrieve(session, 5)).containsExactly("persisted fact");
-            longTerm.recordRefinedFacts(session, List.of("refined fact"));
-            assertThat(longTerm.getRefinedFacts(session)).singleElement()
-                    .satisfies(fact -> {
-                        assertThat(fact.getContent()).isEqualTo("refined fact");
-                        assertThat(fact.getId()).isNotNull();
-                        assertThat(fact.getCreatedAt()).isNotNull();
-                    });
         } finally {
-            redis.delete(List.of("shortterm:session:" + session, "ltm:" + session));
-            jdbc.update("DELETE FROM refined_fact WHERE session_id = ?", session);
-            jdbc.update("DELETE FROM long_term_memory WHERE session_id = ?", session);
+            redis.delete(List.of("shortterm:session:" + session));
         }
     }
 }

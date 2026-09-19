@@ -164,39 +164,39 @@ class SkillSystemTest {
     @DisplayName("测试动态注册与四维索引实时扩展")
     void testDynamicSkillRegistrationAndIndexUpdate() {
         SkillDefinition custom = SkillDefinition.builder()
-                .name("stock-valuation-audit")
-                .description("个股估值与财务穿透风控规范")
-                .assetCategory("STOCK")
-                .taskTypes(List.of("STOCK_AUDIT", "VALUATION"))
-                .triggerKeywords(List.of("估值", "DCF", "财务造假", "爆雷"))
+                .name("fund-valuation-audit")
+                .description("基金估值与财务穿透风控规范")
+                .assetCategory("FUND")
+                .taskTypes(List.of("FUND_AUDIT", "VALUATION"))
+                .triggerKeywords(List.of("估值", "DCF", "造假", "爆雷"))
                 .rulesContent("排查商誉减值与大股东高比例质押风险")
                 .build();
 
         registry.registerSkill(custom);
 
         // 1. 验证根据名称获取
-        Optional<SkillDefinition> found = registry.getSkill("stock-valuation-audit");
+        Optional<SkillDefinition> found = registry.getSkill("fund-valuation-audit");
         assertTrue(found.isPresent());
-        assertEquals("STOCK", found.get().getAssetCategory());
+        assertEquals("FUND", found.get().getAssetCategory());
 
         // 2. 验证任务类型索引自动更新
         List<SkillDefinition> valuationSkills = registry.findSkillsByTaskType("VALUATION");
         assertFalse(valuationSkills.isEmpty());
-        assertEquals("stock-valuation-audit", valuationSkills.get(0).getName());
+        assertEquals("fund-valuation-audit", valuationSkills.get(0).getName());
 
         // 3. 验证触发词倒排索引自动更新
         List<SkillDefinition> dcfSkills = registry.findSkillsByKeyword("DCF");
         assertFalse(dcfSkills.isEmpty());
-        assertEquals("stock-valuation-audit", dcfSkills.get(0).getName());
+        assertEquals("fund-valuation-audit", dcfSkills.get(0).getName());
 
         // 4. 验证资产大类索引自动更新
-        List<SkillDefinition> stockSkills = registry.findSkillsByAssetCategory("STOCK");
-        assertFalse(stockSkills.isEmpty());
-        assertTrue(stockSkills.stream().anyMatch(s -> s.getName().equals("stock-valuation-audit")));
+        List<SkillDefinition> fundSkills = registry.findSkillsByAssetCategory("FUND");
+        assertFalse(fundSkills.isEmpty());
+        assertTrue(fundSkills.stream().anyMatch(s -> s.getName().equals("fund-valuation-audit")));
 
         // 5. 验证动态意图匹配
-        String matched = matcher.matchSkillInstructions("VALUATION", "请帮我排查该公司是否存在财务造假或爆雷风险");
-        assertTrue(matched.contains("stock-valuation-audit"));
+        String matched = matcher.matchSkillInstructions("VALUATION", "请帮我排查该公司是否存在造假或爆雷风险");
+        assertTrue(matched.contains("fund-valuation-audit"));
         assertTrue(matched.contains("商誉减值"));
     }
 }

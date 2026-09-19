@@ -135,8 +135,9 @@ public class ResearchAgentController {
     @GetMapping("/health")
     public ApiResult<Map<String, Object>> healthCheck() {
         return ApiResult.success(Map.of("status", "UP", "system", "Financial Research Agent",
-                "activeDomain", "FUND", "extensibleDomains", new String[]{"STOCK", "FUTURES", "WEALTH"},
+                "activeDomain", "FUND", "extensibleDomains", new String[]{},
                 "pipelineCapabilities", AgentRoleCatalog.taskTypes().stream().sorted().toArray(String[]::new),
                 "orm", "Lombok + MyBatis-Plus 3.5.7 + PGVector", "timestamp", System.currentTimeMillis()));
+
     }
 }

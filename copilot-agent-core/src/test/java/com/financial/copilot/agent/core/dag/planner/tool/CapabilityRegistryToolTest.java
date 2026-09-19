@@ -26,8 +26,8 @@ class CapabilityRegistryToolTest {
         assertThat(list).hasSize(1);
         assertThat(list).allMatch(CapabilityRegistryTool.CapabilityDescriptor::isAvailable);
         assertTrue(tool.isAssetCategorySupported(AssetCategory.FUND));
-        assertFalse(tool.isAssetCategorySupported(AssetCategory.STOCK));
-        assertFalse(tool.isAssetCategorySupported(AssetCategory.FUTURES));
+        assertFalse(tool.isAssetCategorySupported(null));
+
 
         CapabilityRegistryTool.CapabilityDescriptor fundDesc = list.getFirst();
         assertThat(fundDesc.capabilityName()).isEqualTo("FundHttpToolSet");

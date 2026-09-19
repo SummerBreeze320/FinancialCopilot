@@ -1,7 +1,6 @@
 package com.financial.copilot;
 
 import com.financial.copilot.agent.core.conversation.ConversationService;
-import com.financial.copilot.agent.core.memory.LongTermMemoryService;
 import com.financial.copilot.agent.core.memory.ShortTermMemoryService;
 import com.financial.copilot.config.security.SecurityUtils;
 import com.financial.copilot.domain.conversation.entity.ConversationMessage;
@@ -32,7 +31,6 @@ class ConversationPersistenceTest {
     @Autowired ConversationService service;
     @Autowired ConversationPort port;
     @Autowired ShortTermMemoryService shortMemory;
-    @Autowired LongTermMemoryService longMemory;
     @Autowired StringRedisTemplate redis;
     @Autowired JdbcTemplate jdbc;
 
@@ -102,7 +100,6 @@ class ConversationPersistenceTest {
         try {
             String key = SecurityUtils.sessionKey(owner, conversationId.toString());
             redis.delete("shortterm:session:" + key);
-            redis.delete("ltm:" + key);
             jdbc.update("DELETE FROM agent_tool_audit WHERE conversation_id = ?", conversationId);
             jdbc.update("DELETE FROM conversation_message WHERE conversation_id = ?", conversationId);
             jdbc.update("DELETE FROM research_conversation WHERE id = ?", conversationId);

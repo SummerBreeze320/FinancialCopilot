@@ -3,16 +3,19 @@ from typing import Any
 from memory_service.domain.enums import AssertionType, EvidenceType
 from memory_service.domain.fact import Fact
 from memory_service.domain.evidence import Evidence
+from memory_service.engine.extraction.mem0_extractor import Mem0FactExtractor
 
 
 class FactExtractor:
     """
     事实与偏好提炼器：
     从输入会话数据中提炼原子事实 (Fact) 与支持证据 (Evidence)。
-    采用多路提炼策略：
-    1. 结构化/模式化规则提炼（金融核心画像字段：风险偏好、期限、资金预算、禁止标的等）
-    2. 上游大模型事实抽取结果规范化（兼容 Mem0/JSON 格式事实输出）
+    深度集成开源 Mem0 (mem0ai) 提取协议与金融专精规则。
     """
+
+    def __init__(self, mem0_extractor: Mem0FactExtractor | None = None):
+        self.mem0_extractor = mem0_extractor or Mem0FactExtractor()
+
 
     FINANCIAL_PATTERNS = [
         {
@@ -97,9 +100,29 @@ class FactExtractor:
                 facts.append(fact)
                 evidences.append(evidence)
 
-        # 2. 从会话文本消息中根据领域模式提炼
+        # 2. 从会话文本消息或 context 列表中根据 Mem0 与金融领域模式提炼
         messages = session_data.get("messages", [])
+        if not messages and "context" in session_data:
+            ctx = session_data["context"]
+            if isinstance(ctx, list):
+                for item in ctx:
+                    if isinstance(item, str):
+                        if item.startswith("USER:"):
+                            messages.append({"role": "user", "content": item[5:].strip()})
+                        elif item.startswith("ASSISTANT:"):
+                            messages.append({"role": "assistant", "content": item[10:].strip()})
+                        else:
+                            messages.append({"role": "user", "content": item.strip()})
+
+        # 调用 Mem0 提炼器
+        mem0_facts, mem0_evidences = self.mem0_extractor.extract_facts(session_id, messages, session_data)
+        for mf, me in zip(mem0_facts, mem0_evidences):
+            if not any(f.predicate == mf.predicate for f in facts):
+                facts.append(mf)
+                evidences.append(me)
+
         for msg_idx, msg in enumerate(messages):
+
             if msg.get("role") != "user":
                 continue
             text = msg.get("content", "")

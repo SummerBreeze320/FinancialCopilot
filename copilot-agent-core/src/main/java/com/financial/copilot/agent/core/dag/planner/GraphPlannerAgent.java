@@ -102,7 +102,7 @@ public class GraphPlannerAgent implements RePlanAdvisor {
         PlanningTools(MetricRAGTool m,SkillRegistryTool s,CapabilityRegistryTool c,MarketMemoryTool memory,FinancialDocumentSearchTool docs){this.m=m;this.s=s;this.c=c;this.memory=memory;this.docs=docs;}
         @Tool(name="search_metrics",description="检索适用金融指标和阈值",readOnly=true) public Object metrics(@ToolParam(name="query",description="研究目标")String q){return m.searchMetrics(q);}
         @Tool(name="list_skills",description="列出可用投研技能",readOnly=true) public Object skills(){return s.listSkills();}
-        @Tool(name="check_capability",description="检查资产类别的数据能力",readOnly=true) public boolean capability(@ToolParam(name="assetCategory",description="FUND 或 STOCK")String category){return c.isAssetCategorySupported(AssetCategory.valueOf(category));}
+        @Tool(name="check_capability",description="检查资产类别的数据能力",readOnly=true) public boolean capability(@ToolParam(name="assetCategory",description="资产类别: FUND")String category){return c.isAssetCategorySupported(AssetCategory.valueOf(category));}
         @Tool(name="search_documents",description="检索金融文档",readOnly=true) public Object documents(@ToolParam(name="query",description="检索词")String q){return docs.search(q);}
         @Tool(name="read_memory",description="读取会话市场记忆",readOnly=true) public Object memory(@ToolParam(name="sessionKey",description="会话ID")String id,@ToolParam(name="query",description="检索词")String q){return memory.retrieveMemory(id,q,5);}
     }

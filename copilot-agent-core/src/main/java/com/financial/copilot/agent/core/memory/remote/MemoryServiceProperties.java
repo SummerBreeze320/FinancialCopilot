@@ -13,9 +13,9 @@ import org.springframework.stereotype.Component;
 public class MemoryServiceProperties {
 
     /**
-     * 是否启用远程 Python 记忆微服务（默认 false，开启前降级使用本地存储）
+     * 是否启用远程 Python 记忆微服务（默认 true）
      */
-    private boolean enabled = false;
+    private boolean enabled = true;
 
     /**
      * 记忆微服务 HTTP 基础地址

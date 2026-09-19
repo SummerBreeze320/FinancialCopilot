@@ -1,21 +1,22 @@
 package com.financial.copilot.agent.core.memory;
 
 import com.financial.copilot.agent.core.event.WorkflowFinishedEvent;
-import com.financial.copilot.agent.core.llm.service.LlmService;
-import com.financial.copilot.agent.core.prompt.MemoryRefinementPrompt;
+import com.financial.copilot.agent.core.memory.remote.RemoteMemoryServiceClient;
+import com.financial.copilot.agent.core.memory.remote.dto.ProcessSessionRequestDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 /**
  * <h1>短期记忆语义提纯异步任务 (Memory Refinement Task)</h1>
  * <p>
- * 监听工作流完结事件 {@link WorkflowFinishedEvent}，调用大模型对当前会话的短期交互历史
- * 进行事实提取与噪音过滤，将高价值事实持久化至长期记忆库。
+ * 监听工作流完结事件 {@link WorkflowFinishedEvent}，将当前会话的短期上下文
+ * 异步投递至基于 Mem0 与 ReMe 驱动的 Python 长期记忆微服务离线加工管道。
  * </p>
  *
  * @author FinancialCopilot
@@ -25,32 +26,21 @@ import java.util.stream.Collectors;
 public class MemoryRefinementTask {
 
     private final ShortTermMemoryService shortTermMemoryService;
-    private final LongTermMemoryService longTermMemoryService;
-    private final LlmService llmService;
-    private final com.financial.copilot.agent.core.memory.remote.RemoteMemoryServiceClient remoteMemoryServiceClient;
+    private final RemoteMemoryServiceClient remoteMemoryServiceClient;
 
-    public MemoryRefinementTask(ShortTermMemoryService shortTermMemoryService,
-                               LongTermMemoryService longTermMemoryService,
-                               LlmService llmService) {
-        this(shortTermMemoryService, longTermMemoryService, llmService, null);
+    public MemoryRefinementTask(ShortTermMemoryService shortTermMemoryService) {
+        this(shortTermMemoryService, null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     public MemoryRefinementTask(ShortTermMemoryService shortTermMemoryService,
-                               LongTermMemoryService longTermMemoryService,
-                               LlmService llmService,
-                               @org.springframework.beans.factory.annotation.Autowired(required = false)
-                               com.financial.copilot.agent.core.memory.remote.RemoteMemoryServiceClient remoteMemoryServiceClient) {
+                                @Autowired(required = false) RemoteMemoryServiceClient remoteMemoryServiceClient) {
         this.shortTermMemoryService = shortTermMemoryService;
-        this.longTermMemoryService = longTermMemoryService;
-        this.llmService = llmService;
         this.remoteMemoryServiceClient = remoteMemoryServiceClient;
     }
 
     /**
-     * Runs asynchronously after a workflow finishes. It extracts the short‑term memory for the
-     * given session, asks the LLM to summarise factual statements, parses the result and stores
-     * each fact as a refined entry in long‑term memory.
+     * 工作流结束后的异步处理入口：提取会话短期记忆，投递至远程 Python 长期记忆离线提纯管道
      */
     @EventListener
     @Async("taskExecutor")
@@ -61,44 +51,27 @@ public class MemoryRefinementTask {
             log.error("[MemoryRefinement] Failed handling WorkflowFinishedEvent for session {}: {}", event.getSessionKey(), e.getMessage(), e);
         }
     }
+
     public void refineAndRecord(String sessionKey) {
         try {
             List<String> context = shortTermMemoryService.getContext(sessionKey);
             if (context == null || context.isEmpty()) {
-                log.warn("[MemoryRefinement] No short‑term memory found for session {}", sessionKey);
+                log.warn("[MemoryRefinement] No short-term memory found for session {}", sessionKey);
                 return;
             }
-            String joined = String.join("\n", context);
-            var spec = MemoryRefinementPrompt.buildSpec(joined);
-            String llmResponse = llmService.chat(spec.toLlmRequest());
-            List<String> facts = llmResponse.lines()
-                    .map(String::trim)
-                    .filter(l -> !l.isEmpty())
-                    .collect(Collectors.toList());
-            if (facts.isEmpty()) {
-                log.warn("[MemoryRefinement] LLM returned no facts for session {}", sessionKey);
-                return;
-            }
-            longTermMemoryService.recordRefinedFacts(sessionKey, facts);
-            log.info("[MemoryRefinement] Recorded {} refined facts for session {}", facts.size(), sessionKey);
 
             if (remoteMemoryServiceClient != null && remoteMemoryServiceClient.isEnabled()) {
-                try {
-                    String userId = sessionKey.contains(":") ? sessionKey.substring(0, sessionKey.indexOf(":")) : sessionKey;
-                    com.financial.copilot.agent.core.memory.remote.dto.ProcessSessionRequestDTO req =
-                            com.financial.copilot.agent.core.memory.remote.dto.ProcessSessionRequestDTO.builder()
-                                    .sessionId(sessionKey)
-                                    .userId(userId)
-                                    .sessionData(java.util.Map.of("context", context, "refined_facts", facts))
-                                    .build();
-                    remoteMemoryServiceClient.processSessionAsync(req);
-                } catch (Exception ex) {
-                    log.warn("[MemoryRefinement] Failed sending session to remote memory service: {}", ex.getMessage());
-                }
+                String userId = sessionKey.contains(":") ? sessionKey.substring(0, sessionKey.indexOf(":")) : sessionKey;
+                ProcessSessionRequestDTO req = ProcessSessionRequestDTO.builder()
+                        .sessionId(sessionKey)
+                        .userId(userId)
+                        .sessionData(Map.of("context", context))
+                        .build();
+                remoteMemoryServiceClient.processSessionAsync(req);
+                log.info("[MemoryRefinement] Session context dispatched to remote memory service: session={}", sessionKey);
             }
         } catch (Exception e) {
-            log.error("[MemoryRefinement] Failed for session {}: {}", sessionKey, e.getMessage(), e);
+            log.error("[MemoryRefinement] Failed dispatching for session {}: {}", sessionKey, e.getMessage(), e);
         }
     }
-
 }
