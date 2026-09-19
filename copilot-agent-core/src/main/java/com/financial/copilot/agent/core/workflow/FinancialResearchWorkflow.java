@@ -26,6 +26,17 @@ public class FinancialResearchWorkflow {
     private final DagRuntime runtime;
     private final GraphRunRegistry registry;
     private final DagCheckpointStore checkpointStore;
+    private final ShortTermMemoryService shortTermMemoryService;
+    public FinancialResearchWorkflow(
+            AgentNodeRouter agentRouter,
+            GraphPlannerAgent planner,
+            ResourceManager resources,
+            DagCheckpointStore checkpointStore,
+            NodeQualityGate qualityGate,
+            ReplanPolicy replanPolicy,
+            GraphRunRegistry registry) {
+        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, null);
+    }
 
     @Autowired
     public FinancialResearchWorkflow(
@@ -35,11 +46,13 @@ public class FinancialResearchWorkflow {
             @Autowired(required = false) DagCheckpointStore checkpointStore,
             @Autowired(required = false) NodeQualityGate qualityGate,
             @Autowired(required = false) ReplanPolicy replanPolicy,
-            @Autowired(required = false) GraphRunRegistry registry) {
+            @Autowired(required = false) GraphRunRegistry registry,
+            @Autowired(required = false) ShortTermMemoryService shortTermMemoryService) {
         this.agentRouter = agentRouter;
         this.planner = planner;
         this.registry = registry == null ? new GraphRunRegistry() : registry;
         this.checkpointStore = checkpointStore == null ? new InMemoryDagCheckpointStore() : checkpointStore;
+        this.shortTermMemoryService = shortTermMemoryService;
         NodeExecutor dispatcher = this::dispatch;
         this.runtime = new DagRuntime(dispatcher,
                 resources == null ? ResourceManager.defaultManager() : resources,
@@ -50,8 +63,11 @@ public class FinancialResearchWorkflow {
     }
 
     public GraphRunHandle run(GraphRunRequest request) {
+        List<String> recentContext = (shortTermMemoryService != null && request.sessionKey() != null)
+                ? shortTermMemoryService.getContext(request.sessionKey())
+                : Collections.emptyList();
         ExecutionGraph graph = planner.plan(new GraphPlanningRequest(request.prompt(), request.sessionKey(),
-                request.profile(), request.usageConsumer(), request.enableThinking(), request));
+                request.profile(), request.usageConsumer(), request.enableThinking(), request, recentContext));
         GraphRunHandle handle = registry.register(request.userId(), runtime.run(request, graph));
         return handle;
     }

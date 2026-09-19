@@ -33,6 +33,9 @@ copilot:
   conversation:
     persistence-enabled: ${CONVERSATION_PERSISTENCE_ENABLED:true}
   memory:
+    short-term:
+      ttl-minutes: ${COPILOT_SHORT_TERM_MEMORY_TTL_MINUTES:30}
+      token-threshold: ${COPILOT_SHORT_TERM_MEMORY_TOKEN_THRESHOLD:6000}
     remote-service:
       enabled: ${COPILOT_MEMORY_REMOTE_ENABLED:true}
       base-url: ${COPILOT_MEMORY_BASE_URL:http://localhost:8000}

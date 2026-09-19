@@ -70,15 +70,29 @@ public final class GraphPlannerPrompt {
     }
 
     /**
-     * 构建初始建图用户提示词规格
+     * 构建初始建图用户提示词规格（兼容无历史上下文）
      */
     public static RTCFPromptSpec buildPlanSpec(String userGoal, String sessionKey, UserInvestmentProfile profile) {
+        return buildPlanSpec(userGoal, sessionKey, profile, null);
+    }
+
+    /**
+     * 构建包含多轮短期会话上下文的初始建图提示词规格
+     */
+    public static RTCFPromptSpec buildPlanSpec(String userGoal, String sessionKey, UserInvestmentProfile profile, List<String> recentContext) {
         List<RTCFPromptSpec.ContextSlot> slots = new ArrayList<>();
 
         if (userGoal != null && !userGoal.isBlank()) {
             slots.add(RTCFPromptSpec.ContextSlot.builder()
                     .slotName("USER GOAL")
                     .content(userGoal.trim())
+                    .build());
+        }
+
+        if (recentContext != null && !recentContext.isEmpty()) {
+            slots.add(RTCFPromptSpec.ContextSlot.builder()
+                    .slotName("CONVERSATION RECENT CONTEXT")
+                    .content(String.join("\n", recentContext))
                     .build());
         }
 
@@ -99,7 +113,7 @@ public final class GraphPlannerPrompt {
         return RTCFPromptSpec.builder()
                 .role(PLAN_ROLE)
                 .coreDisciplines(PLAN_DISCIPLINES)
-                .task("根据用户诉求与画像，先调用能力发现工具探测算子，然后输出完整的 GraphPlan JSON 拓扑图。")
+                .task("根据用户诉求、会话上下文与画像，先调用能力发现工具探测算子，然后输出完整的 GraphPlan JSON 拓扑图。若用户提问使用代词或省略指代，请结合 CONVERSATION RECENT CONTEXT 解析对应标的。")
                 .contextSlots(slots)
                 .format("输出无任何 Markdown 标记的纯 JSON 格式 GraphPlan 对象。")
                 .build();

@@ -72,8 +72,9 @@ public class ConversationService {
         if (properties.isPersistenceEnabled() && run.assistantMessageId() != null) {
             retryTerminal(() -> port.completeAssistant(userId, run.runId(), report, metadata, Instant.now()));
         }
-        List<String> context = List.of("USER: " + prompt, "ASSISTANT: " + report);
-        shortMemory.replaceContext(sessionKey, context);
+        shortMemory.addMessage(sessionKey, "USER: " + prompt);
+        shortMemory.addMessage(sessionKey, "ASSISTANT: " + report);
+        shortMemory.pruneIfNeeded(sessionKey);
         publisher.publishEvent(new WorkflowFinishedEvent(this, sessionKey));
     }
 

@@ -3,14 +3,20 @@ package com.financial.copilot.agent.core.memory;
 import com.financial.copilot.agent.core.memory.store.ShortTermMemoryStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.List;
 
 /**
- * Service managing short-term memory for a single execution session.
- * Delegates storage to ShortTermMemoryStore (Redis or in-memory) with a 30-minute TTL.
+ * <h1>短期记忆与会话上下文服务 (ShortTermMemoryService)</h1>
+ * <p>
+ * 统一管理单会话的多轮对话与短期交互记忆，代理存储至 {@link ShortTermMemoryStore}（Redis / 本地缓存），
+ * 并由 {@link ContextReducer} 进行基于 Token 安全配额的智能滑动窗口滚动摘要治理。
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 @Service
 public class ShortTermMemoryService {
@@ -23,10 +29,17 @@ public class ShortTermMemoryService {
 
     public ShortTermMemoryService(ShortTermMemoryStore store,
                                   ContextReducer contextReducer) {
+        this(store, contextReducer, new ShortTermMemoryProperties());
+    }
+
+    @Autowired
+    public ShortTermMemoryService(ShortTermMemoryStore store,
+                                  ContextReducer contextReducer,
+                                  @Autowired(required = false) ShortTermMemoryProperties properties) {
         this.store = store;
         this.contextReducer = contextReducer;
-        this.ttlMinutes = 30L;
-        this.tokenThreshold = 8000;
+        this.ttlMinutes = properties != null ? properties.getTtlMinutes() : 30L;
+        this.tokenThreshold = properties != null ? properties.getTokenThreshold() : 6000;
     }
 
     public void addMessage(String sessionId, String message) {
@@ -50,9 +63,9 @@ public class ShortTermMemoryService {
         }
         int currentTokens = TokenUtil.estimateTokens(context);
         if (currentTokens > tokenThreshold) {
-            log.info("[ShortTermMemory] Token budget exceeded ({} > {}), triggering reduction", currentTokens, tokenThreshold);
-            int removed = contextReducer.messagesToRemove(context, tokenThreshold);
-            store.trim(memoryKey(sessionId), removed, -1);
+            log.info("[ShortTermMemory] Token budget exceeded ({} > {}), triggering rolling reduction", currentTokens, tokenThreshold);
+            List<String> reduced = contextReducer.compressAndReduce(context, tokenThreshold);
+            store.replace(memoryKey(sessionId), reduced, Duration.ofMinutes(ttlMinutes));
         }
     }
 
@@ -68,11 +81,15 @@ public class ShortTermMemoryService {
         }
     }
 
-    private String memoryKey(String sessionId) {
-        return "shortterm:session:" + sessionId;
+    public long getTtlMinutes() {
+        return ttlMinutes;
     }
 
-    private String executionLogKey(String sessionId) {
-        return "executionlog:session:" + sessionId;
+    public int getTokenThreshold() {
+        return tokenThreshold;
+    }
+
+    private String memoryKey(String sessionId) {
+        return "shortterm:session:" + sessionId;
     }
 }

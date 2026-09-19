@@ -36,7 +36,7 @@ public class GraphPlannerAgent implements RePlanAdvisor {
         Toolkit toolkit=new Toolkit();toolkit.registerTool(new PlanningTools(metrics,skills,capabilities,memory,documents));
         NodeExecutionContext context=context(request,"__planner__");
         String userPrompt = GraphPlannerPrompt.buildPlanSpec(
-                request.prompt(), request.sessionKey(), request.profile()).renderUserPrompt();
+                request.prompt(), request.sessionKey(), request.profile(), request.recentContext()).renderUserPrompt();
         var run=factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
                 "GraphPlannerAgent","动态图规划", GraphPlannerPrompt.PLAN_SYSTEM_PROMPT, toolkit,8),
                 userPrompt, context);

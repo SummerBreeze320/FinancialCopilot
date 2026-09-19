@@ -11,7 +11,7 @@ import java.util.List;
  * <h1>上下文缩减与滚动摘要治理器 (Context Reducer with Rolling Summary)</h1>
  * <p>
  * 遵循 Context Engineering 理念：当会话消息超出 Token 预算时，
- * 避免粗暴盲目丢弃早期对话，而是将移除的历史执行轮次压缩为紧凑的【历史摘要】，
+ * 避免粗暴盲目丢弃早期对话，而是将移除的历史执行轮次压缩为紧凑的【前期历史交互摘要】，
  * 保留关键决策链条的同时使 Token 严格保持在安全配额之内。
  * </p>
  *
@@ -64,7 +64,7 @@ public class ContextReducer {
         List<String> evicted = context.subList(0, removedCount);
         List<String> retained = new ArrayList<>(context.subList(removedCount, context.size()));
 
-        // 生成滚动摘要
+        // 生成滚动摘要并置于首位
         String summary = buildEvictedSummary(evicted);
         if (!summary.isBlank()) {
             retained.add(0, summary);
@@ -76,16 +76,36 @@ public class ContextReducer {
     private String buildEvictedSummary(List<String> evicted) {
         if (evicted == null || evicted.isEmpty()) return "";
         StringBuilder sb = new StringBuilder("【前期历史交互摘要】:\n");
-        int count = 0;
+        List<String> items = new ArrayList<>();
+
         for (String msg : evicted) {
-            count++;
-            String line = msg.trim().replaceAll("\n+", " ");
-            if (line.length() > 80) {
-                line = line.substring(0, 80) + "...";
+            if (msg == null || msg.isBlank()) continue;
+            if (msg.startsWith("【前期历史交互摘要】")) {
+                int newlineIdx = msg.indexOf('\n');
+                if (newlineIdx >= 0) {
+                    String[] lines = msg.substring(newlineIdx + 1).split("\n");
+                    for (String l : lines) {
+                        String clean = l.trim();
+                        if (!clean.isBlank() && clean.startsWith("- ") && !clean.contains("已按 Token 预算归档")) {
+                            items.add(clean.replaceFirst("^-\\s*(步骤/轮次\\d+:\\s*)?", ""));
+                        }
+                    }
+                }
+            } else {
+                String line = msg.trim().replaceAll("\\s+", " ");
+                if (line.length() > 80) {
+                    line = line.substring(0, 80) + "...";
+                }
+                items.add(line);
             }
-            sb.append("- 步骤/轮次").append(count).append(": ").append(line).append("\n");
+        }
+
+        int count = 0;
+        for (String item : items) {
+            count++;
+            sb.append("- 步骤/轮次").append(count).append(": ").append(item).append("\n");
             if (count >= 5) {
-                int remaining = evicted.size() - count;
+                int remaining = items.size() - count;
                 if (remaining > 0) {
                     sb.append("  (其余 ").append(remaining).append(" 条早期记录已按 Token 预算归档)\n");
                 }

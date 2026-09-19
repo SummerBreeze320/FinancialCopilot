@@ -117,4 +117,21 @@ class RTCFPromptSpecTest {
         assertTrue(userPrompt.contains("sess-123"));
         assertTrue(userPrompt.contains("GraphPlan"));
     }
+
+    @Test
+    @DisplayName("测试 GraphPlannerPrompt 成功装配多轮短期上下文槽位")
+    void testGraphPlannerPromptWithRecentContext() {
+        List<String> recentContext = List.of(
+                "USER: 筛选两只医药基金",
+                "ASSISTANT: 推荐工银医疗(003095)与中欧医疗(005827)"
+        );
+        RTCFPromptSpec planSpec = GraphPlannerPrompt.buildPlanSpec(
+                "对比刚才那两只的重仓股", "sess-multi", null, recentContext);
+        String userPrompt = planSpec.renderUserPrompt();
+
+        assertTrue(userPrompt.contains("### [CONVERSATION RECENT CONTEXT]"));
+        assertTrue(userPrompt.contains("003095"));
+        assertTrue(userPrompt.contains("005827"));
+        assertTrue(userPrompt.contains("CONVERSATION RECENT CONTEXT 解析对应标的"));
+    }
 }
