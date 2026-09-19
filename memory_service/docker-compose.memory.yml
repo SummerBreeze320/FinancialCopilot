@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. MySQL 8.0: 长期记忆主权数据库 (不可变多版本 + 槽位 + 经验 + 证据链)
+  # ----------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: copilot-memory-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_sec
+      MYSQL_DATABASE: financial_copilot
+      MYSQL_USER: copilot
+      MYSQL_PASSWORD: copilot_pass
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_memory_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "copilot", "-pcopilot_pass"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ----------------------------------------------------------------------------
+  # 2. Milvus 2.4 Standalone: 可从 MySQL 权威源随时全量重建的向量检索加速引索
+  # ----------------------------------------------------------------------------
+  milvus-standalone:
+    image: milvusdb/milvus:v2.4.0
+    container_name: copilot-memory-milvus
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_USE_EMBED: "true"
+      ETCD_DATA_DIR: "/var/lib/milvus/etcd"
+      COMMON_STORAGETYPE: "local"
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - milvus_memory_data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 10s
+      start_period: 30s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # 3. Memory API: 在线 Reader 服务 (零生成式 LLM 调用, <10ms 严格预算组装)
+  # ----------------------------------------------------------------------------
+  memory-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: copilot-memory-api
+    restart: always
+    command: ["uvicorn", "memory_service.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=copilot
+      - MYSQL_PASSWORD=copilot_pass
+      - MYSQL_DATABASE=financial_copilot
+      - MILVUS_HOST=milvus-standalone
+      - MILVUS_PORT=19530
+      - USE_SQLITE=false
+      - DEFAULT_TOKEN_BUDGET=500
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.deepseek.com/v1}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-chat}
+      - EMBEDDING_BASE_URL=${EMBEDDING_BASE_URL:-https://api.openai.com/v1}
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY:-}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-small}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      milvus-standalone:
+        condition: service_started
+
+  # ----------------------------------------------------------------------------
+  # 4. Memory Worker: 离线异步加工与合并编译任务调度器 (悲观行锁，防竞态)
+  # ----------------------------------------------------------------------------
+  memory-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: copilot-memory-worker
+    restart: always
+    command: ["python", "-m", "memory_service.jobs.worker"]
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=copilot
+      - MYSQL_PASSWORD=copilot_pass
+      - MYSQL_DATABASE=financial_copilot
+      - MILVUS_HOST=milvus-standalone
+      - MILVUS_PORT=19530
+      - USE_SQLITE=false
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://api.deepseek.com/v1}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-chat}
+      - EMBEDDING_BASE_URL=${EMBEDDING_BASE_URL:-https://api.openai.com/v1}
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY:-}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-small}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      milvus-standalone:
+        condition: service_started
+
+volumes:
+  mysql_memory_data:
+  milvus_memory_data:

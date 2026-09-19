@@ -32,6 +32,12 @@ copilot:
     enabled: ${REDIS_ENABLED:true}
   conversation:
     persistence-enabled: ${CONVERSATION_PERSISTENCE_ENABLED:true}
+  memory:
+    remote-service:
+      enabled: ${COPILOT_MEMORY_REMOTE_ENABLED:false}
+      base-url: ${COPILOT_MEMORY_BASE_URL:http://localhost:8000}
+      timeout-ms: ${COPILOT_MEMORY_TIMEOUT_MS:200}
+      default-token-budget: 500
   jwt:
     secret: ${JWT_SECRET:FinancialCopilotSecretKeyForJwtAuthentication2026SecureKeyWithAtLeast256BitsLong!}
     access-token-expiration-ms: 7200000

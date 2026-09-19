@@ -37,14 +37,21 @@ public class MarketMemoryTool {
     ) {}
 
     private final LongTermMemoryService longTermMemoryService;
+    private final com.financial.copilot.agent.core.memory.remote.RemoteMemoryServiceClient remoteMemoryServiceClient;
 
     public MarketMemoryTool() {
-        this(null);
+        this(null, null);
+    }
+
+    public MarketMemoryTool(LongTermMemoryService longTermMemoryService) {
+        this(longTermMemoryService, null);
     }
 
     @Autowired
-    public MarketMemoryTool(@Autowired(required = false) LongTermMemoryService longTermMemoryService) {
+    public MarketMemoryTool(@Autowired(required = false) LongTermMemoryService longTermMemoryService,
+                            @Autowired(required = false) com.financial.copilot.agent.core.memory.remote.RemoteMemoryServiceClient remoteMemoryServiceClient) {
         this.longTermMemoryService = longTermMemoryService;
+        this.remoteMemoryServiceClient = remoteMemoryServiceClient;
     }
 
     /**
@@ -56,7 +63,45 @@ public class MarketMemoryTool {
      * @return 记忆检索结果
      */
     public MemoryRetrievalResult retrieveMemory(String sessionKey, String query, int maxCount) {
-        if (longTermMemoryService == null || sessionKey == null || sessionKey.isBlank()) {
+        if (sessionKey == null || sessionKey.isBlank()) {
+            return new MemoryRetrievalResult(sessionKey, Collections.emptyList(), Collections.emptyList());
+        }
+
+        // 1. 尝试优先使用远程 Python 记忆微服务
+        if (remoteMemoryServiceClient != null && remoteMemoryServiceClient.isEnabled()) {
+            String userId = extractUserId(sessionKey);
+            com.financial.copilot.agent.core.memory.remote.dto.RecallRequestDTO request =
+                    com.financial.copilot.agent.core.memory.remote.dto.RecallRequestDTO.builder()
+                            .userId(userId)
+                            .queryText(query)
+                            .taskType("investment_advisory")
+                            .tokenBudget(500)
+                            .build();
+
+            java.util.Optional<com.financial.copilot.agent.core.memory.remote.dto.MemoryBundleDTO> bundleOpt =
+                    remoteMemoryServiceClient.recall(request);
+            if (bundleOpt.isPresent()) {
+                com.financial.copilot.agent.core.memory.remote.dto.MemoryBundleDTO bundle = bundleOpt.get();
+                List<String> facts = bundle.getRecalledItems() != null
+                        ? bundle.getRecalledItems().stream().map(item -> item.getContent()).toList()
+                        : Collections.emptyList();
+                List<String> decisions = bundle.getCompactContext() != null && !bundle.getCompactContext().isBlank()
+                        ? List.of(bundle.getCompactContext())
+                        : Collections.emptyList();
+
+                log.debug("[MARKET-MEMORY-TOOL] 远程长期记忆召回成功: session={}, items={}, tokens={}",
+                        sessionKey, facts.size(), bundle.getTotalTokens());
+                return MemoryRetrievalResult.builder()
+                        .sessionKey(sessionKey)
+                        .relevantFacts(facts)
+                        .historicalDecisions(decisions)
+                        .build();
+            }
+            log.debug("[MARKET-MEMORY-TOOL] 远程记忆服务未响应或超时，平滑降级至本地记忆存储: session={}", sessionKey);
+        }
+
+        // 2. 本地长期记忆服务兜底
+        if (longTermMemoryService == null) {
             return new MemoryRetrievalResult(sessionKey, Collections.emptyList(), Collections.emptyList());
         }
 
@@ -64,7 +109,7 @@ public class MarketMemoryTool {
         List<String> relevantFacts = longTermMemoryService.retrieveRelevantFacts(sessionKey, query, limit);
         List<String> historicalDecisions = longTermMemoryService.retrieve(sessionKey, limit);
 
-        log.debug("[MARKET-MEMORY-TOOL] 成功召回记忆: session={}, facts={}, decisions={}",
+        log.debug("[MARKET-MEMORY-TOOL] 成功召回本地记忆: session={}, facts={}, decisions={}",
                 sessionKey, relevantFacts.size(), historicalDecisions.size());
 
         return MemoryRetrievalResult.builder()
@@ -72,5 +117,12 @@ public class MarketMemoryTool {
                 .relevantFacts(relevantFacts != null ? relevantFacts : Collections.emptyList())
                 .historicalDecisions(historicalDecisions != null ? historicalDecisions : Collections.emptyList())
                 .build();
+    }
+
+    private String extractUserId(String sessionKey) {
+        if (sessionKey != null && sessionKey.contains(":")) {
+            return sessionKey.substring(0, sessionKey.indexOf(":"));
+        }
+        return sessionKey != null ? sessionKey : "default_user";
     }
 }

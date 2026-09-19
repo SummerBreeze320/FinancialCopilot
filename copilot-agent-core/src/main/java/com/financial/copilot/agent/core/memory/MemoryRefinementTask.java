@@ -27,13 +27,24 @@ public class MemoryRefinementTask {
     private final ShortTermMemoryService shortTermMemoryService;
     private final LongTermMemoryService longTermMemoryService;
     private final LlmService llmService;
+    private final com.financial.copilot.agent.core.memory.remote.RemoteMemoryServiceClient remoteMemoryServiceClient;
 
     public MemoryRefinementTask(ShortTermMemoryService shortTermMemoryService,
                                LongTermMemoryService longTermMemoryService,
                                LlmService llmService) {
+        this(shortTermMemoryService, longTermMemoryService, llmService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public MemoryRefinementTask(ShortTermMemoryService shortTermMemoryService,
+                               LongTermMemoryService longTermMemoryService,
+                               LlmService llmService,
+                               @org.springframework.beans.factory.annotation.Autowired(required = false)
+                               com.financial.copilot.agent.core.memory.remote.RemoteMemoryServiceClient remoteMemoryServiceClient) {
         this.shortTermMemoryService = shortTermMemoryService;
         this.longTermMemoryService = longTermMemoryService;
         this.llmService = llmService;
+        this.remoteMemoryServiceClient = remoteMemoryServiceClient;
     }
 
     /**
@@ -70,6 +81,21 @@ public class MemoryRefinementTask {
             }
             longTermMemoryService.recordRefinedFacts(sessionKey, facts);
             log.info("[MemoryRefinement] Recorded {} refined facts for session {}", facts.size(), sessionKey);
+
+            if (remoteMemoryServiceClient != null && remoteMemoryServiceClient.isEnabled()) {
+                try {
+                    String userId = sessionKey.contains(":") ? sessionKey.substring(0, sessionKey.indexOf(":")) : sessionKey;
+                    com.financial.copilot.agent.core.memory.remote.dto.ProcessSessionRequestDTO req =
+                            com.financial.copilot.agent.core.memory.remote.dto.ProcessSessionRequestDTO.builder()
+                                    .sessionId(sessionKey)
+                                    .userId(userId)
+                                    .sessionData(java.util.Map.of("context", context, "refined_facts", facts))
+                                    .build();
+                    remoteMemoryServiceClient.processSessionAsync(req);
+                } catch (Exception ex) {
+                    log.warn("[MemoryRefinement] Failed sending session to remote memory service: {}", ex.getMessage());
+                }
+            }
         } catch (Exception e) {
             log.error("[MemoryRefinement] Failed for session {}: {}", sessionKey, e.getMessage(), e);
         }
