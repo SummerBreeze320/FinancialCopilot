@@ -1,0 +1,15 @@
+{
+  "version": "test-v1",
+  "source": "unit-test",
+  "fund_codes": [{"id":"fund_code:000001.OF","code":"000001.OF","aliases":["000001.OF","000001"],"metadata":{"fund_name":"华夏成长"}}],
+  "fund_names": [{"id":"fund_name:000001.OF","name":"华夏成长","aliases":["华夏成长"],"metadata":{"fund_code":"000001.OF"}}],
+  "exchange_fund_names": [{"id":"exchange_fund_name:510300.OF","name":"沪深300ETF","aliases":["沪深300ETF","300ETF"],"metadata":{"fund_code":"510300.OF"}}],
+  "company_names": [{"id":"company_name:华夏基金","name":"华夏基金","aliases":["华夏基金"],"metadata":{}}],
+  "manager_names": [{"id":"manager_name:华夏基金::张三","name":"张三","aliases":["张三"],"metadata":{"company_name":"华夏基金"}}],
+  "track_index_names": [{"id":"track_index_name:沪深300","name":"沪深300","aliases":["沪深300","沪深三百"],"metadata":{"track_index_code":"000300.SH"}}],
+  "track_index_codes": [{"id":"track_index_code:000001.SH","code":"000001.SH","aliases":["000001.SH","000001"],"metadata":{"track_index_name":"上证指数"}}],
+  "stock_codes": [{"id":"stock_code:000001.SZ","code":"000001.SZ","aliases":["000001.SZ","000001"],"metadata":{"stock_name":"平安银行"}}],
+  "stock_names": [{"id":"stock_name:平安银行","name":"平安银行","aliases":["平安银行","平银"],"metadata":{"stock_code":"000001.SZ"}}],
+  "bond_codes": [{"id":"bond_code:110001.SH","code":"110001.SH","aliases":["110001.SH","110001"],"metadata":{"bond_name":"测试转债"}}],
+  "bond_names": [{"id":"bond_name:测试转债","name":"测试转债","aliases":["测试转债"],"metadata":{"bond_code":"110001.SH"}}]
+}
