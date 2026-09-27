@@ -111,7 +111,7 @@ class RecognitionPipeline:
         entities = []
         for (start, end, mention), candidates in groups.items():
             ranked = candidates
-            fuzzy_only = all(candidate.method.value == "vector" for candidate in candidates)
+            fuzzy_only = all(candidate.method.value in {"vector", "hybrid"} for candidate in candidates)
             if len({candidate.entity.id for candidate in candidates}) > 1 or fuzzy_only:
                 try:
                     ranked, reranker_degraded = await self._reranker.rerank(mention, request.text, candidates)

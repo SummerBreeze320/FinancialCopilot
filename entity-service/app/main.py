@@ -62,8 +62,11 @@ async def lifespan(app: FastAPI):
         repository = EntityRepository(sessions)
         embedding_http = httpx.AsyncClient(base_url=settings.embedding_base_url,
                                            timeout=settings.request_timeout_seconds)
-        llm_http = httpx.AsyncClient(base_url=settings.llm_base_url,
-                                     timeout=settings.request_timeout_seconds)
+        llm_http = httpx.AsyncClient(
+            base_url=settings.llm_base_url,
+            timeout=settings.request_timeout_seconds,
+            headers={"Authorization": f"Bearer {settings.llm_api_key}"},
+        )
         runtime.embedding_http = embedding_http
         runtime.reranker_http = llm_http
         embedding = EmbeddingClient(embedding_http, settings.embedding_model, settings.embedding_dim)
