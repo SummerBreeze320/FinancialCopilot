@@ -48,8 +48,26 @@ class EntityRepository:
 
     async def find_version_by_sha(self, source_sha256: str) -> VersionInfo | None:
         async with self._sessions() as session:
-            row = await session.scalar(select(CatalogVersionRow).where(CatalogVersionRow.source_sha256 == source_sha256))
+            row = await session.scalar(select(CatalogVersionRow).where(
+                CatalogVersionRow.source_sha256 == source_sha256,
+                CatalogVersionRow.status == "active",
+            ))
             return self._version(row) if row else None
+
+    async def verify_version(self, version_id: uuid.UUID, expected_count: int, expected_categories: set[Category]) -> None:
+        from sqlalchemy import func
+        async with self._sessions() as session:
+            count = await session.scalar(select(func.count()).select_from(CatalogItemRow).where(
+                CatalogItemRow.version_id == version_id
+            ))
+            categories = set((await session.scalars(select(CatalogItemRow.category).where(
+                CatalogItemRow.version_id == version_id
+            ).distinct())).all())
+        expected = {category.value for category in expected_categories}
+        if count != expected_count or categories != expected:
+            raise ValueError(
+                f"catalog verification failed: rows={count}/{expected_count}, categories={sorted(categories)}/{sorted(expected)}"
+            )
 
     async def insert_batch(
         self,

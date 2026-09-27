@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import asyncio
 import time
 
 from app.core.normalization import normalize_with_offsets
@@ -36,12 +37,24 @@ class RecognitionPipeline:
         self._reranker = reranker
         self._resolver = resolver
         self._vector_min_similarity = vector_min_similarity
+        self._catalog_lock = asyncio.Lock()
 
     def replace_catalog(self, records) -> None:
         from app.core.exact_matcher import ExactMatcher
         self._matcher = ExactMatcher.build(records)
 
+    async def activate_catalog(self, version_id, version, records, activate_database) -> None:
+        from app.core.exact_matcher import ExactMatcher
+        prepared_matcher = ExactMatcher.build(records)
+        async with self._catalog_lock:
+            await activate_database(version_id)
+            self._matcher = prepared_matcher
+
     async def recognize(self, request: RecognitionRequest, request_id: str) -> RecognitionResponse:
+        async with self._catalog_lock:
+            return await self._recognize(request, request_id)
+
+    async def _recognize(self, request: RecognitionRequest, request_id: str) -> RecognitionResponse:
         started = time.perf_counter_ns()
         version = await self._repository.get_active_version()
         if version is None:
@@ -75,7 +88,8 @@ class RecognitionPipeline:
                     if valid_hits:
                         key = (item.span.start, item.span.end, item.mention)
                         groups[key].extend(
-                            CandidateFusion.vector(hit.entity, hit.similarity) for hit in valid_hits
+                            CandidateFusion.vector(hit.entity, hit.similarity, item.normalized_text, request.text)
+                            for hit in valid_hits
                         )
                     elif request.options.include_unresolved:
                         unresolved.append(UnresolvedMention(
@@ -95,7 +109,8 @@ class RecognitionPipeline:
         entities = []
         for (start, end, mention), candidates in groups.items():
             ranked = candidates
-            if len({candidate.entity.id for candidate in candidates}) > 1:
+            fuzzy_only = all(candidate.method.value == "vector" for candidate in candidates)
+            if len({candidate.entity.id for candidate in candidates}) > 1 or fuzzy_only:
                 try:
                     ranked, reranker_degraded = await self._reranker.rerank(mention, request.text, candidates)
                     if reranker_degraded:
@@ -128,7 +143,7 @@ class RecognitionPipeline:
             unresolved_mentions=unresolved,
             diagnostics=Diagnostics(
                 catalog_version=version.catalog_version,
-                entity_count=len(entities),
+                entity_count=version.entity_count,
                 resolved_count=resolved_count,
                 ambiguous_count=ambiguous_count,
                 processing_ms=elapsed_ms,

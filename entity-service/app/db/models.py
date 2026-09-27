@@ -18,7 +18,7 @@ class CatalogVersionRow(Base):
     version_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
     catalog_version: Mapped[str] = mapped_column(Text, nullable=False)
     source: Mapped[str] = mapped_column(Text, nullable=False)
-    source_sha256: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    source_sha256: Mapped[str] = mapped_column(Text, nullable=False, index=True)
     entity_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())

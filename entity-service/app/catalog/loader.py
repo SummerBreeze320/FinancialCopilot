@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
 from app.catalog.models import CatalogDocument, CatalogRecord
 from app.core.normalization import normalize_alias
 from app.models.api import Category
+
+logger = logging.getLogger(__name__)
 
 
 COLLECTIONS: dict[str, tuple[Category, str]] = {
@@ -40,12 +43,18 @@ class CatalogLoader:
             raise CatalogError(f"invalid catalog JSON: {exc}") from exc
 
         records: dict[str, CatalogRecord] = {}
+        rejected_count = 0
         for collection, (category, canonical_key) in COLLECTIONS.items():
             values = payload.get(collection, [])
             if not isinstance(values, list):
                 raise CatalogError(f"{collection} must be an array")
             for index, item in enumerate(values):
-                record = self._record(item, collection, index, category, canonical_key)
+                try:
+                    record = self._record(item, collection, index, category, canonical_key)
+                except CatalogError as exc:
+                    rejected_count += 1
+                    logger.warning("Rejected catalog entry collection=%s index=%d error=%s", collection, index, exc)
+                    continue
                 existing = records.get(record.id)
                 if existing is not None and existing != record:
                     raise CatalogError(f"conflicting duplicate id: {record.id}")
@@ -58,6 +67,7 @@ class CatalogLoader:
             source=str(payload.get("source", "unknown")),
             sha256=sha256,
             entities=tuple(records.values()),
+            rejected_count=rejected_count,
         )
 
     def _record(

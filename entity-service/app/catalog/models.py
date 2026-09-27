@@ -24,6 +24,7 @@ class CatalogDocument:
     source: str
     sha256: str
     entities: tuple[CatalogRecord, ...]
+    rejected_count: int = 0
 
     def by_id(self, entity_id: str) -> CatalogRecord:
         for entity in self.entities:

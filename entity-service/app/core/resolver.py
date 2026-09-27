@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from difflib import SequenceMatcher
+import re
 
 from app.catalog.models import CatalogRecord
 from app.models.api import (
@@ -32,8 +34,20 @@ class CandidateFusion:
         )
 
     @staticmethod
-    def vector(record: CatalogRecord, similarity: float) -> ScoredCandidate:
-        confidence = max(0.0, min(1.0, similarity * 0.92))
+    def vector(record: CatalogRecord, similarity: float, mention: str = "", context: str = "") -> ScoredCandidate:
+        lexical = max(
+            (SequenceMatcher(None, mention.casefold(), alias).ratio() for alias in record.normalized_aliases),
+            default=0.0,
+        )
+        code_compatible = 1.0 if bool(re.search(r"\d", mention)) == record.category.value.endswith("code") else 0.0
+        category_terms = {
+            "fund": ("基金",), "stock": ("股票", "个股"),
+            "index": ("指数",), "bond": ("债", "转债"),
+        }
+        family = next((name for name in category_terms if name in record.category.value), "")
+        contextual = 1.0 if family and any(term in context for term in category_terms[family]) else 0.0
+        confidence = similarity * 0.90 + lexical * 0.06 + code_compatible * 0.02 + contextual * 0.02
+        confidence = max(0.0, min(1.0, confidence))
         return ScoredCandidate(entity=record, confidence=confidence, method=MatchMethod.VECTOR)
 
     @staticmethod

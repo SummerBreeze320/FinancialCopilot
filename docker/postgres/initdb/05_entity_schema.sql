@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS entity_catalog_version (
     version_id UUID PRIMARY KEY,
     catalog_version TEXT NOT NULL,
     source TEXT NOT NULL,
-    source_sha256 TEXT NOT NULL UNIQUE,
+    source_sha256 TEXT NOT NULL,
     entity_count INTEGER NOT NULL DEFAULT 0 CHECK (entity_count >= 0),
     status TEXT NOT NULL CHECK (status IN ('building', 'active', 'failed', 'retired')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS entity_catalog_version (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_entity_catalog_single_active
 ON entity_catalog_version ((status)) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_entity_catalog_source_sha256
+ON entity_catalog_version(source_sha256);
 
 CREATE TABLE IF NOT EXISTS entity_catalog_item (
     version_id UUID NOT NULL REFERENCES entity_catalog_version(version_id) ON DELETE CASCADE,

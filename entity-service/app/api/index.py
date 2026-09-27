@@ -36,6 +36,7 @@ def _job_payload(job) -> dict:
         "total": job.total,
         "version_id": job.version_id,
         "error": job.error,
+        "rejected": getattr(job, "rejected", 0),
     }
 
 

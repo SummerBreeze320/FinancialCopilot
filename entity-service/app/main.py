@@ -86,11 +86,13 @@ async def lifespan(app: FastAPI):
         )
         runtime.pipeline = pipeline
 
-        async def refresh_exact_catalog(refreshed_records):
-            pipeline.replace_catalog(refreshed_records)
+        async def activate_catalog(version_id, document, refreshed_records):
+            await pipeline.activate_catalog(
+                version_id, document.version, refreshed_records, repository.activate_version
+            )
 
         runtime.indexing_service = IndexingService(
-            repository, CatalogLoader(), embedding, on_activate=refresh_exact_catalog
+            repository, CatalogLoader(), embedding, activator=activate_catalog
         )
         yield
     finally:
@@ -153,12 +155,24 @@ async def service_unavailable(request: Request, exc: ServiceUnavailableError):
 
 @app.get("/health", tags=["health"])
 async def health(repository=Depends(get_repository)):
-    version = await repository.get_active_version()
+    try:
+        version = await repository.get_active_version()
+        database_status = "ok"
+    except Exception:
+        version = None
+        database_status = "unavailable"
+    status = "ok" if database_status == "ok" and version else "unavailable"
     return {
-        "status": "ok" if version else "unavailable",
+        "status": status,
         "service": "entity-service",
         "active_catalog_version": version.catalog_version if version else None,
         "entity_count": version.entity_count if version else 0,
+        "dependencies": {
+            "database": database_status,
+            "active_index": "ok" if version else "unavailable",
+            "embedding": "configured" if runtime.pipeline is not None else "unavailable",
+            "reranker": "configured" if runtime.pipeline is not None else "unavailable",
+        },
     }
 
 

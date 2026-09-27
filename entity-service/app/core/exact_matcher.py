@@ -89,17 +89,7 @@ class ExactMatcher:
                         normalized_alias=alias,
                         exact_canonical=alias == entity.normalized_value,
                     ))
-        return [
-            hit
-            for hit in hits
-            if not any(
-                other.entity.id == hit.entity.id
-                and other.span.start <= hit.span.start
-                and other.span.end >= hit.span.end
-                and (other.span.end - other.span.start) > (hit.span.end - hit.span.start)
-                for other in hits
-            )
-        ]
+        return sorted(hits, key=lambda hit: (hit.span.start, -(hit.span.end - hit.span.start), hit.entity.id))
 
     @staticmethod
     def _valid_boundary(text: str, start: int, end: int, alias: str) -> bool:

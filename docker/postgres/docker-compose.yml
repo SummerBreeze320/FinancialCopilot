@@ -69,7 +69,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-123456}@postgres:5432/financial_copilot
       ENTITY_CATALOG_PATH: /data/entity.json
-      ENTITY_ADMIN_TOKEN: ${ENTITY_ADMIN_TOKEN:-change-me}
+      ENTITY_ADMIN_TOKEN: ${ENTITY_ADMIN_TOKEN:?set ENTITY_ADMIN_TOKEN}
       EMBEDDING_BASE_URL: http://host.docker.internal:11434/v1
       EMBEDDING_MODEL: qwen3-embedding:0.6b
       EMBEDDING_DIM: "1024"

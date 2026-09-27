@@ -9,6 +9,7 @@ from app.indexing.service import IndexingService, RebuildAlreadyRunning
 
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "entity-small.json"
+pytestmark = pytest.mark.integration
 
 
 class FakeEmbedding:
@@ -94,14 +95,31 @@ async def test_rejects_concurrent_rebuild():
 async def test_successful_rebuild_refreshes_in_memory_catalog():
     refreshed = []
 
-    async def on_activate(records):
+    async def activate(version_id, document, records):
+        await repository.activate_version(version_id)
         refreshed.append(tuple(records))
 
-    service = IndexingService(
-        FakeRepository(), CatalogLoader(), FakeEmbedding(), batch_size=4, on_activate=on_activate
-    )
+    repository = FakeRepository()
+    service = IndexingService(repository, CatalogLoader(), FakeEmbedding(), batch_size=4, activator=activate)
     job = await service.start_rebuild(FIXTURE)
     result = await service.wait(job.job_id)
     assert result.status == "completed"
     assert len(refreshed) == 1
     assert len(refreshed[0]) == 11
+
+
+@pytest.mark.asyncio
+async def test_failed_prepared_activation_never_activates_new_version():
+    repository = FakeRepository()
+
+    async def failing_activator(version_id, document, records):
+        raise MemoryError("matcher build failed")
+
+    service = IndexingService(
+        repository, CatalogLoader(), FakeEmbedding(), activator=failing_activator
+    )
+    job = await service.start_rebuild(FIXTURE)
+    result = await service.wait(job.job_id)
+    assert result.status == "failed"
+    assert repository.active is None
+    assert {version.status for version in repository.versions.values()} == {"failed"}

@@ -74,6 +74,7 @@ async def test_exact_name_resolves_with_original_span():
     assert response.entities[0].entity.id == "fund_name:000001.OF"
     assert response.entities[0].mention == "华夏成长"
     assert response.entities[0].span.start == 2
+    assert response.diagnostics.entity_count == 11
 
 
 @pytest.mark.asyncio

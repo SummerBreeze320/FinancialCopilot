@@ -45,3 +45,13 @@ def test_loader_hash_is_stable():
     second = CatalogLoader().load(FIXTURE)
     assert first.sha256 == second.sha256
     assert len(first.sha256) == 64
+
+
+def test_loader_counts_and_skips_malformed_entries(tmp_path):
+    payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    payload["stock_names"].append({"id": "broken", "aliases": []})
+    path = tmp_path / "partially-valid.json"
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    document = CatalogLoader().load(path)
+    assert len(document.entities) == 11
+    assert document.rejected_count == 1
