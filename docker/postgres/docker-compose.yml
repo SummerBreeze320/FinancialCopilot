@@ -63,6 +63,31 @@ services:
     networks:
       - myservice_network
 
+  entity-service:
+    build: ../../entity-service
+    container_name: docker_entity_service
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-123456}@postgres:5432/financial_copilot
+      ENTITY_CATALOG_PATH: /data/entity.json
+      ENTITY_ADMIN_TOKEN: ${ENTITY_ADMIN_TOKEN:-change-me}
+      EMBEDDING_BASE_URL: http://host.docker.internal:11434/v1
+      EMBEDDING_MODEL: qwen3-embedding:0.6b
+      EMBEDDING_DIM: "1024"
+      LLM_API_KEY: ${DEEPSEEK_API_KEY:-sk-placeholder}
+      LLM_BASE_URL: https://api.deepseek.com/v1
+      LLM_MODEL: deepseek-chat
+      HOST: "0.0.0.0"
+      PORT: "8800"
+    ports:
+      - "8800:8800"
+    volumes:
+      - ${ENTITY_CATALOG_PATH_HOST:?set ENTITY_CATALOG_PATH_HOST}:/data/entity.json:ro
+    depends_on:
+      - postgres
+    restart: always
+    networks:
+      - myservice_network
+
 networks:
   myservice_network:
     external: true
