@@ -81,3 +81,4 @@ Thumbs.db
 temp.md
 .m2/
 docker/postgres/data/
+.worktrees/
