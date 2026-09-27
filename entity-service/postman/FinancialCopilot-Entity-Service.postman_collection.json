@@ -1,0 +1,190 @@
+{
+  "info": {
+    "_postman_id": "e6e66ead-6489-4e14-83f4-e4a64be41001",
+    "name": "FinancialCopilot Entity Service",
+    "description": "金融实体识别服务接口与测试案例。使用前修改集合变量 admin_token，并确保服务已启动。首次测试应先执行“索引管理/启动索引重建”，再轮询任务状态。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "base_url", "value": "http://localhost:8800", "type": "string"},
+    {"key": "admin_token", "value": "replace-with-a-random-secret", "type": "string"},
+    {"key": "job_id", "value": "", "type": "string"}
+  ],
+  "item": [
+    {
+      "name": "基础状态",
+      "item": [
+        {
+          "name": "服务发现",
+          "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('服务名称正确', () => pm.expect(pm.response.json().service).to.eql('FinancialCopilot Entity Service'));"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "健康检查",
+          "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('包含依赖状态', () => { const j = pm.response.json(); pm.expect(j).to.have.property('dependencies'); pm.expect(j.dependencies).to.have.keys('database', 'active_index', 'embedding', 'reranker'); });",
+            "pm.test('索引可用', () => pm.expect(pm.response.json().status).to.be.oneOf(['ok', 'degraded']));"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "获取响应 JSON Schema",
+          "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/v1/schema/recognition-response", "host": ["{{base_url}}"], "path": ["v1", "schema", "recognition-response"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('JSON Schema 包含 entities', () => pm.expect(pm.response.json().properties).to.have.property('entities'));"
+          ], "type": "text/javascript"}}]
+        }
+      ]
+    },
+    {
+      "name": "索引管理",
+      "item": [
+        {
+          "name": "启动索引重建",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{admin_token}}", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"catalog_path\": null,\n  \"force\": false\n}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/v1/entities/index/rebuild", "host": ["{{base_url}}"], "path": ["v1", "entities", "index", "rebuild"]}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 202', () => pm.response.to.have.status(202));",
+            "const body = pm.response.json();",
+            "pm.test('返回任务 ID', () => pm.expect(body.job_id).to.be.a('string').and.not.empty);",
+            "if (body.job_id) pm.collectionVariables.set('job_id', body.job_id);"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "查询索引任务状态",
+          "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/v1/entities/index/jobs/{{job_id}}", "host": ["{{base_url}}"], "path": ["v1", "entities", "index", "jobs", "{{job_id}}"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('任务状态合法', () => pm.expect(pm.response.json().status).to.be.oneOf(['queued', 'running', 'completed', 'failed']));",
+            "console.log('索引进度', pm.response.json().processed, '/', pm.response.json().total);"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "错误案例：无 Token 重建",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"force\": false}", "options": {"raw": {"language": "json"}}},
+            "url": {"raw": "{{base_url}}/v1/entities/index/rebuild", "host": ["{{base_url}}"], "path": ["v1", "entities", "index", "rebuild"]}
+          },
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+            "pm.test('错误码正确', () => pm.expect(pm.response.json().error.code).to.eql('UNAUTHORIZED'));"
+          ], "type": "text/javascript"}}]
+        }
+      ]
+    },
+    {
+      "name": "实体识别案例",
+      "item": [
+        {
+          "name": "案例 1：精确基金名称",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"text\": \"看看华夏成长最近的表现\"\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{base_url}}/v1/entities/recognize", "host": ["{{base_url}}"], "path": ["v1", "entities", "recognize"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('识别华夏成长', () => { const e = pm.response.json().entities.find(x => x.mention === '华夏成长'); pm.expect(e).to.exist; pm.expect(e.resolution).to.eql('resolved'); pm.expect(e.entity.category).to.eql('fund_name'); });"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "案例 2：代码跨类别歧义",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"text\": \"比较000001最近表现\"\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{base_url}}/v1/entities/recognize", "host": ["{{base_url}}"], "path": ["v1", "entities", "recognize"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('返回歧义候选', () => { const e = pm.response.json().entities.find(x => x.mention === '000001'); pm.expect(e).to.exist; pm.expect(e.resolution).to.eql('ambiguous'); pm.expect(e.candidates.length).to.be.at.least(2); });",
+            "pm.test('候选包含类别', () => pm.response.json().entities.find(x => x.mention === '000001').candidates.forEach(x => pm.expect(x.entity.category).to.be.a('string')));"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "案例 3：基金上下文消歧",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"text\": \"000001基金最近收益如何\"\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{base_url}}/v1/entities/recognize", "host": ["{{base_url}}"], "path": ["v1", "entities", "recognize"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('基金代码候选排在首位或被解析', () => { const e = pm.response.json().entities.find(x => x.mention === '000001'); const category = e.resolution === 'resolved' ? e.entity.category : e.candidates[0].entity.category; pm.expect(category).to.eql('fund_code'); });"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "案例 4：股票上下文消歧",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"text\": \"000001这只股票走势怎么样\"\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{base_url}}/v1/entities/recognize", "host": ["{{base_url}}"], "path": ["v1", "entities", "recognize"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('股票代码候选排在首位或被解析', () => { const e = pm.response.json().entities.find(x => x.mention === '000001'); const category = e.resolution === 'resolved' ? e.entity.category : e.candidates[0].entity.category; pm.expect(category).to.eql('stock_code'); });"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "案例 5：全角股票代码",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"text\": \"请看０００００１．ＳＺ走势\"\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{base_url}}/v1/entities/recognize", "host": ["{{base_url}}"], "path": ["v1", "entities", "recognize"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('保留全角原文', () => { const e = pm.response.json().entities.find(x => x.mention === '０００００１．ＳＺ'); pm.expect(e).to.exist; pm.expect(e.entity.category).to.eql('stock_code'); });"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "案例 6：简称或模糊表达",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"text\": \"分析华夏沪深三百后续表现\",\n  \"options\": {\"top_k\": 20, \"include_unresolved\": true}\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{base_url}}/v1/entities/recognize", "host": ["{{base_url}}"], "path": ["v1", "entities", "recognize"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('响应结构完整', () => { const j = pm.response.json(); pm.expect(j).to.have.keys('request_id', 'text', 'status', 'entities', 'unresolved_mentions', 'diagnostics'); });",
+            "console.log('模糊识别结果', pm.response.json().entities);"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "案例 7：限定股票类别",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"text\": \"查询000001\",\n  \"options\": {\"categories\": [\"stock_code\", \"stock_name\"], \"top_k\": 10}\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{base_url}}/v1/entities/recognize", "host": ["{{base_url}}"], "path": ["v1", "entities", "recognize"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('只返回股票类别', () => { const allowed = ['stock_code', 'stock_name']; pm.response.json().entities.forEach(e => { const entities = e.resolution === 'resolved' ? [e.entity] : e.candidates.map(c => c.entity); entities.forEach(x => pm.expect(allowed).to.include(x.category)); }); });"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "案例 8：无目录实体",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"text\": \"今天天气真不错\",\n  \"options\": {\"include_unresolved\": true}\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{base_url}}/v1/entities/recognize", "host": ["{{base_url}}"], "path": ["v1", "entities", "recognize"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('不创造目录外实体', () => pm.expect(pm.response.json().entities).to.be.an('array').that.is.empty);"
+          ], "type": "text/javascript"}}]
+        }
+      ]
+    },
+    {
+      "name": "实体查询与错误案例",
+      "item": [
+        {
+          "name": "查询标准实体",
+          "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/v1/entities/fund_name:000001.OF", "host": ["{{base_url}}"], "path": ["v1", "entities", "fund_name:000001.OF"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+            "pm.test('实体 ID 正确', () => pm.expect(pm.response.json().id).to.eql('fund_name:000001.OF'));"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "错误案例：实体不存在",
+          "request": {"method": "GET", "header": [], "url": {"raw": "{{base_url}}/v1/entities/stock_name:not-exists", "host": ["{{base_url}}"], "path": ["v1", "entities", "stock_name:not-exists"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+            "pm.test('错误码正确', () => pm.expect(pm.response.json().error.code).to.eql('ENTITY_NOT_FOUND'));"
+          ], "type": "text/javascript"}}]
+        },
+        {
+          "name": "错误案例：空文本",
+          "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"text\": \"\"\n}", "options": {"raw": {"language": "json"}}}, "url": {"raw": "{{base_url}}/v1/entities/recognize", "host": ["{{base_url}}"], "path": ["v1", "entities", "recognize"]}},
+          "event": [{"listen": "test", "script": {"exec": [
+            "pm.test('HTTP 422', () => pm.response.to.have.status(422));",
+            "pm.test('验证错误结构正确', () => pm.expect(pm.response.json().error.code).to.eql('VALIDATION_ERROR'));"
+          ], "type": "text/javascript"}}]
+        }
+      ]
+    }
+  ]
+}
