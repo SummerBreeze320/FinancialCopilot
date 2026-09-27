@@ -33,7 +33,7 @@ class FakeRepository:
     async def get_active_version(self):
         return SimpleNamespace(version_id="v", catalog_version="test-v1", entity_count=len(DOCUMENT.entities))
 
-    async def vector_search(self, embedding, top_k, categories=None):
+    async def vector_search(self, embedding, top_k, categories=None, version_id=None):
         if self.vector_entity is None:
             return []
         if categories and self.vector_entity.category not in categories:

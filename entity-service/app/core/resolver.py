@@ -48,7 +48,8 @@ class CandidateFusion:
         contextual = 1.0 if family and any(term in context for term in category_terms[family]) else 0.0
         confidence = similarity * 0.90 + lexical * 0.06 + code_compatible * 0.02 + contextual * 0.02
         confidence = max(0.0, min(1.0, confidence))
-        return ScoredCandidate(entity=record, confidence=confidence, method=MatchMethod.VECTOR)
+        method = MatchMethod.HYBRID if lexical or code_compatible or contextual else MatchMethod.VECTOR
+        return ScoredCandidate(entity=record, confidence=confidence, method=method)
 
     @staticmethod
     def add_context(candidate: ScoredCandidate, confidence: float) -> ScoredCandidate:

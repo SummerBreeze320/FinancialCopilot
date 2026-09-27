@@ -32,7 +32,7 @@ class Reranker:
         context: str,
         candidates: list[ScoredCandidate],
     ) -> tuple[list[ScoredCandidate], bool]:
-        if len(candidates) < 2:
+        if not candidates:
             return candidates, False
         allowed = {candidate.entity.id: candidate for candidate in candidates}
         candidate_payload = [{

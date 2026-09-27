@@ -52,18 +52,19 @@ class RecognitionPipeline:
 
     async def recognize(self, request: RecognitionRequest, request_id: str) -> RecognitionResponse:
         async with self._catalog_lock:
-            return await self._recognize(request, request_id)
+            matcher = self._matcher
+            version = await self._repository.get_active_version()
+        return await self._recognize(request, request_id, matcher, version)
 
-    async def _recognize(self, request: RecognitionRequest, request_id: str) -> RecognitionResponse:
+    async def _recognize(self, request: RecognitionRequest, request_id: str, matcher, version) -> RecognitionResponse:
         started = time.perf_counter_ns()
-        version = await self._repository.get_active_version()
         if version is None:
             raise IndexNotReadyError("No active entity catalog index is available")
 
         normalized = normalize_with_offsets(request.text)
         category_filter = set(request.options.categories) if request.options.categories else None
         groups: dict[tuple[int, int, str], list[ScoredCandidate]] = defaultdict(list)
-        exact_hits = self._matcher.find(normalized)
+        exact_hits = matcher.find(normalized)
         covered: list[Span] = []
         for hit in exact_hits:
             if category_filter is not None and hit.entity.category not in category_filter:
@@ -83,6 +84,7 @@ class RecognitionPipeline:
                         vector,
                         top_k=request.options.top_k,
                         categories=request.options.categories,
+                        version_id=version.version_id,
                     )
                     valid_hits = [hit for hit in hits if hit.similarity >= self._vector_min_similarity]
                     if valid_hits:

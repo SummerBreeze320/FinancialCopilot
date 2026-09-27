@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import asyncio
 import logging
 import uuid
 
@@ -51,6 +52,8 @@ async def lifespan(app: FastAPI):
         yield
         return
     settings = get_settings()
+    if settings.entity_admin_token in {"", "change-me", "replace-with-a-random-secret"}:
+        raise RuntimeError("ENTITY_ADMIN_TOKEN must be set to a non-placeholder secret")
     engine = None
     embedding_http = None
     llm_http = None
@@ -61,6 +64,8 @@ async def lifespan(app: FastAPI):
                                            timeout=settings.request_timeout_seconds)
         llm_http = httpx.AsyncClient(base_url=settings.llm_base_url,
                                      timeout=settings.request_timeout_seconds)
+        runtime.embedding_http = embedding_http
+        runtime.reranker_http = llm_http
         embedding = EmbeddingClient(embedding_http, settings.embedding_model, settings.embedding_dim)
         reranker = Reranker(llm_http, settings.llm_model, settings.llm_api_key)
         try:
@@ -99,6 +104,8 @@ async def lifespan(app: FastAPI):
         runtime.pipeline = None
         runtime.repository = None
         runtime.indexing_service = None
+        runtime.embedding_http = None
+        runtime.reranker_http = None
         if embedding_http:
             await embedding_http.aclose()
         if llm_http:
@@ -161,7 +168,24 @@ async def health(repository=Depends(get_repository)):
     except Exception:
         version = None
         database_status = "unavailable"
-    status = "ok" if database_status == "ok" and version else "unavailable"
+    async def probe(client):
+        if client is None:
+            return "configured"
+        try:
+            response = await asyncio.wait_for(client.get("/models"), timeout=2.0)
+            return "ok" if response.is_success else "unavailable"
+        except Exception:
+            return "unavailable"
+
+    embedding_status, reranker_status = await asyncio.gather(
+        probe(runtime.embedding_http), probe(runtime.reranker_http)
+    )
+    if database_status != "ok" or not version:
+        status = "unavailable"
+    elif "unavailable" in {embedding_status, reranker_status}:
+        status = "degraded"
+    else:
+        status = "ok"
     return {
         "status": status,
         "service": "entity-service",
@@ -170,8 +194,8 @@ async def health(repository=Depends(get_repository)):
         "dependencies": {
             "database": database_status,
             "active_index": "ok" if version else "unavailable",
-            "embedding": "configured" if runtime.pipeline is not None else "unavailable",
-            "reranker": "configured" if runtime.pipeline is not None else "unavailable",
+            "embedding": embedding_status,
+            "reranker": reranker_status,
         },
     }
 

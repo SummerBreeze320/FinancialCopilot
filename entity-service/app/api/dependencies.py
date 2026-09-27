@@ -13,6 +13,8 @@ class Runtime:
     repository: object | None = None
     indexing_service: object | None = None
     startup_error: str | None = None
+    embedding_http: object | None = None
+    reranker_http: object | None = None
 
 
 runtime = Runtime()

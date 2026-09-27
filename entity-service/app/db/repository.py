@@ -155,15 +155,19 @@ class EntityRepository:
         embedding: list[float],
         top_k: int,
         categories: list[Category] | None = None,
+        version_id: uuid.UUID | str | None = None,
     ) -> list[VectorHit]:
         distance = CatalogItemRow.embedding.cosine_distance(embedding)
         statement = (
             select(CatalogItemRow, distance.label("distance"))
             .join(CatalogVersionRow, CatalogItemRow.version_id == CatalogVersionRow.version_id)
-            .where(CatalogVersionRow.status == "active")
             .order_by(distance)
             .limit(top_k)
         )
+        if version_id is None:
+            statement = statement.where(CatalogVersionRow.status == "active")
+        else:
+            statement = statement.where(CatalogItemRow.version_id == version_id)
         if categories:
             statement = statement.where(CatalogItemRow.category.in_([value.value for value in categories]))
         async with self._sessions() as session:
