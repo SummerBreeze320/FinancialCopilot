@@ -88,3 +88,20 @@ async def test_rejects_concurrent_rebuild():
         await service.start_rebuild(FIXTURE)
     gate.set()
     await service.wait(first.job_id)
+
+
+@pytest.mark.asyncio
+async def test_successful_rebuild_refreshes_in_memory_catalog():
+    refreshed = []
+
+    async def on_activate(records):
+        refreshed.append(tuple(records))
+
+    service = IndexingService(
+        FakeRepository(), CatalogLoader(), FakeEmbedding(), batch_size=4, on_activate=on_activate
+    )
+    job = await service.start_rebuild(FIXTURE)
+    result = await service.wait(job.job_id)
+    assert result.status == "completed"
+    assert len(refreshed) == 1
+    assert len(refreshed[0]) == 11

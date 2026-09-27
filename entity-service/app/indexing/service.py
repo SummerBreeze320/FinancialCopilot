@@ -3,9 +3,11 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Awaitable, Callable, Sequence
 import uuid
 
 from app.catalog.loader import CatalogLoader
+from app.catalog.models import CatalogRecord
 
 
 class RebuildAlreadyRunning(RuntimeError):
@@ -23,11 +25,19 @@ class IndexJob:
 
 
 class IndexingService:
-    def __init__(self, repository, loader: CatalogLoader, embedding, batch_size: int = 128) -> None:
+    def __init__(
+        self,
+        repository,
+        loader: CatalogLoader,
+        embedding,
+        batch_size: int = 128,
+        on_activate: Callable[[Sequence[CatalogRecord]], Awaitable[None]] | None = None,
+    ) -> None:
         self._repository = repository
         self._loader = loader
         self._embedding = embedding
         self._batch_size = batch_size
+        self._on_activate = on_activate
         self._guard = asyncio.Lock()
         self._jobs: dict[str, IndexJob] = {}
         self._tasks: dict[str, asyncio.Task] = {}
@@ -77,6 +87,8 @@ class IndexingService:
                 await self._repository.insert_batch(version_id, list(zip(records, embeddings, strict=True)))
                 job.processed += len(records)
             await self._repository.activate_version(version_id)
+            if self._on_activate is not None:
+                await self._on_activate(document.entities)
             job.status = "completed"
         except Exception as exc:
             if version_id is not None:

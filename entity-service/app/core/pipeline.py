@@ -37,6 +37,10 @@ class RecognitionPipeline:
         self._resolver = resolver
         self._vector_min_similarity = vector_min_similarity
 
+    def replace_catalog(self, records) -> None:
+        from app.core.exact_matcher import ExactMatcher
+        self._matcher = ExactMatcher.build(records)
+
     async def recognize(self, request: RecognitionRequest, request_id: str) -> RecognitionResponse:
         started = time.perf_counter_ns()
         version = await self._repository.get_active_version()
