@@ -1,0 +1,1 @@
+"""FinancialCopilot entity recognition service."""
