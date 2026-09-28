@@ -13,7 +13,9 @@ def build_screening_graph(nodes: ScreeningGraphNodes, checkpointer: Any = None):
 
     # 1. 基础阶段节点
     builder.add_node("query_preprocess", nodes.query_preprocess)
+    builder.add_node("pre_route_recall", nodes.pre_route_recall)
     builder.add_node("route_classifier", nodes.route_classifier)
+    builder.add_node("simple_edit", nodes.simple_edit)
     builder.add_node("direct_build", nodes.direct_build)
     builder.add_node("simple_semantic_parse", nodes.simple_semantic_parse)
     builder.add_node("pre_recall_plan", nodes.pre_recall_plan)
@@ -27,10 +29,13 @@ def build_screening_graph(nodes: ScreeningGraphNodes, checkpointer: Any = None):
 
     # 2. 起始流
     builder.add_edge(START, "query_preprocess")
-    builder.add_edge("query_preprocess", "route_classifier")
+    builder.add_edge("query_preprocess", "pre_route_recall")
+    builder.add_edge("pre_route_recall", "route_classifier")
 
-    # 3. 三级条件路由
+    # 3. 三级条件路由（包含简单编辑旁路）
     def route_condition(state: FundScreeningState) -> str:
+        if state.get("intent") == "EDIT" and state.get("edit_complexity") == "SIMPLE" and state.get("previous_dsl"):
+            return "simple_edit"
         r = state.get("route", "full")
         if r == "direct":
             return "direct_build"
@@ -42,6 +47,7 @@ def build_screening_graph(nodes: ScreeningGraphNodes, checkpointer: Any = None):
         "route_classifier",
         route_condition,
         {
+            "simple_edit": "simple_edit",
             "direct_build": "direct_build",
             "simple_semantic_parse": "simple_semantic_parse",
             "pre_recall_plan": "pre_recall_plan",
@@ -54,9 +60,11 @@ def build_screening_graph(nodes: ScreeningGraphNodes, checkpointer: Any = None):
     builder.add_edge("candidate_adjudication", "command_build")
 
     # 5. 各分支汇入 validator
+    builder.add_edge("simple_edit", "validator")
     builder.add_edge("direct_build", "validator")
     builder.add_edge("simple_semantic_parse", "validator")
     builder.add_edge("command_build", "validator")
+
 
     # 6. 校验与循环修复条件边
     def validation_condition(state: FundScreeningState) -> str:

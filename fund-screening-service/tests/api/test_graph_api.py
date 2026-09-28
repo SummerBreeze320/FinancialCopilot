@@ -38,3 +38,33 @@ def test_app_holds_compiled_graph_and_routes_identically() -> None:
     assert len(stages) >= 3
     final_event = events[-1]
     assert final_event["dsl"] == http_dsl
+
+
+def test_http_and_ws_both_execute_same_langgraph_for_simple_edit() -> None:
+    client = TestClient(create_app())
+    first = client.post("/v1/fund-screening/commands", json={"query": "筛选最大回撤低于15%、规模大于10亿的主动权益基金，按近3年收益降序取前20只"}).json()["dsl"]
+
+    # HTTP simple edit
+    http_resp = client.post("/v1/fund-screening/commands", json={"query": "改成前50只", "previousDsl": first})
+    assert http_resp.status_code == 200
+    http_dsl = http_resp.json()["dsl"]
+
+    # WebSocket simple edit
+    with client.websocket_connect("/v1/fund-screening/ws") as ws:
+        ws.send_json({"query": "改成前50只", "previousDsl": first})
+        events = []
+        for _ in range(25):
+            try:
+                ev = ws.receive_json()
+                events.append(ev)
+                if ev.get("type") in ("finalized", "final"):
+                    break
+            except Exception:
+                break
+    ws_dsl = events[-1]["dsl"]
+
+    assert http_dsl["limit"] == 50
+    assert ws_dsl["limit"] == 50
+    assert http_dsl == ws_dsl
+    assert http_dsl["children"] == first["children"]
+

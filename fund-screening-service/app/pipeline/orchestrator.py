@@ -11,10 +11,12 @@ STAGES = ("query_preprocess", "query_analysis_and_recall", "command_build", "val
 
 NODE_TO_STAGE = {
     "query_preprocess": "query_preprocess",
+    "pre_route_recall": "query_analysis_and_recall",
     "route_classifier": "query_analysis_and_recall",
     "pre_recall_plan": "query_analysis_and_recall",
     "parallel_recall": "query_analysis_and_recall",
     "candidate_adjudication": "query_analysis_and_recall",
+    "simple_edit": "command_build",
     "direct_build": "command_build",
     "simple_semantic_parse": "command_build",
     "command_build": "command_build",
@@ -44,12 +46,12 @@ class ScreeningOrchestrator:
             state = empty_state(query, conversation_id=conversation_id, previous_dsl=previous_dsl)
             config = make_graph_config(conversation_id)
 
-            if emit:
-                final_state = state
-                emitted_stages = set()
-                async for update in self._graph.astream(state, config=config, stream_mode="updates"):
-                    for node_name, node_update in update.items():
-                        final_state = {**final_state, **node_update}
+            final_state = state
+            emitted_stages = set()
+            async for update in self._graph.astream(state, config=config, stream_mode="updates"):
+                for node_name, node_update in update.items():
+                    final_state = {**final_state, **node_update}
+                    if emit:
                         trace_list = node_update.get("trace", [])
                         summary = trace_list[-1]["summary"] if trace_list else {}
 
@@ -65,9 +67,15 @@ class ScreeningOrchestrator:
                                 "summary": summary,
                             })
 
-                raw_dsl = final_state.get("final_dsl") or final_state.get("draft_dsl")
-                if raw_dsl:
-                    return FundScreeningDsl.model_validate(raw_dsl)
+            raw_dsl = final_state.get("final_dsl") or final_state.get("draft_dsl")
+            if raw_dsl:
+                return FundScreeningDsl.model_validate(raw_dsl)
+            if final_state.get("clarification"):
+                clarification = final_state["clarification"]
+                msg = clarification.get("message") if isinstance(clarification, dict) else str(clarification)
+                raise RuntimeError(f"Screening compilation failed: {msg}")
+            raise RuntimeError("Screening compilation failed to produce a valid DSL")
+
 
         # 2. 兼容外部 compiler 或 MVP 流程
         async def stage(name: str) -> None:
