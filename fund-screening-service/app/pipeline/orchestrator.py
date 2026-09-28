@@ -26,6 +26,14 @@ NODE_TO_STAGE = {
 }
 
 
+class ClarificationRequiredError(Exception):
+    def __init__(self, code: str, message: str, clarification: dict[str, Any] | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.clarification = clarification or {"code": code, "message": message}
+
+
 class ScreeningOrchestrator:
     def __init__(self, compiler: Any = None, graph: Any = None) -> None:
         self._compiler = compiler
@@ -72,8 +80,10 @@ class ScreeningOrchestrator:
                 return FundScreeningDsl.model_validate(raw_dsl)
             if final_state.get("clarification"):
                 clarification = final_state["clarification"]
-                msg = clarification.get("message") if isinstance(clarification, dict) else str(clarification)
-                raise RuntimeError(f"Screening compilation failed: {msg}")
+                code = clarification.get("code", "CLARIFICATION_REQUIRED") if isinstance(clarification, dict) else "CLARIFICATION_REQUIRED"
+                msg = clarification.get("message", str(clarification)) if isinstance(clarification, dict) else str(clarification)
+                clar_dict = clarification if isinstance(clarification, dict) else {"code": code, "message": msg}
+                raise ClarificationRequiredError(code, msg, clar_dict)
             raise RuntimeError("Screening compilation failed to produce a valid DSL")
 
 

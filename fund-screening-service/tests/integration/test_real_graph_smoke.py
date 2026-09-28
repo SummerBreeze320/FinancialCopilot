@@ -14,7 +14,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def real_compiler():
     settings = Settings()
     return build_production_compiler(settings)

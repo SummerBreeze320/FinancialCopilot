@@ -9,7 +9,7 @@ from pathlib import Path
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.catalog.parameter_rules import infer_parameters
+from app.catalog.parameter_rules import infer_aliases, infer_parameters, infer_value_type
 from app.models.parameters import MetricParameterDefinition
 
 
@@ -25,12 +25,13 @@ def enrich_catalog(input_path: Path, output_path: Path, report_path: Path | None
     enriched_metrics = []
     for m in metrics:
         inferred = infer_parameters(m)
-        # Validate through Pydantic
         validated_params = [
             MetricParameterDefinition.model_validate(p).model_dump(by_alias=True, exclude_none=True)
             for p in inferred
         ]
         m["parameters"] = validated_params
+        m["value_type"] = infer_value_type(m)
+        m["aliases"] = infer_aliases(m)
         enriched_metrics.append(m)
 
         p_count_key = str(len(validated_params))

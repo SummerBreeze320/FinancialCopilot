@@ -53,3 +53,32 @@ def test_http_uses_injected_rag_compiler() -> None:
     response = TestClient(create_app(compiler=compiler)).post("/v1/fund-screening/commands", json={"query":"半导体基金回撤低于15%"})
     assert response.json()["dsl"]["children"][0]["sector"]["children"][0]["sectorId"] == "1000022713000000"
     assert compiler.queries == ["半导体基金回撤低于15%"]
+
+
+def test_http_direct_route_fund_code_001938() -> None:
+    client = TestClient(create_app())
+    response = client.post("/v1/fund-screening/commands", json={"query": "001938"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["dsl"] is not None
+    metric = data["dsl"]["children"][0]["metric"]["children"][0]
+    assert metric["metric"] == "f_info_fundcode"
+    assert metric["value"] in ("001938.OF", "001938")
+    assert metric["unit"] == "ENTITY_REF"
+
+
+def test_http_simple_route_preserves_scale_and_existing_year() -> None:
+    client = TestClient(create_app())
+    response = client.post("/v1/fund-screening/commands", json={"query": "规模>10亿且成立>5年"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["dsl"] is not None
+    metrics = data["dsl"]["children"][0]["metric"]["children"]
+    metric_map = {m["metric"]: m for m in metrics}
+    assert "f_info_fundscale" in metric_map
+    assert "f_info_existingyear" in metric_map
+    assert metric_map["f_info_fundscale"]["unit"] == "BILLION_CNY"
+    assert metric_map["f_info_fundscale"]["value"] == 10
+    assert metric_map["f_info_existingyear"]["unit"] == "YEAR"
+    assert metric_map["f_info_existingyear"]["value"] == 5
+

@@ -27,7 +27,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "BILLION_CNY",
+    "aliases": []
   },
   {
     "mnemonic": "f_return_1y",
@@ -46,11 +48,13 @@
     "authoritative_code": "f_return_1y",
     "name": "近1年回报",
     "aliases": [
-      "近一年收益",
-      "近一年回报",
       "1年收益",
+      "一年收益",
       "年收益",
-      "一年收益"
+      "近1年回报",
+      "近1年收益",
+      "近一年回报",
+      "近一年收益"
     ],
     "parameters": [
       {
@@ -66,7 +70,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_risk_maxdownside",
@@ -102,6 +107,13 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
+    ],
+    "value_type": "PERCENT",
+    "aliases": [
+      "回撤",
+      "回撤率",
+      "最大回撤",
+      "最大回撤率"
     ]
   },
   {
@@ -125,6 +137,11 @@
         "required": true,
         "options": []
       }
+    ],
+    "value_type": "ENTITY_REF",
+    "aliases": [
+      "代码",
+      "基金代码"
     ]
   },
   {
@@ -148,7 +165,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_name",
@@ -177,7 +196,8 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER"
   },
   {
     "mnemonic": "f_info_fundmanager",
@@ -200,7 +220,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_nav_adjustedreturn",
@@ -230,7 +252,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_fundscale",
@@ -253,6 +277,13 @@
         "required": true,
         "options": []
       }
+    ],
+    "value_type": "BILLION_CNY",
+    "aliases": [
+      "合并规模",
+      "基金规模",
+      "规模",
+      "资产规模"
     ]
   },
   {
@@ -283,6 +314,13 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
+    ],
+    "value_type": "BILLION_CNY",
+    "aliases": [
+      "合并规模",
+      "基金规模",
+      "规模",
+      "资产规模"
     ]
   },
   {
@@ -306,7 +344,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "ENTITY_REF",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_sharpe",
@@ -349,7 +389,9 @@
         "defaultValue": "FUND_BENCHMARK",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_mgrcomp",
@@ -372,7 +414,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_topstockname",
@@ -389,14 +433,14 @@
     ],
     "applicable_products": "1001000",
     "aliases": [
-      "重仓股票",
-      "持仓股票",
-      "重仓股名称",
-      "持仓股票名称",
       "前N大重仓股名",
       "前几大持仓名",
+      "持仓名称",
+      "持仓股票",
+      "持仓股票名称",
       "重仓持股名",
-      "持仓名称"
+      "重仓股名称",
+      "重仓股票"
     ],
     "parameters": [
       {
@@ -412,7 +456,8 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER"
   },
   {
     "mnemonic": "f_return_3m",
@@ -431,9 +476,9 @@
     "authoritative_code": "f_return_3m",
     "name": "近3月回报",
     "aliases": [
-      "近三月收益",
+      "3月收益",
       "近三月回报",
-      "3月收益"
+      "近三月收益"
     ],
     "parameters": [
       {
@@ -449,7 +494,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_5y",
@@ -468,9 +514,9 @@
     "authoritative_code": "f_return_5y",
     "name": "近5年回报",
     "aliases": [
-      "近五年收益",
+      "5年收益",
       "近五年回报",
-      "5年收益"
+      "近五年收益"
     ],
     "parameters": [
       {
@@ -486,7 +532,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_6m",
@@ -505,10 +552,10 @@
     "authoritative_code": "f_return_6m",
     "name": "近6月回报",
     "aliases": [
-      "近六月收益",
-      "近六月回报",
       "6月收益",
-      "半年收益"
+      "半年收益",
+      "近六月回报",
+      "近六月收益"
     ],
     "parameters": [
       {
@@ -524,7 +571,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_ytd",
@@ -554,6 +602,13 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
+    ],
+    "value_type": "PERCENT",
+    "aliases": [
+      "今年以来收益",
+      "今年收益",
+      "年内收益",
+      "年初至今收益"
     ]
   },
   {
@@ -590,7 +645,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_mmf_annualizedyield",
@@ -620,7 +677,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_mmf_avgannualizedyield",
@@ -650,7 +709,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_nav_periodreturnranking_ytd",
@@ -669,7 +730,11 @@
     "authoritative_code": "f_nav_periodreturnranking_ytd",
     "name": "今年以来回报排名",
     "aliases": [
-      "YTD收益排名"
+      "YTD收益排名",
+      "今年以来收益",
+      "今年收益",
+      "年内收益",
+      "年初至今收益"
     ],
     "parameters": [
       {
@@ -685,7 +750,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_y",
@@ -715,7 +781,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_stdevyearly",
@@ -751,7 +819,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_stdev",
@@ -787,7 +857,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_annustdev",
@@ -823,7 +895,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_quot_benchreturn",
@@ -853,7 +927,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_nav_navoverbenchreturn",
@@ -883,7 +959,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_navoverbenchannualreturn",
@@ -919,7 +997,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_duration",
@@ -955,7 +1035,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_foundleverage",
@@ -985,7 +1067,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_managementfeeratio",
@@ -1008,7 +1092,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_custodianfeeratio",
@@ -1031,7 +1117,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_salefeeratio",
@@ -1054,7 +1142,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_purchasefeeratio",
@@ -1077,7 +1167,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_topstockcode",
@@ -1107,7 +1199,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "ENTITY_REF",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_topstockvalue",
@@ -1137,7 +1231,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_topstockholdingchanging",
@@ -1167,7 +1263,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_fundnoofstocks",
@@ -1197,7 +1295,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_bondtonav",
@@ -1227,7 +1327,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_bondbycreditratingtonav",
@@ -1257,7 +1359,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_convertiblebondtonav",
@@ -1287,7 +1391,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_cashtonav",
@@ -1317,7 +1423,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_holder_institution_holdingpct",
@@ -1347,7 +1455,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_style_styleattribute",
@@ -1377,7 +1487,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_style_marketvaluestyleattribute",
@@ -1407,7 +1519,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_style_marketvalueattribute",
@@ -1437,7 +1551,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_dq_turn",
@@ -1467,7 +1583,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_return_1w",
@@ -1486,9 +1604,9 @@
     "authoritative_code": "f_return_1w",
     "name": "近1周回报",
     "aliases": [
-      "近一周收益",
+      "1周收益",
       "近一周回报",
-      "1周收益"
+      "近一周收益"
     ],
     "parameters": [
       {
@@ -1504,7 +1622,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_1m",
@@ -1523,9 +1642,9 @@
     "authoritative_code": "f_return_1m",
     "name": "近1月回报",
     "aliases": [
-      "近一月收益",
+      "1月收益",
       "近一月回报",
-      "1月收益"
+      "近一月收益"
     ],
     "parameters": [
       {
@@ -1541,7 +1660,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_2y",
@@ -1560,9 +1680,9 @@
     "authoritative_code": "f_return_2y",
     "name": "近2年回报",
     "aliases": [
-      "近两年收益",
+      "2年收益",
       "近两年回报",
-      "2年收益"
+      "近两年收益"
     ],
     "parameters": [
       {
@@ -1578,7 +1698,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_3y",
@@ -1597,9 +1718,12 @@
     "authoritative_code": "f_return_3y",
     "name": "近3年回报",
     "aliases": [
-      "近三年收益",
+      "3年收益",
+      "三年收益",
+      "近3年回报",
+      "近3年收益",
       "近三年回报",
-      "3年收益"
+      "近三年收益"
     ],
     "parameters": [
       {
@@ -1615,7 +1739,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_10y",
@@ -1634,9 +1759,9 @@
     "authoritative_code": "f_return_10y",
     "name": "近10年回报",
     "aliases": [
-      "近十年收益",
+      "10年收益",
       "近十年回报",
-      "10年收益"
+      "近十年收益"
     ],
     "parameters": [
       {
@@ -1652,7 +1777,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_std",
@@ -1671,10 +1797,10 @@
     "authoritative_code": "f_return_std",
     "name": "今年以来回报",
     "aliases": [
-      "今年以来收益",
       "YTD收益",
-      "本年以来收益",
-      "年初以来收益"
+      "今年以来收益",
+      "年初以来收益",
+      "本年以来收益"
     ],
     "parameters": [
       {
@@ -1690,7 +1816,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_m",
@@ -1725,7 +1852,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_q",
@@ -1760,7 +1888,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_return_y",
@@ -1795,7 +1924,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_1w",
@@ -1830,7 +1960,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_1m",
@@ -1865,7 +1996,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_3m",
@@ -1900,7 +2032,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_6m",
@@ -1935,7 +2068,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_1y",
@@ -1954,6 +2088,11 @@
     "authoritative_code": "f_nav_periodreturnranking_1y",
     "name": "近1年回报排名",
     "aliases": [
+      "一年收益",
+      "近1年回报",
+      "近1年收益",
+      "近一年回报",
+      "近一年收益",
       "近一年收益排名"
     ],
     "parameters": [
@@ -1970,7 +2109,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_2y",
@@ -2005,7 +2145,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_3y",
@@ -2024,6 +2165,11 @@
     "authoritative_code": "f_nav_periodreturnranking_3y",
     "name": "近3年回报排名",
     "aliases": [
+      "三年收益",
+      "近3年回报",
+      "近3年收益",
+      "近三年回报",
+      "近三年收益",
       "近三年收益排名"
     ],
     "parameters": [
@@ -2040,7 +2186,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_5y",
@@ -2075,7 +2222,8 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT"
   },
   {
     "mnemonic": "f_risk_maxdownsideranking",
@@ -2111,6 +2259,13 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
+    ],
+    "value_type": "PERCENT",
+    "aliases": [
+      "回撤",
+      "回撤率",
+      "最大回撤",
+      "最大回撤率"
     ]
   },
   {
@@ -2147,6 +2302,13 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
+    ],
+    "value_type": "PERCENT",
+    "aliases": [
+      "回撤",
+      "回撤率",
+      "最大回撤",
+      "最大回撤率"
     ]
   },
   {
@@ -2183,6 +2345,13 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
+    ],
+    "value_type": "PERCENT",
+    "aliases": [
+      "回撤",
+      "回撤率",
+      "最大回撤",
+      "最大回撤率"
     ]
   },
   {
@@ -2219,6 +2388,13 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
+    ],
+    "value_type": "PERCENT",
+    "aliases": [
+      "回撤",
+      "回撤率",
+      "最大回撤",
+      "最大回撤率"
     ]
   },
   {
@@ -2255,7 +2431,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_siml_avgsortino",
@@ -2291,7 +2469,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_siml_avgannusharpe",
@@ -2327,7 +2507,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_siml_avgannuSortino",
@@ -2363,7 +2545,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_annusharpe",
@@ -2399,7 +2583,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_annuSortino",
@@ -2435,7 +2621,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_avgfundscale",
@@ -2458,6 +2646,13 @@
         "required": true,
         "options": []
       }
+    ],
+    "value_type": "BILLION_CNY",
+    "aliases": [
+      "合并规模",
+      "基金规模",
+      "规模",
+      "资产规模"
     ]
   },
   {
@@ -2481,6 +2676,13 @@
         "required": true,
         "options": []
       }
+    ],
+    "value_type": "BILLION_CNY",
+    "aliases": [
+      "合并规模",
+      "基金规模",
+      "规模",
+      "资产规模"
     ]
   },
   {
@@ -2498,7 +2700,10 @@
     ],
     "applicable_products": "1001000",
     "aliases": [
-      "规模"
+      "合并规模",
+      "基金规模",
+      "规模",
+      "资产规模"
     ],
     "parameters": [
       {
@@ -2514,7 +2719,8 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "BILLION_CNY"
   },
   {
     "mnemonic": "f_netasset_total_cc",
@@ -2544,6 +2750,13 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
+    ],
+    "value_type": "BILLION_CNY",
+    "aliases": [
+      "合并规模",
+      "基金规模",
+      "规模",
+      "资产规模"
     ]
   },
   {
@@ -2580,7 +2793,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_siml_avgstdevyearly",
@@ -2616,7 +2831,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_nav_adjustedreturn_org",
@@ -2646,7 +2863,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_nav_adjustedreturn1",
@@ -2676,7 +2895,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_nav_navoverbenchreturn_freq",
@@ -2706,7 +2927,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_nav_navoverbenchreturn_freq2",
@@ -2736,7 +2959,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_firstinvesttype",
@@ -2759,7 +2984,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_investtype",
@@ -2782,7 +3009,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_setupdate",
@@ -2805,7 +3034,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "DATE",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_existingyear",
@@ -2828,6 +3059,15 @@
         "required": true,
         "options": []
       }
+    ],
+    "value_type": "YEAR",
+    "aliases": [
+      "存续年限",
+      "存续时间",
+      "成立",
+      "成立多久",
+      "成立年限",
+      "成立时间"
     ]
   },
   {
@@ -2851,7 +3091,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_alpha",
@@ -2894,7 +3136,9 @@
         "defaultValue": "FUND_BENCHMARK",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_beta",
@@ -2937,7 +3181,9 @@
         "defaultValue": "FUND_BENCHMARK",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_sortino",
@@ -2973,7 +3219,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_trackerror",
@@ -3009,7 +3257,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_redemptionfeeratio",
@@ -3032,7 +3282,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_stocktonav",
@@ -3062,7 +3314,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_themetype",
@@ -3085,7 +3339,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_calmar",
@@ -3121,7 +3377,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_treynor",
@@ -3164,7 +3422,9 @@
         "defaultValue": "FUND_BENCHMARK",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_inforatio",
@@ -3200,7 +3460,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_inforatioranking",
@@ -3236,7 +3498,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_downsidestdev",
@@ -3272,7 +3536,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_annutrackerror",
@@ -3308,7 +3574,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_dq_amount",
@@ -3338,7 +3606,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_pq_amount",
@@ -3368,7 +3638,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "s_pq_avgamount",
@@ -3391,7 +3663,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_pq_avgturn",
@@ -3421,7 +3695,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_stockvalue",
@@ -3451,7 +3727,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_stockvalue_topindustryname2",
@@ -3481,7 +3759,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_bondvalue",
@@ -3511,7 +3791,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_stocktoasset",
@@ -3541,7 +3823,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "BILLION_CNY",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_bondtoasset",
@@ -3571,7 +3855,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "BILLION_CNY",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_heavilyheldstocktostock",
@@ -3601,7 +3887,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_convertiblebondtobond",
@@ -3631,7 +3919,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_redemptionfee",
@@ -3654,7 +3944,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_redemptionfee2",
@@ -3677,7 +3969,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_managementfeeratio2",
@@ -3700,7 +3994,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_custodianfeeratio2",
@@ -3723,7 +4019,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_salefeeratio2",
@@ -3746,7 +4044,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_exchangeshortname",
@@ -3769,7 +4069,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_trackindexname",
@@ -3792,7 +4094,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_trackindexcode",
@@ -3815,7 +4119,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "ENTITY_REF",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_topbondname",
@@ -3845,7 +4151,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_topbondsymbol",
@@ -3875,7 +4183,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "ENTITY_REF",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_etffeeder",
@@ -3898,7 +4208,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_etf_feedercode",
@@ -3921,7 +4233,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "ENTITY_REF",
+    "aliases": []
   },
   {
     "mnemonic": "f_customizedfundornot",
@@ -3944,7 +4258,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_initial",
@@ -3967,7 +4283,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_investscope",
@@ -3990,7 +4308,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_risk_downsiderisk",
@@ -4026,7 +4346,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_nav_periodreturnrankingper",
@@ -4056,7 +4378,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_mmf_unityield",
@@ -4086,7 +4410,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_dq_pctchange",
@@ -4116,7 +4442,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_pchredm_largepchmaxamt",
@@ -4139,7 +4467,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_maxworkingyears",
@@ -4162,7 +4492,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "YEAR",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_investtype2",
@@ -4185,7 +4517,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_industryvaluetonav_sw",
@@ -4215,7 +4549,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_topgicsindustryname",
@@ -4245,7 +4581,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_topindustryname_citic",
@@ -4275,7 +4613,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_topindustryname_sw2021",
@@ -4305,7 +4645,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_topindustryname_wind",
@@ -4335,7 +4677,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_issue_deputy",
@@ -4358,7 +4702,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_countryregioninvestmenttonav",
@@ -4388,7 +4734,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_countryregioninvestment",
@@ -4418,7 +4766,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_distributionarea",
@@ -4441,7 +4791,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_mmf_avgptm",
@@ -4471,7 +4823,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_holder_institution_totalholdingpct",
@@ -4501,7 +4855,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_prt_stockholding",
@@ -4531,7 +4887,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_manager_awardrecord",
@@ -4554,7 +4912,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_manager_awardrecordnum",
@@ -4577,7 +4937,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_holder_single_holdingpct",
@@ -4607,7 +4969,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "PERCENT",
+    "aliases": []
   },
   {
     "mnemonic": "f_div_times",
@@ -4637,7 +5001,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_div_accumulatedtimes",
@@ -4667,7 +5033,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_valuationmethod",
@@ -4690,7 +5058,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_ptmyear",
@@ -4713,7 +5083,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "YEAR",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_ptmday",
@@ -4736,7 +5108,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_risklevel",
@@ -4759,7 +5133,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_mmf_frequencyofdeviation",
@@ -4789,7 +5165,9 @@
         "defaultValue": "LATEST_TRADE_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_pchmstatus",
@@ -4812,7 +5190,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_benchmark",
@@ -4835,7 +5215,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_custodianbank",
@@ -4858,7 +5240,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_investstyle",
@@ -4888,7 +5272,9 @@
         "defaultValue": "LATEST_REPORT_DATE",
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_lofornot",
@@ -4911,7 +5297,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_foffundornot",
@@ -4934,7 +5322,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_t0ornot",
@@ -4957,7 +5347,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_regulopenfundornot",
@@ -4980,7 +5372,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_structuredfundornot",
@@ -5003,7 +5397,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_redmstatus",
@@ -5026,7 +5422,9 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "NUMBER",
+    "aliases": []
   },
   {
     "mnemonic": "f_info_etflisteddate",
@@ -5049,6 +5447,8 @@
         "required": true,
         "options": []
       }
-    ]
+    ],
+    "value_type": "DATE",
+    "aliases": []
   }
 ]

@@ -14,19 +14,25 @@ class Catalog:
         def read(path: Path) -> list[dict]:
             return json.loads(path.read_text(encoding="utf-8"))
 
+        from app.catalog.parameter_rules import infer_aliases, infer_value_type
         from app.models.parameters import MetricParameterDefinition
-        metrics = [
-            CandidateContract(
-                "metric",
-                item["mnemonic"],
-                item["index_name"],
-                tuple(item.get("aliases", ())),
+        metrics = []
+        for item in read(metrics_path):
+            if not item.get("enabled", True):
+                continue
+            vt = item.get("value_type") or infer_value_type(item)
+            aliases = tuple(item.get("aliases") or infer_aliases(item))
+            params = tuple(MetricParameterDefinition.model_validate(p) for p in item.get("parameters", ()))
+            metrics.append(CandidateContract(
+                domain="metric",
+                key=item["mnemonic"],
+                name=item["index_name"],
+                aliases=aliases,
+                supported_operators=tuple(item.get("supported_operators") or (">", ">=", "<", "<=", "=")),
+                value_type=vt,
                 supported_usage=tuple(item.get("supported_usage", ("filter",))),
-                parameters=tuple(MetricParameterDefinition.model_validate(p) for p in item.get("parameters", ())),
-            )
-            for item in read(metrics_path)
-            if item.get("enabled", True)
-        ]
+                parameters=params,
+            ))
         scopes = [CandidateContract("scope", item["source_sector_id"], item["name"], tuple(item.get("aliases", ()))) for item in read(sectors_path) if item.get("enabled", True)]
         entity_source = read(entities_path)
         if isinstance(entity_source, dict):

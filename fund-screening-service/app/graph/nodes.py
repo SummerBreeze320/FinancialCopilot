@@ -224,6 +224,24 @@ class ScreeningGraphNodes:
             }
             for c in pool.candidates
         ]
+        clean_q = query.strip()
+        if re.fullmatch(r"\d{6}(\.[A-Za-z]+)?", clean_q):
+            code_key = clean_q if "." in clean_q else f"{clean_q}.OF"
+            direct_candidate = {
+                "domain": "entity",
+                "key": code_key,
+                "name": clean_q,
+                "aliases": [clean_q, code_key],
+                "supported_operators": ["=", "!="],
+                "value_type": "ENTITY_REF",
+                "supported_usage": ["filter"],
+                "binding_role": "FUND",
+                "preferred_metric": "f_info_fundcode",
+                "score": 1.0,
+                "parameters": [],
+            }
+            raw_pool.insert(0, direct_candidate)
+
         contract_index = {c["key"]: c for c in raw_pool}
         event = _make_trace("pre_route_recall", t0, {"candidate_count": len(raw_pool)})
         return {
@@ -295,9 +313,35 @@ class ScreeningGraphNodes:
     async def direct_build(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
         pool = state.get("candidate_pool") or []
-        if not pool or pool[0].get("score", 0.0) < 0.95:
-            raise ValueError("Direct routing requires a high-confidence exact candidate in candidate_pool")
-        candidate = pool[0]
+        query = (state.get("normalized_query") or state.get("query", "")).strip()
+
+        candidate = None
+        for c in pool:
+            if c.get("domain") == "entity" and c.get("preferred_metric") == "f_info_fundcode":
+                if c.get("name") == query or query in c.get("aliases", []) or c.get("key", "").endswith(query + ".OF") or c.get("key") == query:
+                    candidate = c
+                    break
+
+        if candidate is None:
+            for c in pool:
+                if c.get("domain") == "entity" and (c.get("score", 0.0) >= 0.95 or c.get("name") == query or query in c.get("aliases", [])):
+                    candidate = c
+                    break
+
+        if candidate is None:
+            if re.fullmatch(r"\d{6}(\.[A-Za-z]+)?", query):
+                code_key = query if "." in query else f"{query}.OF"
+                candidate = {
+                    "domain": "entity",
+                    "key": code_key,
+                    "name": query,
+                    "preferred_metric": "f_info_fundcode",
+                    "value_type": "ENTITY_REF",
+                }
+            elif pool and pool[0].get("score", 0.0) >= 0.95:
+                candidate = pool[0]
+            else:
+                raise ValueError("Direct routing requires a high-confidence exact candidate in candidate_pool")
 
         if candidate.get("domain") == "entity" and candidate.get("preferred_metric"):
             metric_key = candidate["preferred_metric"]
@@ -365,21 +409,41 @@ def _build_decision_from_contracts(query: str, pool: CandidatePool, default_sect
     sector_ids = matched_sectors if matched_sectors else [default_sector_id]
 
     metrics = []
-    for c in pool.candidates:
-        if c.domain != "metric":
-            continue
-        all_names = [c.name, *c.aliases]
-        matched_name = next((name for name in all_names if name in query), None)
-        if not matched_name:
-            continue
+    matched_metric_keys = set()
+    condition_mentions = [item.strip() for item in re.split(r"[且与和、,，\s]+", query) if item.strip()]
 
-        op, val = _extract_op_and_val(query, matched_name, c.value_type)
-        if op is not None and val is not None:
+    for mention in condition_mentions:
+        best_candidate = None
+        best_op, best_val = None, None
+        for c in pool.candidates:
+            if c.domain != "metric" or c.key in matched_metric_keys:
+                continue
+            all_names = [c.name, *c.aliases]
+            if "规模" in c.name and "规模" not in all_names:
+                all_names.append("规模")
+            if "成立" in c.name and "成立" not in all_names:
+                all_names.append("成立")
+            if "回撤" in c.name and "回撤" not in all_names:
+                all_names.append("回撤")
+            matched_name = next((name for name in all_names if name in mention), None)
+            if not matched_name:
+                continue
+            op, val = _extract_op_and_val(mention, matched_name, c.value_type)
+            if op is not None and val is not None:
+                if best_candidate is None:
+                    best_candidate = c
+                    best_op, best_val = op, val
+                elif c.key in ("f_info_fundscale", "f_info_existingyear", "f_risk_maxdownside"):
+                    best_candidate = c
+                    best_op, best_val = op, val
+
+        if best_candidate is not None:
+            matched_metric_keys.add(best_candidate.key)
             metrics.append({
-                "metric": c.key,
-                "operator": op,
-                "value": val,
-                "unit": c.value_type,
+                "metric": best_candidate.key,
+                "operator": best_op,
+                "value": best_val,
+                "unit": best_candidate.value_type,
             })
 
     entities = []

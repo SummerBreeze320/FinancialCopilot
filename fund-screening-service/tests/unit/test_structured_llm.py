@@ -58,7 +58,7 @@ class MockStructuredModel:
         self.outputs = outputs
         self.calls = []
 
-    def with_structured_output(self, schema_cls):
+    def with_structured_output(self, schema_cls, *args, **kwargs):
         from langchain_core.runnables import RunnableLambda
         model = self
         async def _call(inp, **kwargs):
