@@ -14,7 +14,20 @@ class CommandBuilder:
                 if contract.domain != "scope":
                     raise ValueError(f"candidate {sector_id} is not a scope")
             sector_ids = explicit_sector_ids or [self._default_sector_id]
-            predicates = list(group.get("metrics", ()))
+            predicates = []
+            for item in group.get("metrics", ()):
+                p = item.model_dump() if hasattr(item, "model_dump") else dict(item)
+                pred_dict = {
+                    "metric": p["metric"],
+                    "operator": p["operator"],
+                    "value": p["value"],
+                    "unit": p.get("unit", "NUMBER"),
+                    "params": p.get("params", []),
+                }
+                if p.get("period") is not None:
+                    pred_dict["period"] = p["period"]
+                predicates.append(pred_dict)
+
             for entity_ref in group.get("entities", ()):
                 contract = candidate_pool.contract(entity_ref["entity"])
                 if contract.domain != "entity" or not contract.preferred_metric:
@@ -27,6 +40,7 @@ class CommandBuilder:
                     "operator": operator,
                     "value": contract.key,
                     "unit": contract.value_type,
+                    "params": [p.model_dump() if hasattr(p, "model_dump") else p for p in getattr(contract, "parameters", ())] if getattr(contract, "parameters", None) else [],
                 })
             for predicate in group.get("metrics", ()):
                 candidate_pool.contract(predicate["metric"])

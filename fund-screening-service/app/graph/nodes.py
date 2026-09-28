@@ -23,6 +23,46 @@ def _make_trace(stage: str, started_at: float, summary: dict[str, Any], status: 
     }
 
 
+def _candidate_to_dict(c: CandidateContract) -> dict[str, Any]:
+    return {
+        "domain": c.domain,
+        "key": c.key,
+        "name": c.name,
+        "aliases": list(c.aliases),
+        "supported_operators": list(c.supported_operators),
+        "value_type": c.value_type,
+        "supported_usage": list(c.supported_usage),
+        "binding_role": c.binding_role,
+        "preferred_metric": c.preferred_metric,
+        "score": c.score,
+        "parameters": [
+            p.model_dump() if hasattr(p, "model_dump") else (p if isinstance(p, dict) else p.__dict__)
+            for p in getattr(c, "parameters", ())
+        ],
+    }
+
+
+def _dict_to_candidate(c: dict[str, Any]) -> CandidateContract:
+    from app.models.parameters import MetricParameterDefinition
+    params = tuple(
+        MetricParameterDefinition.model_validate(p) if isinstance(p, dict) else p
+        for p in c.get("parameters", ())
+    )
+    return CandidateContract(
+        domain=c["domain"],
+        key=c["key"],
+        name=c["name"],
+        aliases=tuple(c.get("aliases", ())),
+        supported_operators=tuple(c.get("supported_operators", ())),
+        value_type=c.get("value_type", "NUMBER"),
+        supported_usage=tuple(c.get("supported_usage", ("filter",))),
+        binding_role=c.get("binding_role"),
+        preferred_metric=c.get("preferred_metric"),
+        score=c.get("score", 1.0),
+        parameters=params,
+    )
+
+
 class ScreeningGraphNodes:
     def __init__(self, analysis: AnalysisService, builder: CommandBuilder | None = None) -> None:
         self._analysis = analysis
@@ -66,21 +106,7 @@ class ScreeningGraphNodes:
         )
         plan = RecallPlan(tuple(plan_data.get("domains", ())), conditions)
         pool = await self._analysis._recall(state["normalized_query"], plan)
-        raw_pool = [
-            {
-                "domain": c.domain,
-                "key": c.key,
-                "name": c.name,
-                "aliases": list(c.aliases),
-                "supported_operators": list(c.supported_operators),
-                "value_type": c.value_type,
-                "supported_usage": list(c.supported_usage),
-                "binding_role": c.binding_role,
-                "preferred_metric": c.preferred_metric,
-                "score": c.score,
-            }
-            for c in pool.candidates
-        ]
+        raw_pool = [_candidate_to_dict(c) for c in pool.candidates]
         contract_index = {c["key"]: c for c in raw_pool}
         event = _make_trace("parallel_recall", t0, {"candidate_count": len(raw_pool)})
         return {
@@ -91,21 +117,7 @@ class ScreeningGraphNodes:
 
     async def candidate_adjudication(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
-        contracts = [
-            CandidateContract(
-                domain=c["domain"],
-                key=c["key"],
-                name=c["name"],
-                aliases=tuple(c.get("aliases", ())),
-                supported_operators=tuple(c.get("supported_operators", ())),
-                value_type=c.get("value_type", "NUMBER"),
-                supported_usage=tuple(c.get("supported_usage", ("filter",))),
-                binding_role=c.get("binding_role"),
-                preferred_metric=c.get("preferred_metric"),
-                score=c.get("score", 1.0),
-            )
-            for c in state.get("candidate_pool", [])
-        ]
+        contracts = [_dict_to_candidate(c) for c in state.get("candidate_pool", [])]
         pool = CandidatePool(contracts)
         plan_data = state.get("recall_plan") or {"domains": ["metric"], "conditions": []}
         plan = RecallPlan(
@@ -123,21 +135,7 @@ class ScreeningGraphNodes:
 
     async def command_build(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
-        contracts = [
-            CandidateContract(
-                domain=c["domain"],
-                key=c["key"],
-                name=c["name"],
-                aliases=tuple(c.get("aliases", ())),
-                supported_operators=tuple(c.get("supported_operators", ())),
-                value_type=c.get("value_type", "NUMBER"),
-                supported_usage=tuple(c.get("supported_usage", ("filter",))),
-                binding_role=c.get("binding_role"),
-                preferred_metric=c.get("preferred_metric"),
-                score=c.get("score", 1.0),
-            )
-            for c in state.get("candidate_pool", [])
-        ]
+        contracts = [_dict_to_candidate(c) for c in state.get("candidate_pool", [])]
         keys = {c.key for c in contracts}
         if self._builder._default_sector_id not in keys:
             contracts.append(CandidateContract("scope", self._builder._default_sector_id, "全市场"))
@@ -153,12 +151,7 @@ class ScreeningGraphNodes:
         t0 = time.perf_counter()
         dsl = FundScreeningDsl.model_validate(state["draft_dsl"])
         contracts = {
-            c["key"]: CandidateContract(
-                domain=c["domain"],
-                key=c["key"],
-                name=c["name"],
-                supported_usage=tuple(c.get("supported_usage", ("filter",))),
-            )
+            c["key"]: _dict_to_candidate(c)
             for c in state.get("candidate_pool", [])
             if c.get("domain") == "metric"
         }
@@ -261,21 +254,7 @@ class ScreeningGraphNodes:
     async def simple_semantic_parse(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
         query = state["normalized_query"]
-        contracts = [
-            CandidateContract(
-                domain=c["domain"],
-                key=c["key"],
-                name=c["name"],
-                aliases=tuple(c.get("aliases", ())),
-                supported_operators=tuple(c.get("supported_operators", ())),
-                value_type=c.get("value_type", "NUMBER"),
-                supported_usage=tuple(c.get("supported_usage", ("filter",))),
-                binding_role=c.get("binding_role"),
-                preferred_metric=c.get("preferred_metric"),
-                score=c.get("score", 1.0),
-            )
-            for c in state.get("candidate_pool", [])
-        ]
+        contracts = [_dict_to_candidate(c) for c in state.get("candidate_pool", [])]
         keys = {c.key for c in contracts}
         if self._builder._default_sector_id not in keys:
             contracts.append(CandidateContract("scope", self._builder._default_sector_id, "全市场"))

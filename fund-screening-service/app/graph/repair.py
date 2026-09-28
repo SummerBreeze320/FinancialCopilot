@@ -35,13 +35,9 @@ def decide_validation_outcome(state: FundScreeningState) -> Literal["finalize", 
 async def mechanical_repair_node(state: FundScreeningState) -> dict[str, Any]:
     t0 = time.perf_counter()
     dsl = FundScreeningDsl.model_validate(state["draft_dsl"])
+    from app.graph.nodes import _dict_to_candidate
     contracts = {
-        c["key"]: CandidateContract(
-            domain=c["domain"],
-            key=c["key"],
-            name=c["name"],
-            supported_usage=tuple(c.get("supported_usage", ("filter",))),
-        )
+        c["key"]: _dict_to_candidate(c)
         for c in state.get("candidate_pool", [])
         if c.get("domain") == "metric"
     }
