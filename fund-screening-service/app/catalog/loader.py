@@ -16,7 +16,30 @@ class Catalog:
 
         metrics = [CandidateContract("metric", item["mnemonic"], item["index_name"], tuple(item.get("aliases", ())), supported_usage=tuple(item.get("supported_usage", ("filter",)))) for item in read(metrics_path) if item.get("enabled", True)]
         scopes = [CandidateContract("scope", item["source_sector_id"], item["name"], tuple(item.get("aliases", ()))) for item in read(sectors_path) if item.get("enabled", True)]
-        entities = [CandidateContract("entity", item["key"], item["name"], tuple(item.get("aliases", ())), binding_role=item.get("binding_role"), preferred_metric=item.get("preferred_metric"), value_type="ENTITY_REF") for item in read(entities_path)]
+        entity_source = read(entities_path)
+        if isinstance(entity_source, dict):
+            bindings = {
+                "company_names": ("FUND_COMPANY", "f_info_mgrcomp"),
+                "manager_names": ("FUND_MANAGER", "f_info_fundmanager"),
+                "track_index_names": ("TRACK_INDEX", "f_info_trackindex"),
+                "track_index_codes": ("TRACK_INDEX", "f_info_trackindex"),
+                "stock_names": ("STOCK", "f_info_heavystock"),
+                "stock_codes": ("STOCK", "f_info_heavystock"),
+                "fund_names": ("FUND", "f_info_fundname"),
+                "fund_codes": ("FUND", "f_info_fundcode"),
+            }
+            flattened = []
+            for category, (role, metric) in bindings.items():
+                for item in entity_source.get(category, ()):
+                    flattened.append({
+                        "key": item.get("id"),
+                        "name": item.get("name") or item.get("code"),
+                        "aliases": item.get("aliases", ()),
+                        "binding_role": role,
+                        "preferred_metric": metric,
+                    })
+            entity_source = flattened
+        entities = [CandidateContract("entity", item["key"], item["name"], tuple(item.get("aliases", ())), binding_role=item.get("binding_role"), preferred_metric=item.get("preferred_metric"), supported_operators=("=", "!="), value_type="ENTITY_REF") for item in entity_source]
         return cls(metrics, scopes, entities)
 
     def metric_contract(self, key: str) -> CandidateContract:

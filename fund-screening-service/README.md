@@ -15,6 +15,26 @@ python -m uvicorn app.main:app --port 8810
 python -m pytest -v
 ```
 
+真实 RAG + LLM 链路需要设置：
+
+```dotenv
+FUND_SCREENING_PIPELINE_MODE=rag
+FUND_SCREENING_METRICS_CATALOG_PATH=D:/BaiduSyncdisk/IdeaProjects/FinancialCopilot/.worktrees/lite-mysql/docs/temp/metrics.json
+FUND_SCREENING_SECTORS_CATALOG_PATH=D:/BaiduSyncdisk/IdeaProjects/FinancialCopilot/.worktrees/lite-mysql/docs/temp/sectors.json
+FUND_SCREENING_ENTITY_CATALOG_PATH=D:/BaiduSyncdisk/IdeaProjects/FinancialCopilot/.worktrees/lite-mysql/docs/temp/entity.json
+FUND_SCREENING_LLM_BASE_URL=http://127.0.0.1:8000/v1
+FUND_SCREENING_LLM_API_KEY=local-codex
+FUND_SCREENING_LLM_MODEL=gpt-5.3-codex
+FUND_SCREENING_LLM_REASONING_EFFORT=low
+FUND_SCREENING_EMBEDDING_BASE_URL=http://127.0.0.1:11434/v1
+FUND_SCREENING_EMBEDDING_MODEL=qwen3-embedding:0.6b
+FUND_SCREENING_MILVUS_URI=http://127.0.0.1:19530
+FUND_SCREENING_METRIC_COLLECTION=fund_metrics
+FUND_SCREENING_SCOPE_COLLECTION=fund_scopes
+```
+
+目录路径齐全时，`app.main:app` 自动启用真实链路：Codex 生成 pre-recall plan → metric/scope Milvus 与 entity lexical 三路召回 → Codex 在 Candidate Pool 内裁决填参 → Command Builder → Validator/Repair → DSL。
+
 HTTP：`POST /v1/fund-screening/commands`，请求体为 `{"query":"成立年限大于10年"}`。
 WebSocket：`/v1/fund-screening/ws`，使用同一请求体并依次接收五段事件及 `finalized`。
 

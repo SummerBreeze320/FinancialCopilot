@@ -1,6 +1,17 @@
 from fastapi.testclient import TestClient
 
 from app.main import create_app
+from app.models.dsl import FundScreeningDsl
+from app.pipeline.compiler import CompileResult
+from app.pipeline.validator import ValidationResult
+
+
+class FakeRagCompiler:
+    def __init__(self): self.queries = []
+    async def compile(self, query):
+        self.queries.append(query)
+        dsl = FundScreeningDsl.model_validate({"version":"fund-screening/v1","operator":"AND","children":[{"sector":{"operator":"OR","children":[{"sectorId":"1000022713000000"}]},"metric":{"operator":"AND","children":[{"metric":"f_risk_maxdownside","operator":">=","value":-15,"unit":"PERCENT"}]}}],"limit":20})
+        return CompileResult(dsl, {"route":"full"}, ValidationResult(dsl))
 
 
 def test_http_returns_final_dsl_for_supported_query() -> None:
@@ -35,3 +46,10 @@ def test_mvp_edits_previous_dsl_limit_in_second_turn() -> None:
     assert second.status_code == 200
     assert second.json()["dsl"]["limit"] == 50
     assert second.json()["dsl"]["children"] == first["children"]
+
+
+def test_http_uses_injected_rag_compiler() -> None:
+    compiler = FakeRagCompiler()
+    response = TestClient(create_app(compiler=compiler)).post("/v1/fund-screening/commands", json={"query":"半导体基金回撤低于15%"})
+    assert response.json()["dsl"]["children"][0]["sector"]["children"][0]["sectorId"] == "1000022713000000"
+    assert compiler.queries == ["半导体基金回撤低于15%"]

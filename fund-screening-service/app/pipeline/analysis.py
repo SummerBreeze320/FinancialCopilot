@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import inspect
 
 from app.models.candidate import CandidateContract
 
@@ -43,17 +44,21 @@ class AnalysisService:
         self._adjudicator = adjudicator
 
     async def analyze_and_recall(self, query: str) -> CandidatePool:
-        plan = self._plan_generator(query)
+        plan = await self._make_plan(query)
         return await self._recall(query, plan)
 
     async def analyze_recall_and_decide(self, query: str) -> AnalysisResult:
         """先生成 plan、再召回、最后只在候选池内裁决并填充参数。"""
         if self._adjudicator is None:
             raise RuntimeError("adjudicator is required for three-layer semantic processing")
-        plan = self._plan_generator(query)
+        plan = await self._make_plan(query)
         pool = await self._recall(query, plan)
         decision = await self._adjudicator(query, plan, pool)
         return AnalysisResult(plan, pool, decision)
+
+    async def _make_plan(self, query: str) -> RecallPlan:
+        plan = self._plan_generator(query)
+        return await plan if inspect.isawaitable(plan) else plan
 
     async def _recall(self, query: str, plan: RecallPlan) -> CandidatePool:
         results = []

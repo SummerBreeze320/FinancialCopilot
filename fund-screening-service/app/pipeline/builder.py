@@ -8,7 +8,12 @@ class CommandBuilder:
     def build(self, decision: dict, candidate_pool) -> FundScreeningDsl:
         groups = []
         for group in decision["groups"]:
-            sector_ids = group.get("sectorIds") or [self._default_sector_id]
+            explicit_sector_ids = group.get("sectorIds") or []
+            for sector_id in explicit_sector_ids:
+                contract = candidate_pool.contract(sector_id)
+                if contract.domain != "scope":
+                    raise ValueError(f"candidate {sector_id} is not a scope")
+            sector_ids = explicit_sector_ids or [self._default_sector_id]
             predicates = list(group.get("metrics", ()))
             for entity_ref in group.get("entities", ()):
                 contract = candidate_pool.contract(entity_ref["entity"])

@@ -8,6 +8,9 @@ STAGES = ("query_preprocess", "query_analysis_and_recall", "command_build", "val
 
 
 class ScreeningOrchestrator:
+    def __init__(self, compiler=None) -> None:
+        self._compiler = compiler
+
     async def run(self, query: str, previous_dsl: dict | None = None, emit=None) -> FundScreeningDsl:
         async def stage(name: str) -> None:
             if emit:
@@ -18,6 +21,8 @@ class ScreeningOrchestrator:
         edit_kind = classify_edit(prepared.normalized_query, previous_dsl)
         if edit_kind is EditKind.SIMPLE and previous_dsl is not None:
             dsl = apply_simple_edit(FundScreeningDsl.model_validate(previous_dsl), prepared.normalized_query)
+        elif self._compiler is not None:
+            dsl = (await self._compiler.compile(prepared.normalized_query)).dsl
         else:
             dsl = compile_mvp_query(prepared.normalized_query)
         await stage(STAGES[3]); dsl = validate_and_repair(dsl).dsl

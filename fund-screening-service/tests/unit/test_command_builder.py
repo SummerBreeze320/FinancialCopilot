@@ -1,6 +1,7 @@
 from app.models.candidate import CandidateContract
 from app.pipeline.analysis import CandidatePool
 from app.pipeline.builder import CommandBuilder
+import pytest
 
 
 def test_builder_injects_default_sector_for_metric_only_group() -> None:
@@ -22,3 +23,10 @@ def test_builder_binds_company_entity_to_contract_preferred_metric() -> None:
 
     leaf = dsl.children[0].metric.children[0]
     assert (leaf.metric, leaf.operator, leaf.value, leaf.unit) == ("f_info_mgrcomp", "=", "company:eastmoney", "ENTITY_REF")
+
+
+def test_builder_rejects_sector_outside_candidate_pool() -> None:
+    pool = CandidatePool([CandidateContract("metric", "f_return_3y", "近3年回报")])
+    decision = {"groups": [{"sectorIds": ["hallucinated"], "metrics": [{"metric":"f_return_3y","operator":">","value":1,"unit":"PERCENT"}]}]}
+    with pytest.raises(KeyError):
+        CommandBuilder().build(decision, pool)
