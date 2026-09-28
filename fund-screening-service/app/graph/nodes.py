@@ -180,3 +180,42 @@ class ScreeningGraphNodes:
             "final_dsl": final_dsl,
             "trace": [*state.get("trace", []), event],
         }
+
+    async def route_classifier(self, state: FundScreeningState) -> dict[str, Any]:
+        t0 = time.perf_counter()
+        from app.graph.router import classify_screening_route
+        route = classify_screening_route(state)
+        event = _make_trace("route_classifier", t0, {"route": route})
+        return {
+            "route": route,
+            "trace": [*state.get("trace", []), event],
+        }
+
+    async def simple_semantic_parse(self, state: FundScreeningState) -> dict[str, Any]:
+        t0 = time.perf_counter()
+        from app.pipeline.mvp import compile_mvp_query
+        dsl = compile_mvp_query(state["normalized_query"])
+        event = _make_trace("simple_semantic_parse", t0, {"limit": dsl.limit})
+        return {
+            "draft_dsl": dsl.model_dump(by_alias=True, exclude_none=True),
+            "trace": [*state.get("trace", []), event],
+        }
+
+    async def direct_build(self, state: FundScreeningState) -> dict[str, Any]:
+        t0 = time.perf_counter()
+        candidate = state["candidate_pool"][0]
+        dsl_dict = {
+            "version": "fund-screening/v1",
+            "operator": "AND",
+            "children": [{
+                "sector": {"operator": "OR", "children": [{"sectorId": self._builder._default_sector_id, "match": "SELF_OR_DESCENDANT"}]},
+                "metric": {"operator": "AND", "children": [{"metric": candidate["key"], "operator": "=", "value": candidate["name"], "unit": candidate.get("value_type", "STRING")}]},
+            }],
+            "limit": 20,
+        }
+        event = _make_trace("direct_build", t0, {"candidate": candidate["key"]})
+        return {
+            "draft_dsl": dsl_dict,
+            "trace": [*state.get("trace", []), event],
+        }
+
