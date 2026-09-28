@@ -18,9 +18,11 @@ def classify_screening_route(state: FundScreeningState) -> Literal["direct", "si
         return "full"
 
     # 3. 候选池已有单高置信候选且参数完整 -> direct
-    pool = state.get("candidate_pool", [])
-    if len(pool) == 1 and pool[0].get("score", 0.0) >= 0.95:
-        return "direct"
+    pool = state.get("candidate_pool") or []
+    if pool and len(pool) == 1 and pool[0].get("score", 0.0) >= 0.95:
+        if not any(op in query for op in (">", "<", "=", "大于", "小于", "超过", "低于", "高于")):
+            return "direct"
+
 
     # 4. 简单单组且少于 4 个 AND 条件 -> simple
     conditions = [c for c in re.split(r"[且与和、,，\s]+", query) if c.strip()]
