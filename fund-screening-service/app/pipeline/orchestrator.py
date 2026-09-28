@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Any
 from app.models.dsl import FundScreeningDsl
 from app.pipeline.preprocess import preprocess
 from app.pipeline.mvp import compile_mvp_query
@@ -6,16 +9,72 @@ from app.pipeline.validator import validate_and_repair
 
 STAGES = ("query_preprocess", "query_analysis_and_recall", "command_build", "validator_and_repair", "command_finalize")
 
+NODE_TO_STAGE = {
+    "query_preprocess": "query_preprocess",
+    "route_classifier": "query_analysis_and_recall",
+    "pre_recall_plan": "query_analysis_and_recall",
+    "parallel_recall": "query_analysis_and_recall",
+    "candidate_adjudication": "query_analysis_and_recall",
+    "direct_build": "command_build",
+    "simple_semantic_parse": "command_build",
+    "command_build": "command_build",
+    "validator": "validator_and_repair",
+    "mechanical_repair": "validator_and_repair",
+    "command_finalize": "command_finalize",
+}
+
 
 class ScreeningOrchestrator:
-    def __init__(self, compiler=None) -> None:
+    def __init__(self, compiler: Any = None, graph: Any = None) -> None:
         self._compiler = compiler
+        self._graph = graph
 
-    async def run(self, query: str, previous_dsl: dict | None = None, emit=None) -> FundScreeningDsl:
+    async def run(
+        self,
+        query: str,
+        previous_dsl: dict[str, Any] | None = None,
+        emit: Any = None,
+        conversation_id: str | None = None,
+    ) -> FundScreeningDsl:
+        # 1. 优先使用已编译 LangGraph 执行
+        if self._graph is not None:
+            from app.graph.checkpoint import make_graph_config
+            from app.graph.state import empty_state
+
+            state = empty_state(query, conversation_id=conversation_id, previous_dsl=previous_dsl)
+            config = make_graph_config(conversation_id)
+
+            if emit:
+                final_state = state
+                emitted_stages = set()
+                async for update in self._graph.astream(state, config=config, stream_mode="updates"):
+                    for node_name, node_update in update.items():
+                        final_state = {**final_state, **node_update}
+                        trace_list = node_update.get("trace", [])
+                        summary = trace_list[-1]["summary"] if trace_list else {}
+
+                        # 映射并发射兼容历史客户端的五段事件（去重保证单阶段只触发一次 started/completed）
+                        mapped_stage = NODE_TO_STAGE.get(node_name)
+                        if mapped_stage and mapped_stage not in emitted_stages:
+                            emitted_stages.add(mapped_stage)
+                            await emit({"type": "stage_started", "stage": mapped_stage})
+                            await emit({
+                                "type": "stage_completed",
+                                "stage": mapped_stage,
+                                "status": "completed",
+                                "summary": summary,
+                            })
+
+                raw_dsl = final_state.get("final_dsl") or final_state.get("draft_dsl")
+                if raw_dsl:
+                    return FundScreeningDsl.model_validate(raw_dsl)
+
+        # 2. 兼容外部 compiler 或 MVP 流程
         async def stage(name: str) -> None:
             if emit:
                 await emit({"type": "stage_started", "stage": name})
-                await emit({"type": "stage_completed", "stage": name})
+                await emit({"type": "stage_completed", "stage": name, "status": "completed", "summary": {}})
+
         await stage(STAGES[0]); prepared = preprocess(query, previous_dsl)
         await stage(STAGES[1]); await stage(STAGES[2])
         edit_kind = classify_edit(prepared.normalized_query, previous_dsl)

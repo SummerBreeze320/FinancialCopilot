@@ -4,7 +4,12 @@ import httpx
 
 from app.catalog.loader import Catalog
 from app.config import Settings
+from app.graph.checkpoint import build_checkpointer
+from app.graph.compiler import LangGraphCommandCompiler
+from app.graph.nodes import ScreeningGraphNodes
+from app.graph.workflow import build_screening_graph
 from app.pipeline.analysis import AnalysisService
+from app.pipeline.builder import CommandBuilder
 from app.pipeline.compiler import RagCommandCompiler
 from app.retrieval.clients import OpenAiEmbeddingClient
 from app.retrieval.lexical import LexicalEntityRetriever
@@ -12,7 +17,7 @@ from app.retrieval.llm import OpenAiSemanticLlm
 from app.retrieval.pgvector import LazyAsyncpgPool, PgVectorMetricRetriever, PgVectorScopeRetriever, PgVectorSearchClient
 
 
-def build_production_compiler(settings: Settings | None = None) -> RagCommandCompiler:
+def build_production_compiler(settings: Settings | None = None) -> LangGraphCommandCompiler:
     settings = settings or Settings()
     if not all((settings.metrics_catalog_path, settings.sectors_catalog_path, settings.entity_catalog_path)):
         raise RuntimeError("metrics, sectors and entity catalog paths are required in rag mode")
@@ -29,4 +34,7 @@ def build_production_compiler(settings: Settings | None = None) -> RagCommandCom
         LexicalEntityRetriever(catalog.entities),
         llm.adjudicate,
     )
-    return RagCommandCompiler(analysis)
+    nodes = ScreeningGraphNodes(analysis, CommandBuilder(default_sector_id=settings.default_sector_id))
+    checkpointer = build_checkpointer(settings.redis_url)
+    graph = build_screening_graph(nodes, checkpointer=checkpointer)
+    return LangGraphCommandCompiler(graph)
