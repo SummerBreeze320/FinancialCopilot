@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 
+from app.api.schema import router as schema_router
+
 
 def create_app() -> FastAPI:
     """创建基金筛选 HTTP 应用。"""
     app = FastAPI(title="Fund Screening Service", version="0.1.0")
+    app.include_router(schema_router)
 
     @app.get("/v1/fund-screening/health")
     async def health() -> dict[str, object]:
