@@ -1,4 +1,5 @@
 from enum import StrEnum
+from dataclasses import dataclass
 
 
 class Route(StrEnum):
@@ -7,7 +8,20 @@ class Route(StrEnum):
     FULL = "full"
 
 
-def classify_route(group_count: int, has_or: bool, has_not: bool, confidence: float) -> Route:
-    if group_count > 1 or has_or or has_not:
+@dataclass(frozen=True)
+class RoutingSignals:
+    """路由只依赖可审计的语义复杂度与候选置信度。"""
+
+    group_count: int
+    has_or: bool
+    has_not: bool
+    confidence: float
+    candidate_complete: bool = False
+
+
+def classify_route(signals: RoutingSignals) -> Route:
+    if signals.group_count > 1 or signals.has_or or signals.has_not:
         return Route.FULL
-    return Route.DIRECT if confidence >= 0.95 else Route.SIMPLE
+    if signals.candidate_complete and signals.confidence >= 0.95:
+        return Route.DIRECT
+    return Route.SIMPLE
