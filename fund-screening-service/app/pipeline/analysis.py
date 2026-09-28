@@ -57,6 +57,10 @@ class AnalysisService:
 
     async def _recall(self, query: str, plan: RecallPlan) -> CandidatePool:
         results = []
-        for domain in plan.domains:
-            results.extend(await self._retrievers[domain].search(query, 10))
+        if plan.conditions:
+            for condition in plan.conditions:
+                results.extend(await self._retrievers[condition.domain].search(condition.mention, 10))
+        else:
+            for domain in plan.domains:
+                results.extend(await self._retrievers[domain].search(query, 10))
         return CandidatePool(list({(item.domain, item.key): item for item in results}.values()))
