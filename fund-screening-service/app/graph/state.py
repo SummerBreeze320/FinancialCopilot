@@ -46,20 +46,16 @@ def empty_state(
     conversation_id: str | None = None,
     previous_dsl: dict[str, Any] | None = None,
 ) -> FundScreeningState:
-    intent: Literal["CREATE", "EDIT"] = "EDIT" if previous_dsl else "CREATE"
-    return {
+    state: FundScreeningState = {
         "request_id": str(uuid.uuid4()),
         "conversation_id": conversation_id,
         "query": query,
         "normalized_query": query,
-        "previous_dsl": previous_dsl,
-        "intent": intent,
+        "intent": "EDIT" if previous_dsl else "CREATE",
         "edit_complexity": "NONE",
         "route": "full",
-        "recall_plan": None,
         "candidate_pool": [],
         "candidate_contract_index": {},
-        "decision": None,
         "draft_dsl": None,
         "final_dsl": None,
         "validation_errors": [],
@@ -68,3 +64,7 @@ def empty_state(
         "repair_attempts": 0,
         "trace": [],
     }
+    if previous_dsl is not None:
+        state["previous_dsl"] = previous_dsl
+    return state
+

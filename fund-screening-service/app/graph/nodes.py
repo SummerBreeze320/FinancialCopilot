@@ -70,12 +70,14 @@ class ScreeningGraphNodes:
 
     async def query_preprocess(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
-        prep = preprocess(state["query"], state.get("previous_dsl"))
-        intent = "EDIT" if prep.previous_dsl else "CREATE"
+        prev = state.get("previous_dsl") or state.get("final_dsl") or state.get("draft_dsl")
+        prep = preprocess(state["query"], prev)
+        intent = "EDIT" if prev else "CREATE"
         complexity = "SIMPLE" if prep.edit_kind == "simple" else ("COMPLEX" if intent == "EDIT" else "NONE")
         event = _make_trace("query_preprocess", t0, {"intent": intent, "complexity": complexity})
         return {
             "normalized_query": prep.normalized_query,
+            "previous_dsl": prev,
             "intent": intent,
             "edit_complexity": complexity,
             "trace": [*state.get("trace", []), event],
@@ -169,12 +171,15 @@ class ScreeningGraphNodes:
 
     async def command_finalize(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
-        final_dsl = state["draft_dsl"] if not state.get("validation_errors") else None
+        final_dsl = state["draft_dsl"] if not state.get("validation_errors") and not state.get("clarification") else None
         event = _make_trace("command_finalize", t0, {"valid": final_dsl is not None})
-        return {
+        res: dict[str, Any] = {
             "final_dsl": final_dsl,
             "trace": [*state.get("trace", []), event],
         }
+        if final_dsl is not None:
+            res["previous_dsl"] = final_dsl
+        return res
 
     async def pre_route_recall(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
