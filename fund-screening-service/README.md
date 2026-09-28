@@ -28,12 +28,18 @@ FUND_SCREENING_LLM_MODEL=gpt-5.3-codex
 FUND_SCREENING_LLM_REASONING_EFFORT=low
 FUND_SCREENING_EMBEDDING_BASE_URL=http://127.0.0.1:11434/v1
 FUND_SCREENING_EMBEDDING_MODEL=qwen3-embedding:0.6b
-FUND_SCREENING_MILVUS_URI=http://127.0.0.1:19530
-FUND_SCREENING_METRIC_COLLECTION=fund_metrics
-FUND_SCREENING_SCOPE_COLLECTION=fund_scopes
+FUND_SCREENING_DATABASE_URL=postgresql://postgres:123456@127.0.0.1:15432/financial_copilot
 ```
 
-目录路径齐全时，`app.main:app` 自动启用真实链路：Codex 生成 pre-recall plan → metric/scope Milvus 与 entity lexical 三路召回 → Codex 在 Candidate Pool 内裁决填参 → Command Builder → Validator/Repair → DSL。
+目录路径齐全时，`app.main:app` 自动启用真实链路：Codex 生成 pre-recall plan → metric/scope PGVector 与 entity lexical 三路召回 → Codex 在 Candidate Pool 内裁决填参 → Command Builder → Validator/Repair → DSL。
+
+仓库已有服务可直接启动：
+
+```powershell
+docker compose -f ..\docker\postgres\docker-compose.yml up -d postgres
+docker compose -f ..\docker\embedding\docker-compose.yml up -d
+docker compose -f ..\docker\embedding\docker-compose.yml exec embedding ollama pull qwen3-embedding:0.6b
+```
 
 HTTP：`POST /v1/fund-screening/commands`，请求体为 `{"query":"成立年限大于10年"}`。
 WebSocket：`/v1/fund-screening/ws`，使用同一请求体并依次接收五段事件及 `finalized`。

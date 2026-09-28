@@ -10,7 +10,7 @@
 
 服务提供 FastAPI HTTP 和 WebSocket 两种入口。调用方在每次追问时完整传入上轮 DSL；服务不持久化 DSL 的业务真相，也不把内部候选、版本或节点标识交给数据引擎。
 
-本轮 MVP 使用本地 Codex 桥接的低成本 LLM，Python、AgentScope、Milvus、Embedding、Redis、sa-token 和 WebSocket 的部署适配保留为明确接口。指标与板块初始数据来自：
+本轮 MVP 使用本地 Codex 桥接的低成本 LLM，Python、AgentScope、PostgreSQL PGVector、Embedding、Redis、sa-token 和 WebSocket 的部署适配保留为明确接口。指标与板块初始数据来自：
 
 - `D:\BaiduSyncdisk\IdeaProjects\FinancialCopilot\.worktrees\lite-mysql\docs\temp\metrics.json`
 - `D:\BaiduSyncdisk\IdeaProjects\FinancialCopilot\.worktrees\lite-mysql\docs\temp\sectors.json`
@@ -96,8 +96,8 @@ AND
 
 ### 4.2 三路召回
 
-- **metrics**：Milvus 向量召回，语料包含名称、别名、描述和指标助记码。
-- **scope**：Milvus 向量召回，返回 sectorId、层级、叶子状态和展开策略。
+- **metrics**：PGVector 向量召回，语料包含名称、别名、描述和指标助记码。
+- **scope**：PGVector 向量召回，返回 sectorId、层级、叶子状态和展开策略。
 - **entities**：Lexical 文本检索，适合公司、经理、股票、指数等精确命名实体。
 
 三路结果进入统一 candidate pool 与 Candidate Contract Index。禁止在 parser 或 validator 中堆积业务词硬编码。
@@ -160,7 +160,7 @@ AND
 
 ### 8.3 运维
 
-`GET /v1/fund-screening/health` 返回服务、Milvus、Redis、模型桥接和数据目录健康状态。
+`GET /v1/fund-screening/health` 返回服务、PGVector、Redis、模型桥接和数据目录健康状态。
 
 ## 9. Validator 与修复策略
 

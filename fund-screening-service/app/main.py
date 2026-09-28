@@ -20,7 +20,7 @@ def create_app(compiler=None) -> FastAPI:
             "service": "fund-screening-service",
             "dependencies": {
                 "catalog": "configured",
-                "milvus": "configured",
+                "pgvector": "configured",
                 "redis": "configured",
                 "llm": "configured",
             },

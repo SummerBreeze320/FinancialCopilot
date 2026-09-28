@@ -6,29 +6,26 @@ from app.catalog.loader import Catalog
 from app.config import Settings
 from app.pipeline.analysis import AnalysisService
 from app.pipeline.compiler import RagCommandCompiler
-from app.retrieval.clients import OpenAiEmbeddingClient, PymilvusVectorSearchClient
+from app.retrieval.clients import OpenAiEmbeddingClient
 from app.retrieval.lexical import LexicalEntityRetriever
 from app.retrieval.llm import OpenAiSemanticLlm
-from app.retrieval.milvus import MilvusMetricRetriever, MilvusScopeRetriever
+from app.retrieval.pgvector import LazyAsyncpgPool, PgVectorMetricRetriever, PgVectorScopeRetriever, PgVectorSearchClient
 
 
 def build_production_compiler(settings: Settings | None = None) -> RagCommandCompiler:
     settings = settings or Settings()
     if not all((settings.metrics_catalog_path, settings.sectors_catalog_path, settings.entity_catalog_path)):
         raise RuntimeError("metrics, sectors and entity catalog paths are required in rag mode")
-    from pymilvus import MilvusClient
-
     catalog = Catalog.from_files(Path(settings.metrics_catalog_path), Path(settings.sectors_catalog_path), Path(settings.entity_catalog_path))
     llm_http = httpx.AsyncClient(base_url=settings.llm_base_url, headers={"Authorization": f"Bearer {settings.llm_api_key}"}, timeout=60)
     embedding_http = httpx.AsyncClient(base_url=settings.embedding_base_url, headers={"Authorization": f"Bearer {settings.embedding_api_key}"}, timeout=30)
     llm = OpenAiSemanticLlm(llm_http, settings.llm_model, settings.llm_reasoning_effort)
     embedding = OpenAiEmbeddingClient(embedding_http, settings.embedding_model)
-    milvus = MilvusClient(uri=settings.milvus_uri, token=settings.milvus_token or None)
-    vector = PymilvusVectorSearchClient(milvus, embedding, {"fund_metrics": settings.metric_collection, "fund_scopes": settings.scope_collection})
+    vector = PgVectorSearchClient(LazyAsyncpgPool(settings.database_url), embedding)
     analysis = AnalysisService(
         llm.generate_plan,
-        MilvusMetricRetriever(vector),
-        MilvusScopeRetriever(vector),
+        PgVectorMetricRetriever(vector),
+        PgVectorScopeRetriever(vector),
         LexicalEntityRetriever(catalog.entities),
         llm.adjudicate,
     )

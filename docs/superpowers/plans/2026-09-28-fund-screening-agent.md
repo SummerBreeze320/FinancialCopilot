@@ -4,9 +4,9 @@
 
 **Goal:** 建立独立 FastAPI 基金筛选服务，将自然语言稳定转换为 `fund-screening/v1` DSL，并支持 HTTP、WebSocket、多轮编辑、三路候选召回和可观测五段编排。
 
-**Architecture:** 新服务位于 `fund-screening-service/`，采用 Pydantic 模型约束请求、候选契约、阶段输出和最终 DSL。编排器固定执行 preprocess → analysis/recall → command build → validator/repair → finalize；Milvus 和模型调用通过端口抽象，单元测试使用内存替身。
+**Architecture:** 新服务位于 `fund-screening-service/`，采用 Pydantic 模型约束请求、候选契约、阶段输出和最终 DSL。编排器固定执行 preprocess → analysis/recall → command build → validator/repair → finalize；PGVector 和模型调用通过端口抽象，单元测试使用内存替身。
 
-**Tech Stack:** Python 3.11、FastAPI、Pydantic v2、WebSocket、AgentScope、Milvus、Redis、pytest、httpx。
+**Tech Stack:** Python 3.11、FastAPI、Pydantic v2、WebSocket、AgentScope、PostgreSQL PGVector、Redis、pytest、httpx。
 
 **Spec:** `docs/superpowers/specs/2026-09-28-fund-screening-agent-design.md`
 
@@ -18,7 +18,7 @@
 - `metric` 与 `sector` 分别使用递归 `AND`、`OR`、`NOT` 逻辑树，`NOT` 只允许一个 child。
 - 只能从 Candidate Contract Index 绑定指标、板块或实体；禁止 LLM 编造 catalog 外 key。
 - 最大回撤的用户正值阈值须归一化为底层负值及反向操作符。
-- HTTP 与 WebSocket 对同一输入必须产生等价 DSL；测试不能依赖真实 Milvus、Redis 或 LLM。
+- HTTP 与 WebSocket 对同一输入必须产生等价 DSL；单元测试不能依赖真实 PGVector、Redis 或 LLM。
 
 ---
 
@@ -37,7 +37,7 @@ fund-screening-service/
     catalog/loader.py                    # 加载 metrics.json、sectors.json 与实体目录
     catalog/contracts.py                 # catalog 记录转 Candidate Contract
     retrieval/ports.py                   # Metric/Scope/Entity 检索端口
-    retrieval/milvus.py                  # Milvus 向量检索适配器
+    retrieval/pgvector.py                # PGVector 向量检索适配器
     retrieval/lexical.py                 # 实体 lexical 检索适配器
     pipeline/preprocess.py               # 归一化及新建/编辑判断
     pipeline/analysis.py                 # pre-recall plan 与候选裁决接口
@@ -76,7 +76,7 @@ async def test_health_returns_service_and_dependency_states(client):
     response = await client.get("/v1/fund-screening/health")
     assert response.status_code == 200
     assert response.json()["service"] == "fund-screening-service"
-    assert set(response.json()["dependencies"]) == {"catalog", "milvus", "redis", "llm"}
+    assert set(response.json()["dependencies"]) == {"catalog", "pgvector", "redis", "llm"}
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -94,7 +94,7 @@ def create_app() -> FastAPI:
     @app.get("/v1/fund-screening/health")
     async def health() -> dict[str, object]:
         return {"service": "fund-screening-service", "dependencies": {
-            "catalog": "configured", "milvus": "configured",
+            "catalog": "configured", "pgvector": "configured",
             "redis": "configured", "llm": "configured",
         }}
     return app
@@ -217,15 +217,15 @@ git add fund-screening-service/app/catalog fund-screening-service/app/models/can
 git commit -m "feat: add candidate contracts and lexical entity retrieval"
 ```
 
-### Task 4: Milvus retrieval adapters and candidate-pool aggregation
+### Task 4: PGVector retrieval adapters and candidate-pool aggregation
 
 **Files:**
-- Create: `fund-screening-service/app/retrieval/milvus.py`
+- Create: `fund-screening-service/app/retrieval/pgvector.py`
 - Create: `fund-screening-service/app/pipeline/analysis.py`
 - Create: `fund-screening-service/tests/unit/test_analysis_recall.py`
 
 **Interfaces:**
-- Produces `MilvusMetricRetriever` and `MilvusScopeRetriever`; both implement the ports from Task 3.
+- Produces `PgVectorMetricRetriever` and `PgVectorScopeRetriever`; both implement the ports from Task 3.
 - Produces `RecallPlan`, `ConditionPlan`, `CandidatePool`, and `AnalysisService.analyze_and_recall(query) -> CandidatePool`.
 
 - [ ] **Step 1: Write failing aggregation test**
@@ -246,7 +246,7 @@ Expected: FAIL because `AnalysisService` is absent.
 
 - [ ] **Step 3: Implement retriever adapters and analysis service**
 
-Milvus adapters accept an injected embedding client and collection client, map hit metadata to Candidate Contract, and reject keys absent from the active catalog. The analysis service accepts an injected plan generator, executes only the domains named in `RecallPlan`, merges candidates by `(domain, key)`, and builds a lookup index. Tests use fake retrievers and a deterministic plan generator.
+PGVector adapters accept an injected embedding client and asyncpg pool, query the existing `rag_fund_metric` and `rag_fund_sector` tables, map rows to Candidate Contract, and reject keys absent from the active catalog. The analysis service accepts an injected plan generator, executes only the domains named in `RecallPlan`, merges candidates by `(domain, key)`, and builds a lookup index. Tests use fake retrievers and a deterministic plan generator。
 
 - [ ] **Step 4: Run test to verify pass**
 
@@ -257,7 +257,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add fund-screening-service/app/retrieval/milvus.py fund-screening-service/app/pipeline/analysis.py fund-screening-service/tests/unit/test_analysis_recall.py
+git add fund-screening-service/app/retrieval/pgvector.py fund-screening-service/app/pipeline/analysis.py fund-screening-service/tests/unit/test_analysis_recall.py
 git commit -m "feat: aggregate three-way recall candidates"
 ```
 

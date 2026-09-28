@@ -10,4 +10,4 @@ def test_health_returns_service_and_dependency_states() -> None:
 
     assert response.status_code == 200
     assert response.json()["service"] == "fund-screening-service"
-    assert set(response.json()["dependencies"]) == {"catalog", "milvus", "redis", "llm"}
+    assert set(response.json()["dependencies"]) == {"catalog", "pgvector", "redis", "llm"}
