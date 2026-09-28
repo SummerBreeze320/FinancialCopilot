@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -13,3 +14,4 @@ class CandidateContract:
     binding_role: str | None = None
     preferred_metric: str | None = None
     score: float = 1.0
+    parameters: tuple[Any, ...] = ()

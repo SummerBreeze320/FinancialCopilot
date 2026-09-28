@@ -20,6 +20,7 @@ class MetricPredicate(BaseModel):
     value: Any
     unit: str
     period: dict[str, Any] | None = None
+    params: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class MetricExpression(BaseModel):
@@ -30,6 +31,7 @@ class MetricExpression(BaseModel):
     value: Any | None = None
     unit: str | None = None
     period: dict[str, Any] | None = None
+    params: list[dict[str, Any]] = Field(default_factory=list)
     children: list[MetricExpression] | None = None
 
     @model_validator(mode="after")

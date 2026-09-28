@@ -1,1 +1,25 @@
-[{"mnemonic":"f_risk_maxdownside","index_name":"最大回撤","aliases":["回撤"],"supported_usage":["filter","sort"],"enabled":true},{"mnemonic":"f_return_3y","index_name":"近3年回报","aliases":["近三年收益"],"supported_usage":["filter","sort"],"enabled":true}]
+[
+  {
+    "mnemonic": "f_risk_maxdownside",
+    "index_name": "最大回撤",
+    "aliases": ["回撤"],
+    "supported_usage": ["filter", "sort"],
+    "enabled": true,
+    "parameters": [
+      {"key": "windCode", "valueType": "FUND_CODE", "required": true},
+      {"key": "startDate", "valueType": "DATE", "required": true},
+      {"key": "endDate", "valueType": "DATE", "required": true, "defaultValue": "LATEST_TRADE_DATE"}
+    ]
+  },
+  {
+    "mnemonic": "f_return_3y",
+    "index_name": "近3年回报",
+    "aliases": ["近三年收益"],
+    "supported_usage": ["filter", "sort"],
+    "enabled": true,
+    "parameters": [
+      {"key": "windCode", "valueType": "FUND_CODE", "required": true},
+      {"key": "endDate", "valueType": "DATE", "required": true, "defaultValue": "LATEST_TRADE_DATE"}
+    ]
+  }
+]
