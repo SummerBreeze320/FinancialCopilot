@@ -15,20 +15,35 @@ from app.pipeline.orchestrator import ScreeningOrchestrator
 from app.runtime import build_production_compiler
 
 
-def _build_default_graph():
-    class _EmptyRetriever:
-        async def search(self, q: str, l: int = 10):
-            return []
+from app.catalog.defaults import DEFAULT_ENTITIES, DEFAULT_METRICS, DEFAULT_SCOPES
 
+
+
+class DefaultCandidateRetriever:
+    def __init__(self, candidates: list[CandidateContract]) -> None:
+        self._candidates = candidates
+
+    async def search(self, query: str, limit: int = 10) -> list[CandidateContract]:
+        results = []
+        for c in self._candidates:
+            if c.name in query or any(a in query for a in c.aliases) or query in c.name or any(query in a for a in c.aliases):
+                results.append(c)
+        return results[:limit]
+
+
+def _build_default_graph(checkpointer: Any = None):
+    if checkpointer is None:
+        from langgraph.checkpoint.memory import MemorySaver
+        checkpointer = MemorySaver()
     analysis = AnalysisService(
-        lambda q: RecallPlan(("metric",)),
-        _EmptyRetriever(),
-        _EmptyRetriever(),
-        _EmptyRetriever(),
+        lambda q: RecallPlan(("metric", "scope", "entity")),
+        DefaultCandidateRetriever(DEFAULT_METRICS),
+        DefaultCandidateRetriever(DEFAULT_SCOPES),
+        DefaultCandidateRetriever(DEFAULT_ENTITIES),
         lambda q, p, pool: {"groups": [], "limit": 20},
     )
     nodes = ScreeningGraphNodes(analysis, CommandBuilder())
-    return build_screening_graph(nodes)
+    return build_screening_graph(nodes, checkpointer=checkpointer)
 
 
 def create_app(compiler: Any = None, graph: Any = None) -> FastAPI:
@@ -38,8 +53,11 @@ def create_app(compiler: Any = None, graph: Any = None) -> FastAPI:
     if graph is None:
         if compiler is not None and hasattr(compiler, "graph"):
             graph = compiler.graph
+        elif compiler is not None:
+            graph = None
         else:
             graph = _build_default_graph()
+
 
     app.state.graph = graph
     if compiler is None and graph is not None:
