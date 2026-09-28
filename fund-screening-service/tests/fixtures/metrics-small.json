@@ -1,0 +1,1 @@
+[{"mnemonic":"f_risk_maxdownside","index_name":"最大回撤","aliases":["回撤"],"supported_usage":["filter","sort"],"enabled":true},{"mnemonic":"f_return_3y","index_name":"近3年回报","aliases":["近三年收益"],"supported_usage":["filter","sort"],"enabled":true}]
