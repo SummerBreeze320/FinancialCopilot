@@ -1,0 +1,34 @@
+{
+  "total_metrics": 169,
+  "enriched_metrics": 169,
+  "coverage_rate": 1.0,
+  "by_parameter_count": {
+    "2": 83,
+    "3": 27,
+    "1": 55,
+    "4": 4
+  },
+  "by_prefix": {
+    "prt": 29,
+    "return": 14,
+    "risk": 31,
+    "info": 52,
+    "nav": 17,
+    "netasset": 3,
+    "mmf": 5,
+    "quot": 1,
+    "holder": 3,
+    "style": 3,
+    "dq": 3,
+    "pq": 3,
+    "customizedfundornot": 1,
+    "pchredm": 1,
+    "issue": 1,
+    "div": 2
+  },
+  "by_parameter_type": {
+    "FUND_CODE": 169,
+    "DATE": 145,
+    "INDEX_CODE": 4
+  }
+}
