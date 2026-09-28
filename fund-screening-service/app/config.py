@@ -22,4 +22,5 @@ class Settings(BaseSettings):
     embedding_api_key: str = "local"
     embedding_model: str = "qwen3-embedding:0.6b"
     database_url: str = "postgresql://postgres:123456@127.0.0.1:15432/financial_copilot"
+    redis_url: str = ""
     pipeline_mode: str = "rag"
