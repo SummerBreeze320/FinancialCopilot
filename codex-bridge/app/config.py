@@ -6,6 +6,8 @@ class Settings(BaseSettings):
 
     host: str = "127.0.0.1"
     port: int = 8000
+    backend: str = "agy"
+    agy_command: str = "agy"
     codex_command: str = "codex"
     timeout_seconds: float = 180.0
     max_concurrency: int = 1

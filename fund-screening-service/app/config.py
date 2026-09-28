@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     group_limit_max: int = 1000
     entity_catalog_path: str = ""
     llm_base_url: str = "http://127.0.0.1:8000/v1"
-    llm_api_key: str = "local-codex"
-    llm_model: str = "gpt-5.6-terra"
+    llm_api_key: str = "local-agy"
+    llm_model: str = "gemini-3.8-flash-low"
     llm_reasoning_effort: str = "low"
     embedding_base_url: str = "http://127.0.0.1:11434/v1"
     embedding_api_key: str = "local"

@@ -20,18 +20,23 @@ class Catalog:
         for item in read(metrics_path):
             if not item.get("enabled", True):
                 continue
-            vt = item.get("value_type") or infer_value_type(item)
+            res_contract = item.get("result") or item.get("result_contract") or {}
+            vt = res_contract.get("valueType") or item.get("result_value_type") or item.get("value_type") or infer_value_type(item)
             aliases = tuple(item.get("aliases") or infer_aliases(item))
+            supported_ops = tuple(res_contract.get("supportedOperators") or item.get("supported_operators") or (">", ">=", "<", "<=", "="))
             params = tuple(MetricParameterDefinition.model_validate(p) for p in item.get("parameters", ()))
             metrics.append(CandidateContract(
                 domain="metric",
                 key=item["mnemonic"],
                 name=item["index_name"],
                 aliases=aliases,
-                supported_operators=tuple(item.get("supported_operators") or (">", ">=", "<", "<=", "=")),
+                supported_operators=supported_ops,
                 value_type=vt,
                 supported_usage=tuple(item.get("supported_usage", ("filter",))),
                 parameters=params,
+                result_contract=res_contract,
+                parameter_schema_version=item.get("parameter_schema_version", 1),
+                contract_status=item.get("contract_status", "INFERRED"),
             ))
         scopes = [CandidateContract("scope", item["source_sector_id"], item["name"], tuple(item.get("aliases", ()))) for item in read(sectors_path) if item.get("enabled", True)]
         entity_source = read(entities_path)

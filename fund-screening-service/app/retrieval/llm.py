@@ -24,6 +24,7 @@ PLAN_SYSTEM_PROMPT = """你只负责把基金筛选 query 拆成 condition。输
 只输出有效 JSON。"""
 
 ADJUDICATION_SYSTEM_PROMPT = """你只可使用 candidateContracts 中存在的 key 构建基金筛选 decision，禁止创造指标或板块 ID。
+若指标有参数契约 parameters，必须在 params 对象中提供命名字段键值对（例如 {"creditRating": 1}），禁止输出位置数组或函数字符串。ENUM 参数必须按 options 中的整数 value 填写。比较符必须来自指标支持的 supportedOperators，比较值必须符合其类型与单位。
 group.operator 只能表示 metrics 之间的逻辑关系，不能使用比较符。每个 group 必须含至少一个 metric 或 entity；同一业务条件的板块放入该 group.sectorIds。sort 永远是数组，字段名只能是 metric/direction/nulls。没有指定 limit 时用 20。
 输出单个 JSON 对象：
 {
@@ -31,7 +32,7 @@ group.operator 只能表示 metrics 之间的逻辑关系，不能使用比较�
   "groups": [
     {
       "sectorIds": ["..."],
-      "metrics": [{"metric": "...", "operator": ">"|">="|"<"|"<="|"=", "value": ..., "unit": "..."}],
+      "metrics": [{"metric": "...", "params": {"key": value}, "operator": ">"|">="|"<"|"<="|"=", "value": ..., "unit": "..."}],
       "entities": [{"entity": "...", "operator": "="}]
     }
   ],
@@ -81,7 +82,7 @@ class OpenAiSemanticLlm:
                 HumanMessagePromptTemplate.from_template("{query}"),
             ])
             try:
-                self.plan_runnable = plan_prompt | self.chat_model.with_structured_output(RecallPlanOutput, method="json_mode")
+                self.plan_runnable = plan_prompt | self.chat_model.with_structured_output(RecallPlanOutput, method="json_schema")
             except TypeError:
                 self.plan_runnable = plan_prompt | self.chat_model.with_structured_output(RecallPlanOutput)
 
@@ -90,7 +91,7 @@ class OpenAiSemanticLlm:
                 HumanMessagePromptTemplate.from_template("{context}"),
             ])
             try:
-                self.adjudicate_runnable = adjudicate_prompt | self.chat_model.with_structured_output(DecisionOutput, method="json_mode")
+                self.adjudicate_runnable = adjudicate_prompt | self.chat_model.with_structured_output(DecisionOutput, method="json_schema")
             except TypeError:
                 self.adjudicate_runnable = adjudicate_prompt | self.chat_model.with_structured_output(DecisionOutput)
         else:
@@ -114,8 +115,18 @@ class OpenAiSemanticLlm:
         return RecallPlan(domains, conditions)
 
     async def adjudicate(self, query: str, plan: RecallPlan, pool: Any) -> dict[str, Any]:
-        candidates = [asdict(item) for item in pool.candidates]
-        contract_index = {item.key: asdict(item) for item in pool.candidates}
+        candidates = []
+        contract_index = {}
+        for item in pool.candidates:
+            d = asdict(item) if hasattr(item, "__dataclass_fields__") else (item if isinstance(item, dict) else item.__dict__)
+            if "parameters" in d and d["parameters"]:
+                d["parameters"] = [
+                    p.model_dump(by_alias=True) if hasattr(p, "model_dump")
+                    else (asdict(p) if hasattr(p, "__dataclass_fields__") else p)
+                    for p in d["parameters"]
+                ]
+            candidates.append(d)
+            contract_index[item.key] = d
         user_content = json.dumps(
             {"query": query, "plan": asdict(plan), "candidateContracts": candidates},
             ensure_ascii=False,
@@ -136,24 +147,32 @@ class OpenAiSemanticLlm:
         last_error = None
         for _ in range(2):
             try:
-                raw_json = await self._complete_json(system, user)
+                raw_json = await self._complete_json(system, user, schema_cls)
                 return schema_cls.model_validate(raw_json)
             except Exception as e:
                 last_error = e
         raise last_error
 
-    async def _complete_json(self, system: str, user: str) -> dict[str, Any]:
+    async def _complete_json(self, system: str, user: str, schema_cls: Type[Any]) -> dict[str, Any]:
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": schema_cls.__name__,
+                "strict": True,
+                "schema": schema_cls.model_json_schema(),
+            },
+        }
         if self._http is not None:
             response = await self._http.post("/chat/completions", json={
                 "model": self._model,
                 "reasoning_effort": self._reasoning_effort,
-                "response_format": {"type": "json_object"},
+                "response_format": response_format,
                 "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
             })
             response.raise_for_status()
             content = response.json()["choices"][0]["message"]["content"]
         elif self.chat_model is not None:
-            resp = await self.chat_model.ainvoke([("system", system), ("user", user)], response_format={"type": "json_object"})
+            resp = await self.chat_model.ainvoke([("system", system), ("user", user)], response_format=response_format)
             content = resp.content
         else:
             raise RuntimeError("No HTTP client or ChatModel configured for JSON completion")

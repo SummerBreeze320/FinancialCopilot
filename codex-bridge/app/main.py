@@ -6,21 +6,29 @@ from fastapi import FastAPI, HTTPException
 
 from app.config import Settings
 from app.models import ChatCompletionRequest
-from app.runner import CodexCliRunner
+from app.runner import AgyCliRunner, CodexCliRunner
+
+
+def build_runner(settings: Settings):
+    common = {
+        "timeout_seconds": settings.timeout_seconds,
+        "max_concurrency": settings.max_concurrency,
+    }
+    if settings.backend == "agy":
+        return AgyCliRunner(command=settings.agy_command, **common)
+    if settings.backend == "codex":
+        return CodexCliRunner(command=settings.codex_command, **common)
+    raise ValueError(f"unsupported backend: {settings.backend}")
 
 
 def create_app(runner=None) -> FastAPI:
     settings = Settings()
-    backend = runner or CodexCliRunner(
-        command=settings.codex_command,
-        timeout_seconds=settings.timeout_seconds,
-        max_concurrency=settings.max_concurrency,
-    )
-    app = FastAPI(title="Local Codex Bridge", version="0.1.0")
+    backend = runner or build_runner(settings)
+    app = FastAPI(title="Local LLM CLI Bridge", version="0.2.0")
 
     @app.get("/health")
     async def health():
-        return {"status": "ok", "backend": "codex-cli"}
+        return {"status": "ok", "backend": backend.backend_name}
 
     @app.post("/v1/chat/completions")
     async def chat_completions(request: ChatCompletionRequest):
@@ -32,7 +40,7 @@ def create_app(runner=None) -> FastAPI:
                 response_format=request.response_format.model_dump(),
             )
         except Exception as exc:
-            raise HTTPException(status_code=502, detail=f"Codex execution failed: {exc}") from exc
+            raise HTTPException(status_code=502, detail=f"LLM backend execution failed: {exc}") from exc
 
         return {
             "id": f"chatcmpl-{uuid.uuid4().hex}",

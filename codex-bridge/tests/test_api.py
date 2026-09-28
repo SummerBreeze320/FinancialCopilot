@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 
-from app.main import create_app
+from app.config import Settings
+from app.main import build_runner, create_app
+from app.runner import AgyCliRunner, CodexCliRunner
 
 
 class RecordingRunner:
@@ -8,6 +10,7 @@ class RecordingRunner:
         self.result = result or {"conditions": []}
         self.error = error
         self.calls = []
+        self.backend_name = "test-cli"
 
     async def run(self, *, messages, model, reasoning_effort, response_format):
         self.calls.append({
@@ -61,14 +64,14 @@ def test_chat_completions_maps_runner_failure_to_bad_gateway():
     })
 
     assert response.status_code == 502
-    assert response.json() == {"detail": "Codex execution failed: codex failed"}
+    assert response.json() == {"detail": "LLM backend execution failed: codex failed"}
 
 
 def test_health_reports_ready():
     response = TestClient(create_app(RecordingRunner())).get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "backend": "codex-cli"}
+    assert response.json() == {"status": "ok", "backend": "test-cli"}
 
 
 def test_chat_completions_defaults_to_locally_available_codex_model():
@@ -80,3 +83,13 @@ def test_chat_completions_defaults_to_locally_available_codex_model():
     assert response.status_code == 200
     assert response.json()["model"] == "gpt-5.6-terra"
     assert runner.calls[0]["model"] == "gpt-5.6-terra"
+
+
+def test_build_runner_selects_agy_or_codex_from_settings():
+    agy = build_runner(Settings(backend="agy", agy_command="agy"))
+    codex = build_runner(Settings(backend="codex", codex_command="codex"))
+
+    assert isinstance(agy, AgyCliRunner)
+    assert agy.backend_name == "agy-cli"
+    assert isinstance(codex, CodexCliRunner)
+    assert codex.backend_name == "codex-cli"

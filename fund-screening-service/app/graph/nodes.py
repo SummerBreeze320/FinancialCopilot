@@ -39,6 +39,9 @@ def _candidate_to_dict(c: CandidateContract) -> dict[str, Any]:
             p.model_dump() if hasattr(p, "model_dump") else (p if isinstance(p, dict) else p.__dict__)
             for p in getattr(c, "parameters", ())
         ],
+        "result_contract": getattr(c, "result_contract", {}) or {},
+        "parameter_schema_version": getattr(c, "parameter_schema_version", 1),
+        "contract_status": getattr(c, "contract_status", "INFERRED"),
     }
 
 
@@ -60,6 +63,9 @@ def _dict_to_candidate(c: dict[str, Any]) -> CandidateContract:
         preferred_metric=c.get("preferred_metric"),
         score=c.get("score", 1.0),
         parameters=params,
+        result_contract=c.get("result_contract", {}),
+        parameter_schema_version=c.get("parameter_schema_version", 1),
+        contract_status=c.get("contract_status", "INFERRED"),
     )
 
 

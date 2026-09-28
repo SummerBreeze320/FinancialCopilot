@@ -57,10 +57,12 @@ class MockStructuredModel:
     def __init__(self, outputs):
         self.outputs = outputs
         self.calls = []
+        self.methods = []
 
     def with_structured_output(self, schema_cls, *args, **kwargs):
         from langchain_core.runnables import RunnableLambda
         model = self
+        model.methods.append(kwargs.get("method"))
         async def _call(inp, **kwargs):
             model.calls.append((schema_cls, inp))
             return model.outputs[schema_cls]
@@ -81,6 +83,7 @@ async def test_openai_semantic_llm_uses_structured_runnable() -> None:
     plan = await llm.generate_plan("回撤小于10%")
     assert plan.conditions[0].mention == "回撤"
     assert mock_model.calls[0][0] is RecallPlanOutput
+    assert mock_model.methods == ["json_schema", "json_schema"]
 
     decision = await llm.adjudicate("回撤小于10%", plan, CandidatePool([CandidateContract("metric", "f_risk_maxdownside", "最大回撤")]))
     assert decision["groups"][0]["metrics"][0]["metric"] == "f_risk_maxdownside"

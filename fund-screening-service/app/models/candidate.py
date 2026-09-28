@@ -1,4 +1,6 @@
-from dataclasses import dataclass
+from __future__ import annotations
+
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -15,3 +17,6 @@ class CandidateContract:
     preferred_metric: str | None = None
     score: float = 1.0
     parameters: tuple[Any, ...] = ()
+    result_contract: dict[str, Any] = field(default_factory=dict)
+    parameter_schema_version: int = 1
+    contract_status: str = "INFERRED"

@@ -32,6 +32,7 @@ class PgVectorSearchClient:
 
 _METRIC_SQL = """
 SELECT mnemonic, index_name, aliases, supported_usage,
+       parameters, result_contract, parameter_schema_version, contract_status, contract_updated_at,
        1 - (embedding <=> $1::vector) AS score
 FROM rag_fund_metric
 WHERE enabled = TRUE AND embedding IS NOT NULL
@@ -75,6 +76,59 @@ class PgVectorMetricRetriever(_PgVectorRetriever):
     domain = "metric"
     key_field = "mnemonic"
     name_field = "index_name"
+
+    async def search(self, text: str, top_k: int) -> list[CandidateContract]:
+        import json
+        from app.models.parameters import MetricParameterDefinition
+
+        hits = await self._client.search(self.collection, text, top_k)
+        candidates: list[CandidateContract] = []
+        for hit in hits:
+            raw_params = hit.get("parameters")
+            if isinstance(raw_params, str):
+                try:
+                    raw_params = json.loads(raw_params)
+                except Exception:
+                    raw_params = []
+            raw_params = raw_params or []
+            param_defs = tuple(
+                MetricParameterDefinition.model_validate(p) if isinstance(p, dict) else p
+                for p in sorted(
+                    raw_params,
+                    key=lambda x: x.get("position", 0) if isinstance(x, dict) else getattr(x, "position", 0),
+                )
+            )
+
+            raw_res = hit.get("result_contract")
+            if isinstance(raw_res, str):
+                try:
+                    raw_res = json.loads(raw_res)
+                except Exception:
+                    raw_res = {}
+            raw_res = raw_res or {}
+
+            value_type = raw_res.get("valueType") or raw_res.get("value_type") or "NUMBER"
+            supported_ops = tuple(
+                raw_res.get("supportedOperators")
+                or raw_res.get("supported_operators")
+                or (">", ">=", "<", "<=", "=", "!=")
+            )
+
+            candidates.append(CandidateContract(
+                domain=self.domain,
+                key=hit[self.key_field],
+                name=hit[self.name_field],
+                aliases=tuple(hit.get("aliases") or ()),
+                supported_operators=supported_ops,
+                value_type=value_type,
+                supported_usage=tuple(hit.get("supported_usage") or ("filter",)),
+                score=float(hit.get("score", 0)),
+                parameters=param_defs,
+                result_contract=raw_res,
+                parameter_schema_version=int(hit.get("parameter_schema_version", 1)),
+                contract_status=str(hit.get("contract_status", "INFERRED")),
+            ))
+        return candidates
 
 
 class PgVectorScopeRetriever(_PgVectorRetriever):
