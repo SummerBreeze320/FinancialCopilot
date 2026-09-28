@@ -15,21 +15,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "BILLION_CNY",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_1y",
@@ -48,30 +54,35 @@
     "authoritative_code": "f_return_1y",
     "name": "近1年回报",
     "aliases": [
-      "1年收益",
-      "一年收益",
-      "年收益",
-      "近1年回报",
-      "近1年收益",
+      "近一年收益",
       "近一年回报",
-      "近一年收益"
+      "1年收益",
+      "年收益",
+      "一年收益"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_maxdownside",
@@ -89,32 +100,38 @@
     "applicable_products": "1001010",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": [
-      "回撤",
-      "回撤率",
-      "最大回撤",
-      "最大回撤率"
-    ]
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_windcode",
@@ -132,17 +149,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "ENTITY_REF",
-    "aliases": [
-      "代码",
-      "基金代码"
-    ]
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_fullname",
@@ -160,14 +177,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_name",
@@ -191,13 +211,17 @@
     "aliases": [],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER"
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_fundmanager",
@@ -215,14 +239,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_adjustedreturn",
@@ -240,21 +267,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
+        "key": "startDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "description": "开始日期",
+        "pairWith": "endDate"
+      },
+      {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期",
+        "pairWith": "startDate"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_fundscale",
@@ -272,19 +316,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "BILLION_CNY",
-    "aliases": [
-      "合并规模",
-      "基金规模",
-      "规模",
-      "资产规模"
-    ]
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_netasset_total2",
@@ -302,26 +344,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "reportDate",
+        "position": 2,
+        "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "截止日期"
       }
     ],
-    "value_type": "BILLION_CNY",
-    "aliases": [
-      "合并规模",
-      "基金规模",
-      "规模",
-      "资产规模"
-    ]
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_relatedcode",
@@ -339,14 +382,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "ENTITY_REF",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_sharpe",
@@ -364,34 +410,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
-      },
-      {
-        "key": "indexCode",
-        "valueType": "INDEX_CODE",
-        "required": false,
-        "defaultValue": "FUND_BENCHMARK",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_mgrcomp",
@@ -409,14 +459,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_topstockname",
@@ -433,31 +486,46 @@
     ],
     "applicable_products": "1001000",
     "aliases": [
+      "重仓股票",
+      "持仓股票",
+      "重仓股名称",
+      "持仓股票名称",
       "前N大重仓股名",
       "前几大持仓名",
-      "持仓名称",
-      "持仓股票",
-      "持仓股票名称",
       "重仓持股名",
-      "重仓股名称",
-      "重仓股票"
+      "持仓名称"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "重仓股排名，如 1 表示第一大重仓股"
       }
     ],
-    "value_type": "NUMBER"
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_3m",
@@ -476,26 +544,33 @@
     "authoritative_code": "f_return_3m",
     "name": "近3月回报",
     "aliases": [
-      "3月收益",
+      "近三月收益",
       "近三月回报",
-      "近三月收益"
+      "3月收益"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_5y",
@@ -514,26 +589,33 @@
     "authoritative_code": "f_return_5y",
     "name": "近5年回报",
     "aliases": [
-      "5年收益",
+      "近五年收益",
       "近五年回报",
-      "近五年收益"
+      "5年收益"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_6m",
@@ -552,27 +634,34 @@
     "authoritative_code": "f_return_6m",
     "name": "近6月回报",
     "aliases": [
-      "6月收益",
-      "半年收益",
+      "近六月收益",
       "近六月回报",
-      "近六月收益"
+      "6月收益",
+      "半年收益"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_ytd",
@@ -590,26 +679,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": [
-      "今年以来收益",
-      "今年收益",
-      "年内收益",
-      "年初至今收益"
-    ]
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_returnyearly",
@@ -627,27 +717,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_mmf_annualizedyield",
@@ -665,21 +766,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
+        "position": 2,
+        "key": "date",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "交易日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_mmf_avgannualizedyield",
@@ -697,21 +804,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
+        "key": "startDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "description": "开始日期",
+        "pairWith": "endDate"
+      },
+      {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期",
+        "pairWith": "startDate"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_ytd",
@@ -730,28 +854,31 @@
     "authoritative_code": "f_nav_periodreturnranking_ytd",
     "name": "今年以来回报排名",
     "aliases": [
-      "YTD收益排名",
-      "今年以来收益",
-      "今年收益",
-      "年内收益",
-      "年初至今收益"
+      "YTD收益排名"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_y",
@@ -769,21 +896,24 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
-        "valueType": "DATE",
+        "position": 2,
+        "key": "year",
+        "valueType": "INTEGER",
         "required": true,
-        "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "统计年份，例如 2024"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_stdevyearly",
@@ -801,27 +931,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_stdev",
@@ -839,27 +980,38 @@
     "applicable_products": "1001010",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_annustdev",
@@ -877,27 +1029,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_quot_benchreturn",
@@ -915,21 +1078,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
+        "key": "startDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "description": "开始日期",
+        "pairWith": "endDate"
+      },
+      {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期",
+        "pairWith": "startDate"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_navoverbenchreturn",
@@ -947,21 +1127,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
+        "key": "startDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "description": "开始日期",
+        "pairWith": "endDate"
+      },
+      {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期",
+        "pairWith": "startDate"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_navoverbenchannualreturn",
@@ -979,27 +1176,47 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
+      },
+      {
+        "position": 4,
+        "key": "indexCode",
+        "valueType": "STRING",
+        "semanticType": "BENCHMARK_CODE",
+        "required": false,
+        "defaultValue": "FUND_BENCHMARK",
+        "description": "比较基准代码，默认基金基准"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_duration",
@@ -1017,27 +1234,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "startDate",
+        "position": 2,
+        "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
-        "options": []
-      },
-      {
-        "key": "endDate",
-        "valueType": "DATE",
-        "required": true,
-        "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "defaultValue": "LATEST_REPORT_DATE",
+        "description": "报告期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_foundleverage",
@@ -1055,21 +1272,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_managementfeeratio",
@@ -1087,14 +1310,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_custodianfeeratio",
@@ -1112,14 +1338,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_salefeeratio",
@@ -1137,14 +1366,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_purchasefeeratio",
@@ -1162,14 +1394,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_topstockcode",
@@ -1187,21 +1422,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "重仓股排名，如 1"
       }
     ],
-    "value_type": "ENTITY_REF",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_topstockvalue",
@@ -1219,21 +1468,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "重仓股排名，如 1"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_topstockholdingchanging",
@@ -1251,21 +1514,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "重仓股排名，如 1"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_fundnoofstocks",
@@ -1283,21 +1560,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "重仓股排名，如 1"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_bondtonav",
@@ -1315,21 +1606,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_bondbycreditratingtonav",
@@ -1347,21 +1644,106 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "ratingTerm",
+        "valueType": "ENUM",
+        "required": true,
+        "description": "信用评级期限",
+        "options": [
+          {
+            "value": 1,
+            "label": "长期信用评级",
+            "aliases": [
+              "长期",
+              "长期评级"
+            ]
+          },
+          {
+            "value": 2,
+            "label": "短期信用评级",
+            "aliases": [
+              "短期",
+              "短期评级"
+            ]
+          }
+        ]
+      },
+      {
+        "position": 4,
+        "key": "creditRating",
+        "valueType": "ENUM",
+        "required": true,
+        "description": "信用评级级别",
+        "options": [
+          {
+            "value": 1,
+            "label": "AAA",
+            "aliases": [
+              "AAA级",
+              "3A"
+            ]
+          },
+          {
+            "value": 2,
+            "label": "AA+",
+            "aliases": [
+              "AA+级"
+            ]
+          },
+          {
+            "value": 3,
+            "label": "AA",
+            "aliases": [
+              "AA级"
+            ]
+          },
+          {
+            "value": 4,
+            "label": "AA-",
+            "aliases": [
+              "AA-级"
+            ]
+          },
+          {
+            "value": 5,
+            "label": "A+",
+            "aliases": [
+              "A+级"
+            ]
+          },
+          {
+            "value": 6,
+            "label": "A及以下",
+            "aliases": [
+              "A",
+              "A级",
+              "其他"
+            ]
+          }
+        ]
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_prt_convertiblebondtonav",
@@ -1379,21 +1761,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_cashtonav",
@@ -1411,21 +1799,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_holder_institution_holdingpct",
@@ -1443,21 +1837,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_style_styleattribute",
@@ -1475,21 +1875,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_style_marketvaluestyleattribute",
@@ -1507,21 +1913,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_style_marketvalueattribute",
@@ -1539,21 +1951,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_dq_turn",
@@ -1571,21 +1989,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
+        "position": 2,
+        "key": "date",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "交易日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_1w",
@@ -1604,26 +2028,33 @@
     "authoritative_code": "f_return_1w",
     "name": "近1周回报",
     "aliases": [
-      "1周收益",
+      "近一周收益",
       "近一周回报",
-      "近一周收益"
+      "1周收益"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_1m",
@@ -1642,26 +2073,33 @@
     "authoritative_code": "f_return_1m",
     "name": "近1月回报",
     "aliases": [
-      "1月收益",
+      "近一月收益",
       "近一月回报",
-      "近一月收益"
+      "1月收益"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_2y",
@@ -1680,26 +2118,33 @@
     "authoritative_code": "f_return_2y",
     "name": "近2年回报",
     "aliases": [
-      "2年收益",
+      "近两年收益",
       "近两年回报",
-      "近两年收益"
+      "2年收益"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_3y",
@@ -1718,29 +2163,33 @@
     "authoritative_code": "f_return_3y",
     "name": "近3年回报",
     "aliases": [
-      "3年收益",
-      "三年收益",
-      "近3年回报",
-      "近3年收益",
+      "近三年收益",
       "近三年回报",
-      "近三年收益"
+      "3年收益"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_10y",
@@ -1759,26 +2208,33 @@
     "authoritative_code": "f_return_10y",
     "name": "近10年回报",
     "aliases": [
-      "10年收益",
+      "近十年收益",
       "近十年回报",
-      "近十年收益"
+      "10年收益"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_std",
@@ -1797,27 +2253,34 @@
     "authoritative_code": "f_return_std",
     "name": "今年以来回报",
     "aliases": [
-      "YTD收益",
       "今年以来收益",
-      "年初以来收益",
-      "本年以来收益"
+      "YTD收益",
+      "本年以来收益",
+      "年初以来收益"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_m",
@@ -1840,20 +2303,31 @@
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
-        "valueType": "DATE",
+        "position": 2,
+        "key": "year",
+        "valueType": "INTEGER",
         "required": true,
-        "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "年份，例如 2024"
+      },
+      {
+        "position": 3,
+        "key": "month",
+        "valueType": "INTEGER",
+        "required": true,
+        "description": "月份，1-12"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_q",
@@ -1876,20 +2350,31 @@
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
-        "valueType": "DATE",
+        "position": 2,
+        "key": "year",
+        "valueType": "INTEGER",
         "required": true,
-        "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "年份，例如 2024"
+      },
+      {
+        "position": 3,
+        "key": "quarter",
+        "valueType": "INTEGER",
+        "required": true,
+        "description": "季度，1-4"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_return_y",
@@ -1912,20 +2397,24 @@
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
-        "valueType": "DATE",
+        "position": 2,
+        "key": "year",
+        "valueType": "INTEGER",
         "required": true,
-        "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "年份，例如 2024"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_1w",
@@ -1948,20 +2437,27 @@
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_1m",
@@ -1984,20 +2480,27 @@
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_3m",
@@ -2020,20 +2523,27 @@
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_6m",
@@ -2056,20 +2566,27 @@
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_1y",
@@ -2088,29 +2605,31 @@
     "authoritative_code": "f_nav_periodreturnranking_1y",
     "name": "近1年回报排名",
     "aliases": [
-      "一年收益",
-      "近1年回报",
-      "近1年收益",
-      "近一年回报",
-      "近一年收益",
       "近一年收益排名"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_2y",
@@ -2133,20 +2652,27 @@
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_3y",
@@ -2165,29 +2691,31 @@
     "authoritative_code": "f_nav_periodreturnranking_3y",
     "name": "近3年回报排名",
     "aliases": [
-      "三年收益",
-      "近3年回报",
-      "近3年收益",
-      "近三年回报",
-      "近三年收益",
       "近三年收益排名"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnranking_5y",
@@ -2210,20 +2738,27 @@
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT"
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_maxdownsideranking",
@@ -2241,32 +2776,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": [
-      "回撤",
-      "回撤率",
-      "最大回撤",
-      "最大回撤率"
-    ]
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_risk_maxdownside_date",
@@ -2284,32 +2825,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": [
-      "回撤",
-      "回撤率",
-      "最大回撤",
-      "最大回撤率"
-    ]
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_siml_avgmaxdownside",
@@ -2327,32 +2874,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": [
-      "回撤",
-      "回撤率",
-      "最大回撤",
-      "最大回撤率"
-    ]
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_risk_maxdownside_recoverdays",
@@ -2370,32 +2923,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": [
-      "回撤",
-      "回撤率",
-      "最大回撤",
-      "最大回撤率"
-    ]
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_siml_avgsharpe",
@@ -2413,27 +2972,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_risk_siml_avgsortino",
@@ -2451,27 +3021,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_risk_siml_avgannusharpe",
@@ -2489,27 +3070,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_risk_siml_avgannuSortino",
@@ -2527,27 +3119,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_risk_annusharpe",
@@ -2565,27 +3168,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_annuSortino",
@@ -2603,27 +3217,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_avgfundscale",
@@ -2641,19 +3266,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "BILLION_CNY",
-    "aliases": [
-      "合并规模",
-      "基金规模",
-      "规模",
-      "资产规模"
-    ]
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_scaleranking",
@@ -2671,19 +3294,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "BILLION_CNY",
-    "aliases": [
-      "合并规模",
-      "基金规模",
-      "规模",
-      "资产规模"
-    ]
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_netasset_total",
@@ -2700,27 +3321,31 @@
     ],
     "applicable_products": "1001000",
     "aliases": [
-      "合并规模",
-      "基金规模",
-      "规模",
-      "资产规模"
+      "规模"
     ],
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "reportDate",
+        "position": 2,
+        "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "截止日期"
       }
     ],
-    "value_type": "BILLION_CNY"
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_netasset_total_cc",
@@ -2738,26 +3363,36 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "reportDate",
+        "position": 2,
+        "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "截止日期"
+      },
+      {
+        "position": 3,
+        "key": "currency",
+        "valueType": "STRING",
+        "semanticType": "CURRENCY_CODE",
+        "required": false,
+        "defaultValue": "CNY",
+        "description": "折算币种，默认CNY"
       }
     ],
-    "value_type": "BILLION_CNY",
-    "aliases": [
-      "合并规模",
-      "基金规模",
-      "规模",
-      "资产规模"
-    ]
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_annualvolranking",
@@ -2775,27 +3410,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_risk_siml_avgstdevyearly",
@@ -2813,27 +3459,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_nav_adjustedreturn_org",
@@ -2851,21 +3508,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_adjustedreturn1",
@@ -2883,21 +3546,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
+        "position": 2,
+        "key": "date",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "交易日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_navoverbenchreturn_freq",
@@ -2915,21 +3584,24 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
-        "valueType": "DATE",
+        "position": 2,
+        "key": "year",
+        "valueType": "INTEGER",
         "required": true,
-        "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "统计年份，例如 2024"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_navoverbenchreturn_freq2",
@@ -2947,21 +3619,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
+        "key": "startDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "description": "开始日期",
+        "pairWith": "endDate"
+      },
+      {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期",
+        "pairWith": "startDate"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_firstinvesttype",
@@ -2979,14 +3668,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_investtype",
@@ -3004,14 +3696,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_setupdate",
@@ -3029,14 +3724,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "DATE",
-    "aliases": []
+    "result_value_type": "DATE",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_existingyear",
@@ -3054,21 +3752,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
+      },
+      {
+        "position": 2,
+        "key": "endDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "计算截止日期"
       }
     ],
-    "value_type": "YEAR",
-    "aliases": [
-      "存续年限",
-      "存续时间",
-      "成立",
-      "成立多久",
-      "成立年限",
-      "成立时间"
-    ]
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_etfornot",
@@ -3086,14 +3790,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "BOOLEAN",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_alpha",
@@ -3111,34 +3818,47 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       },
       {
+        "position": 4,
         "key": "indexCode",
-        "valueType": "INDEX_CODE",
+        "valueType": "STRING",
+        "semanticType": "BENCHMARK_CODE",
         "required": false,
         "defaultValue": "FUND_BENCHMARK",
-        "options": []
+        "description": "比较基准代码，默认基金基准"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_beta",
@@ -3156,34 +3876,47 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       },
       {
+        "position": 4,
         "key": "indexCode",
-        "valueType": "INDEX_CODE",
+        "valueType": "STRING",
+        "semanticType": "BENCHMARK_CODE",
         "required": false,
         "defaultValue": "FUND_BENCHMARK",
-        "options": []
+        "description": "比较基准代码，默认基金基准"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_sortino",
@@ -3201,27 +3934,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_trackerror",
@@ -3239,27 +3983,47 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
+      },
+      {
+        "position": 4,
+        "key": "indexCode",
+        "valueType": "STRING",
+        "semanticType": "BENCHMARK_CODE",
+        "required": false,
+        "defaultValue": "FUND_BENCHMARK",
+        "description": "比较基准代码，默认基金基准"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_redemptionfeeratio",
@@ -3277,14 +4041,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_stocktonav",
@@ -3302,21 +4069,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_themetype",
@@ -3334,14 +4107,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_calmar",
@@ -3359,27 +4135,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_treynor",
@@ -3397,34 +4184,47 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       },
       {
+        "position": 4,
         "key": "indexCode",
-        "valueType": "INDEX_CODE",
+        "valueType": "STRING",
+        "semanticType": "BENCHMARK_CODE",
         "required": false,
         "defaultValue": "FUND_BENCHMARK",
-        "options": []
+        "description": "比较基准代码，默认基金基准"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_inforatio",
@@ -3442,27 +4242,47 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
+      },
+      {
+        "position": 4,
+        "key": "indexCode",
+        "valueType": "STRING",
+        "semanticType": "BENCHMARK_CODE",
+        "required": false,
+        "defaultValue": "FUND_BENCHMARK",
+        "description": "比较基准代码，默认基金基准"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_inforatioranking",
@@ -3480,27 +4300,47 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
+      },
+      {
+        "position": 4,
+        "key": "indexCode",
+        "valueType": "STRING",
+        "semanticType": "BENCHMARK_CODE",
+        "required": false,
+        "defaultValue": "FUND_BENCHMARK",
+        "description": "比较基准代码，默认基金基准"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_risk_downsidestdev",
@@ -3518,27 +4358,38 @@
     "applicable_products": "1001010",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_annutrackerror",
@@ -3556,27 +4407,47 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
+      },
+      {
+        "position": 4,
+        "key": "indexCode",
+        "valueType": "STRING",
+        "semanticType": "BENCHMARK_CODE",
+        "required": false,
+        "defaultValue": "FUND_BENCHMARK",
+        "description": "比较基准代码，默认基金基准"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_dq_amount",
@@ -3594,21 +4465,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
+        "position": 2,
+        "key": "date",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "交易日期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_pq_amount",
@@ -3626,21 +4503,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
+        "key": "startDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "description": "开始日期",
+        "pairWith": "endDate"
+      },
+      {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期",
+        "pairWith": "startDate"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "s_pq_avgamount",
@@ -3658,14 +4552,38 @@
     "applicable_products": "1101000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
+      },
+      {
+        "position": 2,
+        "key": "startDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "description": "开始日期",
+        "pairWith": "endDate"
+      },
+      {
+        "position": 3,
+        "key": "endDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "截止日期",
+        "pairWith": "startDate"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_pq_avgturn",
@@ -3683,21 +4601,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
+        "key": "startDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "description": "开始日期",
+        "pairWith": "endDate"
+      },
+      {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期",
+        "pairWith": "startDate"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_stockvalue",
@@ -3715,21 +4650,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_stockvalue_topindustryname2",
@@ -3747,21 +4688,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "重仓行业排名，如 1"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_bondvalue",
@@ -3779,21 +4734,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_stocktoasset",
@@ -3811,21 +4772,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "BILLION_CNY",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_bondtoasset",
@@ -3843,21 +4810,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "BILLION_CNY",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_heavilyheldstocktostock",
@@ -3875,21 +4848,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "重仓股排名，如 1"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_convertiblebondtobond",
@@ -3907,21 +4894,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_redemptionfee",
@@ -3939,14 +4932,40 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
+      },
+      {
+        "position": 2,
+        "key": "chargeType",
+        "valueType": "ENUM",
+        "required": true,
+        "description": "收费类型",
+        "options": [
+          {
+            "value": 1,
+            "label": "前端收费",
+            "aliases": [
+              "前端"
+            ]
+          },
+          {
+            "value": 2,
+            "label": "后端收费",
+            "aliases": [
+              "后端"
+            ]
+          }
+        ]
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_info_redemptionfee2",
@@ -3964,14 +4983,50 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
+      },
+      {
+        "position": 2,
+        "key": "tradeDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "交易日期"
+      },
+      {
+        "position": 3,
+        "key": "chargeType",
+        "valueType": "ENUM",
+        "required": true,
+        "description": "收费类型",
+        "options": [
+          {
+            "value": 1,
+            "label": "前端收费",
+            "aliases": [
+              "前端"
+            ]
+          },
+          {
+            "value": 2,
+            "label": "后端收费",
+            "aliases": [
+              "后端"
+            ]
+          }
+        ]
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "NEEDS_REVIEW"
   },
   {
     "mnemonic": "f_info_managementfeeratio2",
@@ -3989,14 +5044,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
+      },
+      {
+        "position": 2,
+        "key": "tradeDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "交易日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_custodianfeeratio2",
@@ -4014,14 +5082,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
+      },
+      {
+        "position": 2,
+        "key": "tradeDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "交易日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_salefeeratio2",
@@ -4039,14 +5120,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
+      },
+      {
+        "position": 2,
+        "key": "tradeDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "交易日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_exchangeshortname",
@@ -4064,14 +5158,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_trackindexname",
@@ -4089,14 +5186,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_trackindexcode",
@@ -4114,14 +5214,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "ENTITY_REF",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_topbondname",
@@ -4139,21 +5242,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "重仓债券排名，如 1"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_topbondsymbol",
@@ -4171,21 +5288,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "重仓债券排名，如 1"
       }
     ],
-    "value_type": "ENTITY_REF",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_etffeeder",
@@ -4203,14 +5334,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "BOOLEAN",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_etf_feedercode",
@@ -4228,14 +5362,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "ENTITY_REF",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_customizedfundornot",
@@ -4253,14 +5390,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "BOOLEAN",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_initial",
@@ -4278,14 +5418,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "BOOLEAN",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_investscope",
@@ -4303,14 +5446,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_risk_downsiderisk",
@@ -4328,27 +5474,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "startDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
-        "options": []
+        "pairWith": "endDate",
+        "description": "开始日期"
       },
       {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
+        "pairWith": "startDate",
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_nav_periodreturnrankingper",
@@ -4366,21 +5523,38 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
+        "key": "startDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "description": "开始日期",
+        "pairWith": "endDate"
+      },
+      {
+        "position": 3,
         "key": "endDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "截止日期",
+        "pairWith": "startDate"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_mmf_unityield",
@@ -4398,21 +5572,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
+        "position": 2,
+        "key": "date",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "交易日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_dq_pctchange",
@@ -4430,21 +5610,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
+        "position": 2,
+        "key": "date",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "交易日期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_pchredm_largepchmaxamt",
@@ -4462,14 +5648,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
+      },
+      {
+        "position": 2,
+        "key": "date",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "交易日期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_maxworkingyears",
@@ -4487,14 +5686,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "YEAR",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_investtype2",
@@ -4512,14 +5714,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_industryvaluetonav_sw",
@@ -4537,21 +5742,34 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "industryName",
+        "valueType": "STRING",
+        "required": true,
+        "description": "申万一级行业名称，例如'电子'、'医药生物'"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_topgicsindustryname",
@@ -4569,21 +5787,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "行业排名，如 1"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_topindustryname_citic",
@@ -4601,21 +5833,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "行业排名，如 1"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_topindustryname_sw2021",
@@ -4633,21 +5879,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "行业排名，如 1"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_topindustryname_wind",
@@ -4665,21 +5925,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "行业排名，如 1"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_issue_deputy",
@@ -4697,14 +5971,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_countryregioninvestmenttonav",
@@ -4722,21 +5999,34 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "country",
+        "valueType": "STRING",
+        "required": true,
+        "description": "国家或地区名称，例如'中国'、'美国'、'中国香港'"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_countryregioninvestment",
@@ -4754,21 +6044,34 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "country",
+        "valueType": "STRING",
+        "required": true,
+        "description": "国家或地区名称"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_distributionarea",
@@ -4786,14 +6089,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_mmf_avgptm",
@@ -4811,21 +6117,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
+        "position": 2,
+        "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
-        "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "defaultValue": "LATEST_REPORT_DATE",
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_holder_institution_totalholdingpct",
@@ -4843,21 +6155,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_prt_stockholding",
@@ -4875,21 +6193,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_manager_awardrecord",
@@ -4907,14 +6231,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_manager_awardrecordnum",
@@ -4932,14 +6259,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_holder_single_holdingpct",
@@ -4957,21 +6287,35 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
+        "position": 2,
         "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
         "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "报告期"
+      },
+      {
+        "position": 3,
+        "key": "rank",
+        "valueType": "INTEGER",
+        "semanticType": "HOLDING_RANK",
+        "required": true,
+        "description": "单一投资者排名序号，如 1"
       }
     ],
-    "value_type": "PERCENT",
-    "aliases": []
+    "result_value_type": "PERCENT",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_div_times",
@@ -4989,21 +6333,24 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
-        "valueType": "DATE",
+        "position": 2,
+        "key": "year",
+        "valueType": "INTEGER",
         "required": true,
-        "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "指定年度，例如 2024"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_div_accumulatedtimes",
@@ -5021,21 +6368,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
+        "position": 2,
+        "key": "date",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
         "required": true,
         "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "description": "指定交易日"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_valuationmethod",
@@ -5053,14 +6406,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_ptmyear",
@@ -5078,14 +6434,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "YEAR",
-    "aliases": []
+    "result_value_type": "DECIMAL",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_ptmday",
@@ -5103,14 +6462,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_risklevel",
@@ -5128,14 +6490,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "ENUM",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_mmf_frequencyofdeviation",
@@ -5153,21 +6518,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       },
       {
-        "key": "endDate",
+        "position": 2,
+        "key": "reportDate",
         "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "REPORT_DATE",
         "required": true,
-        "defaultValue": "LATEST_TRADE_DATE",
-        "options": []
+        "defaultValue": "LATEST_REPORT_DATE",
+        "description": "报告期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "INTEGER",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_pchmstatus",
@@ -5185,14 +6556,27 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
+      },
+      {
+        "position": 2,
+        "key": "tradeDate",
+        "valueType": "DATE",
+        "format": "yyyyMMdd",
+        "semanticType": "TRADE_DATE",
+        "required": true,
+        "defaultValue": "LATEST_TRADE_DATE",
+        "description": "交易日期"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_benchmark",
@@ -5210,14 +6594,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_custodianbank",
@@ -5235,14 +6622,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_investstyle",
@@ -5260,21 +6650,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
-      },
-      {
-        "key": "reportDate",
-        "valueType": "DATE",
-        "required": true,
-        "defaultValue": "LATEST_REPORT_DATE",
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_lofornot",
@@ -5292,14 +6678,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "BOOLEAN",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_foffundornot",
@@ -5317,14 +6706,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "BOOLEAN",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_t0ornot",
@@ -5342,14 +6734,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "BOOLEAN",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_regulopenfundornot",
@@ -5367,14 +6762,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "BOOLEAN",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_structuredfundornot",
@@ -5392,14 +6790,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "BOOLEAN",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_redmstatus",
@@ -5417,14 +6818,17 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "NUMBER",
-    "aliases": []
+    "result_value_type": "STRING",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   },
   {
     "mnemonic": "f_info_etflisteddate",
@@ -5442,13 +6846,16 @@
     "applicable_products": "1001000",
     "parameters": [
       {
+        "position": 1,
         "key": "windCode",
-        "valueType": "FUND_CODE",
+        "valueType": "STRING",
+        "semanticType": "FUND_CODE",
         "required": true,
-        "options": []
+        "description": "基金 Wind 代码"
       }
     ],
-    "value_type": "DATE",
-    "aliases": []
+    "result_value_type": "DATE",
+    "parameter_schema_version": 1,
+    "contract_status": "INFERRED"
   }
 ]

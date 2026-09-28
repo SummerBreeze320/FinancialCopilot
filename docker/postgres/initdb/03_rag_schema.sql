@@ -23,7 +23,15 @@ CREATE TABLE IF NOT EXISTS rag_fund_metric (
     aliases TEXT[],                                    -- 别名同义词数组
     version INT DEFAULT 1,
     enabled BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    parameters JSONB NOT NULL DEFAULT '[]',
+    result_contract JSONB NOT NULL DEFAULT '{}',
+    parameter_schema_version INT NOT NULL DEFAULT 1,
+    contract_status VARCHAR(32) NOT NULL DEFAULT 'NEEDS_REVIEW',
+    contract_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_rag_metric_parameters_array CHECK (jsonb_typeof(parameters) = 'array'),
+    CONSTRAINT chk_rag_metric_result_contract_object CHECK (jsonb_typeof(result_contract) = 'object'),
+    CONSTRAINT chk_rag_metric_contract_status CHECK (contract_status IN ('INFERRED', 'REVIEWED', 'NEEDS_REVIEW'))
 );
 
 -- HNSW 高维向量余弦距离索引

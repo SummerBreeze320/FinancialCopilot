@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://financial-copilot/schemas/metric-parameter-contract.schema.json",
+  "title": "FundMetricParameterContract",
+  "description": "Schema for fund metric parameter contracts",
+  "type": "object",
+  "required": [
+    "mnemonic",
+    "parameters",
+    "result_value_type",
+    "parameter_schema_version",
+    "contract_status"
+  ],
+  "properties": {
+    "mnemonic": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$"
+    },
+    "index_name": {
+      "type": "string"
+    },
+    "parent_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "embedding_text": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "source_indicator_id": {
+      "type": "integer"
+    },
+    "supported_usage": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "applicable_products": {
+      "type": "string"
+    },
+    "authoritative_code": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/parameter"
+      }
+    },
+    "result_value_type": {
+      "type": "string",
+      "enum": [
+        "STRING",
+        "DATE",
+        "INTEGER",
+        "DECIMAL",
+        "BOOLEAN",
+        "ENUM",
+        "PERCENT",
+        "NUMBER"
+      ]
+    },
+    "parameter_schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "contract_status": {
+      "type": "string",
+      "enum": [
+        "INFERRED",
+        "REVIEWED",
+        "NEEDS_REVIEW"
+      ]
+    }
+  },
+  "$defs": {
+    "parameter": {
+      "type": "object",
+      "required": [
+        "position",
+        "key",
+        "valueType",
+        "required"
+      ],
+      "properties": {
+        "position": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+        },
+        "valueType": {
+          "type": "string",
+          "enum": [
+            "STRING",
+            "DATE",
+            "INTEGER",
+            "DECIMAL",
+            "BOOLEAN",
+            "ENUM"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "semanticType": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "defaultValue": {},
+        "format": {
+          "type": "string"
+        },
+        "pairWith": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/enumOption"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "enumOption": {
+      "type": "object",
+      "required": [
+        "value",
+        "label"
+      ],
+      "properties": {
+        "value": {
+          "type": "integer"
+        },
+        "label": {
+          "type": "string"
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
