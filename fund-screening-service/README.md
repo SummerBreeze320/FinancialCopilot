@@ -24,7 +24,7 @@ FUND_SCREENING_SECTORS_CATALOG_PATH=D:/BaiduSyncdisk/IdeaProjects/FinancialCopil
 FUND_SCREENING_ENTITY_CATALOG_PATH=D:/BaiduSyncdisk/IdeaProjects/FinancialCopilot/.worktrees/lite-mysql/docs/temp/entity.json
 FUND_SCREENING_LLM_BASE_URL=http://127.0.0.1:8000/v1
 FUND_SCREENING_LLM_API_KEY=local-codex
-FUND_SCREENING_LLM_MODEL=gpt-5.3-codex
+FUND_SCREENING_LLM_MODEL=gpt-5.6-terra
 FUND_SCREENING_LLM_REASONING_EFFORT=low
 FUND_SCREENING_EMBEDDING_BASE_URL=http://127.0.0.1:11434/v1
 FUND_SCREENING_EMBEDDING_MODEL=qwen3-embedding:0.6b
@@ -32,6 +32,15 @@ FUND_SCREENING_DATABASE_URL=postgresql://postgres:123456@127.0.0.1:15432/financi
 ```
 
 目录路径齐全时，`app.main:app` 自动启用真实链路：Codex 生成 pre-recall plan → metric/scope PGVector 与 entity lexical 三路召回 → Codex 在 Candidate Pool 内裁决填参 → Command Builder → Validator/Repair → DSL。
+
+先在另一个终端启动仓库内的本地 Codex bridge：
+
+```powershell
+cd ..\codex-bridge
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+bridge 复用本机 Codex CLI 登录态；当前已验证模型为 `gpt-5.6-terra`、推理等级为 `low`。
 
 仓库已有服务可直接启动：
 

@@ -17,8 +17,8 @@ def build_production_compiler(settings: Settings | None = None) -> RagCommandCom
     if not all((settings.metrics_catalog_path, settings.sectors_catalog_path, settings.entity_catalog_path)):
         raise RuntimeError("metrics, sectors and entity catalog paths are required in rag mode")
     catalog = Catalog.from_files(Path(settings.metrics_catalog_path), Path(settings.sectors_catalog_path), Path(settings.entity_catalog_path))
-    llm_http = httpx.AsyncClient(base_url=settings.llm_base_url, headers={"Authorization": f"Bearer {settings.llm_api_key}"}, timeout=60)
-    embedding_http = httpx.AsyncClient(base_url=settings.embedding_base_url, headers={"Authorization": f"Bearer {settings.embedding_api_key}"}, timeout=30)
+    llm_http = httpx.AsyncClient(base_url=settings.llm_base_url, headers={"Authorization": f"Bearer {settings.llm_api_key}"}, timeout=60, trust_env=False)
+    embedding_http = httpx.AsyncClient(base_url=settings.embedding_base_url, headers={"Authorization": f"Bearer {settings.embedding_api_key}"}, timeout=30, trust_env=False)
     llm = OpenAiSemanticLlm(llm_http, settings.llm_model, settings.llm_reasoning_effort)
     embedding = OpenAiEmbeddingClient(embedding_http, settings.embedding_model)
     vector = PgVectorSearchClient(LazyAsyncpgPool(settings.database_url), embedding)
