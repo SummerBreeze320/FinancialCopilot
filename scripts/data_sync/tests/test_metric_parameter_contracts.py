@@ -34,7 +34,17 @@ class TestMetricParameterContracts(unittest.TestCase):
                     "description": "截止日期",
                 },
             ],
-            "result_value_type": "PERCENT",
+            "result": {
+                "valueType": "DECIMAL",
+                "precision": {
+                    "totalDigits": 12,
+                    "scale": 6,
+                    "roundingMode": "HALF_UP",
+                },
+                "displayScale": 2,
+                "unit": "%",
+                "supportedOperators": [">", ">=", "<", "<=", "=", "!="],
+            },
             "parameter_schema_version": 1,
             "contract_status": "INFERRED",
         }
@@ -45,7 +55,7 @@ class TestMetricParameterContracts(unittest.TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_array_order_mismatch_with_position(self):
-        metric = dict(self.valid_metric)
+        metric = json.loads(json.dumps(self.valid_metric))
         # Position 2 is placed before Position 1 in the array
         metric["parameters"] = [
             {
@@ -70,7 +80,7 @@ class TestMetricParameterContracts(unittest.TestCase):
         )
 
     def test_position_duplication(self):
-        metric = dict(self.valid_metric)
+        metric = json.loads(json.dumps(self.valid_metric))
         metric["parameters"] = [
             {
                 "position": 1,
@@ -94,7 +104,7 @@ class TestMetricParameterContracts(unittest.TestCase):
         )
 
     def test_position_gaps_or_non_one_start(self):
-        metric = dict(self.valid_metric)
+        metric = json.loads(json.dumps(self.valid_metric))
         metric["parameters"] = [
             {
                 "position": 1,
@@ -118,7 +128,7 @@ class TestMetricParameterContracts(unittest.TestCase):
         )
 
     def test_unknown_value_type(self):
-        metric = dict(self.valid_metric)
+        metric = json.loads(json.dumps(self.valid_metric))
         metric["parameters"] = [
             {
                 "position": 1,
@@ -135,7 +145,7 @@ class TestMetricParameterContracts(unittest.TestCase):
         )
 
     def test_enum_missing_options(self):
-        metric = dict(self.valid_metric)
+        metric = json.loads(json.dumps(self.valid_metric))
         metric["parameters"] = [
             {
                 "position": 1,
@@ -153,7 +163,7 @@ class TestMetricParameterContracts(unittest.TestCase):
         )
 
     def test_enum_option_value_non_integer(self):
-        metric = dict(self.valid_metric)
+        metric = json.loads(json.dumps(self.valid_metric))
         metric["parameters"] = [
             {
                 "position": 1,
@@ -174,7 +184,7 @@ class TestMetricParameterContracts(unittest.TestCase):
         )
 
     def test_enum_option_value_duplicate(self):
-        metric = dict(self.valid_metric)
+        metric = json.loads(json.dumps(self.valid_metric))
         metric["parameters"] = [
             {
                 "position": 1,
@@ -195,7 +205,7 @@ class TestMetricParameterContracts(unittest.TestCase):
         )
 
     def test_unilateral_pair_with(self):
-        metric = dict(self.valid_metric)
+        metric = json.loads(json.dumps(self.valid_metric))
         metric["parameters"] = [
             {
                 "position": 1,
@@ -222,7 +232,7 @@ class TestMetricParameterContracts(unittest.TestCase):
         )
 
     def test_date_missing_format_yyyymmdd(self):
-        metric = dict(self.valid_metric)
+        metric = json.loads(json.dumps(self.valid_metric))
         metric["parameters"] = [
             {
                 "position": 1,
@@ -239,8 +249,80 @@ class TestMetricParameterContracts(unittest.TestCase):
             f"Expected format error, got: {errors}",
         )
 
+    def test_decimal_missing_precision(self):
+        metric = json.loads(json.dumps(self.valid_metric))
+        del metric["result"]["precision"]
+        is_valid, errors = validate_metric_contract(metric)
+        self.assertFalse(is_valid)
+        self.assertTrue(
+            any("precision" in err for err in errors),
+            f"Expected missing precision error, got: {errors}",
+        )
+
+    def test_non_decimal_with_precision(self):
+        metric = json.loads(json.dumps(self.valid_metric))
+        metric["result"]["valueType"] = "INTEGER"
+        # precision wrongly left on non-DECIMAL
+        is_valid, errors = validate_metric_contract(metric)
+        self.assertFalse(is_valid)
+        self.assertTrue(
+            any("precision" in err for err in errors),
+            f"Expected precision error for non-DECIMAL, got: {errors}",
+        )
+
+    def test_english_unit_prohibited(self):
+        metric = json.loads(json.dumps(self.valid_metric))
+        metric["result"]["unit"] = "PERCENT"  # Prohibited, must be %
+        is_valid, errors = validate_metric_contract(metric)
+        self.assertFalse(is_valid)
+        self.assertTrue(
+            any("unit" in err for err in errors),
+            f"Expected prohibited unit error, got: {errors}",
+        )
+
+        metric["result"]["unit"] = "NONE"  # Prohibited, must be null
+        is_valid, errors = validate_metric_contract(metric)
+        self.assertFalse(is_valid)
+
+    def test_illegal_operator(self):
+        metric = json.loads(json.dumps(self.valid_metric))
+        metric["result"]["supportedOperators"] = [">", "CONTAINS"]
+        is_valid, errors = validate_metric_contract(metric)
+        self.assertFalse(is_valid)
+        self.assertTrue(
+            any("supportedOperators" in err for err in errors),
+            f"Expected illegal operator error, got: {errors}",
+        )
+
+    def test_string_result_with_magnitude_operator(self):
+        metric = json.loads(json.dumps(self.valid_metric))
+        metric["result"]["valueType"] = "STRING"
+        del metric["result"]["precision"]
+        metric["result"]["unit"] = None
+        metric["result"]["supportedOperators"] = [">", "="]  # Magnitude operator not allowed for STRING
+        is_valid, errors = validate_metric_contract(metric)
+        self.assertFalse(is_valid)
+        self.assertTrue(
+            any("magnitude" in err.lower() or "supportedOperators" in err for err in errors),
+            f"Expected magnitude operator error on STRING, got: {errors}",
+        )
+
+    def test_result_enum_missing_options(self):
+        metric = json.loads(json.dumps(self.valid_metric))
+        metric["result"]["valueType"] = "ENUM"
+        del metric["result"]["precision"]
+        metric["result"]["unit"] = None
+        metric["result"]["supportedOperators"] = ["=", "!="]
+        # missing options
+        is_valid, errors = validate_metric_contract(metric)
+        self.assertFalse(is_valid)
+        self.assertTrue(
+            any("options" in err for err in errors),
+            f"Expected options error on ENUM result, got: {errors}",
+        )
+
     def test_invalid_contract_status(self):
-        metric = dict(self.valid_metric)
+        metric = json.loads(json.dumps(self.valid_metric))
         metric["contract_status"] = "DRAFT"  # Allowed: INFERRED, REVIEWED, NEEDS_REVIEW
         is_valid, errors = validate_metric_contract(metric)
         self.assertFalse(is_valid)
@@ -252,11 +334,11 @@ class TestMetricParameterContracts(unittest.TestCase):
     def test_missing_required_contract_fields(self):
         for field in [
             "parameters",
-            "result_value_type",
+            "result",
             "parameter_schema_version",
             "contract_status",
         ]:
-            metric = dict(self.valid_metric)
+            metric = json.loads(json.dumps(self.valid_metric))
             del metric[field]
             is_valid, errors = validate_metric_contract(metric)
             self.assertFalse(is_valid, f"Should fail when missing {field}")
@@ -271,7 +353,7 @@ class TestMetricParameterContracts(unittest.TestCase):
             {
                 "mnemonic": "f_invalid_one",
                 "parameters": "invalid_not_a_list",
-                "result_value_type": "PERCENT",
+                "result": {"valueType": "DECIMAL"},
                 "parameter_schema_version": 1,
                 "contract_status": "INFERRED",
             },

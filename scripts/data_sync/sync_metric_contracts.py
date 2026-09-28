@@ -51,10 +51,9 @@ def load_contracts(path: Union[str, Path]) -> list[MetricContract]:
         if not mnemonic:
             continue
         params = item.get("parameters", [])
-        ret_type = item.get("result_value_type", "NUMBER")
-        result_contract = {
-            "result_value_type": ret_type,
-            "type": ret_type,
+        result_contract = item.get("result") or {
+            "valueType": item.get("result_value_type", "NUMBER"),
+            "supportedOperators": [">", ">=", "<", "<=", "=", "!="],
         }
         schema_ver = item.get("parameter_schema_version", 1)
         status = item.get("contract_status", "NEEDS_REVIEW")

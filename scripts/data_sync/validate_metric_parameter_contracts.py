@@ -29,8 +29,6 @@ ALLOWED_RESULT_VALUE_TYPES = {
     "DECIMAL",
     "BOOLEAN",
     "ENUM",
-    "PERCENT",
-    "NUMBER",
 }
 
 ALLOWED_CONTRACT_STATUSES = {
@@ -38,6 +36,12 @@ ALLOWED_CONTRACT_STATUSES = {
     "REVIEWED",
     "NEEDS_REVIEW",
 }
+
+ALLOWED_OPERATORS = {">", ">=", "<", "<=", "=", "!="}
+MAGNITUDE_OPERATORS = {">", ">=", "<", "<="}
+
+ALLOWED_UNITS = {"%", "元", "万元", "亿元", "天", "月", "年", "名", "次", "只", "户"}
+PROHIBITED_ENGLISH_UNITS = {"PERCENT", "NONE", "YUAN", "DAYS", "YEARS", "MONTHS", "COUNT"}
 
 KEY_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
 
@@ -54,7 +58,7 @@ class ValidationReport:
 
 
 def validate_metric_contract(metric: dict[str, Any]) -> tuple[bool, list[str]]:
-    """Validate a single metric dictionary for parameter contract compliance.
+    """Validate a single metric dictionary for parameter and result contract compliance.
 
     Returns:
         (is_valid, errors) where errors are human-readable strings formatted as:
@@ -64,7 +68,7 @@ def validate_metric_contract(metric: dict[str, Any]) -> tuple[bool, list[str]]:
     mnemonic = str(metric.get("mnemonic", "<unknown>"))
 
     # 1. Top-level required contract fields
-    for req_field in ["parameters", "result_value_type", "parameter_schema_version", "contract_status"]:
+    for req_field in ["parameters", "result", "parameter_schema_version", "contract_status"]:
         if req_field not in metric:
             errors.append(f"[{mnemonic}] {req_field}: required contract field is missing")
 
@@ -85,14 +89,115 @@ def validate_metric_contract(metric: dict[str, Any]) -> tuple[bool, list[str]]:
                 f"[{mnemonic}] parameter_schema_version: must be an integer >= 1, got {schema_ver!r}"
             )
 
-    # 4. result_value_type check
-    ret_type = metric.get("result_value_type")
-    if ret_type is not None:
-        if not isinstance(ret_type, str) or ret_type not in ALLOWED_RESULT_VALUE_TYPES:
-            errors.append(
-                f"[{mnemonic}] result_value_type: invalid result_value_type '{ret_type}', "
-                f"must be one of {sorted(ALLOWED_RESULT_VALUE_TYPES)}"
-            )
+    # 4. result contract check
+    result = metric.get("result")
+    if result is not None:
+        if not isinstance(result, dict):
+            errors.append(f"[{mnemonic}] result: must be an object, got {type(result).__name__}")
+        else:
+            # Required result fields
+            for r_req in ["valueType", "supportedOperators"]:
+                if r_req not in result:
+                    errors.append(f"[{mnemonic}] result.{r_req}: required result field is missing")
+
+            res_vtype = result.get("valueType")
+            if res_vtype is not None:
+                if not isinstance(res_vtype, str) or res_vtype not in ALLOWED_RESULT_VALUE_TYPES:
+                    errors.append(
+                        f"[{mnemonic}] result.valueType: invalid valueType '{res_vtype}', "
+                        f"must be one of {sorted(ALLOWED_RESULT_VALUE_TYPES)}"
+                    )
+
+            # precision rules
+            precision = result.get("precision")
+            if res_vtype == "DECIMAL":
+                if precision is None:
+                    errors.append(f"[{mnemonic}] result.precision: precision is required for DECIMAL results")
+                elif not isinstance(precision, dict):
+                    errors.append(f"[{mnemonic}] result.precision: must be an object")
+                else:
+                    for p_field in ["totalDigits", "scale", "roundingMode"]:
+                        if p_field not in precision:
+                            errors.append(f"[{mnemonic}] result.precision.{p_field}: required field missing")
+                    td = precision.get("totalDigits")
+                    if td is not None and (isinstance(td, bool) or not isinstance(td, int) or td < 1):
+                        errors.append(f"[{mnemonic}] result.precision.totalDigits: must be an integer >= 1")
+                    sc = precision.get("scale")
+                    if sc is not None and (isinstance(sc, bool) or not isinstance(sc, int) or sc < 0):
+                        errors.append(f"[{mnemonic}] result.precision.scale: must be an integer >= 0")
+            elif precision is not None:
+                errors.append(
+                    f"[{mnemonic}] result.precision: precision is only allowed for DECIMAL results, got '{res_vtype}'"
+                )
+
+            # displayScale
+            display_scale = result.get("displayScale")
+            if display_scale is not None:
+                if isinstance(display_scale, bool) or not isinstance(display_scale, int) or display_scale < 0:
+                    errors.append(f"[{mnemonic}] result.displayScale: must be an integer >= 0")
+
+            # unit validation
+            if "unit" in result:
+                unit = result.get("unit")
+                if unit is not None:
+                    if not isinstance(unit, str):
+                        errors.append(f"[{mnemonic}] result.unit: unit must be a string or null")
+                    elif unit in PROHIBITED_ENGLISH_UNITS:
+                        errors.append(
+                            f"[{mnemonic}] result.unit: English unit code '{unit}' is prohibited; "
+                            "use real symbols like %, 元, or null"
+                        )
+                    elif unit not in ALLOWED_UNITS:
+                        errors.append(
+                            f"[{mnemonic}] result.unit: invalid unit '{unit}', "
+                            f"must be one of {sorted(ALLOWED_UNITS)} or null"
+                        )
+
+            # supportedOperators validation
+            ops = result.get("supportedOperators")
+            if ops is not None:
+                if not isinstance(ops, list) or len(ops) == 0:
+                    errors.append(f"[{mnemonic}] result.supportedOperators: must be a non-empty list")
+                else:
+                    invalid_ops = [op for op in ops if op not in ALLOWED_OPERATORS]
+                    if invalid_ops:
+                        errors.append(
+                            f"[{mnemonic}] result.supportedOperators: unsupported operator(s) {invalid_ops}, "
+                            f"must be from {sorted(ALLOWED_OPERATORS)}"
+                        )
+                    if res_vtype in ("STRING", "BOOLEAN", "ENUM"):
+                        mag_ops = [op for op in ops if op in MAGNITUDE_OPERATORS]
+                        if mag_ops:
+                            errors.append(
+                                f"[{mnemonic}] result.supportedOperators: magnitude operators {mag_ops} "
+                                f"are not allowed for {res_vtype} results (only '=' and '!=')"
+                            )
+
+            # result ENUM options validation
+            if res_vtype == "ENUM":
+                r_options = result.get("options")
+                if not isinstance(r_options, list) or len(r_options) == 0:
+                    errors.append(f"[{mnemonic}] result.options: ENUM result requires non-empty options list")
+                else:
+                    seen_vals: set[int] = set()
+                    for opt_idx, opt in enumerate(r_options):
+                        opt_prefix = f"[{mnemonic}] result.options[{opt_idx}]"
+                        if not isinstance(opt, dict):
+                            errors.append(f"{opt_prefix}: option must be an object")
+                            continue
+                        if "value" not in opt or "label" not in opt:
+                            errors.append(f"{opt_prefix}: option requires 'value' and 'label'")
+                            continue
+                        val = opt.get("value")
+                        if isinstance(val, bool) or not isinstance(val, int):
+                            errors.append(f"{opt_prefix}.value: option value must be an integer, got {val!r}")
+                        elif val in seen_vals:
+                            errors.append(f"{opt_prefix}.value: duplicate enum option value {val}")
+                        else:
+                            seen_vals.add(val)
+                        lbl = opt.get("label")
+                        if not isinstance(lbl, str) or not lbl.strip():
+                            errors.append(f"{opt_prefix}.label: option label must be non-empty string")
 
     # 5. parameters check
     params = metric.get("parameters")
@@ -263,7 +368,6 @@ def main() -> int:
     print(f"Validation summary: {report.valid}/{report.total} metrics valid.")
     if report.errors:
         print(f"Encountered {len(report.errors)} error(s):")
-        # Print up to 50 errors if many
         for err in report.errors[:50]:
             print(f"  - {err}")
         if len(report.errors) > 50:

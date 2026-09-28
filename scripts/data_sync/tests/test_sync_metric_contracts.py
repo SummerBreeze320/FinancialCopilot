@@ -26,7 +26,11 @@ class TestSyncMetricContracts(unittest.TestCase):
                         "required": True,
                     }
                 ],
-                "result_value_type": "PERCENT",
+                "result": {
+                    "valueType": "DECIMAL",
+                    "unit": "%",
+                    "supportedOperators": [">", ">=", "<", "<=", "=", "!="],
+                },
                 "parameter_schema_version": 1,
                 "contract_status": "INFERRED",
             },
@@ -40,7 +44,11 @@ class TestSyncMetricContracts(unittest.TestCase):
                         "required": True,
                     }
                 ],
-                "result_value_type": "STRING",
+                "result": {
+                    "valueType": "STRING",
+                    "unit": None,
+                    "supportedOperators": ["=", "!="],
+                },
                 "parameter_schema_version": 1,
                 "contract_status": "REVIEWED",
             },
@@ -55,7 +63,8 @@ class TestSyncMetricContracts(unittest.TestCase):
             contracts = load_contracts(tmp_path)
             self.assertEqual(len(contracts), 2)
             self.assertEqual(contracts[0].mnemonic, "f_test_1")
-            self.assertEqual(contracts[0].result_contract.get("result_value_type"), "PERCENT")
+            self.assertEqual(contracts[0].result_contract.get("valueType"), "DECIMAL")
+            self.assertEqual(contracts[0].result_contract.get("unit"), "%")
             self.assertEqual(contracts[1].contract_status, "REVIEWED")
         finally:
             if tmp_path.exists():

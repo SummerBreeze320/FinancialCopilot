@@ -35,7 +35,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_1y",
@@ -82,7 +114,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_maxdownside",
@@ -131,7 +181,26 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ],
+      "storageConvention": "NEGATIVE_PERCENT"
+    }
   },
   {
     "mnemonic": "f_info_windcode",
@@ -159,7 +228,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_fullname",
@@ -187,7 +264,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_name",
@@ -221,7 +306,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_fundmanager",
@@ -249,7 +342,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_adjustedreturn",
@@ -298,7 +399,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_fundscale",
@@ -326,7 +445,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_netasset_total2",
@@ -364,7 +515,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_relatedcode",
@@ -392,7 +575,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_sharpe",
@@ -441,7 +632,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_mgrcomp",
@@ -469,7 +678,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_topstockname",
@@ -525,7 +742,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_3m",
@@ -570,7 +795,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_5y",
@@ -615,7 +858,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_6m",
@@ -661,7 +922,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_ytd",
@@ -699,7 +978,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_returnyearly",
@@ -748,7 +1045,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_mmf_annualizedyield",
@@ -786,7 +1101,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_mmf_avgannualizedyield",
@@ -835,7 +1168,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnranking_ytd",
@@ -878,7 +1229,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnranking_y",
@@ -913,7 +1276,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_stdevyearly",
@@ -962,7 +1337,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_stdev",
@@ -1011,7 +1404,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_annustdev",
@@ -1060,7 +1471,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_quot_benchreturn",
@@ -1109,7 +1538,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_navoverbenchreturn",
@@ -1158,7 +1605,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_navoverbenchannualreturn",
@@ -1216,7 +1681,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_duration",
@@ -1254,7 +1737,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 10,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "年",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_foundleverage",
@@ -1292,7 +1793,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_managementfeeratio",
@@ -1320,7 +1839,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_custodianfeeratio",
@@ -1348,7 +1885,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_salefeeratio",
@@ -1376,7 +1931,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_purchasefeeratio",
@@ -1404,7 +1977,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_topstockcode",
@@ -1450,7 +2041,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_topstockvalue",
@@ -1496,7 +2095,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_topstockholdingchanging",
@@ -1542,7 +2173,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_fundnoofstocks",
@@ -1588,7 +2237,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "只",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_bondtonav",
@@ -1626,7 +2287,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_bondbycreditratingtonav",
@@ -1743,7 +2422,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_convertiblebondtonav",
@@ -1781,7 +2478,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_cashtonav",
@@ -1819,7 +2534,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_holder_institution_holdingpct",
@@ -1857,7 +2590,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_style_styleattribute",
@@ -1895,7 +2646,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_style_marketvaluestyleattribute",
@@ -1933,7 +2692,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_style_marketvalueattribute",
@@ -1971,7 +2738,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_dq_turn",
@@ -2009,7 +2784,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_1w",
@@ -2054,7 +2847,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_1m",
@@ -2099,7 +2910,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_2y",
@@ -2144,7 +2973,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_3y",
@@ -2189,7 +3036,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_10y",
@@ -2234,7 +3099,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_std",
@@ -2280,7 +3163,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_m",
@@ -2327,7 +3228,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_q",
@@ -2374,7 +3293,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_return_y",
@@ -2414,7 +3351,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnranking_1w",
@@ -2457,7 +3412,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnranking_1m",
@@ -2500,7 +3467,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnranking_3m",
@@ -2543,7 +3522,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnranking_6m",
@@ -2586,7 +3577,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnranking_1y",
@@ -2629,7 +3632,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnranking_2y",
@@ -2672,7 +3687,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnranking_3y",
@@ -2715,7 +3742,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnranking_5y",
@@ -2758,7 +3797,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_maxdownsideranking",
@@ -2807,7 +3858,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_maxdownside_date",
@@ -2856,7 +3919,19 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DATE",
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_siml_avgmaxdownside",
@@ -2905,7 +3980,26 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ],
+      "storageConvention": "NEGATIVE_PERCENT"
+    }
   },
   {
     "mnemonic": "f_risk_maxdownside_recoverdays",
@@ -2954,7 +4048,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "天",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_siml_avgsharpe",
@@ -3003,7 +4109,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_siml_avgsortino",
@@ -3052,7 +4176,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_siml_avgannusharpe",
@@ -3101,7 +4243,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_siml_avgannuSortino",
@@ -3150,7 +4310,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_annusharpe",
@@ -3199,7 +4377,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_annuSortino",
@@ -3248,7 +4444,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_avgfundscale",
@@ -3276,7 +4490,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_scaleranking",
@@ -3304,7 +4550,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_netasset_total",
@@ -3345,7 +4603,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_netasset_total_cc",
@@ -3392,7 +4682,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_annualvolranking",
@@ -3441,7 +4763,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_siml_avgstdevyearly",
@@ -3490,7 +4824,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_adjustedreturn_org",
@@ -3528,7 +4880,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_adjustedreturn1",
@@ -3566,7 +4936,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_navoverbenchreturn_freq",
@@ -3601,7 +4989,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "次",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_navoverbenchreturn_freq2",
@@ -3650,7 +5050,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_firstinvesttype",
@@ -3678,7 +5096,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_investtype",
@@ -3706,7 +5132,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_setupdate",
@@ -3734,7 +5168,19 @@
     ],
     "result_value_type": "DATE",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DATE",
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_existingyear",
@@ -3772,7 +5218,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 10,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "年",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_etfornot",
@@ -3800,7 +5264,15 @@
     ],
     "result_value_type": "BOOLEAN",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "BOOLEAN",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_alpha",
@@ -3858,7 +5330,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_beta",
@@ -3916,7 +5406,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_sortino",
@@ -3965,7 +5473,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_trackerror",
@@ -4023,7 +5549,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_redemptionfeeratio",
@@ -4051,7 +5595,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_stocktonav",
@@ -4089,7 +5651,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_themetype",
@@ -4117,7 +5697,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_calmar",
@@ -4166,7 +5754,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_treynor",
@@ -4224,7 +5830,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_inforatio",
@@ -4282,7 +5906,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_inforatioranking",
@@ -4340,7 +5982,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "名",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_downsidestdev",
@@ -4389,7 +6043,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_annutrackerror",
@@ -4447,7 +6119,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_dq_amount",
@@ -4485,7 +6175,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_pq_amount",
@@ -4534,7 +6256,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "s_pq_avgamount",
@@ -4583,7 +6337,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_pq_avgturn",
@@ -4632,7 +6418,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_stockvalue",
@@ -4670,7 +6474,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_stockvalue_topindustryname2",
@@ -4716,7 +6552,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_bondvalue",
@@ -4754,7 +6598,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_stocktoasset",
@@ -4792,7 +6668,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_bondtoasset",
@@ -4830,7 +6724,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_heavilyheldstocktostock",
@@ -4876,7 +6788,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_convertiblebondtobond",
@@ -4914,7 +6844,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_redemptionfee",
@@ -4965,7 +6913,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_redemptionfee2",
@@ -5026,7 +6992,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "NEEDS_REVIEW"
+    "contract_status": "NEEDS_REVIEW",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_managementfeeratio2",
@@ -5064,7 +7048,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_custodianfeeratio2",
@@ -5102,7 +7104,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_salefeeratio2",
@@ -5140,7 +7160,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_exchangeshortname",
@@ -5168,7 +7206,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_trackindexname",
@@ -5196,7 +7242,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_trackindexcode",
@@ -5224,7 +7278,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_topbondname",
@@ -5270,7 +7332,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_topbondsymbol",
@@ -5316,7 +7386,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_etffeeder",
@@ -5344,7 +7422,15 @@
     ],
     "result_value_type": "BOOLEAN",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "BOOLEAN",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_etf_feedercode",
@@ -5372,7 +7458,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_customizedfundornot",
@@ -5400,7 +7494,15 @@
     ],
     "result_value_type": "BOOLEAN",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "BOOLEAN",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_initial",
@@ -5428,7 +7530,15 @@
     ],
     "result_value_type": "BOOLEAN",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "BOOLEAN",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_investscope",
@@ -5456,7 +7566,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_risk_downsiderisk",
@@ -5505,7 +7623,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_nav_periodreturnrankingper",
@@ -5554,7 +7690,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_mmf_unityield",
@@ -5592,7 +7746,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 4,
+      "unit": "元",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_dq_pctchange",
@@ -5630,7 +7802,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_pchredm_largepchmaxamt",
@@ -5668,7 +7858,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_maxworkingyears",
@@ -5696,7 +7918,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 10,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "年",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_investtype2",
@@ -5724,7 +7964,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_industryvaluetonav_sw",
@@ -5769,7 +8017,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_topgicsindustryname",
@@ -5815,7 +8081,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_topindustryname_citic",
@@ -5861,7 +8135,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_topindustryname_sw2021",
@@ -5907,7 +8189,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_topindustryname_wind",
@@ -5953,7 +8243,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_issue_deputy",
@@ -5981,7 +8279,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_countryregioninvestmenttonav",
@@ -6026,7 +8332,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_countryregioninvestment",
@@ -6071,7 +8395,39 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 18,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "元",
+      "acceptedInputUnits": [
+        {
+          "unit": "元",
+          "multiplier": 1
+        },
+        {
+          "unit": "万元",
+          "multiplier": 10000
+        },
+        {
+          "unit": "亿元",
+          "multiplier": 100000000
+        }
+      ],
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_distributionarea",
@@ -6099,7 +8455,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_mmf_avgptm",
@@ -6137,7 +8501,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 10,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "年",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_holder_institution_totalholdingpct",
@@ -6175,7 +8557,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_prt_stockholding",
@@ -6213,7 +8613,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "只",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_manager_awardrecord",
@@ -6241,7 +8653,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_manager_awardrecordnum",
@@ -6269,7 +8689,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "次",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_holder_single_holdingpct",
@@ -6315,7 +8747,25 @@
     ],
     "result_value_type": "PERCENT",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 12,
+        "scale": 6,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "%",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_div_times",
@@ -6350,7 +8800,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "次",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_div_accumulatedtimes",
@@ -6388,7 +8850,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "次",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_valuationmethod",
@@ -6416,7 +8890,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_ptmyear",
@@ -6444,7 +8926,25 @@
     ],
     "result_value_type": "DECIMAL",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DECIMAL",
+      "precision": {
+        "totalDigits": 10,
+        "scale": 4,
+        "roundingMode": "HALF_UP"
+      },
+      "displayScale": 2,
+      "unit": "年",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_ptmday",
@@ -6472,7 +8972,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "天",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_risklevel",
@@ -6500,7 +9012,57 @@
     ],
     "result_value_type": "ENUM",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "ENUM",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ],
+      "options": [
+        {
+          "value": 1,
+          "label": "低风险 (R1)",
+          "aliases": [
+            "R1",
+            "低风险"
+          ]
+        },
+        {
+          "value": 2,
+          "label": "中低风险 (R2)",
+          "aliases": [
+            "R2",
+            "中低风险"
+          ]
+        },
+        {
+          "value": 3,
+          "label": "中风险 (R3)",
+          "aliases": [
+            "R3",
+            "中风险"
+          ]
+        },
+        {
+          "value": 4,
+          "label": "中高风险 (R4)",
+          "aliases": [
+            "R4",
+            "中高风险"
+          ]
+        },
+        {
+          "value": 5,
+          "label": "高风险 (R5)",
+          "aliases": [
+            "R5",
+            "高风险"
+          ]
+        }
+      ]
+    }
   },
   {
     "mnemonic": "f_mmf_frequencyofdeviation",
@@ -6538,7 +9100,19 @@
     ],
     "result_value_type": "INTEGER",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "INTEGER",
+      "unit": "次",
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_pchmstatus",
@@ -6576,7 +9150,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_benchmark",
@@ -6604,7 +9186,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_custodianbank",
@@ -6632,7 +9222,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_investstyle",
@@ -6660,7 +9258,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_lofornot",
@@ -6688,7 +9294,15 @@
     ],
     "result_value_type": "BOOLEAN",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "BOOLEAN",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_foffundornot",
@@ -6716,7 +9330,15 @@
     ],
     "result_value_type": "BOOLEAN",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "BOOLEAN",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_t0ornot",
@@ -6744,7 +9366,15 @@
     ],
     "result_value_type": "BOOLEAN",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "BOOLEAN",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_regulopenfundornot",
@@ -6772,7 +9402,15 @@
     ],
     "result_value_type": "BOOLEAN",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "BOOLEAN",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_structuredfundornot",
@@ -6800,7 +9438,15 @@
     ],
     "result_value_type": "BOOLEAN",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "BOOLEAN",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_redmstatus",
@@ -6828,7 +9474,15 @@
     ],
     "result_value_type": "STRING",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "STRING",
+      "unit": null,
+      "supportedOperators": [
+        "=",
+        "!="
+      ]
+    }
   },
   {
     "mnemonic": "f_info_etflisteddate",
@@ -6856,6 +9510,18 @@
     ],
     "result_value_type": "DATE",
     "parameter_schema_version": 1,
-    "contract_status": "INFERRED"
+    "contract_status": "INFERRED",
+    "result": {
+      "valueType": "DATE",
+      "unit": null,
+      "supportedOperators": [
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "=",
+        "!="
+      ]
+    }
   }
 ]
