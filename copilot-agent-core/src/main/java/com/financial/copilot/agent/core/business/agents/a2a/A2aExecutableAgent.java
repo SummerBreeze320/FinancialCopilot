@@ -1,5 +1,6 @@
 package com.financial.copilot.agent.core.business.agents.a2a;
 
+import com.financial.copilot.agent.core.infra.agentscope.AgentScopeAgentFactory;
 import com.financial.copilot.agent.core.infra.dag.artifact.Artifact;
 import com.financial.copilot.agent.core.infra.dag.model.GraphNode;
 import com.financial.copilot.agent.core.infra.dag.runtime.NodeExecutionContext;
@@ -14,6 +15,7 @@ import java.util.Locale;
  * <p>
  * 遵循开源 A2A 协议规范，每个智能体持有自描述的 {@link AgentCard}，
  * 支持基于 TaskType 与 AssetCategory 的能力自省与动态匹配。
+ * 具体智能体运行时统一由 {@link AgentScopeAgentFactory} 驱动。
  * </p>
  *
  * @author FinancialCopilot
