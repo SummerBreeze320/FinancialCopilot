@@ -11,7 +11,7 @@ class ChatMessage(BaseModel):
 
 class ResponseFormat(BaseModel):
     model_config = ConfigDict(extra="allow")
-    type: str = "json_object"
+    type: str = "text"
 
 
 class ChatCompletionRequest(BaseModel):
@@ -19,4 +19,6 @@ class ChatCompletionRequest(BaseModel):
     model: str = "gpt-5.6-terra"
     messages: list[ChatMessage] = Field(min_length=1)
     reasoning_effort: Literal["low", "medium", "high", "xhigh"] = "low"
-    response_format: ResponseFormat = ResponseFormat()
+    response_format: ResponseFormat | None = None
+
+

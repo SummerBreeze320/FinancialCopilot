@@ -37,10 +37,16 @@ def create_app(runner=None) -> FastAPI:
                 messages=[message.model_dump() for message in request.messages],
                 model=request.model,
                 reasoning_effort=request.reasoning_effort,
-                response_format=request.response_format.model_dump(),
+                response_format=request.response_format.model_dump() if request.response_format else None,
             )
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"LLM backend execution failed: {exc}") from exc
+
+        content = (
+            json.dumps(result, ensure_ascii=False, separators=(",", ":"))
+            if isinstance(result, (dict, list))
+            else str(result)
+        )
 
         return {
             "id": f"chatcmpl-{uuid.uuid4().hex}",
@@ -51,7 +57,7 @@ def create_app(runner=None) -> FastAPI:
                 "index": 0,
                 "message": {
                     "role": "assistant",
-                    "content": json.dumps(result, ensure_ascii=False, separators=(",", ":")),
+                    "content": content,
                 },
                 "finish_reason": "stop",
             }],

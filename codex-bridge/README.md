@@ -4,18 +4,19 @@
 
 ```powershell
 cd codex-bridge
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 9090
 ```
 
 验证：
 
 ```powershell
-Invoke-RestMethod http://127.0.0.1:8000/health
+Invoke-RestMethod http://127.0.0.1:9090/health
 ```
 
 默认一次只运行一个 Agy 请求，并使用 sandbox、禁用 slash command expansion。Agy structured output 直接使用上游传入的 JSON Schema。配置前缀保持为 `CODEX_BRIDGE_`：
 
 - `CODEX_BRIDGE_BACKEND=agy`，可选 `agy` 或 `codex`
+- `CODEX_BRIDGE_PORT=9090`
 - `CODEX_BRIDGE_AGY_COMMAND=agy`
 - `CODEX_BRIDGE_CODEX_COMMAND=codex`
 - `CODEX_BRIDGE_TIMEOUT_SECONDS=180`
@@ -25,21 +26,20 @@ Invoke-RestMethod http://127.0.0.1:8000/health
 
 ```powershell
 $env:CODEX_BRIDGE_BACKEND = "agy"
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 9090
 ```
 
 切换到 Codex 后端：
 
 ```powershell
 $env:CODEX_BRIDGE_BACKEND = "codex"
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 9090
 ```
 
-基金筛选服务默认使用：
+本地调用参考：
 
 ```text
-FUND_SCREENING_LLM_BASE_URL=http://127.0.0.1:8000/v1
-FUND_SCREENING_LLM_API_KEY=local-agy
-FUND_SCREENING_LLM_MODEL=gemini-3.8-flash-low
-FUND_SCREENING_LLM_REASONING_EFFORT=low
+OPENAI_BASE_URL=http://127.0.0.1:9090/v1
+OPENAI_API_KEY=local-agy
+MODEL_NAME=gemini-3.8-flash-low
 ```
