@@ -113,4 +113,13 @@ class DatabaseStockDataAdapterTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    @DisplayName("验证按代码或关键词模糊搜索股票")
+    void testSearchStocksByCodeOrName() {
+        List<StockInfo> result = adapter.searchStocks("茅台", 5);
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertEquals("贵州茅台", result.getFirst().getStockName());
+    }
 }

@@ -36,6 +36,15 @@ public interface FundDataPort {
     List<FundInfo> screenFunds(FundScreeningCriteria criteria);
 
     /**
+     * 按代码或中文名称关键词检索基金候选标的
+     *
+     * @param keyword 基金代码或名称关键词 (如 "005827" 或 "易方达蓝筹")
+     * @param limit   最大返回数 (默认 5)
+     * @return 匹配的基金实体列表
+     */
+    List<FundInfo> searchFunds(String keyword, int limit);
+
+    /**
      * 获取指定时间区间的每日复权净值时序数据 (按日期递增升序排列)
      *
      * @param fundCode  6位基金代码

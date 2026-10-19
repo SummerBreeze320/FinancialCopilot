@@ -37,6 +37,15 @@ public interface StockDataPort {
     List<StockInfo> screenStocks(StockScreeningCriteria criteria);
 
     /**
+     * 按代码或中文名称关键词检索股票候选标的
+     *
+     * @param keyword 股票代码或名称关键词 (如 "600519" 或 "茅台")
+     * @param limit   最大返回数 (默认 5)
+     * @return 匹配的股票实体列表
+     */
+    List<StockInfo> searchStocks(String keyword, int limit);
+
+    /**
      * 获取股票的最新量化与估值指标 (PE, PB, ROE, 股息率等)
      *
      * @param stockCode 股票代码
