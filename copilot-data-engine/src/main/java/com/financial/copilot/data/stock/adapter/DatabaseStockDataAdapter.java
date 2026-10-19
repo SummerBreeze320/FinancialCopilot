@@ -3,8 +3,16 @@ package com.financial.copilot.data.stock.adapter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.financial.copilot.common.stock.dto.StockMetricsDTO;
 import com.financial.copilot.common.stock.dto.StockScreeningCriteria;
+import com.financial.copilot.data.stock.mapper.StockDailyKlineMapper;
+import com.financial.copilot.data.stock.mapper.StockDividendMapper;
+import com.financial.copilot.data.stock.mapper.StockFinancialMapper;
 import com.financial.copilot.data.stock.mapper.StockInfoMapper;
+import com.financial.copilot.data.stock.mapper.StockShareholderMapper;
+import com.financial.copilot.data.stock.po.StockDailyKlinePO;
+import com.financial.copilot.data.stock.po.StockDividendPO;
+import com.financial.copilot.data.stock.po.StockFinancialQuarterlyPO;
 import com.financial.copilot.data.stock.po.StockInfoPO;
+import com.financial.copilot.data.stock.po.StockTopShareholderPO;
 import com.financial.copilot.domain.business.stock.entity.StockInfo;
 import com.financial.copilot.domain.business.stock.port.StockDataPort;
 import lombok.RequiredArgsConstructor;
@@ -13,13 +21,14 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * <h1>数据库股票数据访问适配器 (Database Stock Data Adapter)</h1>
  * <p>
- * 职责：实现领域层定义的数据端口 {@link StockDataPort}，基于 MyBatis-Plus 驱动对底层股票基础信息表进行查询。
+ * 职责：实现领域层定义的数据端口 {@link StockDataPort}，基于 MyBatis-Plus 驱动对底层股票基础信息、财务季报、分红历史与十大股东表进行查询。
  * 包含防断流默认样本，确保在无网络或空表状态下平台能顺畅演示。
  * </p>
  *
@@ -31,6 +40,10 @@ import java.util.Optional;
 public class DatabaseStockDataAdapter implements StockDataPort {
 
     private final StockInfoMapper stockInfoMapper;
+    private final StockFinancialMapper stockFinancialMapper;
+    private final StockDividendMapper stockDividendMapper;
+    private final StockShareholderMapper stockShareholderMapper;
+    private final StockDailyKlineMapper stockDailyKlineMapper;
 
 
     @Override
@@ -124,6 +137,92 @@ public class DatabaseStockDataAdapter implements StockDataPort {
                 .beta(new BigDecimal("1.05"))
                 .updateDate(LocalDate.now())
                 .build();
+    }
+
+    @Override
+    public List<StockFinancialSummary> getFinancialHistory(String stockCode, int limit) {
+        try {
+            LambdaQueryWrapper<StockFinancialQuarterlyPO> query = new LambdaQueryWrapper<>();
+            query.eq(StockFinancialQuarterlyPO::getStockCode, stockCode)
+                 .orderByDesc(StockFinancialQuarterlyPO::getReportQuarter)
+                 .last("LIMIT " + limit);
+            List<StockFinancialQuarterlyPO> list = stockFinancialMapper.selectList(query);
+            if (list != null && !list.isEmpty()) {
+                return list.stream().map(po -> new StockFinancialSummary(
+                    po.getStockCode(), po.getReportQuarter(),
+                    po.getRevenueBillion(), po.getNetProfitBillion(),
+                    po.getEps(), po.getRoe(),
+                    po.getGrossMargin(), po.getNetMargin(),
+                    po.getDebtToAssetRatio()
+                )).toList();
+            }
+        } catch (Exception e) {
+            log.warn("[STOCK-ADAPTER] 查询财务历史失败: code={}, error={}", stockCode, e.getMessage());
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<StockDividendRecord> getDividendHistory(String stockCode) {
+        try {
+            LambdaQueryWrapper<StockDividendPO> query = new LambdaQueryWrapper<>();
+            query.eq(StockDividendPO::getStockCode, stockCode)
+                 .orderByDesc(StockDividendPO::getDividendYear);
+            List<StockDividendPO> list = stockDividendMapper.selectList(query);
+            if (list != null && !list.isEmpty()) {
+                return list.stream().map(po -> new StockDividendRecord(
+                    po.getStockCode(), po.getDividendYear(),
+                    po.getCashDividendPer10(), po.getDividendRatio(),
+                    po.getPayoutRatio(), po.getExDividendDate()
+                )).toList();
+            }
+        } catch (Exception e) {
+            log.warn("[STOCK-ADAPTER] 查询分红历史失败: code={}, error={}", stockCode, e.getMessage());
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<StockShareholderRecord> getTopShareholders(String stockCode) {
+        try {
+            LambdaQueryWrapper<StockTopShareholderPO> query = new LambdaQueryWrapper<>();
+            query.eq(StockTopShareholderPO::getStockCode, stockCode)
+                 .orderByAsc(StockTopShareholderPO::getRankOrder)
+                 .last("LIMIT 10");
+            List<StockTopShareholderPO> list = stockShareholderMapper.selectList(query);
+            if (list != null && !list.isEmpty()) {
+                return list.stream().map(po -> new StockShareholderRecord(
+                    po.getStockCode(), po.getReportQuarter(),
+                    po.getRankOrder(), po.getShareholderName(),
+                    po.getShareholderType(), po.getHoldingRatio(),
+                    po.getHoldingChange()
+                )).toList();
+            }
+        } catch (Exception e) {
+            log.warn("[STOCK-ADAPTER] 查询十大股东失败: code={}, error={}", stockCode, e.getMessage());
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<BigDecimal> getDailyClosePrices(String stockCode, int limit) {
+        try {
+            LambdaQueryWrapper<StockDailyKlinePO> query = new LambdaQueryWrapper<>();
+            query.eq(StockDailyKlinePO::getStockCode, stockCode)
+                 .orderByDesc(StockDailyKlinePO::getTradeDate)
+                 .last("LIMIT " + limit);
+            List<StockDailyKlinePO> list = stockDailyKlineMapper.selectList(query);
+            if (list != null && !list.isEmpty()) {
+                // 反转为时间正序
+                List<BigDecimal> prices = list.stream()
+                        .map(StockDailyKlinePO::getClose)
+                        .toList();
+                return new java.util.ArrayList<>(prices.reversed());
+            }
+        } catch (Exception e) {
+            log.warn("[STOCK-ADAPTER] 查询日K线失败: code={}, error={}", stockCode, e.getMessage());
+        }
+        return Collections.emptyList();
     }
 
     private StockInfo mapToEntity(StockInfoPO po) {

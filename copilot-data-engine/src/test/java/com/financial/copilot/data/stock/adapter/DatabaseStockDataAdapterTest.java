@@ -2,8 +2,13 @@ package com.financial.copilot.data.stock.adapter;
 
 import com.financial.copilot.common.stock.dto.StockMetricsDTO;
 import com.financial.copilot.common.stock.dto.StockScreeningCriteria;
+import com.financial.copilot.data.stock.mapper.StockDailyKlineMapper;
+import com.financial.copilot.data.stock.mapper.StockDividendMapper;
+import com.financial.copilot.data.stock.mapper.StockFinancialMapper;
 import com.financial.copilot.data.stock.mapper.StockInfoMapper;
+import com.financial.copilot.data.stock.mapper.StockShareholderMapper;
 import com.financial.copilot.domain.business.stock.entity.StockInfo;
+import com.financial.copilot.domain.business.stock.port.StockDataPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,7 +35,11 @@ class DatabaseStockDataAdapterTest {
     @BeforeEach
     void setUp() {
         mockMapper = Mockito.mock(StockInfoMapper.class);
-        adapter = new DatabaseStockDataAdapter(mockMapper);
+        StockFinancialMapper mockFinancialMapper = Mockito.mock(StockFinancialMapper.class);
+        StockDividendMapper mockDividendMapper = Mockito.mock(StockDividendMapper.class);
+        StockShareholderMapper mockShareholderMapper = Mockito.mock(StockShareholderMapper.class);
+        StockDailyKlineMapper mockKlineMapper = Mockito.mock(StockDailyKlineMapper.class);
+        adapter = new DatabaseStockDataAdapter(mockMapper, mockFinancialMapper, mockDividendMapper, mockShareholderMapper, mockKlineMapper);
     }
 
     /**
@@ -71,5 +80,37 @@ class DatabaseStockDataAdapterTest {
         assertEquals("600519.SH", metrics.getStockCode());
         assertNotNull(metrics.getPeTtm());
         assertNotNull(metrics.getRoe());
+    }
+
+    @Test
+    @DisplayName("验证财务历史查询返回空列表而非异常")
+    void testGetFinancialHistory_empty() {
+        List<StockDataPort.StockFinancialSummary> result = adapter.getFinancialHistory("600519.SH", 4);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("验证分红历史查询返回空列表而非异常")
+    void testGetDividendHistory_empty() {
+        List<StockDataPort.StockDividendRecord> result = adapter.getDividendHistory("600519.SH");
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("验证十大股东查询返回空列表而非异常")
+    void testGetTopShareholders_empty() {
+        List<StockDataPort.StockShareholderRecord> result = adapter.getTopShareholders("600519.SH");
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("验证日K线收盘价查询返回空列表而非异常")
+    void testGetDailyClosePrices_empty() {
+        List<java.math.BigDecimal> result = adapter.getDailyClosePrices("600519.SH", 60);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
     }
 }
