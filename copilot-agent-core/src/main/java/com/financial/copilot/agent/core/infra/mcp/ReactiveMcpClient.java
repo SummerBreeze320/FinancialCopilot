@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -82,6 +83,18 @@ public class ReactiveMcpClient {
      * @return 响应式调用结果 Mono
      */
     public Mono<McpCallResult> callTool(String toolName, Map<String, Object> arguments) {
+        return callTool(toolName, arguments, null);
+    }
+
+    /**
+     * 异步非阻塞调用 MCP 工具（支持透传用户身份）
+     *
+     * @param toolName  工具名称
+     * @param arguments 入参键值对
+     * @param userId    可选的用户 ID (透传至 X-User-Id 头)
+     * @return 响应式调用结果 Mono
+     */
+    public Mono<McpCallResult> callTool(String toolName, Map<String, Object> arguments, @Nullable Long userId) {
         if (!properties.isEnabled()) {
             return Mono.just(McpCallResult.error("MCP client is disabled"));
         }
@@ -99,14 +112,18 @@ public class ReactiveMcpClient {
 
         Duration timeout = Duration.ofSeconds(Math.max(1, properties.getTimeoutSeconds()));
 
-        return webClient.post()
-                .uri("/messages")
+        WebClient.RequestBodySpec requestSpec = webClient.post().uri("/messages");
+        if (userId != null) {
+            requestSpec.header("X-User-Id", String.valueOf(userId));
+        }
+
+        return requestSpec
                 .bodyValue(requestPayload)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .timeout(timeout)
                 .map(this::parseToolCallResponse)
-                .doOnError(err -> log.warn("[MCP CLIENT] 远程工具调用异常: tool={}, error={}", toolName, err.getMessage()))
+                .doOnError(err -> log.warn("[MCP CLIENT] 远程工具调用异常: tool={}, userId={}, error={}", toolName, userId, err.getMessage()))
                 .onErrorResume(err -> Mono.just(McpCallResult.error("MCP Remote Call Error: " + err.getMessage())));
     }
 
@@ -118,8 +135,20 @@ public class ReactiveMcpClient {
      * @return 工具返回文本
      */
     public String callToolSync(String toolName, Map<String, Object> arguments) {
+        return callToolSync(toolName, arguments, null);
+    }
+
+    /**
+     * 同步阻塞调用 MCP 工具（支持透传用户身份与自动解包）
+     *
+     * @param toolName  工具名称
+     * @param arguments 入参键值对
+     * @param userId    可选的用户 ID
+     * @return 工具返回文本
+     */
+    public String callToolSync(String toolName, Map<String, Object> arguments, @Nullable Long userId) {
         Duration timeout = Duration.ofSeconds(Math.max(2, properties.getTimeoutSeconds() + 2));
-        McpCallResult result = callTool(toolName, arguments).block(timeout);
+        McpCallResult result = callTool(toolName, arguments, userId).block(timeout);
         if (result == null) {
             throw new IllegalStateException("MCP tool [" + toolName + "] execution returned null response");
         }

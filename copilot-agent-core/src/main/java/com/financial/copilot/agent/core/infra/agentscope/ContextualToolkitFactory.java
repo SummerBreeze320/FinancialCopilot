@@ -16,6 +16,8 @@ import com.financial.copilot.agent.tools.fund.FundPoolTool;
 import com.financial.copilot.agent.tools.stock.StockQuantAnalysisTool;
 import com.financial.copilot.agent.tools.stock.StockScreeningTool;
 import com.financial.copilot.agent.tools.stock.StockWatchlistTool;
+import com.financial.copilot.agent.tools.fund.FundProfileTool;
+import com.financial.copilot.agent.tools.stock.StockProfileTool;
 import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
 import com.financial.copilot.common.intent.IntentType;
 import com.financial.copilot.common.stock.dto.StockScreeningCriteria;
@@ -56,6 +58,7 @@ public class ContextualToolkitFactory {
     private final Map<AgentRole, Toolkit> cachedFullToolkits = new ConcurrentHashMap<>();
     private final FundPoolTool fundPoolTool;
     private final StockWatchlistTool stockWatchlistTool;
+    private final ReactiveMcpClient mcpClient;
 
     @Autowired
     public ContextualToolkitFactory(AgentRoleProperties roleProperties,
@@ -71,11 +74,14 @@ public class ContextualToolkitFactory {
                                     ObjectMapper mapper,
                                     @Autowired(required = false) @Nullable ReactiveMcpClient mcpClient,
                                     @Autowired(required = false) @Nullable FundPoolTool fundPoolTool,
-                                    @Autowired(required = false) @Nullable StockWatchlistTool stockWatchlistTool) {
+                                    @Autowired(required = false) @Nullable StockWatchlistTool stockWatchlistTool,
+                                    @Autowired(required = false) @Nullable FundProfileTool fundProfileTool,
+                                    @Autowired(required = false) @Nullable StockProfileTool stockProfileTool) {
         this.roleProperties = Objects.requireNonNull(roleProperties);
         this.permissionService = Objects.requireNonNull(permissionService);
         this.fundPoolTool = fundPoolTool;
         this.stockWatchlistTool = stockWatchlistTool;
+        this.mcpClient = mcpClient;
 
         // 注册所有单原子工具代理
         registerProvider("fund_metrics", new FundMetricsTool(fundQuant, mcpClient));
@@ -95,6 +101,30 @@ public class ContextualToolkitFactory {
         registerProvider("screen_stocks", new StockScreeningToolDelegate(stockScreening, mcpClient));
         registerProvider("compare_stock_metrics", new StockCompareMetricsTool(stockQuant, mcpClient));
         registerProvider("read_research_artifacts", new ReportSynthesizerTool(mapper));
+        if (fundProfileTool != null || (mcpClient != null && mcpClient.isEnabled())) {
+            registerProvider("query_fund_profile", new FundProfileToolDelegate(fundProfileTool, mcpClient));
+        }
+        if (stockProfileTool != null || (mcpClient != null && mcpClient.isEnabled())) {
+            registerProvider("query_stock_profile", new StockProfileToolDelegate(stockProfileTool, mcpClient));
+        }
+    }
+
+    public ContextualToolkitFactory(AgentRoleProperties roleProperties,
+                                    UserToolPermissionService permissionService,
+                                    FundQuantAnalysisTool fundQuant,
+                                    FundHoldingsQueryTool fundHoldings,
+                                    FundReportRetrieverTool fundReports,
+                                    FundScreeningTool fundScreening,
+                                    @Nullable FinancialSchemaRagTool schemaRag,
+                                    @Nullable FinancialGraphTool graph,
+                                    StockQuantAnalysisTool stockQuant,
+                                    StockScreeningTool stockScreening,
+                                    ObjectMapper mapper,
+                                    @Nullable ReactiveMcpClient mcpClient,
+                                    @Nullable FundPoolTool fundPoolTool,
+                                    @Nullable StockWatchlistTool stockWatchlistTool) {
+        this(roleProperties, permissionService, fundQuant, fundHoldings, fundReports, fundScreening,
+             schemaRag, graph, stockQuant, stockScreening, mapper, mcpClient, fundPoolTool, stockWatchlistTool, null, null);
     }
 
     public ContextualToolkitFactory(AgentRoleProperties roleProperties,
@@ -110,7 +140,7 @@ public class ContextualToolkitFactory {
                                     ObjectMapper mapper,
                                     @Nullable ReactiveMcpClient mcpClient) {
         this(roleProperties, permissionService, fundQuant, fundHoldings, fundReports, fundScreening,
-             schemaRag, graph, stockQuant, stockScreening, mapper, mcpClient, null, null);
+             schemaRag, graph, stockQuant, stockScreening, mapper, mcpClient, null, null, null, null);
     }
 
     private void registerProvider(String name, Object provider) {
@@ -156,10 +186,10 @@ public class ContextualToolkitFactory {
         Toolkit dynamicToolkit = new Toolkit();
         for (String toolName : candidateTools) {
             if (permissionService.isToolAllowed(userId, toolName)) {
-                if ("fund_pool".equals(toolName) && fundPoolTool != null) {
-                    dynamicToolkit.registerTool(new FundPoolToolDelegate(fundPoolTool, userId));
-                } else if ("stock_watchlist".equals(toolName) && stockWatchlistTool != null) {
-                    dynamicToolkit.registerTool(new StockWatchlistToolDelegate(stockWatchlistTool, userId));
+                if ("fund_pool".equals(toolName) && (fundPoolTool != null || (mcpClient != null && mcpClient.isEnabled()))) {
+                    dynamicToolkit.registerTool(new FundPoolToolDelegate(fundPoolTool, mcpClient, userId));
+                } else if ("stock_watchlist".equals(toolName) && (stockWatchlistTool != null || (mcpClient != null && mcpClient.isEnabled()))) {
+                    dynamicToolkit.registerTool(new StockWatchlistToolDelegate(stockWatchlistTool, mcpClient, userId));
                 } else {
                     Object provider = toolProviders.get(toolName);
                     if (provider != null) {
@@ -183,12 +213,12 @@ public class ContextualToolkitFactory {
         }
 
         Set<String> relevantTools = switch (intent) {
-            case FUND_SCREENING -> Set.of("screen_funds", "fund_metrics", "fund_pool");
-            case FUND_DIAGNOSIS -> Set.of("fund_metrics", "fund_holdings", "fund_report", "fund_pool");
-            case FUND_COMPARISON -> Set.of("compare_metrics", "compare_holdings", "compare_reports", "shared_holdings", "fund_metrics");
-            case ASSET_ALLOCATION -> Set.of("screen_funds", "fund_metrics", "screen_stocks", "stock_metrics", "fund_pool", "stock_watchlist");
+            case FUND_SCREENING -> Set.of("screen_funds", "fund_metrics", "fund_pool", "query_fund_profile");
+            case FUND_DIAGNOSIS -> Set.of("fund_metrics", "fund_holdings", "fund_report", "fund_pool", "query_fund_profile");
+            case FUND_COMPARISON -> Set.of("compare_metrics", "compare_holdings", "compare_reports", "shared_holdings", "fund_metrics", "query_fund_profile");
+            case ASSET_ALLOCATION -> Set.of("screen_funds", "fund_metrics", "screen_stocks", "stock_metrics", "fund_pool", "stock_watchlist", "query_fund_profile", "query_stock_profile");
             case REPORT_SYNTHESIS -> Set.of("read_research_artifacts", "fund_report");
-            case STOCK_RESEARCH -> Set.of("stock_metrics", "screen_stocks", "compare_stock_metrics", "stock_watchlist");
+            case STOCK_RESEARCH -> Set.of("stock_metrics", "screen_stocks", "compare_stock_metrics", "stock_watchlist", "query_stock_profile");
             default -> baselineTools;
         };
 
@@ -201,10 +231,10 @@ public class ContextualToolkitFactory {
         List<String> baseTools = roleProperties.getToolsFor(role);
         Toolkit toolkit = new Toolkit();
         for (String toolName : baseTools) {
-            if ("fund_pool".equals(toolName) && fundPoolTool != null) {
-                toolkit.registerTool(new FundPoolToolDelegate(fundPoolTool, 1L));
-            } else if ("stock_watchlist".equals(toolName) && stockWatchlistTool != null) {
-                toolkit.registerTool(new StockWatchlistToolDelegate(stockWatchlistTool, 1L));
+            if ("fund_pool".equals(toolName) && (fundPoolTool != null || (mcpClient != null && mcpClient.isEnabled()))) {
+                toolkit.registerTool(new FundPoolToolDelegate(fundPoolTool, mcpClient, 1L));
+            } else if ("stock_watchlist".equals(toolName) && (stockWatchlistTool != null || (mcpClient != null && mcpClient.isEnabled()))) {
+                toolkit.registerTool(new StockWatchlistToolDelegate(stockWatchlistTool, mcpClient, 1L));
             } else {
                 Object provider = toolProviders.get(toolName);
                 if (provider != null) {
@@ -544,107 +574,309 @@ public class ContextualToolkitFactory {
 
     public static final class FundPoolToolDelegate {
         private final FundPoolTool tool;
+        private final ReactiveMcpClient mcpClient;
         private final Long userId;
 
-        public FundPoolToolDelegate(FundPoolTool tool, @Nullable Long userId) {
-            this.tool = Objects.requireNonNull(tool, "FundPoolTool must not be null");
+        public FundPoolToolDelegate(@Nullable FundPoolTool tool, @Nullable ReactiveMcpClient mcpClient, @Nullable Long userId) {
+            this.tool = tool;
+            this.mcpClient = mcpClient;
             this.userId = userId;
+        }
+
+        public FundPoolToolDelegate(FundPoolTool tool, @Nullable Long userId) {
+            this(tool, null, userId);
         }
 
         @Tool(name = "add_to_fund_pool", description = "将指定基金添加至当前用户的私有基金池")
         public String addFund(
-                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字基金代码")
+                @ToolConstraint(regexPattern = "^\\d{6}$")
                 @ToolParam(name = "fundCode", description = "六位基金代码") String fundCode,
                 @ToolParam(name = "fundName", description = "基金名称", required = false) String fundName,
                 @ToolParam(name = "poolType", description = "池类别(如 CORE/TACTICAL/OBSERVATION)", required = false) String poolType,
                 @ToolParam(name = "targetWeight", description = "目标配置权重(0~1)", required = false) Double targetWeight,
                 @ToolParam(name = "reason", description = "入池理由", required = false) String reason,
                 @ToolParam(name = "tags", description = "标的标签(逗号分隔)", required = false) String tags) {
-            return tool.addFund(userId, fundCode, fundName, poolType, targetWeight, reason, tags);
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    Map<String, Object> args = new LinkedHashMap<>();
+                    args.put("fundCode", fundCode);
+                    if (fundName != null) args.put("fundName", fundName);
+                    if (poolType != null) args.put("poolType", poolType);
+                    if (targetWeight != null) args.put("targetWeight", targetWeight);
+                    if (reason != null) args.put("reason", reason);
+                    if (tags != null) args.put("tags", tags);
+                    return mcpClient.callToolSync("add_to_fund_pool", args, userId);
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] add_to_fund_pool fallback to local tool: fundCode={}, userId={}, error={}", fundCode, userId, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.addFund(userId, fundCode, fundName, poolType, targetWeight, reason, tags);
+            }
+            return "{\"error\":\"FundPoolTool is not available locally\"}";
         }
 
         @Tool(name = "update_fund_pool", description = "更新用户基金池中某标的的目标仓位或入池理由")
         public String updateFund(
-                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字基金代码")
+                @ToolConstraint(regexPattern = "^\\d{6}$")
                 @ToolParam(name = "fundCode", description = "六位基金代码") String fundCode,
                 @ToolParam(name = "poolType", description = "池类别", required = false) String poolType,
                 @ToolParam(name = "targetWeight", description = "目标配置权重(0~1)", required = false) Double targetWeight,
                 @ToolParam(name = "reason", description = "更新理由", required = false) String reason) {
-            return tool.updateFund(userId, fundCode, poolType, targetWeight, reason);
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    Map<String, Object> args = new LinkedHashMap<>();
+                    args.put("fundCode", fundCode);
+                    if (poolType != null) args.put("poolType", poolType);
+                    if (targetWeight != null) args.put("targetWeight", targetWeight);
+                    if (reason != null) args.put("reason", reason);
+                    return mcpClient.callToolSync("update_fund_pool", args, userId);
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] update_fund_pool fallback to local tool: fundCode={}, userId={}, error={}", fundCode, userId, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.updateFund(userId, fundCode, poolType, targetWeight, reason);
+            }
+            return "{\"error\":\"FundPoolTool is not available locally\"}";
         }
 
         @Tool(name = "remove_from_fund_pool", description = "从当前用户的私有基金池中移出指定标的")
         public String removeFund(
-                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字基金代码")
+                @ToolConstraint(regexPattern = "^\\d{6}$")
                 @ToolParam(name = "fundCode", description = "六位基金代码") String fundCode,
                 @ToolParam(name = "poolType", description = "池类别", required = false) String poolType) {
-            return tool.removeFund(userId, fundCode, poolType);
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    Map<String, Object> args = new LinkedHashMap<>();
+                    args.put("fundCode", fundCode);
+                    if (poolType != null) args.put("poolType", poolType);
+                    return mcpClient.callToolSync("remove_from_fund_pool", args, userId);
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] remove_from_fund_pool fallback to local tool: fundCode={}, userId={}, error={}", fundCode, userId, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.removeFund(userId, fundCode, poolType);
+            }
+            return "{\"error\":\"FundPoolTool is not available locally\"}";
         }
 
-        @HighRiskTool(category = "ASSET_TRANSACTION", riskLevel = "HIGH", requiresApproval = true, description = "清空基金池属于破坏性高危操作")
+        @HighRiskTool(category = "ASSET_TRANSACTION", riskLevel = "HIGH", requiresApproval = true)
         @Tool(name = "clear_fund_pool", description = "清空指定分类或全部用户基金池")
         public String clearPool(
                 @ToolParam(name = "poolType", description = "池类别(如 CORE/TACTICAL)，为空则清空默认池", required = false) String poolType) {
-            return tool.clearPool(userId, poolType);
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    Map<String, Object> args = new LinkedHashMap<>();
+                    if (poolType != null) args.put("poolType", poolType);
+                    return mcpClient.callToolSync("clear_fund_pool", args, userId);
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] clear_fund_pool fallback to local tool: userId={}, error={}", userId, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.clearPool(userId, poolType);
+            }
+            return "{\"error\":\"FundPoolTool is not available locally\"}";
         }
 
         @Tool(name = "query_fund_pool", description = "查询当前用户的私有基金池列表", readOnly = true)
         public String queryPool(
                 @ToolParam(name = "poolType", description = "池类别筛选，为空则查询全部", required = false) String poolType) {
-            return tool.queryPool(userId, poolType);
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    Map<String, Object> args = new LinkedHashMap<>();
+                    if (poolType != null) args.put("poolType", poolType);
+                    return mcpClient.callToolSync("query_fund_pool", args, userId);
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] query_fund_pool fallback to local tool: userId={}, error={}", userId, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.queryPool(userId, poolType);
+            }
+            return "{\"error\":\"FundPoolTool is not available locally\"}";
         }
     }
 
     public static final class StockWatchlistToolDelegate {
         private final StockWatchlistTool tool;
+        private final ReactiveMcpClient mcpClient;
         private final Long userId;
 
-        public StockWatchlistToolDelegate(StockWatchlistTool tool, @Nullable Long userId) {
-            this.tool = Objects.requireNonNull(tool, "StockWatchlistTool must not be null");
+        public StockWatchlistToolDelegate(@Nullable StockWatchlistTool tool, @Nullable ReactiveMcpClient mcpClient, @Nullable Long userId) {
+            this.tool = tool;
+            this.mcpClient = mcpClient;
             this.userId = userId;
+        }
+
+        public StockWatchlistToolDelegate(StockWatchlistTool tool, @Nullable Long userId) {
+            this(tool, null, userId);
         }
 
         @Tool(name = "add_to_stock_watchlist", description = "将股票添加至当前用户的自选股列表")
         public String addStock(
-                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字股票代码")
+                @ToolConstraint(regexPattern = "^\\d{6}$")
                 @ToolParam(name = "stockCode", description = "六位股票代码") String stockCode,
                 @ToolParam(name = "stockName", description = "股票名称", required = false) String stockName,
                 @ToolParam(name = "groupName", description = "自选分组(如 核心/观察/高股息)", required = false) String groupName,
                 @ToolParam(name = "targetPrice", description = "目标价格", required = false) Double targetPrice,
                 @ToolParam(name = "notes", description = "关注说明或入选理由", required = false) String notes,
                 @ToolParam(name = "priority", description = "优先级(HIGH/MEDIUM/LOW)", required = false) String priority) {
-            return tool.addStock(userId, stockCode, stockName, groupName, targetPrice, notes, priority);
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    Map<String, Object> args = new LinkedHashMap<>();
+                    args.put("stockCode", stockCode);
+                    if (stockName != null) args.put("stockName", stockName);
+                    if (groupName != null) args.put("groupName", groupName);
+                    if (targetPrice != null) args.put("targetPrice", targetPrice);
+                    if (notes != null) args.put("notes", notes);
+                    if (priority != null) args.put("priority", priority);
+                    return mcpClient.callToolSync("add_to_stock_watchlist", args, userId);
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] add_to_stock_watchlist fallback to local tool: stockCode={}, userId={}, error={}", stockCode, userId, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.addStock(userId, stockCode, stockName, groupName, targetPrice, notes, priority);
+            }
+            return "{\"error\":\"StockWatchlistTool is not available locally\"}";
         }
 
         @Tool(name = "update_stock_watchlist", description = "更新自选股的目标价或关注说明")
         public String updateStock(
-                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字股票代码")
+                @ToolConstraint(regexPattern = "^\\d{6}$")
                 @ToolParam(name = "stockCode", description = "六位股票代码") String stockCode,
                 @ToolParam(name = "groupName", description = "分组名称", required = false) String groupName,
                 @ToolParam(name = "targetPrice", description = "目标价格", required = false) Double targetPrice,
                 @ToolParam(name = "notes", description = "关注说明", required = false) String notes) {
-            return tool.updateStock(userId, stockCode, groupName, targetPrice, notes);
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    Map<String, Object> args = new LinkedHashMap<>();
+                    args.put("stockCode", stockCode);
+                    if (groupName != null) args.put("groupName", groupName);
+                    if (targetPrice != null) args.put("targetPrice", targetPrice);
+                    if (notes != null) args.put("notes", notes);
+                    return mcpClient.callToolSync("update_stock_watchlist", args, userId);
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] update_stock_watchlist fallback to local tool: stockCode={}, userId={}, error={}", stockCode, userId, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.updateStock(userId, stockCode, groupName, targetPrice, notes);
+            }
+            return "{\"error\":\"StockWatchlistTool is not available locally\"}";
         }
 
         @Tool(name = "remove_from_stock_watchlist", description = "从自选股中移除指定股票")
         public String removeStock(
-                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字股票代码")
+                @ToolConstraint(regexPattern = "^\\d{6}$")
                 @ToolParam(name = "stockCode", description = "六位股票代码") String stockCode,
                 @ToolParam(name = "groupName", description = "分组名称", required = false) String groupName) {
-            return tool.removeStock(userId, stockCode, groupName);
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    Map<String, Object> args = new LinkedHashMap<>();
+                    args.put("stockCode", stockCode);
+                    if (groupName != null) args.put("groupName", groupName);
+                    return mcpClient.callToolSync("remove_from_stock_watchlist", args, userId);
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] remove_from_stock_watchlist fallback to local tool: stockCode={}, userId={}, error={}", stockCode, userId, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.removeStock(userId, stockCode, groupName);
+            }
+            return "{\"error\":\"StockWatchlistTool is not available locally\"}";
         }
 
-        @HighRiskTool(category = "ASSET_TRANSACTION", riskLevel = "HIGH", requiresApproval = true, description = "清空自选股属于破坏性高危操作")
+        @HighRiskTool(category = "ASSET_TRANSACTION", riskLevel = "HIGH", requiresApproval = true)
         @Tool(name = "clear_stock_watchlist", description = "清空自选股分组")
         public String clearWatchlist(
                 @ToolParam(name = "groupName", description = "分组名称，为空则清空默认分组", required = false) String groupName) {
-            return tool.clearWatchlist(userId, groupName);
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    Map<String, Object> args = new LinkedHashMap<>();
+                    if (groupName != null) args.put("groupName", groupName);
+                    return mcpClient.callToolSync("clear_stock_watchlist", args, userId);
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] clear_stock_watchlist fallback to local tool: userId={}, error={}", userId, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.clearWatchlist(userId, groupName);
+            }
+            return "{\"error\":\"StockWatchlistTool is not available locally\"}";
         }
 
         @Tool(name = "query_stock_watchlist", description = "查询当前用户的自选股列表", readOnly = true)
         public String queryWatchlist(
                 @ToolParam(name = "groupName", description = "分组名称筛选，为空则查询全部", required = false) String groupName) {
-            return tool.queryWatchlist(userId, groupName);
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    Map<String, Object> args = new LinkedHashMap<>();
+                    if (groupName != null) args.put("groupName", groupName);
+                    return mcpClient.callToolSync("query_stock_watchlist", args, userId);
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] query_stock_watchlist fallback to local tool: userId={}, error={}", userId, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.queryWatchlist(userId, groupName);
+            }
+            return "{\"error\":\"StockWatchlistTool is not available locally\"}";
+        }
+    }
+
+    public static final class FundProfileToolDelegate {
+        private final FundProfileTool tool;
+        private final ReactiveMcpClient mcpClient;
+
+        public FundProfileToolDelegate(@Nullable FundProfileTool tool, @Nullable ReactiveMcpClient mcpClient) {
+            this.tool = tool;
+            this.mcpClient = mcpClient;
+        }
+
+        @Tool(name = "query_fund_profile", description = "按6位基金代码或名称关键词模糊查询公募基金全维档案与实时净值指标", readOnly = true)
+        public String queryFundProfile(
+                @ToolParam(name = "keyword", description = "6位基金代码或中文名称/简称关键词") String keyword) {
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    return mcpClient.callToolSync("query_fund_profile", Map.of("keyword", keyword));
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] query_fund_profile fallback to local tool: keyword={}, error={}", keyword, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.getFundProfile(keyword);
+            }
+            return "{\"error\":\"FundProfileTool is not available locally\"}";
+        }
+    }
+
+    public static final class StockProfileToolDelegate {
+        private final StockProfileTool tool;
+        private final ReactiveMcpClient mcpClient;
+
+        public StockProfileToolDelegate(@Nullable StockProfileTool tool, @Nullable ReactiveMcpClient mcpClient) {
+            this.tool = tool;
+            this.mcpClient = mcpClient;
+        }
+
+        @Tool(name = "query_stock_profile", description = "按6位股票代码或股票简称模糊查询股票全维基本面与估值指标", readOnly = true)
+        public String queryStockProfile(
+                @ToolParam(name = "keyword", description = "6位股票代码或股票简称/拼音关键词") String keyword) {
+            if (mcpClient != null && mcpClient.isEnabled()) {
+                try {
+                    return mcpClient.callToolSync("query_stock_profile", Map.of("keyword", keyword));
+                } catch (Exception e) {
+                    log.warn("[MCP TOOL FALLBACK] query_stock_profile fallback to local tool: keyword={}, error={}", keyword, e.getMessage());
+                }
+            }
+            if (tool != null) {
+                return tool.getStockProfile(keyword);
+            }
+            return "{\"error\":\"StockProfileTool is not available locally\"}";
         }
     }
 }
