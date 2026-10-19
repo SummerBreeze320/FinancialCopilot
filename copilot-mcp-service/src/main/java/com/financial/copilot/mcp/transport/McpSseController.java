@@ -77,9 +77,10 @@ public class McpSseController {
     @PostMapping(value = {"/messages", "/api/mcp/messages"}, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<McpJsonRpcResponse>> handleMessage(
             @RequestParam(value = "sessionId", required = false) String sessionId,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
             @RequestBody String rawJson) {
 
-        log.debug("[MCP MESSAGE] 收到上行消息: sessionId={}, body={}", sessionId, rawJson);
+        log.debug("[MCP MESSAGE] 收到上行消息: sessionId={}, userId={}, body={}", sessionId, userIdHeader, rawJson);
 
         McpJsonRpcRequest request;
         try {
@@ -89,6 +90,14 @@ public class McpSseController {
             return Mono.just(ResponseEntity.badRequest().body(
                     McpJsonRpcResponse.error(null, McpJsonRpcError.PARSE_ERROR, "Invalid JSON: " + ex.getMessage())
             ));
+        }
+
+        Long finalUserId = com.financial.copilot.mcp.context.McpUserContext.DEFAULT_FALLBACK_USER_ID;
+        if (userIdHeader != null && !userIdHeader.isBlank()) {
+            try {
+                finalUserId = Long.parseLong(userIdHeader.trim());
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         return serverService.handleRequest(request)
@@ -104,6 +113,7 @@ public class McpSseController {
                     }
                     return ResponseEntity.ok(response);
                 })
+                .contextWrite(reactor.util.context.Context.of(com.financial.copilot.mcp.context.McpUserContext.CONTEXT_KEY, finalUserId))
                 .defaultIfEmpty(ResponseEntity.status(HttpStatus.ACCEPTED).build());
     }
 }

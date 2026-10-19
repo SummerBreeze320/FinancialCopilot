@@ -2,15 +2,20 @@ package com.financial.copilot.mcp.binding;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
+import com.financial.copilot.agent.tools.fund.FundPoolTool;
+import com.financial.copilot.agent.tools.fund.FundProfileTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
+import com.financial.copilot.agent.tools.stock.StockProfileTool;
 import com.financial.copilot.agent.tools.stock.StockQuantAnalysisTool;
 import com.financial.copilot.agent.tools.stock.StockScreeningTool;
 import com.financial.copilot.agent.tools.stock.StockTechnicalAnalysisTool;
+import com.financial.copilot.agent.tools.stock.StockWatchlistTool;
 import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
 import com.financial.copilot.common.stock.dto.StockScreeningCriteria;
 import com.financial.copilot.mcp.config.McpServerProperties;
+import com.financial.copilot.mcp.context.McpUserContext;
 import com.financial.copilot.mcp.protocol.McpToolCallResult;
 import com.financial.copilot.mcp.protocol.McpToolDefinition;
 import com.financial.copilot.mcp.registry.DynamicHttpToolHandler;
@@ -31,6 +36,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -65,6 +71,12 @@ public class FinancialToolsBinder {
     private FundReportRetrieverTool fundReports;
 
     @Autowired(required = false)
+    private FundProfileTool fundProfile;
+
+    @Autowired(required = false)
+    private FundPoolTool fundPool;
+
+    @Autowired(required = false)
     private StockQuantAnalysisTool stockQuant;
 
     @Autowired(required = false)
@@ -72,6 +84,12 @@ public class FinancialToolsBinder {
 
     @Autowired(required = false)
     private StockTechnicalAnalysisTool stockTechnical;
+
+    @Autowired(required = false)
+    private StockProfileTool stockProfile;
+
+    @Autowired(required = false)
+    private StockWatchlistTool stockWatchlist;
 
     public FinancialToolsBinder(McpToolRegistry registry,
                                 McpServerProperties properties,
@@ -109,6 +127,22 @@ public class FinancialToolsBinder {
 
     public void setStockTechnical(StockTechnicalAnalysisTool stockTechnical) {
         this.stockTechnical = stockTechnical;
+    }
+
+    public void setFundProfile(FundProfileTool fundProfile) {
+        this.fundProfile = fundProfile;
+    }
+
+    public void setFundPool(FundPoolTool fundPool) {
+        this.fundPool = fundPool;
+    }
+
+    public void setStockProfile(StockProfileTool stockProfile) {
+        this.stockProfile = stockProfile;
+    }
+
+    public void setStockWatchlist(StockWatchlistTool stockWatchlist) {
+        this.stockWatchlist = stockWatchlist;
     }
 
     @PostConstruct
@@ -195,7 +229,64 @@ public class FinancialToolsBinder {
                     args -> fundReports.getLatestQuarterlyReportView(str(args, "fundCode")));
         }
 
-        // 5. 股票估值和财务指标
+        // 5. 基金全维属性与档案检索 (新增)
+        if (fundProfile != null) {
+            registerTool("query_fund_profile",
+                    "查询基金全维档案与关键业绩 (支持6位代码或中文模糊名称)",
+                    Map.of("query", prop("string", "基金代码或基金名称 (例如 005827 或 易方达蓝筹)", true)),
+                    args -> fundProfile.getFundProfile(str(args, "query")));
+        }
+
+        // 6. 私有基金池增删改查工具 (新增用户感知)
+        if (fundPool != null) {
+            registerUserAwareTool("add_to_fund_pool",
+                    "将指定基金添加至当前用户的私有基金池",
+                    Map.of(
+                            "fundCode", prop("string", "6位纯数字基金代码", true),
+                            "fundName", prop("string", "基金名称", false),
+                            "poolType", prop("string", "池类别 (如 CORE/TACTICAL/OBSERVATION)", false),
+                            "targetWeight", prop("number", "目标配置权重(0~1)", false),
+                            "reason", prop("string", "入池理由", false),
+                            "tags", prop("string", "标的标签", false)
+                    ),
+                    (userId, args) -> fundPool.addFund(userId, str(args, "fundCode"), str(args, "fundName"),
+                            str(args, "poolType"), dbl(args, "targetWeight"), str(args, "reason"), str(args, "tags")));
+
+            registerUserAwareTool("update_fund_pool",
+                    "更新用户基金池中某标的的目标仓位或入池理由",
+                    Map.of(
+                            "fundCode", prop("string", "6位纯数字基金代码", true),
+                            "poolType", prop("string", "池类别", false),
+                            "targetWeight", prop("number", "目标配置权重(0~1)", false),
+                            "reason", prop("string", "更新理由", false)
+                    ),
+                    (userId, args) -> fundPool.updateFund(userId, str(args, "fundCode"), str(args, "poolType"),
+                            dbl(args, "targetWeight"), str(args, "reason")));
+
+            registerUserAwareTool("remove_from_fund_pool",
+                    "从当前用户的私有基金池中移出指定标的",
+                    Map.of(
+                            "fundCode", prop("string", "6位纯数字基金代码", true),
+                            "poolType", prop("string", "池类别", false)
+                    ),
+                    (userId, args) -> fundPool.removeFund(userId, str(args, "fundCode"), str(args, "poolType")));
+
+            registerUserAwareTool("clear_fund_pool",
+                    "清空指定分类或全部用户基金池 (高危操作)",
+                    Map.of(
+                            "poolType", prop("string", "池类别，为空则清空默认池", false)
+                    ),
+                    (userId, args) -> fundPool.clearPool(userId, str(args, "poolType")));
+
+            registerUserAwareTool("query_fund_pool",
+                    "查询当前用户的私有基金池列表",
+                    Map.of(
+                            "poolType", prop("string", "池类别筛选", false)
+                    ),
+                    (userId, args) -> fundPool.queryPool(userId, str(args, "poolType")));
+        }
+
+        // 7. 股票估值和财务指标
         if (stockQuant != null) {
             registerTool("stock_metrics",
                     "查询股票估值和财务量化指标 (PE、PB、ROE、股息率、涨跌幅)",
@@ -203,7 +294,7 @@ public class FinancialToolsBinder {
                     args -> stockQuant.getStockMetrics(str(args, "stockCode")));
         }
 
-        // 6. 股票多维初筛
+        // 8. 股票多维初筛
         if (stockScreening != null) {
             Map<String, Map<String, Object>> stockProps = new LinkedHashMap<>();
             stockProps.put("exchange", prop("string", "交易所代码 (SH/SZ)", false));
@@ -234,12 +325,69 @@ public class FinancialToolsBinder {
                     )));
         }
 
-        // 7. 股票技术分析
+        // 9. 股票技术分析
         if (stockTechnical != null) {
             registerTool("stock_technical",
                     "获取个股全维度技术指标 (均线MA + RSI + MACD + 波动率)",
                     Map.of("stockCode", prop("string", "A股股票代码 (例如 600519.SH)", true)),
                     args -> stockTechnical.getTechnicalIndicators(str(args, "stockCode")));
+        }
+
+        // 10. 股票全维属性与档案检索 (新增)
+        if (stockProfile != null) {
+            registerTool("query_stock_profile",
+                    "查询股票全维档案与实时估值 (支持6位代码或中文模糊名称)",
+                    Map.of("query", prop("string", "股票代码或公司名称 (例如 600519 或 贵州茅台)", true)),
+                    args -> stockProfile.getStockProfile(str(args, "query")));
+        }
+
+        // 11. 股票自选股增删改查工具 (新增用户感知)
+        if (stockWatchlist != null) {
+            registerUserAwareTool("add_to_stock_watchlist",
+                    "将股票添加至当前用户的自选股列表",
+                    Map.of(
+                            "stockCode", prop("string", "6位纯数字股票代码", true),
+                            "stockName", prop("string", "股票名称", false),
+                            "groupName", prop("string", "自选分组 (如 核心/观察/高股息)", false),
+                            "targetPrice", prop("number", "目标价格", false),
+                            "notes", prop("string", "关注说明或入选理由", false),
+                            "priority", prop("string", "优先级 (HIGH/MEDIUM/LOW)", false)
+                    ),
+                    (userId, args) -> stockWatchlist.addStock(userId, str(args, "stockCode"), str(args, "stockName"),
+                            str(args, "groupName"), dbl(args, "targetPrice"), str(args, "notes"), str(args, "priority")));
+
+            registerUserAwareTool("update_stock_watchlist",
+                    "更新自选股的目标价或关注说明",
+                    Map.of(
+                            "stockCode", prop("string", "6位纯数字股票代码", true),
+                            "groupName", prop("string", "分组名称", false),
+                            "targetPrice", prop("number", "目标价格", false),
+                            "notes", prop("string", "关注说明", false)
+                    ),
+                    (userId, args) -> stockWatchlist.updateStock(userId, str(args, "stockCode"), str(args, "groupName"),
+                            dbl(args, "targetPrice"), str(args, "notes")));
+
+            registerUserAwareTool("remove_from_stock_watchlist",
+                    "从自选股中移除指定股票",
+                    Map.of(
+                            "stockCode", prop("string", "6位纯数字股票代码", true),
+                            "groupName", prop("string", "分组名称", false)
+                    ),
+                    (userId, args) -> stockWatchlist.removeStock(userId, str(args, "stockCode"), str(args, "groupName")));
+
+            registerUserAwareTool("clear_stock_watchlist",
+                    "清空自选股分组 (高危操作)",
+                    Map.of(
+                            "groupName", prop("string", "分组名称，为空则清空默认分组", false)
+                    ),
+                    (userId, args) -> stockWatchlist.clearWatchlist(userId, str(args, "groupName")));
+
+            registerUserAwareTool("query_stock_watchlist",
+                    "查询当前用户的自选股列表",
+                    Map.of(
+                            "groupName", prop("string", "分组名称筛选", false)
+                    ),
+                    (userId, args) -> stockWatchlist.queryWatchlist(userId, str(args, "groupName")));
         }
     }
 
@@ -302,6 +450,57 @@ public class FinancialToolsBinder {
                         .subscribeOn(McpVirtualThreadConfig.scheduler())
                         .onErrorResume(ex -> {
                             log.error("[MCP CALL-ERROR] 工具 {} 执行异常: {}", name, ex.getMessage(), ex);
+                            return Mono.just(McpToolCallResult.error("工具执行失败: " + ex.getMessage()));
+                        });
+            }
+        });
+    }
+
+    private void registerUserAwareTool(String name, String description,
+                                       Map<String, Map<String, Object>> properties,
+                                       BiFunction<Long, Map<String, Object>, String> executor) {
+        Map<String, Object> props = new HashMap<>();
+        List<String> required = new ArrayList<>();
+
+        properties.forEach((propName, meta) -> {
+            Map<String, Object> fieldSchema = new HashMap<>();
+            fieldSchema.put("type", meta.get("type"));
+            fieldSchema.put("description", meta.get("description"));
+            props.put(propName, fieldSchema);
+
+            if (Boolean.TRUE.equals(meta.get("required"))) {
+                required.add(propName);
+            }
+        });
+
+        Map<String, Object> inputSchema = Map.of(
+                "type", "object",
+                "properties", props,
+                "required", required
+        );
+
+        McpToolDefinition definition = McpToolDefinition.builder()
+                .name(name)
+                .description(description)
+                .inputSchema(inputSchema)
+                .build();
+
+        registry.register(new McpToolHandler() {
+            @Override
+            public McpToolDefinition getDefinition() {
+                return definition;
+            }
+
+            @Override
+            public Mono<McpToolCallResult> execute(Map<String, Object> arguments) {
+                return McpUserContext.getCurrentUserId()
+                        .publishOn(McpVirtualThreadConfig.scheduler())
+                        .map(userId -> {
+                            String result = executor.apply(userId, arguments != null ? arguments : Map.of());
+                            return McpToolCallResult.success(result);
+                        })
+                        .onErrorResume(ex -> {
+                            log.error("[MCP CALL-ERROR] 用户感知工具 {} 执行异常: {}", name, ex.getMessage(), ex);
                             return Mono.just(McpToolCallResult.error("工具执行失败: " + ex.getMessage()));
                         });
             }
