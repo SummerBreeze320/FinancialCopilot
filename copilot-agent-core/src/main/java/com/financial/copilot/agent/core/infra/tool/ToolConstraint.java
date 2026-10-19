@@ -14,6 +14,9 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface ToolConstraint {
+    /** 参数名称（用于在无 -parameters 编译参数下精准映射） */
+    String name() default "";
+
     /** 允许的枚举常量值数组 */
     String[] allowedValues() default {};
 
