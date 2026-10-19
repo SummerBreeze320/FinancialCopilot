@@ -33,6 +33,8 @@ class MemorySearchRequest(BaseModel):
     query: str
     user_id: str | None = None
     session_id: str | None = None
+    conversation_id: str | None = None
+    scope: str = "USER"
     max_results: int = Field(default=10, ge=1, le=50)
     center_node_uuid: str | None = None
 

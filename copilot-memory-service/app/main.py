@@ -44,7 +44,7 @@ app.include_router(profile.router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "memory-service"}
+    return {"status": "ok", "service": "copilot-memory-service"}
 
 
 @app.get("/")

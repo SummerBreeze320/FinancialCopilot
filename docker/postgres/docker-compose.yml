@@ -38,7 +38,7 @@ services:
       - myservice_network
 
   memory-service:
-    build: ../../memory-service
+    build: ../../copilot-memory-service
     container_name: docker_memory_service
     environment:
       NEO4J_URI: bolt://neo4j:7687
@@ -64,7 +64,7 @@ services:
       - myservice_network
 
   entity-service:
-    build: ../../entity-service
+    build: ../../copilot-ner-service
     container_name: docker_entity_service
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-123456}@postgres:5432/financial_copilot

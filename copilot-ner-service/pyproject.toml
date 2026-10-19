@@ -1,5 +1,5 @@
 [project]
-name = "entity-service"
+name = "copilot-ner-service"
 version = "0.1.0"
 description = "Catalog-backed financial entity recognition service"
 requires-python = ">=3.11"

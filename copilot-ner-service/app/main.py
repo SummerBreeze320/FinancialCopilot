@@ -30,6 +30,14 @@ from app.indexing.service import IndexingService, RebuildAlreadyRunning
 logger = logging.getLogger(__name__)
 
 
+def create_embedding_http_client(settings):
+    return httpx.AsyncClient(
+        base_url=settings.embedding_base_url,
+        timeout=settings.request_timeout_seconds,
+        trust_env=False,
+    )
+
+
 def _request_id(request: Request) -> str:
     return request.headers.get("X-Request-ID") or str(uuid.uuid4())
 
@@ -60,8 +68,7 @@ async def lifespan(app: FastAPI):
     try:
         engine, sessions = create_engine_and_session(settings.database_url)
         repository = EntityRepository(sessions)
-        embedding_http = httpx.AsyncClient(base_url=settings.embedding_base_url,
-                                           timeout=settings.request_timeout_seconds)
+        embedding_http = create_embedding_http_client(settings)
         llm_http = httpx.AsyncClient(
             base_url=settings.llm_base_url,
             timeout=settings.request_timeout_seconds,

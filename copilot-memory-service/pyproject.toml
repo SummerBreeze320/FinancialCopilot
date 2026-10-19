@@ -1,5 +1,5 @@
 [project]
-name = "memory-service"
+name = "copilot-memory-service"
 version = "0.1.0"
 description = "FinancialCopilot 记忆服务 — 基于 Graphiti 的时序知识图谱 + 用户画像引擎"
 requires-python = ">=3.10"

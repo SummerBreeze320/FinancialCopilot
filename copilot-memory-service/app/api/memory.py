@@ -1,9 +1,10 @@
-"""长期记忆检索 API"""
+"""长期记忆检索 API — 支持隔离作用域与服务级认证"""
 
 import logging
 from datetime import datetime
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from app.api.security import verify_service_token
 from app.engine.long_term import long_term_engine
 from app.models.schemas import MemorySearchRequest, MemorySearchResponse
 
@@ -11,17 +12,29 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1/memory", tags=["memory"])
 
 
-@router.post("/search", response_model=MemorySearchResponse)
+@router.post(
+    "/search",
+    response_model=MemorySearchResponse,
+    dependencies=[Depends(verify_service_token)],
+)
 async def search_memory(body: MemorySearchRequest):
-    """混合检索：向量 + BM25 + 图遍历"""
+    """按命名空间与作用域检索长期记忆"""
     return await long_term_engine.search(
+        user_id_or_query=body.query,
+        user_id=body.user_id,
+        conversation_id=body.conversation_id,
+        scope=body.scope,
         query=body.query,
         max_results=body.max_results,
         center_node_uuid=body.center_node_uuid,
     )
 
 
-@router.post("/search/temporal", response_model=MemorySearchResponse)
+@router.post(
+    "/search/temporal",
+    response_model=MemorySearchResponse,
+    dependencies=[Depends(verify_service_token)],
+)
 async def search_memory_temporal(
     body: MemorySearchRequest,
     at_time: datetime = Query(..., description="ISO 8601 时间点"),
@@ -34,7 +47,7 @@ async def search_memory_temporal(
     )
 
 
-@router.post("/forget")
+@router.post("/forget", dependencies=[Depends(verify_service_token)])
 async def forget_memory(
     user_id: str | None = None,
     session_id: str | None = None,

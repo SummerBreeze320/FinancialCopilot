@@ -25,7 +25,7 @@
 ## 本地启动
 
 ```powershell
-cd entity-service
+cd copilot-ner-service
 Copy-Item .env.example .env
 python -m pip install -e ".[dev]"
 python -m app.main
