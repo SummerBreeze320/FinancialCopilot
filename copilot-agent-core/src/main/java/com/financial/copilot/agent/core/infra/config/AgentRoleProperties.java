@@ -67,11 +67,11 @@ public class AgentRoleProperties {
             return Collections.emptyList();
         }
         return switch (role) {
-            case FUND_ANALYZER -> List.of("fund_metrics", "fund_holdings", "fund_report");
-            case FUND_SCREENER -> List.of("screen_funds", "schema_rag");
+            case FUND_ANALYZER -> List.of("fund_metrics", "fund_holdings", "fund_report", "fund_pool");
+            case FUND_SCREENER -> List.of("screen_funds", "schema_rag", "fund_pool");
             case FUND_COMPARATOR -> List.of("compare_metrics", "compare_holdings", "compare_reports", "shared_holdings");
-            case STOCK_ANALYZER -> List.of("stock_metrics");
-            case STOCK_SCREENER -> List.of("screen_stocks");
+            case STOCK_ANALYZER -> List.of("stock_metrics", "stock_watchlist");
+            case STOCK_SCREENER -> List.of("screen_stocks", "stock_watchlist");
             case STOCK_COMPARATOR -> List.of("compare_stock_metrics");
             case REPORT_SYNTHESIZER, REVIEWER -> List.of("read_research_artifacts");
         };

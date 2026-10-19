@@ -12,11 +12,15 @@ import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
 import com.financial.copilot.agent.tools.graph.FinancialGraphTool;
 import com.financial.copilot.agent.tools.rag.FinancialSchemaRagTool;
+import com.financial.copilot.agent.tools.fund.FundPoolTool;
 import com.financial.copilot.agent.tools.stock.StockQuantAnalysisTool;
 import com.financial.copilot.agent.tools.stock.StockScreeningTool;
+import com.financial.copilot.agent.tools.stock.StockWatchlistTool;
 import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
 import com.financial.copilot.common.intent.IntentType;
 import com.financial.copilot.common.stock.dto.StockScreeningCriteria;
+import com.financial.copilot.common.tool.HighRiskTool;
+import com.financial.copilot.common.tool.ToolConstraint;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.ToolParam;
 import io.agentscope.core.tool.Toolkit;
@@ -50,6 +54,8 @@ public class ContextualToolkitFactory {
     private final UserToolPermissionService permissionService;
     private final Map<String, Object> toolProviders = new HashMap<>();
     private final Map<AgentRole, Toolkit> cachedFullToolkits = new ConcurrentHashMap<>();
+    private final FundPoolTool fundPoolTool;
+    private final StockWatchlistTool stockWatchlistTool;
 
     @Autowired
     public ContextualToolkitFactory(AgentRoleProperties roleProperties,
@@ -63,9 +69,13 @@ public class ContextualToolkitFactory {
                                     StockQuantAnalysisTool stockQuant,
                                     StockScreeningTool stockScreening,
                                     ObjectMapper mapper,
-                                    @Autowired(required = false) @Nullable ReactiveMcpClient mcpClient) {
+                                    @Autowired(required = false) @Nullable ReactiveMcpClient mcpClient,
+                                    @Autowired(required = false) @Nullable FundPoolTool fundPoolTool,
+                                    @Autowired(required = false) @Nullable StockWatchlistTool stockWatchlistTool) {
         this.roleProperties = Objects.requireNonNull(roleProperties);
         this.permissionService = Objects.requireNonNull(permissionService);
+        this.fundPoolTool = fundPoolTool;
+        this.stockWatchlistTool = stockWatchlistTool;
 
         // 注册所有单原子工具代理
         registerProvider("fund_metrics", new FundMetricsTool(fundQuant, mcpClient));
@@ -85,6 +95,22 @@ public class ContextualToolkitFactory {
         registerProvider("screen_stocks", new StockScreeningToolDelegate(stockScreening, mcpClient));
         registerProvider("compare_stock_metrics", new StockCompareMetricsTool(stockQuant, mcpClient));
         registerProvider("read_research_artifacts", new ReportSynthesizerTool(mapper));
+    }
+
+    public ContextualToolkitFactory(AgentRoleProperties roleProperties,
+                                    UserToolPermissionService permissionService,
+                                    FundQuantAnalysisTool fundQuant,
+                                    FundHoldingsQueryTool fundHoldings,
+                                    FundReportRetrieverTool fundReports,
+                                    FundScreeningTool fundScreening,
+                                    @Nullable FinancialSchemaRagTool schemaRag,
+                                    @Nullable FinancialGraphTool graph,
+                                    StockQuantAnalysisTool stockQuant,
+                                    StockScreeningTool stockScreening,
+                                    ObjectMapper mapper,
+                                    @Nullable ReactiveMcpClient mcpClient) {
+        this(roleProperties, permissionService, fundQuant, fundHoldings, fundReports, fundScreening,
+             schemaRag, graph, stockQuant, stockScreening, mapper, mcpClient, null, null);
     }
 
     private void registerProvider(String name, Object provider) {
@@ -130,9 +156,15 @@ public class ContextualToolkitFactory {
         Toolkit dynamicToolkit = new Toolkit();
         for (String toolName : candidateTools) {
             if (permissionService.isToolAllowed(userId, toolName)) {
-                Object provider = toolProviders.get(toolName);
-                if (provider != null) {
-                    dynamicToolkit.registerTool(provider);
+                if ("fund_pool".equals(toolName) && fundPoolTool != null) {
+                    dynamicToolkit.registerTool(new FundPoolToolDelegate(fundPoolTool, userId));
+                } else if ("stock_watchlist".equals(toolName) && stockWatchlistTool != null) {
+                    dynamicToolkit.registerTool(new StockWatchlistToolDelegate(stockWatchlistTool, userId));
+                } else {
+                    Object provider = toolProviders.get(toolName);
+                    if (provider != null) {
+                        dynamicToolkit.registerTool(provider);
+                    }
                 }
             }
         }
@@ -151,12 +183,12 @@ public class ContextualToolkitFactory {
         }
 
         Set<String> relevantTools = switch (intent) {
-            case FUND_SCREENING -> Set.of("screen_funds", "fund_metrics");
-            case FUND_DIAGNOSIS -> Set.of("fund_metrics", "fund_holdings", "fund_report");
+            case FUND_SCREENING -> Set.of("screen_funds", "fund_metrics", "fund_pool");
+            case FUND_DIAGNOSIS -> Set.of("fund_metrics", "fund_holdings", "fund_report", "fund_pool");
             case FUND_COMPARISON -> Set.of("compare_metrics", "compare_holdings", "compare_reports", "shared_holdings", "fund_metrics");
-            case ASSET_ALLOCATION -> Set.of("screen_funds", "fund_metrics", "screen_stocks", "stock_metrics");
+            case ASSET_ALLOCATION -> Set.of("screen_funds", "fund_metrics", "screen_stocks", "stock_metrics", "fund_pool", "stock_watchlist");
             case REPORT_SYNTHESIS -> Set.of("read_research_artifacts", "fund_report");
-            case STOCK_RESEARCH -> Set.of("stock_metrics", "screen_stocks", "compare_stock_metrics");
+            case STOCK_RESEARCH -> Set.of("stock_metrics", "screen_stocks", "compare_stock_metrics", "stock_watchlist");
             default -> baselineTools;
         };
 
@@ -169,9 +201,15 @@ public class ContextualToolkitFactory {
         List<String> baseTools = roleProperties.getToolsFor(role);
         Toolkit toolkit = new Toolkit();
         for (String toolName : baseTools) {
-            Object provider = toolProviders.get(toolName);
-            if (provider != null) {
-                toolkit.registerTool(provider);
+            if ("fund_pool".equals(toolName) && fundPoolTool != null) {
+                toolkit.registerTool(new FundPoolToolDelegate(fundPoolTool, 1L));
+            } else if ("stock_watchlist".equals(toolName) && stockWatchlistTool != null) {
+                toolkit.registerTool(new StockWatchlistToolDelegate(stockWatchlistTool, 1L));
+            } else {
+                Object provider = toolProviders.get(toolName);
+                if (provider != null) {
+                    toolkit.registerTool(provider);
+                }
             }
         }
         return toolkit;
@@ -503,4 +541,111 @@ public class ContextualToolkitFactory {
             }
         }
     }
+
+    public static final class FundPoolToolDelegate {
+        private final FundPoolTool tool;
+        private final Long userId;
+
+        public FundPoolToolDelegate(FundPoolTool tool, @Nullable Long userId) {
+            this.tool = Objects.requireNonNull(tool, "FundPoolTool must not be null");
+            this.userId = userId;
+        }
+
+        @Tool(name = "add_to_fund_pool", description = "将指定基金添加至当前用户的私有基金池")
+        public String addFund(
+                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字基金代码")
+                @ToolParam(name = "fundCode", description = "六位基金代码") String fundCode,
+                @ToolParam(name = "fundName", description = "基金名称", required = false) String fundName,
+                @ToolParam(name = "poolType", description = "池类别(如 CORE/TACTICAL/OBSERVATION)", required = false) String poolType,
+                @ToolParam(name = "targetWeight", description = "目标配置权重(0~1)", required = false) Double targetWeight,
+                @ToolParam(name = "reason", description = "入池理由", required = false) String reason,
+                @ToolParam(name = "tags", description = "标的标签(逗号分隔)", required = false) String tags) {
+            return tool.addFund(userId, fundCode, fundName, poolType, targetWeight, reason, tags);
+        }
+
+        @Tool(name = "update_fund_pool", description = "更新用户基金池中某标的的目标仓位或入池理由")
+        public String updateFund(
+                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字基金代码")
+                @ToolParam(name = "fundCode", description = "六位基金代码") String fundCode,
+                @ToolParam(name = "poolType", description = "池类别", required = false) String poolType,
+                @ToolParam(name = "targetWeight", description = "目标配置权重(0~1)", required = false) Double targetWeight,
+                @ToolParam(name = "reason", description = "更新理由", required = false) String reason) {
+            return tool.updateFund(userId, fundCode, poolType, targetWeight, reason);
+        }
+
+        @Tool(name = "remove_from_fund_pool", description = "从当前用户的私有基金池中移出指定标的")
+        public String removeFund(
+                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字基金代码")
+                @ToolParam(name = "fundCode", description = "六位基金代码") String fundCode,
+                @ToolParam(name = "poolType", description = "池类别", required = false) String poolType) {
+            return tool.removeFund(userId, fundCode, poolType);
+        }
+
+        @HighRiskTool(category = "ASSET_TRANSACTION", riskLevel = "HIGH", requiresApproval = true, description = "清空基金池属于破坏性高危操作")
+        @Tool(name = "clear_fund_pool", description = "清空指定分类或全部用户基金池")
+        public String clearPool(
+                @ToolParam(name = "poolType", description = "池类别(如 CORE/TACTICAL)，为空则清空默认池", required = false) String poolType) {
+            return tool.clearPool(userId, poolType);
+        }
+
+        @Tool(name = "query_fund_pool", description = "查询当前用户的私有基金池列表", readOnly = true)
+        public String queryPool(
+                @ToolParam(name = "poolType", description = "池类别筛选，为空则查询全部", required = false) String poolType) {
+            return tool.queryPool(userId, poolType);
+        }
+    }
+
+    public static final class StockWatchlistToolDelegate {
+        private final StockWatchlistTool tool;
+        private final Long userId;
+
+        public StockWatchlistToolDelegate(StockWatchlistTool tool, @Nullable Long userId) {
+            this.tool = Objects.requireNonNull(tool, "StockWatchlistTool must not be null");
+            this.userId = userId;
+        }
+
+        @Tool(name = "add_to_stock_watchlist", description = "将股票添加至当前用户的自选股列表")
+        public String addStock(
+                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字股票代码")
+                @ToolParam(name = "stockCode", description = "六位股票代码") String stockCode,
+                @ToolParam(name = "stockName", description = "股票名称", required = false) String stockName,
+                @ToolParam(name = "groupName", description = "自选分组(如 核心/观察/高股息)", required = false) String groupName,
+                @ToolParam(name = "targetPrice", description = "目标价格", required = false) Double targetPrice,
+                @ToolParam(name = "notes", description = "关注说明或入选理由", required = false) String notes,
+                @ToolParam(name = "priority", description = "优先级(HIGH/MEDIUM/LOW)", required = false) String priority) {
+            return tool.addStock(userId, stockCode, stockName, groupName, targetPrice, notes, priority);
+        }
+
+        @Tool(name = "update_stock_watchlist", description = "更新自选股的目标价或关注说明")
+        public String updateStock(
+                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字股票代码")
+                @ToolParam(name = "stockCode", description = "六位股票代码") String stockCode,
+                @ToolParam(name = "groupName", description = "分组名称", required = false) String groupName,
+                @ToolParam(name = "targetPrice", description = "目标价格", required = false) Double targetPrice,
+                @ToolParam(name = "notes", description = "关注说明", required = false) String notes) {
+            return tool.updateStock(userId, stockCode, groupName, targetPrice, notes);
+        }
+
+        @Tool(name = "remove_from_stock_watchlist", description = "从自选股中移除指定股票")
+        public String removeStock(
+                @ToolConstraint(regex = "^\\d{6}$", description = "6位纯数字股票代码")
+                @ToolParam(name = "stockCode", description = "六位股票代码") String stockCode,
+                @ToolParam(name = "groupName", description = "分组名称", required = false) String groupName) {
+            return tool.removeStock(userId, stockCode, groupName);
+        }
+
+        @HighRiskTool(category = "ASSET_TRANSACTION", riskLevel = "HIGH", requiresApproval = true, description = "清空自选股属于破坏性高危操作")
+        @Tool(name = "clear_stock_watchlist", description = "清空自选股分组")
+        public String clearWatchlist(
+                @ToolParam(name = "groupName", description = "分组名称，为空则清空默认分组", required = false) String groupName) {
+            return tool.clearWatchlist(userId, groupName);
+        }
+
+        @Tool(name = "query_stock_watchlist", description = "查询当前用户的自选股列表", readOnly = true)
+        public String queryWatchlist(
+                @ToolParam(name = "groupName", description = "分组名称筛选，为空则查询全部", required = false) String groupName) {
+            return tool.queryWatchlist(userId, groupName);
+        }
+    }
 }
+

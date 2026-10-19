@@ -16,9 +16,9 @@ class AgentRolePropertiesTest {
     void fallbackToDefaultWhenNotConfigured() {
         AgentRoleProperties properties = new AgentRoleProperties();
         assertThat(properties.getToolsFor(AgentRole.FUND_ANALYZER))
-                .containsExactly("fund_metrics", "fund_holdings", "fund_report");
+                .containsExactly("fund_metrics", "fund_holdings", "fund_report", "fund_pool");
         assertThat(properties.getToolsFor(AgentRole.FUND_SCREENER))
-                .containsExactly("screen_funds", "schema_rag");
+                .containsExactly("screen_funds", "schema_rag", "fund_pool");
         assertThat(properties.getToolsFor(AgentRole.FUND_COMPARATOR))
                 .containsExactly("compare_metrics", "compare_holdings", "compare_reports", "shared_holdings");
     }
@@ -38,6 +38,6 @@ class AgentRolePropertiesTest {
                 .containsExactly("screen_funds");
         // 未覆盖的依然使用默认
         assertThat(properties.getToolsFor(AgentRole.STOCK_ANALYZER))
-                .containsExactly("stock_metrics");
+                .containsExactly("stock_metrics", "stock_watchlist");
     }
 }
