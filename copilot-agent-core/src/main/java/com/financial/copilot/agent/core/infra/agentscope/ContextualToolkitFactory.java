@@ -15,6 +15,7 @@ import com.financial.copilot.agent.tools.rag.FinancialSchemaRagTool;
 import com.financial.copilot.agent.tools.stock.StockQuantAnalysisTool;
 import com.financial.copilot.agent.tools.stock.StockScreeningTool;
 import com.financial.copilot.common.fund.dto.FundScreeningCriteria;
+import com.financial.copilot.common.intent.IntentType;
 import com.financial.copilot.common.stock.dto.StockScreeningCriteria;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.ToolParam;
@@ -100,20 +101,34 @@ public class ContextualToolkitFactory {
      * @return 经过白名单过滤后的 Toolkit
      */
     public Toolkit createToolkit(AgentRole role, @Nullable NodeExecutionContext context) {
+        return createToolkit(role, context, null);
+    }
+
+    /**
+     * 为指定角色、执行上下文与意图构建定制且剪枝后的 Toolkit。
+     *
+     * @param role    Agent 角色
+     * @param context 执行上下文 (可为 null)
+     * @param intent  当前分类识别意图 (可为 null)
+     * @return 经过意图剪枝与白名单过滤后的 Toolkit
+     */
+    public Toolkit createToolkit(AgentRole role, @Nullable NodeExecutionContext context, @Nullable IntentType intent) {
         Objects.requireNonNull(role, "role must not be null");
         Long userId = extractUserId(context);
 
         List<String> baseTools = roleProperties.getToolsFor(role);
+        Set<String> candidateTools = intent != null
+                ? filterToolsByIntent(new LinkedHashSet<>(baseTools), intent)
+                : new LinkedHashSet<>(baseTools);
+
         Set<String> allowedTools = permissionService.getAllowedTools(userId);
 
-        // 若用户拥有全量权限，直接复用缓存的全量 Toolkit
-        if (allowedTools != null && allowedTools.contains("*")) {
+        if (intent == null && allowedTools != null && allowedTools.contains("*")) {
             return cachedFullToolkits.computeIfAbsent(role, this::buildFullToolkit);
         }
 
-        // 否则严格计算交集：Role 基准工具 ∩ 用户授权白名单
         Toolkit dynamicToolkit = new Toolkit();
-        for (String toolName : baseTools) {
+        for (String toolName : candidateTools) {
             if (permissionService.isToolAllowed(userId, toolName)) {
                 Object provider = toolProviders.get(toolName);
                 if (provider != null) {
@@ -122,6 +137,32 @@ public class ContextualToolkitFactory {
             }
         }
         return dynamicToolkit;
+    }
+
+    /**
+     * 依据意图类型对基准工具进行 RAG 动态剪枝，消除上下文膨胀
+     */
+    public Set<String> filterToolsByIntent(Set<String> baselineTools, @Nullable IntentType intent) {
+        if (intent == null) {
+            return baselineTools;
+        }
+        if (intent == IntentType.OUT_OF_DOMAIN || intent == IntentType.SYSTEM_HELP) {
+            return Collections.emptySet();
+        }
+
+        Set<String> relevantTools = switch (intent) {
+            case FUND_SCREENING -> Set.of("screen_funds", "fund_metrics");
+            case FUND_DIAGNOSIS -> Set.of("fund_metrics", "fund_holdings", "fund_report");
+            case FUND_COMPARISON -> Set.of("compare_metrics", "compare_holdings", "compare_reports", "shared_holdings", "fund_metrics");
+            case ASSET_ALLOCATION -> Set.of("screen_funds", "fund_metrics", "screen_stocks", "stock_metrics");
+            case REPORT_SYNTHESIS -> Set.of("read_research_artifacts", "fund_report");
+            case STOCK_RESEARCH -> Set.of("stock_metrics", "screen_stocks", "compare_stock_metrics");
+            default -> baselineTools;
+        };
+
+        Set<String> intersection = new LinkedHashSet<>(baselineTools);
+        intersection.retainAll(relevantTools);
+        return intersection;
     }
 
     private Toolkit buildFullToolkit(AgentRole role) {
