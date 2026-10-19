@@ -42,7 +42,7 @@
 - `A2aTaskStatus`: `SUBMITTED`, `WORKING`, `COMPLETED`, `FAILED`, `CANCELLED`.
 - `A2aTaskEvent`: `type` (`status_update`, `text_delta`, `artifact_update`, `error`), `taskId`, `payload`, `timestamp`.
 
-- [ ] **Step 1: Write failing serialization test `A2aProtocolSerializationTest.java`**
+- [x] **Step 1: Write failing serialization test `A2aProtocolSerializationTest.java`**
 
 ```java
 package com.financial.copilot.agent.core.business.agents.a2a.protocol;
@@ -82,12 +82,12 @@ class A2aProtocolSerializationTest {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -s maven-settings.xml -pl copilot-agent-core test -Dtest=A2aProtocolSerializationTest`
 Expected: FAIL (types not found)
 
-- [ ] **Step 3: Implement protocol models**
+- [x] **Step 3: Implement protocol models**
 
 Write `A2aJsonRpcRequest.java`:
 ```java
@@ -182,12 +182,12 @@ public record A2aTaskEvent(
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -s maven-settings.xml -pl copilot-agent-core test -Dtest=A2aProtocolSerializationTest`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add copilot-agent-core/src/main/java/com/financial/copilot/agent/core/business/agents/a2a/protocol/
@@ -212,7 +212,7 @@ git commit -m "feat(a2a): add JSON-RPC protocol models and task status events"
   - `boolean cancelTask(String taskId, String reason)`
   - `Flux<A2aTaskEvent> streamEvents(String taskId)`
 
-- [ ] **Step 1: Write failing test `A2aTaskManagerTest.java`**
+- [x] **Step 1: Write failing test `A2aTaskManagerTest.java`**
 
 ```java
 package com.financial.copilot.agent.core.business.agents.a2a.manager;
@@ -285,12 +285,12 @@ class A2aTaskManagerTest {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -s maven-settings.xml -pl copilot-agent-core test -Dtest=A2aTaskManagerTest`
 Expected: FAIL (classes not found)
 
-- [ ] **Step 3: Implement `A2aTaskSession` and `A2aTaskManager`**
+- [x] **Step 3: Implement `A2aTaskSession` and `A2aTaskManager`**
 
 Write `A2aTaskSession.java`:
 ```java
@@ -463,12 +463,12 @@ public class A2aTaskManager {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -s maven-settings.xml -pl copilot-agent-core test -Dtest=A2aTaskManagerTest`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add copilot-agent-core/src/main/java/com/financial/copilot/agent/core/business/agents/a2a/manager/
@@ -489,7 +489,7 @@ git commit -m "feat(a2a): implement A2aTaskManager for asynchronous task lifecyc
 - Consumes: Remote A2A Base URL, `AgentCard` (fetched or provided), Spring `WebClient`.
 - Produces: `RemoteA2aAgent` which converts `execute(node, input, context)` into remote A2A JSON-RPC calls and maps the returned artifact into local `Artifact<T>`.
 
-- [ ] **Step 1: Write failing test `RemoteA2aAgentTest.java` using MockWebServer**
+- [x] **Step 1: Write failing test `RemoteA2aAgentTest.java` using MockWebServer**
 
 ```java
 package com.financial.copilot.agent.core.business.agents.a2a.client;
@@ -562,12 +562,12 @@ class RemoteA2aAgentTest {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -s maven-settings.xml -pl copilot-agent-core test -Dtest=RemoteA2aAgentTest`
 Expected: FAIL (`RemoteA2aAgent` not found)
 
-- [ ] **Step 3: Implement `RemoteA2aAgent`**
+- [x] **Step 3: Implement `RemoteA2aAgent`**
 
 ```java
 package com.financial.copilot.agent.core.business.agents.a2a.client;
@@ -653,12 +653,12 @@ public class RemoteA2aAgent implements A2aExecutableAgent {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -s maven-settings.xml -pl copilot-agent-core test -Dtest=RemoteA2aAgentTest`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add copilot-agent-core/src/main/java/com/financial/copilot/agent/core/business/agents/a2a/client/
@@ -683,7 +683,7 @@ git commit -m "feat(a2a): implement RemoteA2aAgent adapter for calling external 
   - `POST /api/v1/a2a/agents/{agentName}/rpc`: processes `tasks.create`, `tasks.cancel`, `tasks.get_task`.
   - `GET /api/v1/a2a/tasks/{taskId}/events` (produces `text/event-stream`): SSE event stream.
 
-- [ ] **Step 1: Write failing controller test `A2aServerControllerTest.java`**
+- [x] **Step 1: Write failing controller test `A2aServerControllerTest.java`**
 
 ```java
 package com.financial.copilot.controller.a2a;
@@ -769,12 +769,12 @@ class A2aServerControllerTest {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -s maven-settings.xml -pl copilot-app test -Dtest=A2aServerControllerTest`
 Expected: FAIL (`A2aServerController` not found)
 
-- [ ] **Step 3: Implement `A2aServerController` and update `WebFluxSecurityConfig`**
+- [x] **Step 3: Implement `A2aServerController` and update `WebFluxSecurityConfig`**
 
 Write `A2aServerController.java`:
 ```java
@@ -895,12 +895,12 @@ public class A2aServerController {
 Update `WebFluxSecurityConfig.java`:
 Permit `/.well-known/**` and `/api/v1/a2a/**` for public discovery and RPC.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -s maven-settings.xml -pl copilot-app test -Dtest=A2aServerControllerTest`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add copilot-app/src/main/java/com/financial/copilot/controller/a2a/
@@ -913,17 +913,17 @@ git commit -m "feat(a2a): add A2aServerController for AgentCard discovery, JSON-
 
 ### Task 5: End-to-End Multi-Module Verification & Cleanup
 
-- [ ] **Step 1: Run complete `copilot-agent-core` test suite**
+- [x] **Step 1: Run complete `copilot-agent-core` test suite**
 
 Run: `mvn -s maven-settings.xml -pl copilot-agent-core test`
 Expected: PASS across all 170+ tests.
 
-- [ ] **Step 2: Run complete `copilot-app` test suite**
+- [x] **Step 2: Run complete `copilot-app` test suite**
 
 Run: `mvn -s maven-settings.xml -pl copilot-app test`
 Expected: PASS across all 56+ tests.
 
-- [ ] **Step 3: Check git status and prepare report**
+- [x] **Step 3: Check git status and prepare report**
 
 Run: `git status`
 Expected: Clean working tree on `feat/a2a-protocol-upgrade`.
