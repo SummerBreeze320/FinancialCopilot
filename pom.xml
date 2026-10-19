@@ -102,6 +102,13 @@
                 <version>${agentscope.version}</version>
             </dependency>
 
+            <!-- A2A Protocol SDK Spec -->
+            <dependency>
+                <groupId>io.github.a2asdk</groupId>
+                <artifactId>a2a-java-sdk-spec</artifactId>
+                <version>0.2.5.Beta2</version>
+            </dependency>
+
             <!-- PGVector -->
             <dependency>
                 <groupId>com.pgvector</groupId>
