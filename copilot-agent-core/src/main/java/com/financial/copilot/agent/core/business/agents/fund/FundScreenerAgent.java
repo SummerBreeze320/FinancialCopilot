@@ -54,7 +54,10 @@ public class FundScreenerAgent {
     }
 
     public Artifact<FundPool> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
-        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.FUND_SCREENER);
+        Toolkit toolkit = toolkitRegistry.createToolkit(AgentRole.FUND_SCREENER, context);
+        if (toolkit == null) {
+            toolkit = toolkitRegistry.toolkitFor(AgentRole.FUND_SCREENER);
+        }
         String prompt = context.request() == null ? String.valueOf(node.getParams())
                 : context.request().prompt() + "\n节点参数=" + node.getParams();
         var invocation = agentFactory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(

@@ -31,7 +31,10 @@ public class StockAnalyzerAgent {
     }
 
     public Artifact<String> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
-        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.STOCK_ANALYZER);
+        Toolkit toolkit = toolkitRegistry.createToolkit(AgentRole.STOCK_ANALYZER, context);
+        if (toolkit == null) {
+            toolkit = toolkitRegistry.toolkitFor(AgentRole.STOCK_ANALYZER);
+        }
         var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("StockAnalyzerAgent", "股票量化分析",
                 "你是股票分析 ReAct Agent。自主选择目标代码并调用 stock_metrics，观察结果后给出事实分析。至少调用一次工具。", toolkit, 6),
                 context.request().prompt() + "\n输入=" + input.asMap() + "\n节点参数=" + node.getParams(), context);

@@ -31,7 +31,10 @@ public class StockScreenerAgent {
     }
 
     public Artifact<String> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
-        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.STOCK_SCREENER);
+        Toolkit toolkit = toolkitRegistry.createToolkit(AgentRole.STOCK_SCREENER, context);
+        if (toolkit == null) {
+            toolkit = toolkitRegistry.toolkitFor(AgentRole.STOCK_SCREENER);
+        }
         var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition("StockScreenerAgent", "股票多因子筛选",
                 "你是股票筛选 ReAct Agent。必须调用 screen_stocks，观察真实结果后结束，禁止编造股票。", toolkit, 5),
                 context.request().prompt() + "\n节点参数=" + node.getParams(), context);

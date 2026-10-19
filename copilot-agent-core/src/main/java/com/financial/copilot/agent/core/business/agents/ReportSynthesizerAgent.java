@@ -53,7 +53,10 @@ public class ReportSynthesizerAgent implements AggregatorAgent {
     public Artifact<FinalSynthesisReport> executeWithReview(GraphNode node, NodeInput input, NodeExecutionContext context, ReviewDecision reviewDecision) {
         NodeExecutionContext effectiveContext = (context.input() != null || input == null) ? context
                 : new NodeExecutionContext(context.request(), context.nodeId(), context.artifacts(), context.cancellationToken(), context.attempt(), input);
-        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.REPORT_SYNTHESIZER);
+        Toolkit toolkit = toolkitRegistry.createToolkit(AgentRole.REPORT_SYNTHESIZER, effectiveContext);
+        if (toolkit == null) {
+            toolkit = toolkitRegistry.toolkitFor(AgentRole.REPORT_SYNTHESIZER);
+        }
 
         String baseUserPrompt = com.financial.copilot.agent.core.infra.prompt.ReportSynthesizerPrompt.buildSpec(
                 context.request().prompt(), context.request().profile()).renderUserPrompt();

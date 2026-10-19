@@ -48,7 +48,10 @@ public class FundAnalyzerAgent {
     }
 
     public Artifact<FundResearchResult> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
-        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.FUND_ANALYZER);
+        Toolkit toolkit = toolkitRegistry.createToolkit(AgentRole.FUND_ANALYZER, context);
+        if (toolkit == null) {
+            toolkit = toolkitRegistry.toolkitFor(AgentRole.FUND_ANALYZER);
+        }
         List<String> codes = candidateCodes(input, node);
         if (codes.isEmpty()) throw new IllegalStateException("FundAnalyzerAgent requires a FundPool input");
         var invocation = agentFactory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(

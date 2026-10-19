@@ -80,6 +80,28 @@ public class RoleToolkitRegistry {
         this.toolkits = Collections.unmodifiableMap(new EnumMap<>(customToolkits));
     }
 
+    @Autowired(required = false)
+    @Nullable
+    private ContextualToolkitFactory contextualToolkitFactory;
+
+    public void setContextualToolkitFactory(ContextualToolkitFactory factory) {
+        this.contextualToolkitFactory = factory;
+    }
+
+    /**
+     * 为指定角色和执行上下文动态创建经过白名单过滤的 Toolkit。
+     *
+     * @param role    角色枚举
+     * @param context 执行上下文 (可为 null)
+     * @return 定制工具包实例
+     */
+    public Toolkit createToolkit(AgentRole role, @Nullable NodeExecutionContext context) {
+        if (contextualToolkitFactory != null) {
+            return contextualToolkitFactory.createToolkit(role, context);
+        }
+        return toolkitFor(role);
+    }
+
     /**
      * 获取指定角色的不可变全局工具包
      *

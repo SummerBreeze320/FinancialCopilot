@@ -86,6 +86,29 @@ copilot:
     enabled: ${COPILOT_MCP_ENABLED:true}
     base-url: ${COPILOT_MCP_BASE_URL:http://127.0.0.1:8085}
     timeout-seconds: ${COPILOT_MCP_TIMEOUT_SECONDS:15}
+  agent-roles:
+    fund-analyzer:
+      - fund_metrics
+      - fund_holdings
+      - fund_report
+    fund-screener:
+      - screen_funds
+      - schema_rag
+    fund-comparator:
+      - compare_metrics
+      - compare_holdings
+      - compare_reports
+      - shared_holdings
+    stock-analyzer:
+      - stock_metrics
+    stock-screener:
+      - screen_stocks
+    stock-comparator:
+      - compare_stock_metrics
+    report-synthesizer:
+      - read_research_artifacts
+    reviewer:
+      - read_research_artifacts
 
 
 logging:

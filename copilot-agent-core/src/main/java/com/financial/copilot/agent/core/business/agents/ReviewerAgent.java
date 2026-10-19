@@ -44,7 +44,10 @@ public class ReviewerAgent {
     }
 
     public ReviewDecision review(ExecutionGraph graph, ArtifactStore store, NodeExecutionContext context) {
-        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.REVIEWER);
+        Toolkit toolkit = toolkitRegistry.createToolkit(AgentRole.REVIEWER, context);
+        if (toolkit == null) {
+            toolkit = toolkitRegistry.toolkitFor(AgentRole.REVIEWER);
+        }
         String userPrompt = "审查当前已完成执行图产物质量，并给出 ReviewDecision。\n用户原始问题："
                 + (context.request() != null ? context.request().prompt() : "") + "\n图节点状态：" + (graph != null ? graph.getNodes().keySet() : "[]");
 

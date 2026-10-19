@@ -37,7 +37,10 @@ public class StockComparatorAgent {
 
     public Artifact<String> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
         List<String> codes = stockCodes(node, input);
-        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.STOCK_COMPARATOR);
+        Toolkit toolkit = toolkitRegistry.createToolkit(AgentRole.STOCK_COMPARATOR, context);
+        if (toolkit == null) {
+            toolkit = toolkitRegistry.toolkitFor(AgentRole.STOCK_COMPARATOR);
+        }
         var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
                         "StockComparatorAgent", "股票横向对标",
                         "你是股票对标 ReAct Agent。必须调用 compare_stock_metrics 对称查询两个代码，观察真实结果后生成 Markdown 结论。禁止模型心算。",

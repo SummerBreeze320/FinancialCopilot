@@ -48,7 +48,10 @@ public class FundComparatorAgent {
 
     public Artifact<ComparisonReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
         List<String> codes = codes(input, node);
-        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.FUND_COMPARATOR);
+        Toolkit toolkit = toolkitRegistry.createToolkit(AgentRole.FUND_COMPARATOR, context);
+        if (toolkit == null) {
+            toolkit = toolkitRegistry.toolkitFor(AgentRole.FUND_COMPARATOR);
+        }
         String userPrompt = FundComparatorPrompt.buildSpec(
                 context.request().prompt(), codes, context.request().profile()).renderUserPrompt();
         var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
