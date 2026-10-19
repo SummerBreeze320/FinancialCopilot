@@ -1,7 +1,12 @@
 package com.financial.copilot.domain.platform.billing.port;
 
 import com.financial.copilot.domain.platform.billing.dto.UsageTrendPointDTO;
-import com.financial.copilot.domain.platform.billing.entity.*;
+import com.financial.copilot.domain.platform.billing.entity.ModelPricing;
+import com.financial.copilot.domain.platform.billing.entity.PointReservation;
+import com.financial.copilot.domain.platform.billing.entity.RechargeOrder;
+import com.financial.copilot.domain.platform.billing.entity.RechargePackage;
+import com.financial.copilot.domain.platform.billing.entity.TokenUsageLedger;
+import com.financial.copilot.domain.platform.billing.entity.UserWallet;
 
 import java.util.List;
 import java.util.Optional;
@@ -133,4 +138,41 @@ public interface BillingPort {
      * @return 时序聚合趋势点列表
      */
     List<UsageTrendPointDTO> getUsageTrend(Long userId, int days);
+
+    /**
+     * 投研任务前置原子预占积分（冻结额度，幂等防重）
+     *
+     * @param userId 系统用户 ID
+     * @param workflowRunId 运行唯一标识
+     * @param estimatedPoints 预估消耗积分
+     * @return 预占领域实体
+     */
+    PointReservation reserve(Long userId, String workflowRunId, long estimatedPoints);
+
+    /**
+     * 投研任务完成后的原子结算扣减（幂等结算，解冻预占并扣减实际积分）
+     *
+     * @param userId 系统用户 ID
+     * @param workflowRunId 运行唯一标识
+     * @param actualPoints 实际消耗积分
+     * @return 结算后的领域实体
+     */
+    PointReservation settle(Long userId, String workflowRunId, long actualPoints);
+
+    /**
+     * 任务异常、取消或排队超时时释放预占额度
+     *
+     * @param userId 系统用户 ID
+     * @param workflowRunId 运行唯一标识
+     */
+    void release(Long userId, String workflowRunId);
+
+    /**
+     * 查询运行对应的预占记录
+     *
+     * @param userId 系统用户 ID
+     * @param workflowRunId 运行唯一标识
+     * @return 预占实体（若存在）
+     */
+    Optional<PointReservation> getReservation(Long userId, String workflowRunId);
 }

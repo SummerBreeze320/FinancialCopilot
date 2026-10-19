@@ -144,6 +144,20 @@ CREATE TABLE IF NOT EXISTS sys_user_wallet (
 
 CREATE INDEX IF NOT EXISTS idx_wallet_user ON sys_user_wallet(user_id);
 
+-- 10.1.1 投研任务运行算力预占与结算表
+CREATE TABLE IF NOT EXISTS sys_point_reservation (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    workflow_run_id VARCHAR(64) NOT NULL UNIQUE,
+    estimated_points BIGINT NOT NULL,
+    actual_points BIGINT DEFAULT 0,
+    status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_point_reservation_user ON sys_point_reservation(user_id);
+
 -- 10.2 大模型阶梯定价规格表
 CREATE TABLE IF NOT EXISTS llm_model_pricing (
     id BIGSERIAL PRIMARY KEY,

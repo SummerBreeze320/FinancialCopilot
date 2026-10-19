@@ -1,18 +1,41 @@
 package com.financial.copilot.data.billing.adapter;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.financial.copilot.data.billing.mapper.*;
-import com.financial.copilot.data.billing.po.*;
+import com.financial.copilot.common.exception.WalletInsufficientException;
+import com.financial.copilot.data.billing.mapper.ModelPricingMapper;
+import com.financial.copilot.data.billing.mapper.PointReservationMapper;
+import com.financial.copilot.data.billing.mapper.RechargeOrderMapper;
+import com.financial.copilot.data.billing.mapper.RechargePackageMapper;
+import com.financial.copilot.data.billing.mapper.TokenUsageLedgerMapper;
+import com.financial.copilot.data.billing.mapper.UserWalletMapper;
+import com.financial.copilot.data.billing.po.ModelPricingPO;
+import com.financial.copilot.data.billing.po.PointReservationPO;
+import com.financial.copilot.data.billing.po.RechargeOrderPO;
+import com.financial.copilot.data.billing.po.RechargePackagePO;
+import com.financial.copilot.data.billing.po.TokenUsageLedgerPO;
+import com.financial.copilot.data.billing.po.UserWalletPO;
 import com.financial.copilot.domain.platform.billing.dto.UsageTrendPointDTO;
-import com.financial.copilot.domain.platform.billing.entity.*;
+import com.financial.copilot.domain.platform.billing.entity.ModelPricing;
+import com.financial.copilot.domain.platform.billing.entity.PointReservation;
+import com.financial.copilot.domain.platform.billing.entity.RechargeOrder;
+import com.financial.copilot.domain.platform.billing.entity.RechargePackage;
+import com.financial.copilot.domain.platform.billing.entity.ReservationStatus;
+import com.financial.copilot.domain.platform.billing.entity.TokenUsageLedger;
+import com.financial.copilot.domain.platform.billing.entity.UserWallet;
 import com.financial.copilot.domain.platform.billing.port.BillingPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * <h1>基于 MyBatis-Plus 与 PostgreSQL 的商业化计量计费数据适配器</h1>
@@ -34,6 +57,7 @@ public class DatabaseBillingAdapter implements BillingPort {
     private final TokenUsageLedgerMapper ledgerMapper;
     private final RechargePackageMapper packageMapper;
     private final RechargeOrderMapper orderMapper;
+    private final PointReservationMapper reservationMapper;
 
     @Override
     public UserWallet getOrCreateWallet(Long userId, String tenantId) {
@@ -276,5 +300,114 @@ public class DatabaseBillingAdapter implements BillingPort {
     @Override
     public Optional<RechargeOrder> getOrderByNoForUpdate(String orderNo) {
         return Optional.ofNullable(orderMapper.selectForUpdate(orderNo)).map(RechargeOrderPO::toDomain);
+    }
+
+    @Override
+    @Transactional("jdbcTransactionManager")
+    public PointReservation reserve(Long userId, String workflowRunId, long estimatedPoints) {
+        Long uid = Objects.requireNonNull(userId, "userId");
+        Objects.requireNonNull(workflowRunId, "workflowRunId");
+        if (estimatedPoints <= 0) {
+            throw new IllegalArgumentException("estimatedPoints must be positive");
+        }
+
+        getOrCreateWallet(uid, null);
+
+        // 1. 检查是否已经存在预占记录 (保证幂等)
+        PointReservationPO existing = reservationMapper.selectByWorkflowRunId(workflowRunId);
+        if (existing != null) {
+            return existing.toDomain();
+        }
+
+        // 2. 尝试原子冻结可用积分 (balance_points - frozen_points >= estimate)
+        int frozenRows = walletMapper.freezePoints(uid, estimatedPoints);
+        if (frozenRows == 0) {
+            UserWalletPO wallet = walletMapper.selectOne(new LambdaQueryWrapper<UserWalletPO>()
+                    .eq(UserWalletPO::getUserId, uid));
+            long balance = wallet != null && wallet.getBalancePoints() != null ? wallet.getBalancePoints() : 0L;
+            long frozen = wallet != null && wallet.getFrozenPoints() != null ? wallet.getFrozenPoints() : 0L;
+            long available = Math.max(0L, balance - frozen);
+            throw new WalletInsufficientException(uid, available, estimatedPoints);
+        }
+
+        // 3. 插入预占记录 (唯一索引冲突兜底)
+        Instant now = Instant.now();
+        int inserted = reservationMapper.insertIfAbsent(uid, workflowRunId, estimatedPoints, now, now);
+        if (inserted == 0) {
+            // 并发冲突说明已被另一个事务插入，回滚多冻结的积分并返回已存在的记录
+            walletMapper.releaseFrozen(uid, estimatedPoints);
+            PointReservationPO conflict = reservationMapper.selectByWorkflowRunId(workflowRunId);
+            if (conflict != null) {
+                return conflict.toDomain();
+            }
+        }
+
+        PointReservationPO created = reservationMapper.selectByWorkflowRunId(workflowRunId);
+        return created != null ? created.toDomain() : new PointReservation(
+                null, uid, workflowRunId, estimatedPoints, 0L, ReservationStatus.ACTIVE, now, now);
+    }
+
+    @Override
+    @Transactional("jdbcTransactionManager")
+    public PointReservation settle(Long userId, String workflowRunId, long actualPoints) {
+        Long uid = Objects.requireNonNull(userId, "userId");
+        Objects.requireNonNull(workflowRunId, "workflowRunId");
+        if (actualPoints < 0) {
+            throw new IllegalArgumentException("actualPoints cannot be negative");
+        }
+
+        PointReservationPO existing = reservationMapper.selectByWorkflowRunId(workflowRunId);
+        if (existing == null) {
+            throw new IllegalStateException("Reservation not found for workflowRunId: " + workflowRunId);
+        }
+
+        // 幂等：若已是非 ACTIVE 状态（已结算或已释放），直接返回，不重复扣费
+        if (!"ACTIVE".equalsIgnoreCase(existing.getStatus())) {
+            return existing.toDomain();
+        }
+
+        Instant now = Instant.now();
+        int settledRows = reservationMapper.settleIfActive(uid, workflowRunId, actualPoints, now);
+        if (settledRows == 1) {
+            // 原子扣减实际消费积分，并解冻预占冻结额度
+            walletMapper.settleReservation(uid, actualPoints, existing.getEstimatedPoints());
+            log.info("[BILLING-DB] 算力预占结算完成: user={}, runId={}, estimated={}, actual={}",
+                    uid, workflowRunId, existing.getEstimatedPoints(), actualPoints);
+        }
+
+        PointReservationPO updated = reservationMapper.selectByWorkflowRunId(workflowRunId);
+        return updated != null ? updated.toDomain() : existing.toDomain();
+    }
+
+    @Override
+    @Transactional("jdbcTransactionManager")
+    public void release(Long userId, String workflowRunId) {
+        Long uid = Objects.requireNonNull(userId, "userId");
+        Objects.requireNonNull(workflowRunId, "workflowRunId");
+
+        PointReservationPO existing = reservationMapper.selectByWorkflowRunId(workflowRunId);
+        if (existing == null || !"ACTIVE".equalsIgnoreCase(existing.getStatus())) {
+            return; // 幂等放行
+        }
+
+        Instant now = Instant.now();
+        int releasedRows = reservationMapper.releaseIfActive(uid, workflowRunId, now);
+        if (releasedRows == 1) {
+            walletMapper.releaseFrozen(uid, existing.getEstimatedPoints());
+            log.info("[BILLING-DB] 算力预占释放解冻: user={}, runId={}, releasedPoints={}",
+                    uid, workflowRunId, existing.getEstimatedPoints());
+        }
+    }
+
+    @Override
+    public Optional<PointReservation> getReservation(Long userId, String workflowRunId) {
+        if (workflowRunId == null || workflowRunId.isBlank()) {
+            return Optional.empty();
+        }
+        PointReservationPO po = reservationMapper.selectByWorkflowRunId(workflowRunId);
+        if (po != null && (userId == null || userId.equals(po.getUserId()))) {
+            return Optional.of(po.toDomain());
+        }
+        return Optional.empty();
     }
 }

@@ -80,12 +80,40 @@ public class UserWallet implements Serializable {
     private LocalDateTime updatedAt;
 
     /**
-     * 判定钱包是否可用并满足最低调用积分
+     * 获取累计消费积分
+     *
+     * @return 累计消费积分数
+     */
+    public Long totalConsumedPoints() {
+        return totalConsumedPoints != null ? totalConsumedPoints : 0L;
+    }
+
+    /**
+     * 获取总积分余额
+     *
+     * @return 总余额积分数
+     */
+    public Long balancePoints() {
+        return balancePoints != null ? balancePoints : 0L;
+    }
+
+    /**
+     * 获取当前冻结预占积分
+     *
+     * @return 冻结积分数
+     */
+    public Long frozenPoints() {
+        return frozenPoints != null ? frozenPoints : 0L;
+    }
+
+    /**
+     * 判定钱包是否可用并满足最低调用积分（扣除已冻结预占额度）
      *
      * @param minPoints 最低积分门槛
      * @return true 允许执行，false 拦截
      */
     public boolean hasSufficientBalance(long minPoints) {
-        return "NORMAL".equalsIgnoreCase(walletStatus) && balancePoints != null && balancePoints >= minPoints;
+        long available = (balancePoints != null ? balancePoints : 0L) - (frozenPoints != null ? frozenPoints : 0L);
+        return "NORMAL".equalsIgnoreCase(walletStatus) && available >= minPoints;
     }
 }

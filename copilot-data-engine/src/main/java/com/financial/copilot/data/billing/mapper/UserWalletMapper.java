@@ -70,4 +70,45 @@ public interface UserWalletMapper extends BaseMapper<UserWalletPO> {
             "WHERE user_id = #{userId}")
     int addRechargePoints(@Param("userId") Long userId,
                           @Param("points") Long points);
+
+    /**
+     * 原子预占冻结积分 (确保可用积分 balance - frozen >= estimate)
+     *
+     * @param userId 系统用户 ID
+     * @param estimate 预占冻结积分数
+     * @return 影响行数 (1 成功, 0 余额不足或状态异常)
+     */
+    @Update("UPDATE sys_user_wallet SET frozen_points = frozen_points + #{estimate}, " +
+            "version = version + 1, updated_at = NOW() " +
+            "WHERE user_id = #{userId} AND wallet_status = 'NORMAL' AND balance_points - frozen_points >= #{estimate}")
+    int freezePoints(@Param("userId") Long userId, @Param("estimate") long estimate);
+
+    /**
+     * 结算预占：扣除实际消费积分，解冻预占估算积分
+     *
+     * @param userId 系统用户 ID
+     * @param actual 实际消费积分
+     * @param estimate 预占估算积分
+     * @return 影响行数
+     */
+    @Update("UPDATE sys_user_wallet SET balance_points = balance_points - #{actual}, " +
+            "frozen_points = GREATEST(0, frozen_points - #{estimate}), " +
+            "total_consumed_points = total_consumed_points + #{actual}, " +
+            "version = version + 1, updated_at = NOW() " +
+            "WHERE user_id = #{userId}")
+    int settleReservation(@Param("userId") Long userId,
+                          @Param("actual") long actual,
+                          @Param("estimate") long estimate);
+
+    /**
+     * 释放预占冻结积分
+     *
+     * @param userId 系统用户 ID
+     * @param estimate 待释放预占积分数
+     * @return 影响行数
+     */
+    @Update("UPDATE sys_user_wallet SET frozen_points = GREATEST(0, frozen_points - #{estimate}), " +
+            "version = version + 1, updated_at = NOW() " +
+            "WHERE user_id = #{userId}")
+    int releaseFrozen(@Param("userId") Long userId, @Param("estimate") long estimate);
 }
