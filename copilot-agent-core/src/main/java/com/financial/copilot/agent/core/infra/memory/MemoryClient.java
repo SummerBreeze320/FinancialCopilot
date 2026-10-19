@@ -2,8 +2,10 @@ package com.financial.copilot.agent.core.infra.memory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.financial.copilot.agent.core.infra.context.ExecutionIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -24,9 +26,18 @@ public class MemoryClient {
     private static final Logger log = LoggerFactory.getLogger(MemoryClient.class);
 
     private final WebClient webClient;
+    private final String serviceToken;
     private final Duration timeout = Duration.ofSeconds(10);
 
     public MemoryClient(@Value("${copilot.memory-service.url:http://localhost:8700}") String baseUrl) {
+        this(baseUrl, "");
+    }
+
+    @Autowired
+    public MemoryClient(
+            @Value("${copilot.memory-service.url:http://localhost:8700}") String baseUrl,
+            @Value("${copilot.memory-service.token:}") String serviceToken) {
+        this.serviceToken = serviceToken != null ? serviceToken : "";
         this.webClient = WebClient.builder().baseUrl(baseUrl).build();
     }
 
@@ -87,11 +98,29 @@ public class MemoryClient {
     // ── 长期记忆 ──────────────────────────────────────────────
 
     public List<String> searchMemory(String query, int maxResults) {
+        return searchMemory(null, MemoryScope.GLOBAL_MARKET, query, maxResults);
+    }
+
+    public List<String> searchMemory(ExecutionIdentity identity, MemoryScope scope, String query, int maxResults) {
         try {
-            MemorySearchResponse resp = webClient.post()
-                    .uri("/v1/memory/search")
+            Map<String, Object> body = new HashMap<>();
+            body.put("query", query);
+            body.put("max_results", maxResults);
+            body.put("scope", scope != null ? scope.name() : MemoryScope.USER.name());
+            if (identity != null) {
+                body.put("user_id", String.valueOf(identity.userId()));
+                body.put("conversation_id", identity.conversationId().toString());
+                body.put("session_id", identity.sessionKey());
+            }
+
+            var request = webClient.post().uri("/v1/memory/search");
+            if (serviceToken != null && !serviceToken.isBlank()) {
+                request.header("X-Copilot-Service-Token", serviceToken);
+            }
+
+            MemorySearchResponse resp = request
                     .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(Map.of("query", query, "max_results", maxResults))
+                    .bodyValue(body)
                     .retrieve()
                     .bodyToMono(MemorySearchResponse.class)
                     .timeout(timeout)

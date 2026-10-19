@@ -68,4 +68,37 @@ class NodeEventBusTest {
         assertThat(token.isCancelled()).isTrue();
         assertThat(token.getReason()).contains("SSE Client Disconnected");
     }
+
+    @Test
+    @DisplayName("多虚拟线程高并发并发推送事件不丢失 (busyLooping 线程安全)")
+    void testConcurrentVirtualThreadEmissions() throws Exception {
+        CancellationToken token = new CancellationToken("run-concurrent-vt");
+        NodeEventBus eventBus = new NodeEventBus(token);
+
+        java.util.List<ResearchStreamEvent> received = new java.util.concurrent.CopyOnWriteArrayList<>();
+        eventBus.flux().subscribe(received::add);
+
+        int threadCount = 10;
+        int eventsPerThread = 20;
+        java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(threadCount);
+
+        try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int t = 0; t < threadCount; t++) {
+                final int threadId = t;
+                executor.submit(() -> {
+                    try {
+                        for (int i = 0; i < eventsPerThread; i++) {
+                            eventBus.publishContentChunk("run-concurrent-vt", "node-" + threadId, "chunk-" + i);
+                        }
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+            latch.await();
+        }
+
+        eventBus.complete();
+        assertThat(received).hasSize(threadCount * eventsPerThread);
+    }
 }

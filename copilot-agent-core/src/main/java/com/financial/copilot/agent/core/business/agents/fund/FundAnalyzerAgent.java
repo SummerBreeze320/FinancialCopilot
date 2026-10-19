@@ -1,7 +1,9 @@
 package com.financial.copilot.agent.core.business.agents.fund;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financial.copilot.agent.core.business.agents.AgentRole;
 import com.financial.copilot.agent.core.infra.agentscope.AgentScopeAgentFactory;
+import com.financial.copilot.agent.core.infra.agentscope.RoleToolkitRegistry;
 import com.financial.copilot.agent.core.infra.dag.artifact.*;
 import com.financial.copilot.agent.core.infra.dag.artifact.payload.FundPool;
 import com.financial.copilot.agent.core.infra.dag.artifact.payload.FundResearchResult;
@@ -11,10 +13,13 @@ import com.financial.copilot.agent.core.infra.dag.runtime.NodeInput;
 import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
-import io.agentscope.core.tool.*;
+import io.agentscope.core.tool.Toolkit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /** AgentScope ReAct role for evidence-driven fund analysis. */
 @Component
@@ -26,21 +31,24 @@ public class FundAnalyzerAgent {
             禁止编造未被工具观察支持的数据。
             """;
     private final AgentScopeAgentFactory agentFactory;
-    private final FundQuantAnalysisTool quantTool;
-    private final FundHoldingsQueryTool holdingsTool;
-    private final FundReportRetrieverTool reportTool;
+    private final RoleToolkitRegistry toolkitRegistry;
     private final ObjectMapper mapper;
+
+    @Autowired
+    public FundAnalyzerAgent(AgentScopeAgentFactory agentFactory, RoleToolkitRegistry toolkitRegistry, ObjectMapper mapper) {
+        this.agentFactory = agentFactory;
+        this.toolkitRegistry = toolkitRegistry;
+        this.mapper = mapper;
+    }
 
     public FundAnalyzerAgent(AgentScopeAgentFactory agentFactory, FundQuantAnalysisTool quantTool,
                              FundHoldingsQueryTool holdingsTool, FundReportRetrieverTool reportTool,
                              ObjectMapper mapper) {
-        this.agentFactory = agentFactory; this.quantTool = quantTool; this.holdingsTool = holdingsTool;
-        this.reportTool = reportTool; this.mapper = mapper;
+        this(agentFactory, RoleToolkitRegistry.forFundAnalyzer(quantTool, holdingsTool, reportTool), mapper);
     }
 
     public Artifact<FundResearchResult> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
-        Toolkit toolkit = new Toolkit();
-        toolkit.registerTool(new AnalysisTools(quantTool, holdingsTool, reportTool));
+        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.FUND_ANALYZER);
         List<String> codes = candidateCodes(input, node);
         if (codes.isEmpty()) throw new IllegalStateException("FundAnalyzerAgent requires a FundPool input");
         var invocation = agentFactory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
@@ -76,24 +84,4 @@ public class FundAnalyzerAgent {
     }
 
     public record Decision(List<Map<String, Object>> evaluatedFunds, List<String> topCandidates) {}
-
-    static final class AnalysisTools {
-        private final FundQuantAnalysisTool quant; private final FundHoldingsQueryTool holdings;
-        private final FundReportRetrieverTool reports;
-        AnalysisTools(FundQuantAnalysisTool q, FundHoldingsQueryTool h, FundReportRetrieverTool r) {
-            quant=q; holdings=h; reports=r;
-        }
-        @Tool(name="fund_metrics", description="查询基金收益风险量化指标", readOnly=true)
-        public String metrics(@ToolParam(name="fundCode", description="六位基金代码") String code) {
-            return quant.getFundMetrics(code, null, null);
-        }
-        @Tool(name="fund_holdings", description="查询基金主要持仓", readOnly=true)
-        public String holdings(@ToolParam(name="fundCode", description="六位基金代码") String code) {
-            return holdings.getTopHoldings(code, null);
-        }
-        @Tool(name="fund_report", description="查询基金最新季报观点", readOnly=true)
-        public String report(@ToolParam(name="fundCode", description="六位基金代码") String code) {
-            return reports.getLatestQuarterlyReportView(code);
-        }
-    }
 }

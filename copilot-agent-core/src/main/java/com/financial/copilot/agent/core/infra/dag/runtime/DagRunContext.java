@@ -5,10 +5,12 @@ import com.financial.copilot.agent.core.infra.dag.event.NodeEventBus;
 import com.financial.copilot.agent.core.infra.dag.model.ExecutionGraph;
 import com.financial.copilot.agent.core.infra.dag.model.NodeStatus;
 import com.financial.copilot.agent.core.infra.dag.runtime.context.CancellationToken;
+import com.financial.copilot.common.event.ResearchStreamEvent;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 final class DagRunContext {
     final GraphRunRequest request;
@@ -20,10 +22,14 @@ final class DagRunContext {
     final Instant startedAt = Instant.now();
 
     DagRunContext(GraphRunRequest request, ExecutionGraph graph) {
+        this(request, graph, null);
+    }
+
+    DagRunContext(GraphRunRequest request, ExecutionGraph graph, Consumer<ResearchStreamEvent> eventAppender) {
         this.request = request;
         this.graph = graph;
         this.cancellation = new CancellationToken(request.runId());
-        this.events = new NodeEventBus(cancellation);
+        this.events = new NodeEventBus(cancellation, eventAppender);
     }
 
     GraphRunResult result() {

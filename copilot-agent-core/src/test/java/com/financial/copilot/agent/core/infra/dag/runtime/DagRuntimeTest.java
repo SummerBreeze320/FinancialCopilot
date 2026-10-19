@@ -273,8 +273,50 @@ class DagRuntimeTest {
         assertThat(resumed.artifacts().get("C")).isNotNull();
     }
 
+    @Test
+    @DisplayName("跨 Run 唤醒重现测试：当全局只有 1 个 AGENT 许可时，Run 1 释放后应能唤醒挂起中的 Run 2")
+    void waitingRunWakesWhenAnotherRunReleasesTheOnlyPermit() throws Exception {
+        ResourceManager resources = new ResourceManager(Map.of(ResourceType.AGENT, 1));
+        CountDownLatch runAStarted = new CountDownLatch(1);
+        CountDownLatch releaseFirst = new CountDownLatch(1);
+
+        NodeExecutor executor = (node, store, token) -> {
+            if ("a".equals(node.getNodeId())) {
+                runAStarted.countDown();
+                try {
+                    releaseFirst.await(3, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            return Artifact.of("art_" + node.getNodeId(), ArtifactType.GENERAL, node.getNodeId(), "ok", ArtifactMetadata.standard("TEST"));
+        };
+
+        DagRuntime runtime = new DagRuntime(executor, resources, new InMemoryDagCheckpointStore(), new DefaultNodeQualityGate());
+
+        ExecutionGraph graphA = new ExecutionGraph("graph-a");
+        graphA.addNode(createNode("a", "Node A", FailurePolicy.FAIL_FAST, NodePriority.NORMAL, null));
+
+        ExecutionGraph graphB = new ExecutionGraph("graph-b");
+        graphB.addNode(createNode("b", "Node B", FailurePolicy.FAIL_FAST, NodePriority.NORMAL, null));
+
+        GraphRunHandle first = runtime.run(request("run-a"), graphA);
+        assertThat(runAStarted.await(2, TimeUnit.SECONDS)).isTrue();
+
+        GraphRunHandle second = runtime.run(request("run-b"), graphB);
+        Thread.sleep(100);
+
+        // Run A 释放
+        releaseFirst.countDown();
+
+        // 期望 Run B 能够成功完成；但在当前架构下（无全局调度器，各自拥有独立的本地队列且释放时只唤醒自己的本地队列），Run B 将永久阻塞超时！
+        assertThat(second.completion().get(2, TimeUnit.SECONDS).nodeStatuses().get("b"))
+                .isEqualTo(NodeStatus.SUCCEEDED);
+    }
+
     private GraphRunRequest request(String runId) {
         return new GraphRunRequest(runId, 1L,java.util.UUID.randomUUID(), null,  "test-session", "test prompt", false,
                 null, ignored -> {}, RunMode.SYNC);
     }
 }
+

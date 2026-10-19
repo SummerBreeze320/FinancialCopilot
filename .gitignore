@@ -84,5 +84,5 @@ docker/postgres/data/
 .worktrees/
 
 # Entity service local state
-entity-service/.env
+ner-service/.env
 entity-service/data/*.json

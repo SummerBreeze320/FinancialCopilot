@@ -1,7 +1,9 @@
 package com.financial.copilot.agent.core.platform.conversation;
 
+import com.financial.copilot.agent.core.infra.context.ConversationContextSnapshot;
 import com.financial.copilot.agent.core.infra.event.WorkflowFinishedEvent;
 import com.financial.copilot.agent.core.infra.memory.MemoryClient;
+import com.financial.copilot.domain.platform.user.entity.UserInvestmentProfile;
 import com.financial.copilot.domain.platform.conversation.entity.AgentToolAudit;
 import com.financial.copilot.domain.platform.conversation.entity.ConversationMessage;
 import com.financial.copilot.domain.platform.conversation.entity.ConversationRun;
@@ -123,6 +125,13 @@ public class ConversationService {
             metrics.counter("conversation_cache_rebuild_total").increment();
         }
         return context;
+    }
+
+    public ConversationContextSnapshot snapshot(
+            Long userId, UUID conversationId, String sessionKey, String currentPrompt,
+            UserInvestmentProfile profile, int limit) {
+        List<String> messages = recentContext(userId, conversationId, sessionKey, limit);
+        return new ConversationContextSnapshot(messages, profile, currentPrompt, Instant.now());
     }
 
     public CursorPage<ResearchConversation> listConversations(Long userId, String cursor, int limit) {

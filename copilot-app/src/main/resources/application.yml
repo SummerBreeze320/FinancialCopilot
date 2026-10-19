@@ -9,10 +9,16 @@ spring:
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:50}
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   sql:
     init:
       mode: always
-      schema-locations: classpath:db/memory-schema.sql,classpath:db/billing-schema.sql,classpath:db/conversation-schema.sql
+      schema-locations: classpath:db/memory-schema.sql,classpath:db/billing-schema.sql,classpath:db/conversation-schema.sql,classpath:db/execution-schema.sql
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -66,6 +72,20 @@ copilot:
   memory-service:
     url: ${MEMORY_SERVICE_URL:http://localhost:8700}
     enabled: ${MEMORY_SERVICE_ENABLED:true}
+  runtime:
+    max-active-runs: ${COPILOT_MAX_ACTIVE_RUNS:100}
+    max-queued-runs: ${COPILOT_MAX_QUEUED_RUNS:1000}
+    max-active-runs-per-user: ${COPILOT_MAX_ACTIVE_RUNS_PER_USER:2}
+    max-agents-per-run: ${COPILOT_MAX_AGENTS_PER_RUN:3}
+    max-agent-concurrency: ${COPILOT_MAX_AGENT_CONCURRENCY:32}
+    max-rag-concurrency: ${COPILOT_MAX_RAG_CONCURRENCY:32}
+    queue-timeout: ${COPILOT_QUEUE_TIMEOUT:5m}
+    max-llm-concurrency: ${COPILOT_MAX_LLM_CONCURRENCY:16}
+    llm-call-timeout: ${COPILOT_LLM_CALL_TIMEOUT:120s}
+  mcp:
+    enabled: ${COPILOT_MCP_ENABLED:true}
+    base-url: ${COPILOT_MCP_BASE_URL:http://127.0.0.1:8085}
+    timeout-seconds: ${COPILOT_MCP_TIMEOUT_SECONDS:15}
 
 
 logging:

@@ -14,7 +14,9 @@ import com.financial.copilot.agent.core.infra.dag.model.GraphNode;
 import com.financial.copilot.agent.core.infra.dag.model.NodeStatus;
 import com.financial.copilot.agent.core.infra.dag.model.patch.GraphPatch;
 import com.financial.copilot.agent.core.infra.dag.runtime.DagEvent;
+import java.time.Duration;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * <h1>DAG 节点级响应式事件总线 (NodeEventBus)</h1>
@@ -34,9 +36,16 @@ public class NodeEventBus {
             List<String> parentIds
     ) {}
 
+    private final java.util.function.Consumer<ResearchStreamEvent> eventAppender;
+
     public NodeEventBus(CancellationToken cancellationToken) {
+        this(cancellationToken, null);
+    }
+
+    public NodeEventBus(CancellationToken cancellationToken, Consumer<ResearchStreamEvent> eventAppender) {
         this.cancellationToken = Objects.requireNonNull(cancellationToken, "cancellationToken cannot be null");
         this.sink = Sinks.many().replay().limit(256);
+        this.eventAppender = eventAppender;
     }
 
     /**
@@ -52,8 +61,27 @@ public class NodeEventBus {
 
     public void emit(ResearchStreamEvent event) {
         if (event != null) {
-            sink.tryEmitNext(event);
+            if (eventAppender != null) {
+                try {
+                    eventAppender.accept(event);
+                } catch (Exception e) {
+                    log.warn("Failed to persist event via eventAppender: {}", e.getMessage());
+                }
+            }
+            sink.emitNext(event, Sinks.EmitFailureHandler.busyLooping(Duration.ofSeconds(1)));
         }
+    }
+
+    public void publishRunQueued(String runId, String conversationId, String reason, Integer queuePosition) {
+        emit(ResearchStreamEvent.runQueued(runId, conversationId, reason, queuePosition));
+    }
+
+    public void publishRunAdmitted(String runId, String conversationId) {
+        emit(ResearchStreamEvent.runAdmitted(runId, conversationId));
+    }
+
+    public void publishRunStarted(String runId, String conversationId) {
+        emit(ResearchStreamEvent.runStarted(runId, conversationId));
     }
 
     public void publishGraphInitialized(String runId, String conversationId, int revision, List<NodeDescriptor> nodes) {
@@ -91,7 +119,11 @@ public class NodeEventBus {
         if (event.status() == NodeStatus.READY) {
             emit(ResearchStreamEvent.nodeReady(runId, event.nodeId(), name, taskType));
         } else if (event.status() == NodeStatus.RUNNING) {
-            publishNodeStarted(runId, event.nodeId(), name, taskType);
+            if ("Chunk".equals(event.message()) && event.payload() instanceof String chunk) {
+                publishContentChunk(runId, event.nodeId(), chunk);
+            } else {
+                publishNodeStarted(runId, event.nodeId(), name, taskType);
+            }
         } else if (event.status() == NodeStatus.SUCCEEDED || event.status() == NodeStatus.SKIPPED) {
             List<String> ids = event.payload() instanceof Artifact<?> artifact ? List.of(artifact.id()) : List.of();
             publishNodeCompleted(runId, event.nodeId(), event.status().name(), event.message(), ids);
@@ -101,10 +133,10 @@ public class NodeEventBus {
     }
 
     public void complete() {
-        sink.tryEmitComplete();
+        sink.emitComplete(Sinks.EmitFailureHandler.busyLooping(Duration.ofSeconds(1)));
     }
 
     public void error(Throwable error) {
-        sink.tryEmitError(error);
+        sink.emitError(error, Sinks.EmitFailureHandler.busyLooping(Duration.ofSeconds(1)));
     }
 }

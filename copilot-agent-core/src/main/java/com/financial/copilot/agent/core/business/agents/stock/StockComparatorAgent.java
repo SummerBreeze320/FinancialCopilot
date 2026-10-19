@@ -1,6 +1,8 @@
 package com.financial.copilot.agent.core.business.agents.stock;
 
+import com.financial.copilot.agent.core.business.agents.AgentRole;
 import com.financial.copilot.agent.core.infra.agentscope.AgentScopeAgentFactory;
+import com.financial.copilot.agent.core.infra.agentscope.RoleToolkitRegistry;
 import com.financial.copilot.agent.core.infra.dag.artifact.Artifact;
 import com.financial.copilot.agent.core.infra.dag.artifact.ArtifactMetadata;
 import com.financial.copilot.agent.core.infra.dag.artifact.EvidenceContract;
@@ -8,9 +10,8 @@ import com.financial.copilot.agent.core.infra.dag.model.GraphNode;
 import com.financial.copilot.agent.core.infra.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.infra.dag.runtime.NodeInput;
 import com.financial.copilot.agent.tools.stock.StockQuantAnalysisTool;
-import io.agentscope.core.tool.Tool;
-import io.agentscope.core.tool.ToolParam;
 import io.agentscope.core.tool.Toolkit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -22,17 +23,21 @@ import java.util.UUID;
 @Component
 public class StockComparatorAgent {
     private final AgentScopeAgentFactory factory;
-    private final StockQuantAnalysisTool quant;
+    private final RoleToolkitRegistry toolkitRegistry;
+
+    @Autowired
+    public StockComparatorAgent(AgentScopeAgentFactory factory, RoleToolkitRegistry toolkitRegistry) {
+        this.factory = factory;
+        this.toolkitRegistry = toolkitRegistry;
+    }
 
     public StockComparatorAgent(AgentScopeAgentFactory factory, StockQuantAnalysisTool quant) {
-        this.factory = factory;
-        this.quant = quant;
+        this(factory, RoleToolkitRegistry.forStockComparator(quant));
     }
 
     public Artifact<String> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
         List<String> codes = stockCodes(node, input);
-        Toolkit toolkit = new Toolkit();
-        toolkit.registerTool(new ComparisonTools(quant));
+        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.STOCK_COMPARATOR);
         var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
                         "StockComparatorAgent", "股票横向对标",
                         "你是股票对标 ReAct Agent。必须调用 compare_stock_metrics 对称查询两个代码，观察真实结果后生成 Markdown 结论。禁止模型心算。",
@@ -65,20 +70,5 @@ public class StockComparatorAgent {
     private static void addCodes(List<String> target, Object value) {
         if (value instanceof Iterable<?> values) values.forEach(item -> target.add(String.valueOf(item)));
         else if (value != null) target.addAll(Arrays.asList(String.valueOf(value).split("[,，\\s]+")));
-    }
-
-    static final class ComparisonTools {
-        private final StockQuantAnalysisTool tool;
-
-        ComparisonTools(StockQuantAnalysisTool tool) {
-            this.tool = tool;
-        }
-
-        @Tool(name = "compare_stock_metrics", description = "对称查询两只股票的估值和财务量化指标", readOnly = true)
-        public String compare(
-                @ToolParam(name = "code_a", description = "股票A代码") String codeA,
-                @ToolParam(name = "code_b", description = "股票B代码") String codeB) {
-            return "A=" + tool.getStockMetrics(codeA) + "\nB=" + tool.getStockMetrics(codeB);
-        }
     }
 }

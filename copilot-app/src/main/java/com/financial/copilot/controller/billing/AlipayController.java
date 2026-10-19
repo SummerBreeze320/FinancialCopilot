@@ -1,5 +1,6 @@
 package com.financial.copilot.controller.billing;
 
+import com.financial.copilot.agent.core.infra.thread.VirtualThreadSchedulers;
 import com.financial.copilot.agent.core.platform.billing.AlipayPaymentService;
 import com.financial.copilot.common.result.ApiResult;
 import com.financial.copilot.config.security.SecurityUtils;
@@ -10,7 +11,6 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @RestController
 @RequestMapping("/api/v1/billing/alipay")
@@ -21,7 +21,7 @@ public class AlipayController {
     @PostMapping("/order/{orderNo}/pay")
     public Mono<ApiResult<String>> pay(@PathVariable("orderNo") String orderNo) {
         return SecurityUtils.requireCurrentUserId(null).flatMap(uid -> Mono.fromCallable(() ->
-                ApiResult.success(alipay.paymentUrl(uid, orderNo))).subscribeOn(Schedulers.boundedElastic()))
+                ApiResult.success(alipay.paymentUrl(uid, orderNo))).subscribeOn(VirtualThreadSchedulers.scheduler()))
                 .onErrorMap(SecurityException.class, e -> new ResponseStatusException(HttpStatus.FORBIDDEN))
                 .onErrorMap(IllegalStateException.class, e -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "支付未就绪"))
                 .onErrorMap(IllegalArgumentException.class, e -> new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage()));
@@ -36,6 +36,6 @@ public class AlipayController {
             }
             alipay.acceptNotification(form.toSingleValueMap());
             return "success";
-        }).subscribeOn(Schedulers.boundedElastic())).onErrorReturn("failure");
+        }).subscribeOn(VirtualThreadSchedulers.scheduler())).onErrorReturn("failure");
     }
 }

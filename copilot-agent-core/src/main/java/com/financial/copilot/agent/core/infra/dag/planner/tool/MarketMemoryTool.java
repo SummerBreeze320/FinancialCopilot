@@ -1,6 +1,8 @@
 package com.financial.copilot.agent.core.infra.dag.planner.tool;
 
+import com.financial.copilot.agent.core.infra.context.ExecutionIdentity;
 import com.financial.copilot.agent.core.infra.memory.MemoryClient;
+import com.financial.copilot.agent.core.infra.memory.MemoryScope;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,26 @@ public class MarketMemoryTool {
     @Autowired
     public MarketMemoryTool(@Autowired(required = false) MemoryClient memoryClient) {
         this.memoryClient = memoryClient;
+    }
+
+    public MemoryRetrievalResult retrieveMemory(ExecutionIdentity identity, String query, int maxCount) {
+        if (memoryClient == null || identity == null) {
+            return new MemoryRetrievalResult(identity != null ? identity.sessionKey() : "", Collections.emptyList(), Collections.emptyList());
+        }
+
+        int limit = maxCount > 0 ? maxCount : 5;
+        List<String> relevantFacts = memoryClient.searchMemory(identity, MemoryScope.USER, query, limit);
+        List<String> historicalDecisions = memoryClient.searchMemory(
+                identity, MemoryScope.USER, "历史投资决策 研报摘要 " + query, limit);
+
+        log.debug("[MARKET-MEMORY-TOOL] identity={}, facts={}, decisions={}",
+                identity, relevantFacts.size(), historicalDecisions.size());
+
+        return MemoryRetrievalResult.builder()
+                .sessionKey(identity.sessionKey())
+                .relevantFacts(relevantFacts != null ? relevantFacts : Collections.emptyList())
+                .historicalDecisions(historicalDecisions != null ? historicalDecisions : Collections.emptyList())
+                .build();
     }
 
     public MemoryRetrievalResult retrieveMemory(String sessionKey, String query, int maxCount) {

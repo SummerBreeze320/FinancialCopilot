@@ -4,7 +4,12 @@ import com.financial.copilot.common.exception.WalletInsufficientException;
 import com.financial.copilot.domain.platform.billing.dto.TokenDeductionResult;
 import com.financial.copilot.domain.platform.billing.dto.UsageTrendPointDTO;
 import com.financial.copilot.domain.platform.billing.dto.WalletDTO;
-import com.financial.copilot.domain.platform.billing.entity.*;
+import com.financial.copilot.domain.platform.billing.entity.ModelPricing;
+import com.financial.copilot.domain.platform.billing.entity.PointReservation;
+import com.financial.copilot.domain.platform.billing.entity.RechargeOrder;
+import com.financial.copilot.domain.platform.billing.entity.RechargePackage;
+import com.financial.copilot.domain.platform.billing.entity.TokenUsageLedger;
+import com.financial.copilot.domain.platform.billing.entity.UserWallet;
 import com.financial.copilot.domain.platform.billing.port.BillingPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -13,8 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * <h1>算力计量计费与账户钱包业务服务 (Wallet Billing Service)</h1>
@@ -55,6 +64,65 @@ public class WalletBillingService {
     }
 
     /**
+     * 投研任务运行前原子预占积分（冻结额度，幂等防重）
+     *
+     * @param userId 系统用户 ID
+     * @param workflowRunId 运行唯一标识
+     * @param estimatedPoints 预估冻结积分
+     * @return 预占领域实体
+     */
+    public PointReservation reserve(Long userId, String workflowRunId, long estimatedPoints) {
+        Long uid = Objects.requireNonNull(userId, "userId");
+        Objects.requireNonNull(workflowRunId, "workflowRunId");
+        if (estimatedPoints <= 0) {
+            throw new IllegalArgumentException("estimatedPoints must be positive");
+        }
+        return billingPort.reserve(uid, workflowRunId, estimatedPoints);
+    }
+
+    /**
+     * 投研任务完成后的原子结算扣减（解冻预占并扣减实际产生积分，具备幂等防重）
+     *
+     * @param userId 系统用户 ID
+     * @param workflowRunId 运行唯一标识
+     * @param actualPoints 实际消费积分
+     * @return 结算领域实体
+     */
+    public PointReservation settle(Long userId, String workflowRunId, long actualPoints) {
+        Long uid = Objects.requireNonNull(userId, "userId");
+        Objects.requireNonNull(workflowRunId, "workflowRunId");
+        if (actualPoints < 0) {
+            throw new IllegalArgumentException("actualPoints cannot be negative");
+        }
+        return billingPort.settle(uid, workflowRunId, actualPoints);
+    }
+
+    /**
+     * 任务异常、取消或超时时全额释放解冻预占额度
+     *
+     * @param userId 系统用户 ID
+     * @param workflowRunId 运行唯一标识
+     */
+    public void release(Long userId, String workflowRunId) {
+        Long uid = Objects.requireNonNull(userId, "userId");
+        Objects.requireNonNull(workflowRunId, "workflowRunId");
+        billingPort.release(uid, workflowRunId);
+    }
+
+    /**
+     * 获取指定运行的预占记录
+     *
+     * @param userId 系统用户 ID
+     * @param workflowRunId 运行唯一标识
+     * @return 预占领域实体（若存在）
+     */
+    public Optional<PointReservation> getReservation(Long userId, String workflowRunId) {
+        Long uid = Objects.requireNonNull(userId, "userId");
+        Objects.requireNonNull(workflowRunId, "workflowRunId");
+        return billingPort.getReservation(uid, workflowRunId);
+    }
+
+    /**
      * 根据模型标识与 Token 规模计算应扣积分
      *
      * @param model            模型名称
@@ -66,6 +134,41 @@ public class WalletBillingService {
         ModelPricing pricing = billingPort.getPricing(model)
                 .orElseThrow(() -> new IllegalStateException("模型未配置有效定价: " + model));
         return pricing.calculatePoints(promptTokens, completionTokens);
+    }
+
+    /**
+     * 记录一条不可篡改的 Token 消费对账流水
+     *
+     * @param userId 系统用户 ID
+     * @param sessionId 会话唯一标识
+     * @param taskType 任务步骤类型
+     * @param provider 模型提供商
+     * @param model 模型名称
+     * @param promptTokens 输入 Token 数
+     * @param completionTokens 输出 Token 数
+     * @param latencyMs 调用延迟毫秒数
+     * @param consumedPoints 消耗积分数
+     */
+    public void recordUsage(Long userId, String sessionId, String taskType,
+                            String provider, String model,
+                            int promptTokens, int completionTokens,
+                            long latencyMs, long consumedPoints) {
+        Long uid = Objects.requireNonNull(userId, "userId");
+        int total = Math.addExact(promptTokens, completionTokens);
+        TokenUsageLedger ledger = TokenUsageLedger.builder()
+                .userId(uid)
+                .sessionId(sessionId != null ? sessionId : UUID.randomUUID().toString())
+                .taskType(taskType != null ? taskType : "LLM_CALL")
+                .provider(provider != null ? provider : "DEEPSEEK")
+                .model(model != null ? model : "deepseek-chat")
+                .promptTokens(promptTokens)
+                .completionTokens(completionTokens)
+                .totalTokens(total)
+                .consumedPoints(consumedPoints)
+                .latencyMs((int) latencyMs)
+                .createdAt(LocalDateTime.now())
+                .build();
+        billingPort.recordUsageLedger(ledger);
     }
 
     /**

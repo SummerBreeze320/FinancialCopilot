@@ -1,43 +1,130 @@
 package com.financial.copilot.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunHandle;
+import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
 import com.financial.copilot.agent.core.platform.conversation.ConversationPersistenceDisabledException;
 import com.financial.copilot.agent.core.platform.conversation.ConversationService;
-import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
+import com.financial.copilot.common.event.ResearchStreamEvent;
 import com.financial.copilot.common.result.ApiResult;
 import com.financial.copilot.config.security.SecurityUtils;
 import com.financial.copilot.domain.platform.conversation.entity.AgentToolAudit;
 import com.financial.copilot.domain.platform.conversation.entity.ConversationRun;
 import com.financial.copilot.domain.platform.conversation.model.CursorPage;
+import com.financial.copilot.domain.platform.execution.entity.ResearchRunEvent;
+import com.financial.copilot.domain.platform.execution.port.ResearchExecutionPort;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * <h1>金融投研运行生命周期与状态控制控制器 (ResearchRunController)</h1>
+ * <p>
+ * 提供投研运行状态检索、工具调用审计明细分页、运行取消、运行断点恢复以及 SSE 有序事件重放。
+ * </p>
+ *
+ * @author FinancialCopilot
+ */
 @RestController
 @RequestMapping("/api/v1/research/runs")
 public class ResearchRunController {
+
     private final FinancialResearchWorkflow workflow;
     private final WalletBillingService billing;
     private final ConversationService conversationService;
+    private final ResearchExecutionPort executionPort;
+    private final ObjectMapper json;
 
     public ResearchRunController(FinancialResearchWorkflow workflow,
                                  WalletBillingService billing,
                                  ConversationService conversationService) {
+        this(workflow, billing, conversationService, null, null);
+    }
+
+    @Autowired
+    public ResearchRunController(FinancialResearchWorkflow workflow,
+                                 WalletBillingService billing,
+                                 ConversationService conversationService,
+                                 @Autowired(required = false) ResearchExecutionPort executionPort,
+                                 @Autowired(required = false) ObjectMapper json) {
         this.workflow = workflow;
         this.billing = billing;
         this.conversationService = conversationService;
+        this.executionPort = executionPort;
+        this.json = json != null ? json : new ObjectMapper();
     }
 
     @GetMapping("/{runId}")
     public Mono<ApiResult<Map<String, Object>>> status(@PathVariable String runId) {
         return SecurityUtils.requireCurrentUserId(null).map(uid -> {
-            var checkpoint = workflow.findCheckpoint(uid, runId).orElseThrow(this::notFound);
-            return ApiResult.success(Map.of("runId", runId, "revision", checkpoint.graph().revision(),
-                    "statuses", checkpoint.nodeStatuses(), "savedAt", checkpoint.savedAt()));
+            var checkpointOpt = workflow.findCheckpoint(uid, runId);
+            if (checkpointOpt.isPresent()) {
+                var checkpoint = checkpointOpt.get();
+                return ApiResult.success(Map.of("runId", runId, "revision", checkpoint.graph().revision(),
+                        "statuses", checkpoint.nodeStatuses(), "savedAt", checkpoint.savedAt()));
+            }
+            if (executionPort != null) {
+                UUID runUuid = parseRunId(runId);
+                var runStateOpt = executionPort.findRunState(uid, runUuid);
+                if (runStateOpt.isPresent()) {
+                    var runState = runStateOpt.get();
+                    return ApiResult.success(Map.of("runId", runId, "status", runState.status(),
+                            "version", runState.version(), "updatedAt", runState.updatedAt()));
+                }
+            }
+            throw notFound();
+        });
+    }
+
+    /**
+     * SSE 运行事件重放与实时订阅接口 (支持 Last-Event-ID 游标续传)。
+     *
+     * @param runId       运行 ID
+     * @param lastEventId 客户端上次接收到的最大事件序号
+     * @return 响应式事件流
+     */
+    @GetMapping(value = "/{runId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ResearchStreamEvent> replayEvents(
+            @PathVariable String runId,
+            @RequestHeader(name = "Last-Event-ID", required = false) String lastEventId) {
+        return SecurityUtils.requireCurrentUserId(null).flatMapMany(uid -> {
+            UUID runUuid = parseRunId(runId);
+            verifyRunOwnership(uid, runUuid);
+
+            long afterSeq = 0L;
+            if (lastEventId != null && !lastEventId.isBlank()) {
+                try {
+                    afterSeq = Long.parseLong(lastEventId.trim());
+                } catch (NumberFormatException ignored) {}
+            }
+
+            List<ResearchStreamEvent> replayed = List.of();
+            if (executionPort != null) {
+                List<ResearchRunEvent> persisted = executionPort.getEventsAfter(uid, runUuid, afterSeq);
+                replayed = persisted.stream().map(this::toStreamEvent).toList();
+            }
+
+            long highestSeq = replayed.isEmpty() ? afterSeq : replayed.get(replayed.size() - 1).getSequenceNo();
+            Flux<ResearchStreamEvent> replayFlux = Flux.fromIterable(replayed);
+
+            Optional<GraphRunHandle> activeHandle = workflow.findRun(uid, runId);
+            if (activeHandle.isPresent()) {
+                Flux<ResearchStreamEvent> liveFlux = activeHandle.get().events()
+                        .filter(e -> e.getSequenceNo() == null || e.getSequenceNo() > highestSeq);
+                return replayFlux.concatWith(liveFlux);
+            }
+
+            return replayFlux;
         });
     }
 
@@ -101,13 +188,27 @@ public class ResearchRunController {
         });
     }
 
+    private ResearchStreamEvent toStreamEvent(ResearchRunEvent event) {
+        try {
+            ResearchStreamEvent streamEvent = json.readValue(event.payload(), ResearchStreamEvent.class);
+            streamEvent.setSequenceNo(event.sequenceNo());
+            return streamEvent;
+        } catch (Exception e) {
+            return ResearchStreamEvent.builder()
+                    .type(event.eventType())
+                    .runId(event.runId().toString())
+                    .sequenceNo(event.sequenceNo())
+                    .build();
+        }
+    }
+
     /**
      * 验证 run 是否属于当前用户。持久化启用时通过 ConversationService 验证，
      * 持久化禁用时由 workflow.findCheckpoint 的 userId 作用域自然保证。
      */
     private void verifyRunOwnership(Long userId, UUID runId) {
         try {
-            java.util.Optional<ConversationRun> run = conversationService.findRun(userId, runId);
+            Optional<ConversationRun> run = conversationService.findRun(userId, runId);
             if (run.isEmpty()) {
                 throw notFound();
             }

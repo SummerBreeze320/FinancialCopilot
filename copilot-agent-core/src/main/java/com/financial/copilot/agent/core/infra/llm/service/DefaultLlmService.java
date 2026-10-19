@@ -9,12 +9,12 @@ import com.financial.copilot.agent.core.infra.llm.provider.LlmProviderMetadata;
 import com.financial.copilot.agent.core.infra.llm.provider.LlmProviderRegistry;
 import com.financial.copilot.agent.core.infra.llm.provider.LlmProviderType;
 import lombok.extern.slf4j.Slf4j;
+import com.financial.copilot.agent.core.infra.thread.VirtualThreadSchedulers;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -131,7 +131,7 @@ public class DefaultLlmService implements LlmService {
                 .mapNotNull(ServerSentEvent::data)
                 .takeUntil("[DONE]"::equals)
                 .filter(chunk -> !"[DONE]".equals(chunk))
-                .publishOn(Schedulers.boundedElastic())
+                .publishOn(VirtualThreadSchedulers.scheduler())
                 .map(chunk -> {
                     try {
                         JsonNode root = objectMapper.readTree(chunk);

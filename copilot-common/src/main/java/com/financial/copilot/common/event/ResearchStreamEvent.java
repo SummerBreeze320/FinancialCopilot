@@ -40,6 +40,7 @@ public class ResearchStreamEvent {
     private Long durationMs;
     private Object payload;
     private Object patch;
+    private Long sequenceNo;
 
     public static ResearchStreamEvent graphInitialized(String runId, String conversationId, int revision, Object nodes) {
         return ResearchStreamEvent.builder()
@@ -114,6 +115,76 @@ public class ResearchStreamEvent {
                 .runId(runId)
                 .status(status)
                 .durationMs(durationMs)
+                .build();
+    }
+
+    public static ResearchStreamEvent runQueued(String runId, String conversationId, String reason, Integer queuePosition) {
+        return ResearchStreamEvent.builder()
+                .type("run_queued")
+                .runId(runId)
+                .conversationId(conversationId)
+                .status("QUEUED")
+                .summary(reason)
+                .payload(queuePosition != null ? java.util.Map.of("queuePosition", queuePosition) : null)
+                .build();
+    }
+
+    public static ResearchStreamEvent runAdmitted(String runId, String conversationId) {
+        return ResearchStreamEvent.builder()
+                .type("run_admitted")
+                .runId(runId)
+                .conversationId(conversationId)
+                .status("ADMITTED")
+                .build();
+    }
+
+    public static ResearchStreamEvent runStarted(String runId, String conversationId) {
+        return ResearchStreamEvent.builder()
+                .type("run_started")
+                .runId(runId)
+                .conversationId(conversationId)
+                .status("RUNNING")
+                .build();
+    }
+
+    public static ResearchStreamEvent reviewStarted(String runId, int cycle, int maxCycles) {
+        return ResearchStreamEvent.builder()
+                .type("review_started")
+                .runId(runId)
+                .payload(java.util.Map.of("cycle", cycle, "maxCycles", maxCycles))
+                .build();
+    }
+
+    public static ResearchStreamEvent reviewDecision(String runId, int cycle, String action, List<String> targetTaskIds, List<String> issues, double confidence) {
+        return ResearchStreamEvent.builder()
+                .type("review_decision")
+                .runId(runId)
+                .payload(java.util.Map.of(
+                        "cycle", cycle,
+                        "action", action,
+                        "targetTaskIds", targetTaskIds != null ? targetTaskIds : List.of(),
+                        "issues", issues != null ? issues : List.of(),
+                        "confidence", confidence
+                ))
+                .build();
+    }
+
+    public static ResearchStreamEvent runDegraded(String runId, String reason, List<String> issues) {
+        return ResearchStreamEvent.builder()
+                .type("run_degraded")
+                .runId(runId)
+                .status("DEGRADED")
+                .summary(reason)
+                .payload(java.util.Map.of("issues", issues != null ? issues : List.of()))
+                .build();
+    }
+
+    public static ResearchStreamEvent replanTriggered(String runId, int cycle, String reason) {
+        return ResearchStreamEvent.builder()
+                .type("replan_triggered")
+                .runId(runId)
+                .summary(reason)
+                .payload(java.util.Map.of("cycle", cycle))
                 .build();
     }
 }

@@ -1,40 +1,54 @@
 package com.financial.copilot.agent.core.business.agents.fund;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financial.copilot.agent.core.business.agents.AgentRole;
 import com.financial.copilot.agent.core.infra.agentscope.AgentScopeAgentFactory;
+import com.financial.copilot.agent.core.infra.agentscope.RoleToolkitRegistry;
 import com.financial.copilot.agent.core.infra.dag.artifact.*;
 import com.financial.copilot.agent.core.infra.dag.artifact.payload.ComparisonReport;
 import com.financial.copilot.agent.core.infra.dag.artifact.payload.FundResearchResult;
 import com.financial.copilot.agent.core.infra.dag.model.GraphNode;
 import com.financial.copilot.agent.core.infra.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.infra.dag.runtime.NodeInput;
-import com.financial.copilot.agent.tools.fund.*;
-import com.financial.copilot.agent.tools.graph.FinancialGraphTool;
-import io.agentscope.core.tool.*;
-import org.springframework.stereotype.Component;
 import com.financial.copilot.agent.core.infra.prompt.FundComparatorPrompt;
+import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
+import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
+import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
+import com.financial.copilot.agent.tools.graph.FinancialGraphTool;
+import io.agentscope.core.tool.Toolkit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /** AgentScope ReAct role for fund comparison and deep dives. */
 @Component
 public class FundComparatorAgent {
-    private final AgentScopeAgentFactory factory; private final FundQuantAnalysisTool quant;
-    private final FundHoldingsQueryTool holdings; private final FundReportRetrieverTool reports;
-    private final FinancialGraphTool graph; private final ObjectMapper mapper;
+    private final AgentScopeAgentFactory factory;
+    private final RoleToolkitRegistry toolkitRegistry;
+    private final ObjectMapper mapper;
+
+    @Autowired
+    public FundComparatorAgent(AgentScopeAgentFactory factory,
+                               RoleToolkitRegistry toolkitRegistry,
+                               ObjectMapper mapper) {
+        this.factory = factory;
+        this.toolkitRegistry = toolkitRegistry;
+        this.mapper = mapper;
+    }
 
     public FundComparatorAgent(AgentScopeAgentFactory factory, FundQuantAnalysisTool quant,
                                FundHoldingsQueryTool holdings, FundReportRetrieverTool reports,
                                @Nullable FinancialGraphTool graph, ObjectMapper mapper) {
-        this.factory=factory; this.quant=quant; this.holdings=holdings; this.reports=reports;
-        this.graph=graph; this.mapper=mapper;
+        this(factory, RoleToolkitRegistry.forFundComparator(quant, holdings, reports, graph), mapper);
     }
 
     public Artifact<ComparisonReport> execute(GraphNode node, NodeInput input, NodeExecutionContext context) {
         List<String> codes = codes(input, node);
-        Toolkit toolkit = new Toolkit(); toolkit.registerTool(new ComparisonTools(quant, holdings, reports));
-        if (graph != null) toolkit.registerTool(new GraphComparisonTools(graph));
+        Toolkit toolkit = toolkitRegistry.toolkitFor(AgentRole.FUND_COMPARATOR);
         String userPrompt = FundComparatorPrompt.buildSpec(
                 context.request().prompt(), codes, context.request().profile()).renderUserPrompt();
         var run = factory.invokeWithTrace(new AgentScopeAgentFactory.AgentDefinition(
@@ -66,30 +80,5 @@ public class FundComparatorAgent {
             var array = mapper.readTree(json).path("sharedStockCodes");
             List<String> result = new ArrayList<>(); array.forEach(item -> result.add(item.asText())); return result;
         } catch (Exception ignored) { return List.of(); }
-    }
-
-    static final class ComparisonTools {
-        private final FundQuantAnalysisTool q; private final FundHoldingsQueryTool h;
-        private final FundReportRetrieverTool r;
-        ComparisonTools(FundQuantAnalysisTool q, FundHoldingsQueryTool h, FundReportRetrieverTool r){this.q=q;this.h=h;this.r=r;}
-        @Tool(name="compare_metrics", description="对称查询两只基金量化指标；单标的时两个代码相同", readOnly=true)
-        public String metrics(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+q.getFundMetrics(a,null,null)+"\nB="+q.getFundMetrics(b,null,null);}
-        @Tool(name="compare_holdings", description="对称查询两只基金持仓", readOnly=true)
-        public String holdings(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+h.getTopHoldings(a,null)+"\nB="+h.getTopHoldings(b,null);}
-        @Tool(name="compare_reports", description="对称查询两只基金季报", readOnly=true)
-        public String reports(@ToolParam(name="code_a",description="基金A") String a,@ToolParam(name="code_b",description="基金B") String b){return "A="+r.getLatestQuarterlyReportView(a)+"\nB="+r.getLatestQuarterlyReportView(b);}
-    }
-
-    /** 仅在图谱启用时向模型提供重合持仓查询。 */
-    static final class GraphComparisonTools {
-        private final FinancialGraphTool graph;
-        GraphComparisonTools(FinancialGraphTool graph) { this.graph = graph; }
-
-        /** 查询两只基金在图谱中的共同持仓。 */
-        @Tool(name="shared_holdings", description="查询两只基金的重合持仓", readOnly=true)
-        public String shared(@ToolParam(name="code_a",description="基金A") String a,
-                             @ToolParam(name="code_b",description="基金B") String b) {
-            return graph.getSharedHoldings(a, b);
-        }
     }
 }

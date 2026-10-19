@@ -17,12 +17,12 @@ public class AgentNodeRouter {
     private final StockAnalyzerAgent stockAnalyzer;
     private final FundComparatorAgent fundComparator;
     private final StockComparatorAgent stockComparator;
-    private final ReportSynthesizerAgent synthesizer;
+    private final AggregatorAgent synthesizer;
 
     public AgentNodeRouter(FundScreenerAgent fundScreener, StockScreenerAgent stockScreener,
                            FundAnalyzerAgent fundAnalyzer, StockAnalyzerAgent stockAnalyzer,
                            FundComparatorAgent fundComparator, StockComparatorAgent stockComparator,
-                           ReportSynthesizerAgent synthesizer) {
+                           AggregatorAgent synthesizer) {
         this.fundScreener = fundScreener;
         this.stockScreener = stockScreener;
         this.fundAnalyzer = fundAnalyzer;

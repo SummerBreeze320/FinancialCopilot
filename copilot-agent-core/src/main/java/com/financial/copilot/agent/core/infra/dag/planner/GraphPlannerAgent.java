@@ -13,6 +13,8 @@ import com.financial.copilot.agent.core.infra.dag.runtime.context.CancellationTo
 import com.financial.copilot.common.enums.AssetCategory;
 import com.financial.copilot.agent.core.infra.prompt.GraphPlannerPrompt;
 import io.agentscope.core.tool.*;
+import com.financial.copilot.agent.core.infra.dag.validator.PlanValidator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -24,12 +26,27 @@ public class GraphPlannerAgent implements RePlanAdvisor {
     private final SkillRegistryTool skills; private final CapabilityRegistryTool capabilities;
     private final MarketMemoryTool memory; private final FinancialDocumentSearchTool documents;
     private final ObjectMapper mapper;
+    private final PlanValidator planValidator;
 
     public GraphPlannerAgent(AgentScopeAgentFactory factory, MetricRAGTool metrics, SkillRegistryTool skills,
                              CapabilityRegistryTool capabilities, MarketMemoryTool memory,
                              FinancialDocumentSearchTool documents, ObjectMapper mapper) {
-        this.factory=factory;this.metrics=metrics;this.skills=skills;this.capabilities=capabilities;
-        this.memory=memory;this.documents=documents;this.mapper=mapper;
+        this(factory, metrics, skills, capabilities, memory, documents, mapper, new PlanValidator());
+    }
+
+    @Autowired
+    public GraphPlannerAgent(AgentScopeAgentFactory factory, MetricRAGTool metrics, SkillRegistryTool skills,
+                             CapabilityRegistryTool capabilities, MarketMemoryTool memory,
+                             FinancialDocumentSearchTool documents, ObjectMapper mapper,
+                             @Autowired(required = false) PlanValidator planValidator) {
+        this.factory = factory;
+        this.metrics = metrics;
+        this.skills = skills;
+        this.capabilities = capabilities;
+        this.memory = memory;
+        this.documents = documents;
+        this.mapper = mapper;
+        this.planValidator = planValidator != null ? planValidator : new PlanValidator();
     }
 
     public ExecutionGraph plan(GraphPlanningRequest request) {
@@ -44,15 +61,10 @@ public class GraphPlannerAgent implements RePlanAdvisor {
             if(run.observations().isEmpty())throw new IllegalStateException("Planner finished without capability discovery");
             GraphPlan plan=mapper.readValue(stripFence(run.reply().getTextContent()),GraphPlan.class);
             ExecutionGraph graph=plan.restore();
-            if(graph.getNodes().isEmpty()||graph.hasCycle())throw new IllegalStateException("Planner produced an invalid graph");
-            graph.getNodes().values().forEach(node -> {
-                if (!AgentRoleCatalog.supports(node.getTaskType())) {
-                    throw new IllegalArgumentException("No AgentScope role for task type: " + node.getTaskType());
-                }
-                if (!graph.getUpstream(node.getNodeId()).isEmpty() && node.getInputBindings().isEmpty()) {
-                    throw new IllegalArgumentException("Non-root node requires explicit inputBindings: " + node.getNodeId());
-                }
-            });
+            var validation = planValidator.validate(graph);
+            if (!validation.isValid()) {
+                throw new IllegalArgumentException(validation.getErrors().get(0));
+            }
             return graph;
         } catch(Exception e){throw new IllegalStateException("GraphPlannerAgent returned invalid GraphPlan",e);}
     }
@@ -104,6 +116,6 @@ public class GraphPlannerAgent implements RePlanAdvisor {
         @Tool(name="list_skills",description="列出可用投研技能",readOnly=true) public Object skills(){return s.listSkills();}
         @Tool(name="check_capability",description="检查资产类别的数据能力",readOnly=true) public boolean capability(@ToolParam(name="assetCategory",description="FUND 或 STOCK")String category){return c.isAssetCategorySupported(AssetCategory.valueOf(category));}
         @Tool(name="search_documents",description="检索金融文档",readOnly=true) public Object documents(@ToolParam(name="query",description="检索词")String q){return docs.search(q);}
-        @Tool(name="read_memory",description="读取会话市场记忆",readOnly=true) public Object memory(@ToolParam(name="sessionKey",description="会话ID")String id,@ToolParam(name="query",description="检索词")String q){return memory.retrieveMemory(id,q,5);}
+        @Tool(name="read_memory",description="读取当前用户的投研记忆",readOnly=true) public Object memory(@ToolParam(name="query",description="检索词")String q,NodeExecutionContext context){return memory.retrieveMemory(context!=null&&context.request()!=null?context.request().identity():null,q,5);}
     }
 }

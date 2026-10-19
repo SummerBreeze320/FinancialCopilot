@@ -60,6 +60,35 @@ class AgentScopeAgentFactoryTest {
         assertThat(lastUsage.get().getModel()).isEqualTo("scripted");
     }
 
+    @Test
+    void runtimeContextCarriesDistinctAgentAndWorkflowRunIds() {
+        AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
+                () -> LlmSettingsDTO.builder().model("scripted").build(),
+                ignored -> new ScriptedModel(),
+                mock(MemoryClient.class));
+        NodeExecutionContext context = nodeContext("wf-1", "analysis", 2);
+        io.agentscope.core.agent.RuntimeContext runtimeContext = factory.runtimeContext(context);
+        assertThat(runtimeContext.<String>get("runId")).isEqualTo("wf-1:analysis:2");
+        assertThat(runtimeContext.<String>get("workflowRunId")).isEqualTo("wf-1");
+        assertThat(runtimeContext.get(NodeExecutionContext.class).nodeId()).isEqualTo("analysis");
+        assertThat(runtimeContext.get(AgentInvocationIdentity.class).agentRunId()).isEqualTo("wf-1:analysis:2");
+        assertThat(runtimeContext.get(AgentInvocationIdentity.class).attempt()).isEqualTo(2);
+    }
+
+    private NodeExecutionContext nodeContext(String workflowRunId, String nodeId, int attempt) {
+        com.financial.copilot.agent.core.infra.context.ExecutionIdentity identity =
+                new com.financial.copilot.agent.core.infra.context.ExecutionIdentity("DEFAULT", 100L, java.util.UUID.randomUUID(), workflowRunId, "session-1");
+        GraphRunRequest request = new GraphRunRequest(
+                identity,
+                new com.financial.copilot.agent.core.infra.context.ConversationContextSnapshot(List.of(), null, "prompt", java.time.Instant.now()),
+                null,
+                false,
+                usage -> {},
+                RunMode.SYNC
+        );
+        return new NodeExecutionContext(request, nodeId, new ArtifactStore(), new CancellationToken(nodeId), attempt);
+    }
+
     static final class EchoTool {
         @Tool(name = "echo", description = "Uppercase input", readOnly = true)
         public String echo(@ToolParam(name = "value", description = "text") String value) {

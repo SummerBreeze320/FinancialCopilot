@@ -4,7 +4,13 @@ import com.financial.copilot.common.exception.WalletInsufficientException;
 import com.financial.copilot.domain.platform.billing.dto.TokenDeductionResult;
 import com.financial.copilot.domain.platform.billing.dto.UsageTrendPointDTO;
 import com.financial.copilot.domain.platform.billing.dto.WalletDTO;
-import com.financial.copilot.domain.platform.billing.entity.*;
+import com.financial.copilot.domain.platform.billing.entity.ModelPricing;
+import com.financial.copilot.domain.platform.billing.entity.PointReservation;
+import com.financial.copilot.domain.platform.billing.entity.RechargeOrder;
+import com.financial.copilot.domain.platform.billing.entity.RechargePackage;
+import com.financial.copilot.domain.platform.billing.entity.ReservationStatus;
+import com.financial.copilot.domain.platform.billing.entity.TokenUsageLedger;
+import com.financial.copilot.domain.platform.billing.entity.UserWallet;
 import com.financial.copilot.domain.platform.billing.port.BillingPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,9 +23,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * <h1>算力计量计费与钱包核心业务服务单元测试 (Wallet Billing Service Test)</h1>
@@ -27,6 +47,57 @@ import static org.mockito.Mockito.*;
  * @author FinancialCopilot
  */
 class WalletBillingServiceTest {
+
+    private BillingPort mockBillingPort;
+    private WalletBillingService billingService;
+    private InMemoryBillingPort inMemoryPort;
+    private WalletBillingService inMemoryBillingService;
+
+    @BeforeEach
+    void setUp() {
+        mockBillingPort = Mockito.mock(BillingPort.class);
+        billingService = new WalletBillingService(mockBillingPort);
+        inMemoryPort = new InMemoryBillingPort();
+        inMemoryBillingService = new WalletBillingService(inMemoryPort);
+    }
+
+    private UserWallet wallet() {
+        return inMemoryPort.getOrCreateWallet(7L, null);
+    }
+
+    @Test
+    void concurrentRunsCannotReserveMoreThanAvailableBalance() {
+        WalletBillingService billing = inMemoryBillingService;
+        inMemoryPort.addRechargePoints(7L, 1000L);
+        PointReservation first = billing.reserve(7L, "run-a", 800L);
+        assertThatThrownBy(() -> billing.reserve(7L, "run-b", 800L))
+                .isInstanceOf(WalletInsufficientException.class);
+        assertThat(first.status()).isEqualTo(ReservationStatus.ACTIVE);
+    }
+
+    @Test
+    void duplicateSettlementDoesNotDoubleCharge() {
+        WalletBillingService billing = inMemoryBillingService;
+        inMemoryPort.addRechargePoints(7L, 1000L);
+        billing.reserve(7L, "run-a", 500L);
+        billing.settle(7L, "run-a", 420L);
+        billing.settle(7L, "run-a", 420L);
+        assertThat(wallet().totalConsumedPoints()).isEqualTo(420L);
+    }
+
+    @Test
+    void releaseUnusedReservationRestoresAvailableBalance() {
+        WalletBillingService billing = inMemoryBillingService;
+        inMemoryPort.addRechargePoints(7L, 1000L);
+        billing.reserve(7L, "run-a", 600L);
+        assertThat(wallet().frozenPoints()).isEqualTo(600L);
+        assertThat(wallet().hasSufficientBalance(500L)).isFalse();
+
+        billing.release(7L, "run-a");
+        assertThat(wallet().frozenPoints()).isEqualTo(0L);
+        assertThat(wallet().hasSufficientBalance(500L)).isTrue();
+    }
+
     @Test
     void failedDeductionDoesNotWriteSuccessfulLedger() {
         BillingPort port = mock(BillingPort.class);
@@ -37,15 +108,6 @@ class WalletBillingServiceTest {
         assertThrows(WalletInsufficientException.class, () -> new WalletBillingService(port)
                 .deductTokenPoints(1L, "session", "TEST", "DEEPSEEK", "deepseek-chat", 100, 100, 1));
         verify(port, never()).recordUsageLedger(any());
-    }
-
-    private BillingPort mockBillingPort;
-    private WalletBillingService billingService;
-
-    @BeforeEach
-    void setUp() {
-        mockBillingPort = Mockito.mock(BillingPort.class);
-        billingService = new WalletBillingService(mockBillingPort);
     }
 
     @Test

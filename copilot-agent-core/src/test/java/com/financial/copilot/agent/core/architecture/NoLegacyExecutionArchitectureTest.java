@@ -24,17 +24,47 @@ class NoLegacyExecutionArchitectureTest {
             }
         }
         forbidden.forEach(name -> assertThat(production.toString()).doesNotContain(name));
-        try (var agentFiles = Files.walk(Path.of("src/main/java/com/financial/copilot/agent/core/agents"))) {
-            for (Path file : agentFiles.filter(path -> path.toString().endsWith("Agent.java")).toList()) {
-                assertThat(Files.readString(file))
-                        .as("%s must use AgentScope runtime", file)
-                        .contains("AgentScopeAgentFactory")
-                        .doesNotContain("LlmService");
-            }
+
+        Path sourceRoot = Path.of("src/main/java/com/financial/copilot/agent/core");
+        assertThat(sourceRoot).exists();
+        assertThat(findJavaSources(sourceRoot))
+                .noneMatch(path -> path.toString().replace('\\', '/').contains("agent/core/agents/"));
+
+        Path businessAgents = Path.of("src/main/java/com/financial/copilot/agent/core/business/agents");
+        assertThat(businessAgents).exists();
+        for (Path file : findJavaSources(businessAgents).stream().filter(p -> p.toString().endsWith("Agent.java")).toList()) {
+            assertThat(Files.readString(file))
+                    .as("%s must use AgentScope runtime", file)
+                    .contains("AgentScopeAgentFactory")
+                    .doesNotContain("LlmService");
         }
-        assertThat(Files.readString(Path.of("src/main/java/com/financial/copilot/agent/core/dag/planner/GraphPlannerAgent.java")))
+
+        Path plannerPath = Path.of("src/main/java/com/financial/copilot/agent/core/infra/dag/planner/GraphPlannerAgent.java");
+        assertThat(Files.readString(plannerPath))
                 .contains("AgentScopeAgentFactory")
                 .doesNotContain("LlmService")
                 .doesNotContain("fallback");
+    }
+
+    @Test
+    void openAiChatModelIsOnlyConstructedInModelProviderOrGatewayPackage() throws Exception {
+        Path sourceRoot = Path.of("src/main/java/com/financial/copilot/agent/core");
+        for (Path file : findJavaSources(sourceRoot)) {
+            String normalizedPath = file.toString().replace('\\', '/');
+            if (normalizedPath.contains("/infra/agentscope/AgentScopeAgentFactory.java")
+                    || normalizedPath.contains("/infra/llm/")) {
+                continue;
+            }
+            String content = Files.readString(file);
+            assertThat(content)
+                    .as("%s must not construct or reference OpenAIChatModel directly", file)
+                    .doesNotContain("OpenAIChatModel");
+        }
+    }
+
+    private List<Path> findJavaSources(Path root) throws Exception {
+        try (var stream = Files.walk(root)) {
+            return stream.filter(p -> p.toString().endsWith(".java")).toList();
+        }
     }
 }
