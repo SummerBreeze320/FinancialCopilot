@@ -15,6 +15,9 @@ import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
 import com.financial.copilot.agent.tools.graph.FinancialGraphTool;
+import com.financial.copilot.agent.core.business.agents.a2a.A2aExecutableAgent;
+import com.financial.copilot.agent.core.business.agents.a2a.AgentCardDefinitions;
+import io.a2a.spec.AgentCard;
 import io.agentscope.core.tool.Toolkit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
@@ -26,7 +29,13 @@ import java.util.UUID;
 
 /** AgentScope ReAct role for fund comparison and deep dives. */
 @Component
-public class FundComparatorAgent {
+public class FundComparatorAgent implements A2aExecutableAgent {
+
+    @Override
+    public AgentCard agentCard() {
+        return AgentCardDefinitions.fundComparatorCard();
+    }
+
     private final AgentScopeAgentFactory factory;
     private final RoleToolkitRegistry toolkitRegistry;
     private final ObjectMapper mapper;

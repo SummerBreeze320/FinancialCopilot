@@ -12,6 +12,9 @@ import com.financial.copilot.agent.core.infra.dag.runtime.NodeInput;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
 import com.financial.copilot.agent.tools.rag.FinancialSchemaRagTool;
 import com.financial.copilot.domain.business.fund.entity.FundInfo;
+import com.financial.copilot.agent.core.business.agents.a2a.A2aExecutableAgent;
+import com.financial.copilot.agent.core.business.agents.a2a.AgentCardDefinitions;
+import io.a2a.spec.AgentCard;
 import io.agentscope.core.tool.Toolkit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
@@ -22,7 +25,13 @@ import java.util.UUID;
 
 /** AgentScope ReAct role that chooses and executes fund screening tools. */
 @Component
-public class FundScreenerAgent {
+public class FundScreenerAgent implements A2aExecutableAgent {
+
+    @Override
+    public AgentCard agentCard() {
+        return AgentCardDefinitions.fundScreenerCard();
+    }
+
     private static final String SYSTEM_PROMPT = """
             你是基金筛选 ReAct Agent。
             若用户问题中包含行业主题、模糊板块或专业金融指标（如芯片、医疗、夏普比率、卡玛比率），可先调用 match_metrics_and_sectors 或 expand_sector 对齐指标助记码与板块 ID。

@@ -13,6 +13,9 @@ import com.financial.copilot.agent.core.infra.dag.runtime.NodeInput;
 import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;
 import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
+import com.financial.copilot.agent.core.business.agents.a2a.A2aExecutableAgent;
+import com.financial.copilot.agent.core.business.agents.a2a.AgentCardDefinitions;
+import io.a2a.spec.AgentCard;
 import io.agentscope.core.tool.Toolkit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,7 +26,13 @@ import java.util.UUID;
 
 /** AgentScope ReAct role for evidence-driven fund analysis. */
 @Component
-public class FundAnalyzerAgent {
+public class FundAnalyzerAgent implements A2aExecutableAgent {
+
+    @Override
+    public AgentCard agentCard() {
+        return AgentCardDefinitions.fundAnalyzerAgentCard();
+    }
+
     private static final String SYSTEM_PROMPT = """
             你是基金分析 ReAct Agent。对给定候选基金自主调用 fund_metrics、fund_holdings、fund_report。
             至少调用 fund_metrics，并依据观察结果输出严格 JSON：

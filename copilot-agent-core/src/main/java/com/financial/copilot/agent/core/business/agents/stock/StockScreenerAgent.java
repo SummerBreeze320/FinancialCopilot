@@ -8,6 +8,9 @@ import com.financial.copilot.agent.core.infra.dag.model.GraphNode;
 import com.financial.copilot.agent.core.infra.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.infra.dag.runtime.NodeInput;
 import com.financial.copilot.agent.tools.stock.StockScreeningTool;
+import com.financial.copilot.agent.core.business.agents.a2a.A2aExecutableAgent;
+import com.financial.copilot.agent.core.business.agents.a2a.AgentCardDefinitions;
+import io.a2a.spec.AgentCard;
 import io.agentscope.core.tool.Toolkit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,7 +19,13 @@ import java.util.UUID;
 
 /** AgentScope ReAct role that chooses stock screening parameters and tools. */
 @Component
-public class StockScreenerAgent {
+public class StockScreenerAgent implements A2aExecutableAgent {
+
+    @Override
+    public AgentCard agentCard() {
+        return AgentCardDefinitions.stockScreenerCard();
+    }
+
     private final AgentScopeAgentFactory factory;
     private final RoleToolkitRegistry toolkitRegistry;
 
