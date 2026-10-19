@@ -10,14 +10,17 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import java.util.List;
 import java.util.Optional;
 
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import static org.junit.jupiter.api.Assertions.*;
 
+@EnabledIfSystemProperty(named = "copilot.integration", matches = "true")
 class PostgresRagSchemaAdapterTest {
 
     private PostgresRagSchemaAdapter createLiveAdapter() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl("jdbc:postgresql://127.0.0.1:5432/financial_copilot");
+        String dbPort = System.getProperty("DB_PORT", System.getenv().getOrDefault("DB_PORT", "15432"));
+        dataSource.setUrl("jdbc:postgresql://127.0.0.1:" + dbPort + "/financial_copilot");
         dataSource.setUsername("postgres");
         dataSource.setPassword("123456");
 

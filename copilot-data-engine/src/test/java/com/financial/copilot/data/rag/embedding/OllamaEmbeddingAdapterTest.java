@@ -2,12 +2,14 @@ package com.financial.copilot.data.rag.embedding;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@EnabledIfSystemProperty(named = "copilot.integration", matches = "true")
 class OllamaEmbeddingAdapterTest {
 
     @Test
