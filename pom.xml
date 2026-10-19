@@ -21,6 +21,7 @@
         <module>copilot-agent-tools</module>
         <module>copilot-agent-core</module>
         <module>copilot-app</module>
+        <module>copilot-mcp-service</module>
     </modules>
 
     <properties>
@@ -86,6 +87,11 @@
             <dependency>
                 <groupId>com.financial.copilot</groupId>
                 <artifactId>copilot-agent-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.financial.copilot</groupId>
+                <artifactId>copilot-mcp-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

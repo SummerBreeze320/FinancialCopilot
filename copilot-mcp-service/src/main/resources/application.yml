@@ -1,0 +1,62 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: copilot-mcp-service
+  main:
+    web-application-type: reactive
+    allow-bean-definition-overriding: true
+
+mcp:
+  server:
+    port: 8085
+    name: "financial-copilot-tools"
+    version: "1.0.0"
+    dynamic-tools:
+      - name: "recognize_entities"
+        description: "对输入文本进行金融实体识别（包含基金代码、基金名称、基金经理、股票等实体解析）"
+        endpoint: "http://127.0.0.1:8800/v1/entities/recognize"
+        method: "POST"
+        parameters:
+          - name: "text"
+            type: "string"
+            required: true
+            description: "待进行金融实体抽取的原始文本或用户问题"
+      - name: "search_memory"
+        description: "按作用域检索用户的长期记忆事实（如投资风格偏好、关注行业、历史约束事实）"
+        endpoint: "http://127.0.0.1:8700/v1/memory/search"
+        method: "POST"
+        headers:
+          X-Copilot-Service-Token: "${COPILOT_SERVICE_TOKEN:test-token}"
+        parameters:
+          - name: "query"
+            type: "string"
+            required: true
+            description: "记忆检索查询词"
+          - name: "user_id"
+            type: "string"
+            required: false
+            description: "用户唯一ID"
+          - name: "max_results"
+            type: "integer"
+            required: false
+            description: "返回的最大记忆记录条数"
+      - name: "macro_news_realtime"
+        description: "获取最新宏观财经新闻快讯"
+        endpoint: "https://api.example.com/finance/news/latest"
+        method: "GET"
+        parameters:
+          - name: "keyword"
+            type: "string"
+            required: true
+            description: "检索关键字"
+          - name: "limit"
+            type: "integer"
+            required: false
+            description: "返回条数"
+
+logging:
+  level:
+    root: INFO
+    com.financial.copilot.mcp: DEBUG
