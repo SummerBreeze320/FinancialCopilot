@@ -24,6 +24,10 @@
             <groupId>com.financial.copilot</groupId>
             <artifactId>copilot-agent-tools</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.financial.copilot</groupId>
+            <artifactId>copilot-llm-gateway</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

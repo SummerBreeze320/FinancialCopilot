@@ -19,6 +19,7 @@
         <module>copilot-math-core</module>
         <module>copilot-data-engine</module>
         <module>copilot-agent-tools</module>
+        <module>copilot-llm-gateway</module>
         <module>copilot-agent-core</module>
         <module>copilot-app</module>
         <module>copilot-mcp-service</module>
@@ -87,6 +88,11 @@
             <dependency>
                 <groupId>com.financial.copilot</groupId>
                 <artifactId>copilot-agent-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.financial.copilot</groupId>
+                <artifactId>copilot-llm-gateway</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
