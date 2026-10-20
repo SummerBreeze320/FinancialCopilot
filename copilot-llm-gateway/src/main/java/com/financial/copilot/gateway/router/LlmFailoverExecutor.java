@@ -158,11 +158,20 @@ public class LlmFailoverExecutor {
      * 默认基于 WebClient 的 OpenAI-compatible 端点调用器
      */
     public static class DefaultWebClientEndpointInvoker implements EndpointInvoker {
-        private final WebClient webClient = WebClient.builder().build();
+        private final com.financial.copilot.gateway.transport.LlmDynamicWebClientFactory webClientFactory;
+
+        public DefaultWebClientEndpointInvoker() {
+            this(new com.financial.copilot.gateway.transport.LlmDynamicWebClientFactory());
+        }
+
+        public DefaultWebClientEndpointInvoker(com.financial.copilot.gateway.transport.LlmDynamicWebClientFactory webClientFactory) {
+            this.webClientFactory = webClientFactory != null ? webClientFactory : new com.financial.copilot.gateway.transport.LlmDynamicWebClientFactory();
+        }
 
         @Override
         public Mono<LlmGatewayResponse> invoke(LlmGatewayRequest request, ProviderEndpointSpec spec) {
-            String url = spec.baseUrl().endsWith("/") ? spec.baseUrl() + "chat/completions" : spec.baseUrl() + "/chat/completions";
+            WebClient webClient = webClientFactory.getOrCreateWebClient(spec.baseUrl(), spec.apiKey());
+            String uri = spec.baseUrl().endsWith("/") ? "chat/completions" : "/chat/completions";
 
             List<Map<String, String>> messages = new ArrayList<>();
             if (request.systemPrompt() != null && !request.systemPrompt().isBlank()) {
@@ -180,8 +189,7 @@ public class LlmFailoverExecutor {
             );
 
             return webClient.post()
-                    .uri(url)
-                    .header("Authorization", "Bearer " + spec.apiKey())
+                    .uri(uri)
                     .bodyValue(body)
                     .retrieve()
                     .bodyToMono(Map.class)
