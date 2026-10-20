@@ -10,6 +10,11 @@ import com.financial.copilot.agent.core.infra.llm.provider.LlmProviderRegistry;
 import com.financial.copilot.agent.core.infra.llm.provider.LlmProviderType;
 import lombok.extern.slf4j.Slf4j;
 import com.financial.copilot.agent.core.infra.thread.VirtualThreadSchedulers;
+import com.financial.copilot.gateway.client.LlmGatewayClient;
+import com.financial.copilot.gateway.model.LlmGatewayRequest;
+import com.financial.copilot.gateway.model.LlmGatewayResponse;
+import com.financial.copilot.gateway.model.LlmRoutingScene;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
@@ -43,15 +48,26 @@ public class DefaultLlmService implements LlmService {
     private final LlmConfigManager configManager;
     private final LlmProviderRegistry providerRegistry;
     private final ObjectMapper objectMapper;
+    private final LlmGatewayClient gatewayClient;
+
+    @Autowired
+    public DefaultLlmService(LlmDynamicWebClientFactory webClientFactory,
+                             LlmConfigManager configManager,
+                             LlmProviderRegistry providerRegistry,
+                             ObjectMapper objectMapper,
+                             @Autowired(required = false) LlmGatewayClient gatewayClient) {
+        this.webClientFactory = webClientFactory;
+        this.configManager = configManager;
+        this.providerRegistry = providerRegistry;
+        this.objectMapper = objectMapper;
+        this.gatewayClient = gatewayClient;
+    }
 
     public DefaultLlmService(LlmDynamicWebClientFactory webClientFactory,
                              LlmConfigManager configManager,
                              LlmProviderRegistry providerRegistry,
                              ObjectMapper objectMapper) {
-        this.webClientFactory = webClientFactory;
-        this.configManager = configManager;
-        this.providerRegistry = providerRegistry;
-        this.objectMapper = objectMapper;
+        this(webClientFactory, configManager, providerRegistry, objectMapper, null);
     }
 
     @Override
@@ -65,6 +81,26 @@ public class DefaultLlmService implements LlmService {
             log.warn("[LLM] 未检测到有效的 API Key，启用开发测试模式智能响应兜底: provider={}, model={}, enableThinking={}",
                     resolvedSettings.getProvider(), effectiveModel, resolvedSettings.isEnableThinking());
             return generateMockResponse(request.getSystemPrompt(), request.getUserPrompt());
+        }
+
+        if (gatewayClient != null && request.getUsageConsumer() == null) {
+            try {
+                LlmRoutingScene scene = resolvedSettings.isEnableThinking() ? LlmRoutingScene.REASONING : LlmRoutingScene.STANDARD;
+                LlmGatewayRequest gatewayRequest = LlmGatewayRequest.builder()
+                        .systemPrompt(request.getSystemPrompt())
+                        .userPrompt(request.getUserPrompt())
+                        .scene(scene)
+                        .preferredModel(effectiveModel)
+                        .temperature(resolvedSettings.getTemperature())
+                        .maxTokens(resolvedSettings.resolveMaxTokens())
+                        .build();
+                LlmGatewayResponse response = gatewayClient.executeSync(gatewayRequest);
+                if (response != null && response.content() != null && !response.content().isBlank()) {
+                    return response.content();
+                }
+            } catch (Exception e) {
+                log.warn("[LLM] 网关调用执行异常，回退至底层直连链路: {}", e.getMessage());
+            }
         }
 
         WebClient webClient = webClientFactory.getOrCreateWebClient(

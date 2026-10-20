@@ -12,13 +12,21 @@ import io.agentscope.core.model.ChatResponse;
 import io.agentscope.core.model.GenerateOptions;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.ToolSchema;
+import com.financial.copilot.agent.core.infra.agentscope.loop.AgentLoopSupervisor;
+import com.financial.copilot.agent.core.infra.agentscope.loop.AgentTerminationStatus;
+import io.agentscope.core.message.TextBlock;
+import io.agentscope.core.message.ToolResultBlock;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.extensions.model.openai.OpenAIChatModel;
+import com.financial.copilot.gateway.client.LlmGatewayClient;
+import com.financial.copilot.gateway.model.LlmRoutingScene;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,8 +46,21 @@ public class AgentScopeAgentFactory {
 
     @Autowired
     public AgentScopeAgentFactory(LlmConfigManager configManager, MemoryClient memoryClient,
+                                  com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway,
+                                  @Autowired(required = false) LlmGatewayClient gatewayClient) {
+        this(configManager::getActiveSettings,
+                settings -> gatewayClient != null
+                        ? gatewayClient.createAgentScopeModel(
+                                settings != null && settings.isEnableThinking() ? LlmRoutingScene.REASONING : LlmRoutingScene.STANDARD,
+                                settings != null ? settings.resolveEffectiveModel() : null)
+                        : openAiCompatibleModel(settings),
+                memoryClient,
+                gateway);
+    }
+
+    public AgentScopeAgentFactory(LlmConfigManager configManager, MemoryClient memoryClient,
                                   com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway) {
-        this(configManager::getActiveSettings, AgentScopeAgentFactory::openAiCompatibleModel, memoryClient, gateway);
+        this(configManager, memoryClient, gateway, null);
     }
 
     public AgentScopeAgentFactory(Supplier<LlmSettingsDTO> settingsSupplier,
@@ -85,8 +106,9 @@ public class AgentScopeAgentFactory {
 
         LlmSettingsDTO settings = settingsSupplier.get();
         RuntimeContext runtimeContext = runtimeContext(executionContext);
-        Map<String, List<io.agentscope.core.message.ToolResultBlock>> observations = new ConcurrentHashMap<>();
-        Model meteredModel = new MeteredModel(modelProvider.apply(settings), settings, executionContext, observations, gateway);
+        Map<String, List<ToolResultBlock>> observations = new ConcurrentHashMap<>();
+        AgentLoopSupervisor loopSupervisor = new AgentLoopSupervisor(definition.maxIterations(), 2, 2);
+        Model meteredModel = new MeteredModel(modelProvider.apply(settings), settings, executionContext, observations, gateway, loopSupervisor);
         String enhancedSystemPrompt = enhanceWithProfile(definition.systemPrompt(), executionContext);
         ReActAgent agent = ReActAgent.builder()
                 .name(definition.name())
@@ -97,16 +119,27 @@ public class AgentScopeAgentFactory {
                 .maxIters(definition.maxIterations())
                 .generateOptions(generateOptions(settings))
                 .build();
-        executionContext.cancellationToken().onCancel(() -> agent.interrupt(runtimeContext));
+        executionContext.cancellationToken().onCancel(() -> {
+            loopSupervisor.recordCancellation();
+            agent.interrupt(runtimeContext);
+        });
 
         return agent.call(prompt == null ? "" : prompt, runtimeContext)
                 .map(result -> {
                     if (result == null) {
                         throw new IllegalStateException(definition.name() + " returned no result");
                     }
-                    Map<String, List<io.agentscope.core.message.ToolResultBlock>> snapshot = new java.util.HashMap<>();
+                    Map<String, List<ToolResultBlock>> snapshot = new HashMap<>();
                     observations.forEach((name, results) -> snapshot.put(name, List.copyOf(results)));
-                    return new AgentScopeInvocation(result, Map.copyOf(snapshot));
+                    AgentTerminationStatus status = loopSupervisor.getTerminationStatus() != null
+                            ? loopSupervisor.getTerminationStatus()
+                            : AgentTerminationStatus.TASK_COMPLETED;
+                    return new AgentScopeInvocation(
+                            result,
+                            Map.copyOf(snapshot),
+                            status.isDegraded(),
+                            status
+                    );
                 })
                 .doFinally(signal -> agent.close());
     }
@@ -213,27 +246,37 @@ public class AgentScopeAgentFactory {
         private final Model delegate;
         private final LlmSettingsDTO settings;
         private final NodeExecutionContext context;
-        private final Map<String, List<io.agentscope.core.message.ToolResultBlock>> observations;
+        private final Map<String, List<ToolResultBlock>> observations;
         private final com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway;
+        private final AgentLoopSupervisor loopSupervisor;
         private final java.util.Set<String> observedIds = ConcurrentHashMap.newKeySet();
 
         private MeteredModel(Model delegate, LlmSettingsDTO settings, NodeExecutionContext context,
-                             Map<String, List<io.agentscope.core.message.ToolResultBlock>> observations,
-                             com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway) {
+                             Map<String, List<ToolResultBlock>> observations,
+                             com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway,
+                             AgentLoopSupervisor loopSupervisor) {
             this.delegate = Objects.requireNonNull(delegate);
             this.settings = Objects.requireNonNull(settings);
             this.context = context;
             this.observations = observations;
             this.gateway = Objects.requireNonNull(gateway);
+            this.loopSupervisor = Objects.requireNonNull(loopSupervisor);
         }
 
         @Override
         public Flux<ChatResponse> stream(List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
+            List<ToolResultBlock> newResults = new ArrayList<>();
             messages.stream().flatMap(message -> message
-                    .getContentBlocks(io.agentscope.core.message.ToolResultBlock.class).stream())
+                    .getContentBlocks(ToolResultBlock.class).stream())
                     .filter(result -> observedIds.add(result.getId()))
-                    .forEach(result -> observations.computeIfAbsent(result.getName(), ignored -> new CopyOnWriteArrayList<>())
-                            .add(result));
+                    .forEach(result -> {
+                        observations.computeIfAbsent(result.getName(), ignored -> new CopyOnWriteArrayList<>()).add(result);
+                        newResults.add(result);
+                    });
+
+            if (!newResults.isEmpty()) {
+                loopSupervisor.recordObservations(newResults);
+            }
 
             com.financial.copilot.agent.core.infra.llm.execution.LlmCallContext callContext =
                     new com.financial.copilot.agent.core.infra.llm.execution.LlmCallContext(
@@ -245,12 +288,13 @@ public class AgentScopeAgentFactory {
                     );
 
             return gateway.execute(callContext, () -> delegate.stream(messages, tools, options))
+                    .map(chatResponse -> loopSupervisor.inspectAndGuard(chatResponse, observations))
                     .doOnNext(chatResponse -> {
                         if (context != null && context.chunkConsumer() != null && chatResponse != null) {
                             var content = chatResponse.getContent();
                             if (content != null) {
                                 for (var block : content) {
-                                    if (block instanceof io.agentscope.core.message.TextBlock textBlock) {
+                                    if (block instanceof TextBlock textBlock) {
                                         String text = textBlock.getText();
                                         if (text != null && !text.isEmpty()) {
                                             context.chunkConsumer().accept(text);

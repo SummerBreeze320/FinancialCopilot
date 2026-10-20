@@ -89,6 +89,41 @@ class AgentScopeAgentFactoryTest {
         return new NodeExecutionContext(request, nodeId, new ArtifactStore(), new CancellationToken(nodeId), attempt);
     }
 
+    @Test
+    void loopsWithConsecutiveDuplicateCallsAreInterceptedAndDegraded() {
+        Model loopingModel = new Model() {
+            private final AtomicInteger calls = new AtomicInteger();
+            @Override
+            public Flux<ChatResponse> stream(List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
+                calls.incrementAndGet();
+                return Flux.just(ChatResponse.builder()
+                        .id("loop-reply")
+                        .content(List.of(ToolUseBlock.builder().id("tool-loop").name("echo")
+                                .input(Map.of("value", "loop")).content("{\"value\":\"loop\"}").build()))
+                        .finishReason("tool_calls")
+                        .build());
+            }
+            @Override
+            public String getModelName() { return "looping"; }
+        };
+
+        AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
+                () -> LlmSettingsDTO.builder().model("looping").build(), ignored -> loopingModel, mock(MemoryClient.class));
+        Toolkit toolkit = new Toolkit();
+        toolkit.registerTool(new EchoTool());
+        NodeExecutionContext context = nodeContext("wf-loop", "node-loop", 1);
+
+        AgentScopeInvocation invocation = factory.invokeWithTrace(
+                new AgentScopeAgentFactory.AgentDefinition("LoopAgent", "test", "prompt", toolkit, 5),
+                "trigger",
+                context
+        );
+
+        assertThat(invocation.degraded()).isTrue();
+        assertThat(invocation.terminationReason()).isEqualTo("CONSECUTIVE_DUPLICATE_CALL");
+        assertThat(invocation.reply().getTextContent()).contains("检测到以完全相同的入参连续重复调用工具 [echo]");
+    }
+
     static final class EchoTool {
         @Tool(name = "echo", description = "Uppercase input", readOnly = true)
         public String echo(@ToolParam(name = "value", description = "text") String value) {
@@ -130,5 +165,20 @@ class AgentScopeAgentFactoryTest {
         public String getModelName() {
             return "scripted";
         }
+    }
+
+    @Test
+    void shouldWireLlmGatewayClientSuccessfully() {
+        com.financial.copilot.gateway.client.LlmGatewayClient mockGatewayClient = org.mockito.Mockito.mock(com.financial.copilot.gateway.client.LlmGatewayClient.class);
+        com.financial.copilot.agent.core.infra.llm.config.LlmConfigManager configManager = org.mockito.Mockito.mock(com.financial.copilot.agent.core.infra.llm.config.LlmConfigManager.class);
+        org.mockito.Mockito.when(configManager.getActiveSettings()).thenReturn(LlmSettingsDTO.builder().model("test-model").build());
+
+        AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
+                configManager,
+                mock(MemoryClient.class),
+                null,
+                mockGatewayClient
+        );
+        assertThat(factory).isNotNull();
     }
 }
