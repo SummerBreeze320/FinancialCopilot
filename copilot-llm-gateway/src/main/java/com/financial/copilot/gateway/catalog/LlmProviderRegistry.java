@@ -132,6 +132,16 @@ public class LlmProviderRegistry {
     }
 
     /**
+     * 根据厂商枚举查询元数据
+     *
+     * @param type 厂商类型
+     * @return 厂商元数据
+     */
+    public LlmProviderMetadata getMetadata(LlmProviderType type) {
+        return registryMap.getOrDefault(type, registryMap.get(LlmProviderType.DEEPSEEK));
+    }
+
+    /**
      * 根据厂商类型枚举获取元数据
      *
      * @param type 厂商类型枚举

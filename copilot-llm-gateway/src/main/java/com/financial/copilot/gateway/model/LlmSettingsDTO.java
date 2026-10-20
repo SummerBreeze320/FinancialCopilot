@@ -117,4 +117,19 @@ public class LlmSettingsDTO implements Serializable {
         }
         return enableThinking ? 8192 : 4096;
     }
+
+    /**
+     * 获取最终生效的采样温度。
+     * <p>
+     * 注意：对于推理模型（如 OpenAI o1/o3-mini 或 DeepSeek-R1），返回 null 以防止发送非官方支持参数导致 HTTP 400。
+     * </p>
+     *
+     * @return 最终温度数值，推理模型返回 null
+     */
+    public Double resolveTemperature() {
+        if (isReasoningModel(resolveEffectiveModel())) {
+            return null;
+        }
+        return temperature != null ? temperature : 0.2;
+    }
 }
