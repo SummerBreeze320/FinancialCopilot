@@ -1,5 +1,7 @@
 package com.financial.copilot.agent.core.infra.prompt;
 
+import com.financial.copilot.agent.core.infra.agent.AgentRole;
+
 import java.util.List;
 
 /**
@@ -122,4 +124,25 @@ public final class SubagentPrompts {
             .coreDisciplines(REPORT_AGENT_DISCIPLINES)
             .build()
             .renderSystemPrompt();
+
+    /**
+     * 根据角色枚举获取对应子智能体的 RTCF 系统提示词
+     *
+     * @param role 子智能体角色
+     * @return 对应的静态系统提示词
+     * @throws IllegalArgumentException 若 role 为空或为 SUPERVISOR
+     */
+    public static String getSystemPrompt(AgentRole role) {
+        if (role == null) {
+            throw new IllegalArgumentException("AgentRole cannot be null");
+        }
+        return switch (role) {
+            case FUND_RESEARCH -> FUND_AGENT_SYSTEM_PROMPT;
+            case STOCK_RESEARCH -> STOCK_AGENT_SYSTEM_PROMPT;
+            case MARKET_RESEARCH -> MARKET_AGENT_SYSTEM_PROMPT;
+            case RISK_REVIEW -> RISK_REVIEW_SYSTEM_PROMPT;
+            case REPORT -> REPORT_AGENT_SYSTEM_PROMPT;
+            case SUPERVISOR -> throw new IllegalArgumentException("SUPERVISOR prompt must be obtained from SupervisorPrompts.SYSTEM_PROMPT");
+        };
+    }
 }
