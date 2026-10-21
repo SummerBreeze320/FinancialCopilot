@@ -83,6 +83,18 @@ public class ContextualAgentToolCallback implements ToolCallback {
             }
         }
 
+        if (execCtx == null || store == null) {
+            ToolContext current = ResearchToolContext.currentContext();
+            if (current != null && current.getContext() != null) {
+                if (execCtx == null && current.getContext().get(ResearchToolContext.KEY_EXECUTION_CONTEXT) instanceof ResearchExecutionContext rec) {
+                    execCtx = rec;
+                }
+                if (store == null && current.getContext().get(ResearchToolContext.KEY_EVIDENCE_STORE) instanceof RunEvidenceStore res) {
+                    store = res;
+                }
+            }
+        }
+
         String workflowRunId = execCtx != null ? execCtx.workflowRunId() : "standalone-run";
         String agentRunId = "agent-" + UUID.randomUUID();
         String toolName = delegate.getToolDefinition().name();
@@ -96,14 +108,20 @@ public class ContextualAgentToolCallback implements ToolCallback {
                 ? ResearchToolContext.createToolContext(execCtx, store, role, agentRunId)
                 : toolContext;
 
-        return operationLedger.executeOnce(
-                idempotencyKey,
-                workflowRunId,
-                agentRunId,
-                role,
-                toolName,
-                () -> delegate.call(toolInput, childContext)
-        );
+        try (AutoCloseable ignored = ResearchToolContext.withContext(childContext)) {
+            return operationLedger.executeOnce(
+                    idempotencyKey,
+                    workflowRunId,
+                    agentRunId,
+                    role,
+                    toolName,
+                    () -> delegate.call(toolInput, childContext)
+            );
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception e) {
+            throw new RuntimeException("Subagent invocation failed: " + e.getMessage(), e);
+        }
     }
 
     public AgentRole getRole() {

@@ -37,18 +37,30 @@ public class FinancialResearchWorkflow {
     private final ConversationAdmissionController admissionController;
     private final SupervisorRunRegistry runRegistry;
     private final FrameworkEventBridge eventBridge;
+    private final com.financial.copilot.agent.core.infra.supervisor.context.ConversationContextSnapshotFactory snapshotFactory;
 
     @Autowired
     public FinancialResearchWorkflow(
             ResearchSupervisor researchSupervisor,
             ConversationAdmissionController admissionController,
             SupervisorRunRegistry runRegistry,
-            @Autowired(required = false) FrameworkEventBridge eventBridge
+            @Autowired(required = false) FrameworkEventBridge eventBridge,
+            @Autowired(required = false) com.financial.copilot.agent.core.infra.supervisor.context.ConversationContextSnapshotFactory snapshotFactory
     ) {
         this.researchSupervisor = Objects.requireNonNull(researchSupervisor, "researchSupervisor must not be null");
         this.admissionController = admissionController;
         this.runRegistry = runRegistry != null ? runRegistry : new SupervisorRunRegistry();
         this.eventBridge = eventBridge != null ? eventBridge : new FrameworkEventBridge();
+        this.snapshotFactory = snapshotFactory;
+    }
+
+    public FinancialResearchWorkflow(
+            ResearchSupervisor researchSupervisor,
+            ConversationAdmissionController admissionController,
+            SupervisorRunRegistry runRegistry,
+            FrameworkEventBridge eventBridge
+    ) {
+        this(researchSupervisor, admissionController, runRegistry, eventBridge, null);
     }
 
     /**
@@ -96,9 +108,10 @@ public class FinancialResearchWorkflow {
             try {
                 eventBridge.emitSupervisorThinking(eventSink, request.workflowRunId());
 
-                ConversationContextSnapshot snapshot = ConversationContextSnapshot.of(
-                        List.of(), null, request.prompt(), ""
-                );
+                ConversationContextSnapshot snapshot = (snapshotFactory != null)
+                        ? snapshotFactory.create(identity, request.prompt())
+                        : ConversationContextSnapshot.of(List.of(), null, request.prompt(), "");
+
                 ResearchExecutionContext execCtx = ResearchExecutionContext.start(
                         identity, request.workflowRunId(), "supervisor-root", snapshot
                 );
@@ -137,10 +150,6 @@ public class FinancialResearchWorkflow {
 
     public boolean cancel(Long userId, String runId, String reason) {
         return runRegistry != null && runRegistry.cancel(userId, runId, reason);
-    }
-
-    public Optional<Object> findCheckpoint(Long userId, String runId) {
-        return Optional.empty();
     }
 
     public ConversationAdmissionController getAdmissionController() {

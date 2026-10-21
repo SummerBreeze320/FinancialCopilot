@@ -34,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** 统一对话研究入口：先保存消息，再启动 Graph，终态写入后返回成功。 */
+/** 统一对话研究入口：先保存消息，再启动 Supervisor / Subagents 多智能体编排，终态写入后返回成功。 */
 @RestController
 @RequestMapping("/api/v1/research")
 public class ResearchAgentController {
@@ -61,14 +61,18 @@ public class ResearchAgentController {
         private Boolean enableThinking = false;
     }
 
-    /** 返回新建或延续的对话、运行标识及最终报告。 */
+    /** 返回新建或延续的对话、运行标识、Supervisor 成果及事实证据。 */
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
     public static class ResearchRunResponse {
         private String runId;
         private UUID conversationId;
         private String report;
         private String model;
+        private String supervisorRole;
+        private List<String> evidenceIds;
+        @Deprecated
         private int totalNodes;
+        @Deprecated
         private int graphRevision;
         private String summary;
         private long executionTimeMs;
@@ -113,6 +117,8 @@ public class ResearchAgentController {
                 .conversationId(started.run().conversationId())
                 .report(result.finalReport())
                 .model(usages.isEmpty() ? null : usages.getLast().getModel())
+                .supervisorRole("research_supervisor")
+                .evidenceIds(result.evidenceIds())
                 .promptTokens(usages.stream().mapToInt(LlmResponse::getPromptTokens).sum())
                 .completionTokens(usages.stream().mapToInt(LlmResponse::getCompletionTokens).sum())
                 .totalNodes(1)

@@ -30,7 +30,8 @@ class FinancialToolSchemaIsolationTest {
         List<Class<?>> toolClasses = List.of(
                 FundResearchTools.class,
                 StockResearchTools.class,
-                MarketResearchTools.class
+                MarketResearchTools.class,
+                ResearchEvidenceTools.class
         );
 
         for (Class<?> toolCls : toolClasses) {

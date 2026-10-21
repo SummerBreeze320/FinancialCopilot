@@ -11,6 +11,7 @@ import com.financial.copilot.agent.core.infra.supervisor.tool.ResearchToolContex
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -60,8 +61,7 @@ public class ResearchSupervisor {
         String threadId = context.threadKey();
         log.info("[SUPERVISOR-RUN-START] workflowRunId={}, threadId={}", context.workflowRunId(), threadId);
 
-        // 构造包含运行身份、证据仓库与执行角色的隐式上下文
-        Map<String, Object> toolCtxMap = ResearchToolContext.toContextMap(
+        ToolContext toolCtx = ResearchToolContext.createToolContext(
                 context,
                 evidenceStore,
                 AgentRole.SUPERVISOR,
@@ -72,8 +72,26 @@ public class ResearchSupervisor {
                 .threadId(threadId)
                 .build();
 
-        try {
-            AssistantMessage response = supervisorAgent.call(new UserMessage(userPrompt), config);
+        String effectivePrompt = userPrompt;
+        if (context.conversation() != null) {
+            var snap = context.conversation();
+            com.financial.copilot.agent.core.infra.context.StructuredUserPromptBuilder promptBuilder =
+                    com.financial.copilot.agent.core.infra.context.StructuredUserPromptBuilder.create()
+                            .userGoal(userPrompt);
+            if (snap.investmentProfile() != null) {
+                promptBuilder.userProfile(snap.investmentProfile());
+            }
+            if (snap.completedMessages() != null && !snap.completedMessages().isEmpty()) {
+                promptBuilder.addHistoricalMemory(snap.completedMessages());
+            }
+            if (snap.memorySummary() != null && !snap.memorySummary().isBlank()) {
+                promptBuilder.addHistoricalMemory(snap.memorySummary());
+            }
+            effectivePrompt = promptBuilder.build();
+        }
+
+        try (AutoCloseable ignored = ResearchToolContext.withContext(toolCtx)) {
+            AssistantMessage response = supervisorAgent.call(new UserMessage(effectivePrompt), config);
             String reportText = (response != null && response.getText() != null) ? response.getText() : "";
 
             // 依据版本号确定性提取归并事实证据

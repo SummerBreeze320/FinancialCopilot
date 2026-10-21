@@ -31,7 +31,7 @@ class ResearchRunControllerTest {
     @Test
     void foreignOrMissingRunReturnsNotFound() {
         FinancialResearchWorkflow workflow = mock(FinancialResearchWorkflow.class);
-        when(workflow.findCheckpoint(8L, "owned-by-7")).thenReturn(Optional.empty());
+        when(workflow.findRun(8L, "owned-by-7")).thenReturn(Optional.empty());
         ResearchRunController controller = new ResearchRunController(workflow, mock(WalletBillingService.class),
                 mock(ConversationService.class));
         var auth = new UsernamePasswordAuthenticationToken(UserPrincipal.builder().userId(8L).build(), null, List.of());

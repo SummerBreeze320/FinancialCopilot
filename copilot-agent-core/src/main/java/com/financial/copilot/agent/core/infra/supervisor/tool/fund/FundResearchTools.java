@@ -12,7 +12,11 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.stereotype.Component;
 
+import com.financial.copilot.agent.tools.fund.FundReportRetrieverTool;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * <h1>基金投研智能体工具集 (FundResearchTools)</h1>
@@ -32,6 +36,7 @@ public class FundResearchTools {
     private final FundQuantAnalysisTool quantTool;
     private final FundScreeningTool screeningTool;
     private final FundHoldingsQueryTool holdingsTool;
+    private final Optional<FundReportRetrieverTool> reportRetrieverTool;
 
     public FundResearchTools(
             FundProfileTool profileTool,
@@ -39,10 +44,22 @@ public class FundResearchTools {
             FundScreeningTool screeningTool,
             FundHoldingsQueryTool holdingsTool
     ) {
+        this(profileTool, quantTool, screeningTool, holdingsTool, Optional.empty());
+    }
+
+    @Autowired
+    public FundResearchTools(
+            FundProfileTool profileTool,
+            FundQuantAnalysisTool quantTool,
+            FundScreeningTool screeningTool,
+            FundHoldingsQueryTool holdingsTool,
+            @Autowired(required = false) Optional<FundReportRetrieverTool> reportRetrieverTool
+    ) {
         this.profileTool = Objects.requireNonNull(profileTool, "profileTool cannot be null");
         this.quantTool = Objects.requireNonNull(quantTool, "quantTool cannot be null");
         this.screeningTool = Objects.requireNonNull(screeningTool, "screeningTool cannot be null");
         this.holdingsTool = Objects.requireNonNull(holdingsTool, "holdingsTool cannot be null");
+        this.reportRetrieverTool = reportRetrieverTool != null ? reportRetrieverTool : Optional.empty();
     }
 
     @Tool(description = "查询公募基金全维档案信息，包括基金全称、类型、管理机构及跟踪基准")
@@ -74,6 +91,17 @@ public class FundResearchTools {
         log.info("[FUND-TOOL] 查询基金持仓穿透: fundCode={}, quarter={}", fundCode, reportQuarter);
         String result = holdingsTool.getTopHoldings(fundCode, reportQuarter);
         ResearchToolContext.recordEvidence(context, "getTopHoldings", "基金重仓股穿透: " + fundCode, result);
+        return result;
+    }
+
+    @Tool(description = "查询公募基金各报告期基金经理的定性投资策略观点与市场展望全文")
+    public String getQuarterlyReportViews(String fundCode, ToolContext context) {
+        log.info("[FUND-TOOL] 查询基金定性季报策略观点: fundCode={}", fundCode);
+        if (reportRetrieverTool.isEmpty()) {
+            return "暂无定性季报策略观点。";
+        }
+        String result = reportRetrieverTool.get().getLatestQuarterlyReportView(fundCode);
+        ResearchToolContext.recordEvidence(context, "getQuarterlyReportViews", "基金季报策略观点: " + fundCode, result);
         return result;
     }
 }

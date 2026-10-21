@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.financial.copilot.agent.core.infra.supervisor.coordination.AgentOperationLedger;
 import com.financial.copilot.agent.core.infra.supervisor.coordination.EvidenceMergeCoordinator;
+import com.financial.copilot.agent.core.infra.supervisor.tool.ResearchEvidenceTools;
 import com.financial.copilot.agent.core.infra.supervisor.tool.fund.FundResearchTools;
 import com.financial.copilot.agent.core.infra.supervisor.tool.market.MarketResearchTools;
 import com.financial.copilot.agent.core.infra.supervisor.tool.stock.StockResearchTools;
@@ -95,23 +96,45 @@ public class SupervisorAgentConfiguration {
     }
 
     @Bean(name = "riskReviewAgent")
-    public ReactAgent riskReviewAgent(@Qualifier("governedChatModel") ChatModel governedChatModel) {
+    public ReactAgent riskReviewAgent(
+            @Qualifier("governedChatModel") ChatModel governedChatModel,
+            ResearchEvidenceTools evidenceTools
+    ) {
         return ReactAgent.builder()
                 .name("risk_review_agent")
                 .description("负责只读审查已生成的证据完整性、事实冲突、投资人适格匹配与风险合规披露")
-                .systemPrompt("你是资深合规与风控总监。审查各子智能体返回的证据，指出数据冲突、合规风险与适当性提示。")
+                .systemPrompt("""
+                        你是资深合规与风控总监 (risk_review_agent)。
+                        职责约束：
+                        1. 调用 getCollectedEvidences 获取当前全链路收集的真实事实证据，调用 getUserInvestmentProfile 获取投资者适格性画像；
+                        2. 严格核验数据间是否存在事实冲突（如收益与回撤不匹配、估值矛盾等）；
+                        3. 依据投资人风险评级（C1-C5）与适当性原则进行合规穿透，指出是否存在超风险推荐；
+                        4. 输出专业合规审查结论与风险揭示。
+                        """)
                 .model(governedChatModel)
+                .methodTools(evidenceTools)
                 .saver(new MemorySaver())
                 .build();
     }
 
     @Bean(name = "reportAgent")
-    public ReactAgent reportAgent(@Qualifier("governedChatModel") ChatModel governedChatModel) {
+    public ReactAgent reportAgent(
+            @Qualifier("governedChatModel") ChatModel governedChatModel,
+            ResearchEvidenceTools evidenceTools
+    ) {
         return ReactAgent.builder()
                 .name("report_agent")
                 .description("负责将通过合规复核的结构化事实证据合成排版精美、结构严谨的最终金融投研报告")
-                .systemPrompt("你是金融投研主笔。严格基于已核实的事实证据，输出严谨、专业、结构清晰的 Markdown 投研报告。")
+                .systemPrompt("""
+                        你是机构级投资研报主笔与合成专家 (report_agent)。
+                        职责约束：
+                        1. 调用 getCollectedEvidences 获取已收集的权威事实证据，调用 getUserInvestmentProfile 获取投资者适格性画像；
+                        2. 严格基于真实事实证据撰写专业、逻辑严谨、排版精美的 Markdown 机构级投研报告；
+                        3. 研报架构：核心摘要 ➡️ 宏观与板块透视 ➡️ 核心标的量化体检 ➡️ 多标的横向对比 ➡️ 适格性资产配置建议 ➡️ 合规风险揭示；
+                        4. 严禁编造任何未被证据库支持的数值。
+                        """)
                 .model(governedChatModel)
+                .methodTools(evidenceTools)
                 .saver(new MemorySaver())
                 .build();
     }

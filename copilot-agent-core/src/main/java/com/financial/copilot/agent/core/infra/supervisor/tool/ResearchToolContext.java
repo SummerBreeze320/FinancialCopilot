@@ -28,7 +28,31 @@ public final class ResearchToolContext {
     public static final String KEY_AGENT_ROLE = "CURRENT_AGENT_ROLE";
     public static final String KEY_AGENT_RUN_ID = "CURRENT_AGENT_RUN_ID";
 
+    private static final ThreadLocal<ToolContext> CURRENT_CONTEXT = new ThreadLocal<>();
+
     private ResearchToolContext() {}
+
+    /**
+     * 将 ToolContext 绑定至当前执行线程作用域，支持 try-with-resources 自动释放
+     */
+    public static AutoCloseable withContext(ToolContext context) {
+        ToolContext prev = CURRENT_CONTEXT.get();
+        CURRENT_CONTEXT.set(context);
+        return () -> {
+            if (prev != null) {
+                CURRENT_CONTEXT.set(prev);
+            } else {
+                CURRENT_CONTEXT.remove();
+            }
+        };
+    }
+
+    /**
+     * 获取当前线程绑定的上下文
+     */
+    public static ToolContext currentContext() {
+        return CURRENT_CONTEXT.get();
+    }
 
     /**
      * 构建包含运行上下文、证据仓库与执行角色的 ToolContext 上下文字典
@@ -59,14 +83,22 @@ public final class ResearchToolContext {
         return new ToolContext(toContextMap(executionContext, evidenceStore, role, agentRunId));
     }
 
+    private static ToolContext resolveContext(ToolContext toolContext) {
+        if (toolContext != null && toolContext.getContext() != null) {
+            return toolContext;
+        }
+        return CURRENT_CONTEXT.get();
+    }
+
     /**
      * 从隐藏 ToolContext 中提取不可变运行上下文
      */
     public static ResearchExecutionContext extractExecutionContext(ToolContext toolContext) {
-        if (toolContext == null || toolContext.getContext() == null) {
+        ToolContext resolved = resolveContext(toolContext);
+        if (resolved == null || resolved.getContext() == null) {
             throw new IllegalStateException("ToolContext is null or empty. Hidden execution context is required.");
         }
-        Object obj = toolContext.getContext().get(KEY_EXECUTION_CONTEXT);
+        Object obj = resolved.getContext().get(KEY_EXECUTION_CONTEXT);
         if (!(obj instanceof ResearchExecutionContext ctx)) {
             throw new IllegalStateException("Missing or invalid " + KEY_EXECUTION_CONTEXT + " in ToolContext");
         }
@@ -77,10 +109,11 @@ public final class ResearchToolContext {
      * 从隐藏 ToolContext 中提取证据仓库实例
      */
     public static RunEvidenceStore extractEvidenceStore(ToolContext toolContext) {
-        if (toolContext == null || toolContext.getContext() == null) {
+        ToolContext resolved = resolveContext(toolContext);
+        if (resolved == null || resolved.getContext() == null) {
             throw new IllegalStateException("ToolContext is null or empty. RunEvidenceStore is required.");
         }
-        Object obj = toolContext.getContext().get(KEY_EVIDENCE_STORE);
+        Object obj = resolved.getContext().get(KEY_EVIDENCE_STORE);
         if (!(obj instanceof RunEvidenceStore store)) {
             throw new IllegalStateException("Missing or invalid " + KEY_EVIDENCE_STORE + " in ToolContext");
         }
@@ -91,10 +124,11 @@ public final class ResearchToolContext {
      * 提取当前执行 Subagent 角色
      */
     public static AgentRole extractRole(ToolContext toolContext) {
-        if (toolContext == null || toolContext.getContext() == null) {
+        ToolContext resolved = resolveContext(toolContext);
+        if (resolved == null || resolved.getContext() == null) {
             return AgentRole.SUPERVISOR;
         }
-        Object obj = toolContext.getContext().get(KEY_AGENT_ROLE);
+        Object obj = resolved.getContext().get(KEY_AGENT_ROLE);
         if (obj instanceof AgentRole role) {
             return role;
         }
@@ -105,10 +139,11 @@ public final class ResearchToolContext {
      * 提取当前 Agent 调用唯一 ID
      */
     public static String extractAgentRunId(ToolContext toolContext) {
-        if (toolContext == null || toolContext.getContext() == null) {
+        ToolContext resolved = resolveContext(toolContext);
+        if (resolved == null || resolved.getContext() == null) {
             return "run-unknown";
         }
-        Object obj = toolContext.getContext().get(KEY_AGENT_RUN_ID);
+        Object obj = resolved.getContext().get(KEY_AGENT_RUN_ID);
         return obj != null ? obj.toString() : "run-unknown";
     }
 
