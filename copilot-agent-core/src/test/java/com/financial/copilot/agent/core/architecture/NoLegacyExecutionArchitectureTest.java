@@ -17,7 +17,8 @@ class NoLegacyExecutionArchitectureTest {
                 "class ComparatorAgent {", "class ReportSynthesizer {", "class PlannerAgent {",
                 "GraphPlannerAgent", "AgentNodeRouter", "DagRuntime",
                 "ExecutionGraph", "GraphPatch", "AgentScopeAgentFactory",
-                "import io.agentscope"
+                "import io.agentscope",
+                "FundComparatorPrompt", "ReviewerPrompt", "read_research_artifacts"
         );
 
         Path sourceRoot = Path.of("src/main/java/com/financial/copilot/agent/core");

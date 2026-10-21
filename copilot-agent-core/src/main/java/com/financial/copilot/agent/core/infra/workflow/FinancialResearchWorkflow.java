@@ -6,9 +6,12 @@ import com.financial.copilot.agent.core.infra.agent.ResearchSupervisor;
 import com.financial.copilot.agent.core.infra.context.ConversationContextSnapshot;
 import com.financial.copilot.agent.core.infra.context.ConversationContextSnapshotFactory;
 import com.financial.copilot.agent.core.infra.event.FrameworkEventBridge;
+import com.financial.copilot.agent.core.infra.guardrail.InputGuardrail;
+import com.financial.copilot.agent.core.infra.guardrail.OutputGuardrail;
 import com.financial.copilot.agent.core.infra.runtime.*;
 import com.financial.copilot.agent.core.infra.thread.VirtualThreadSchedulers;
 import com.financial.copilot.common.event.ResearchStreamEvent;
+import com.financial.copilot.common.intent.IntentClassificationResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Sinks;
@@ -27,6 +30,7 @@ import java.util.function.Consumer;
  * <p>
  * 基于 Spring AI Alibaba 官方 Supervisor / Subagents 架构，
  * 统一调度中心化总控智能体 (ResearchSupervisor) 与领域专业子智能体。
+ * 融合输入防注入护栏 (InputGuardrail) 与输出 PII 脱敏/免责护栏 (OutputGuardrail)，
  * 屏蔽底层调度细节，对外暴露纯净的响应式流与异步句柄契约 (ResearchRunHandle)。
  * </p>
  *
@@ -40,6 +44,8 @@ public class FinancialResearchWorkflow {
     private final SupervisorRunRegistry runRegistry;
     private final FrameworkEventBridge eventBridge;
     private final ConversationContextSnapshotFactory snapshotFactory;
+    private final InputGuardrail inputGuardrail;
+    private final OutputGuardrail outputGuardrail;
 
     @Autowired
     public FinancialResearchWorkflow(
@@ -47,13 +53,17 @@ public class FinancialResearchWorkflow {
             ConversationAdmissionController admissionController,
             SupervisorRunRegistry runRegistry,
             @Autowired(required = false) FrameworkEventBridge eventBridge,
-            @Autowired(required = false) ConversationContextSnapshotFactory snapshotFactory
+            @Autowired(required = false) ConversationContextSnapshotFactory snapshotFactory,
+            @Autowired(required = false) InputGuardrail inputGuardrail,
+            @Autowired(required = false) OutputGuardrail outputGuardrail
     ) {
         this.researchSupervisor = Objects.requireNonNull(researchSupervisor, "researchSupervisor must not be null");
         this.admissionController = admissionController;
         this.runRegistry = runRegistry != null ? runRegistry : new SupervisorRunRegistry();
         this.eventBridge = eventBridge != null ? eventBridge : new FrameworkEventBridge();
         this.snapshotFactory = snapshotFactory;
+        this.inputGuardrail = inputGuardrail;
+        this.outputGuardrail = outputGuardrail;
     }
 
     public FinancialResearchWorkflow(
@@ -62,7 +72,17 @@ public class FinancialResearchWorkflow {
             SupervisorRunRegistry runRegistry,
             FrameworkEventBridge eventBridge
     ) {
-        this(researchSupervisor, admissionController, runRegistry, eventBridge, null);
+        this(researchSupervisor, admissionController, runRegistry, eventBridge, null, null, null);
+    }
+
+    public FinancialResearchWorkflow(
+            ResearchSupervisor researchSupervisor,
+            ConversationAdmissionController admissionController,
+            SupervisorRunRegistry runRegistry,
+            FrameworkEventBridge eventBridge,
+            ConversationContextSnapshotFactory snapshotFactory
+    ) {
+        this(researchSupervisor, admissionController, runRegistry, eventBridge, snapshotFactory, null, null);
     }
 
     /**
@@ -108,6 +128,21 @@ public class FinancialResearchWorkflow {
             if (cancelled.get()) return;
             Instant start = Instant.now();
             try {
+                if (inputGuardrail != null) {
+                    IntentClassificationResult audit = inputGuardrail.auditAndSanitize(request.prompt(), null);
+                    if (audit != null && audit.isOutOfDomain()) {
+                        String blockedMsg = audit.clarificationPrompt() != null ? audit.clarificationPrompt() : "输入包含违规敏感内容";
+                        ResearchRunResult rejected = new ResearchRunResult(
+                                request.workflowRunId(), identity, blockedMsg, "REJECTED", List.of(), start, Instant.now()
+                        );
+                        eventBridge.emitContentChunk(eventSink, request.workflowRunId(), blockedMsg);
+                        eventBridge.emitRunFailed(eventSink, request.workflowRunId(), blockedMsg);
+                        eventSink.tryEmitComplete();
+                        completion.complete(rejected);
+                        return;
+                    }
+                }
+
                 eventBridge.emitSupervisorThinking(eventSink, request.workflowRunId());
 
                 ConversationContextSnapshot snapshot = (snapshotFactory != null)
@@ -122,7 +157,21 @@ public class FinancialResearchWorkflow {
 
                 if (cancelled.get()) return;
 
-                eventBridge.emitContentChunk(eventSink, request.workflowRunId(), runResult.finalReport());
+                String reportText = runResult.finalReport();
+                if (outputGuardrail != null) {
+                    reportText = outputGuardrail.sanitize(reportText);
+                    runResult = new ResearchRunResult(
+                            runResult.workflowRunId(),
+                            runResult.identity(),
+                            reportText,
+                            runResult.status(),
+                            runResult.evidenceIds(),
+                            runResult.startedAt(),
+                            runResult.completedAt()
+                    );
+                }
+
+                eventBridge.emitContentChunk(eventSink, request.workflowRunId(), reportText);
                 long duration = Duration.between(start, Instant.now()).toMillis();
                 eventBridge.emitRunCompleted(eventSink, request.workflowRunId(), duration);
                 eventSink.tryEmitComplete();

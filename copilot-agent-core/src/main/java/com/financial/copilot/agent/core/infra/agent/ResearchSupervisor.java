@@ -2,16 +2,20 @@ package com.financial.copilot.agent.core.infra.agent;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.financial.copilot.agent.core.infra.context.ContextBudgetManager;
+import com.financial.copilot.agent.core.infra.context.StructuredUserPromptBuilder;
 import com.financial.copilot.agent.core.infra.coordination.EvidenceMergeCoordinator;
 import com.financial.copilot.agent.core.infra.evidence.AgentEvidence;
 import com.financial.copilot.agent.core.infra.evidence.RunEvidenceStore;
 import com.financial.copilot.agent.core.infra.runtime.ResearchExecutionContext;
 import com.financial.copilot.agent.core.infra.runtime.ResearchRunResult;
+import com.financial.copilot.agent.core.infra.skill.SkillMatcher;
 import com.financial.copilot.agent.core.infra.tool.ResearchToolContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +28,7 @@ import java.util.Objects;
  * <h1>金融投研总控智能体门面 (ResearchSupervisor)</h1>
  * <p>
  * 负责接收用户的投研输入，通过 Spring AI Alibaba 标准 {@link ReactAgent} 协调委派各专业 Subagents，
- * 收集与归并确定性金融证据快照，并产出最终结果 {@link ResearchRunResult}。
+ * 动态融合上下文工程（Context Budget 与结构化分槽 Prompt）与技能规约，收集并归并确定性金融证据快照。
  * </p>
  *
  * @author FinancialCopilot
@@ -36,15 +40,30 @@ public class ResearchSupervisor {
     private final ReactAgent supervisorAgent;
     private final RunEvidenceStore evidenceStore;
     private final EvidenceMergeCoordinator evidenceCoordinator;
+    private final SkillMatcher skillMatcher;
+    private final ContextBudgetManager budgetManager;
 
     public ResearchSupervisor(
             @Qualifier("researchSupervisorAgent") ReactAgent supervisorAgent,
             RunEvidenceStore evidenceStore,
             EvidenceMergeCoordinator evidenceCoordinator
     ) {
+        this(supervisorAgent, evidenceStore, evidenceCoordinator, null, null);
+    }
+
+    @Autowired
+    public ResearchSupervisor(
+            @Qualifier("researchSupervisorAgent") ReactAgent supervisorAgent,
+            RunEvidenceStore evidenceStore,
+            EvidenceMergeCoordinator evidenceCoordinator,
+            @Autowired(required = false) SkillMatcher skillMatcher,
+            @Autowired(required = false) ContextBudgetManager budgetManager
+    ) {
         this.supervisorAgent = Objects.requireNonNull(supervisorAgent, "supervisorAgent cannot be null");
         this.evidenceStore = Objects.requireNonNull(evidenceStore, "evidenceStore cannot be null");
         this.evidenceCoordinator = Objects.requireNonNull(evidenceCoordinator, "evidenceCoordinator cannot be null");
+        this.skillMatcher = skillMatcher;
+        this.budgetManager = budgetManager != null ? budgetManager : new ContextBudgetManager();
     }
 
     /**
@@ -75,9 +94,8 @@ public class ResearchSupervisor {
         String effectivePrompt = userPrompt;
         if (context.conversation() != null) {
             var snap = context.conversation();
-            com.financial.copilot.agent.core.infra.context.StructuredUserPromptBuilder promptBuilder =
-                    com.financial.copilot.agent.core.infra.context.StructuredUserPromptBuilder.create()
-                            .userGoal(userPrompt);
+            StructuredUserPromptBuilder promptBuilder = StructuredUserPromptBuilder.create()
+                    .userGoal(userPrompt);
             if (snap.investmentProfile() != null) {
                 promptBuilder.userProfile(snap.investmentProfile());
             }
@@ -87,7 +105,23 @@ public class ResearchSupervisor {
             if (snap.memorySummary() != null && !snap.memorySummary().isBlank()) {
                 promptBuilder.addHistoricalMemory(snap.memorySummary());
             }
+            if (skillMatcher != null) {
+                try {
+                    String instructions = skillMatcher.matchSkillInstructions(null, userPrompt);
+                    if (instructions != null && !instructions.isBlank()) {
+                        promptBuilder.addSkillRule(instructions);
+                    }
+                } catch (Exception e) {
+                    log.debug("[SUPERVISOR-SKILL-MATCH] 技能检索跳过: {}", e.getMessage());
+                }
+            }
             effectivePrompt = promptBuilder.build();
+        }
+
+        if (budgetManager != null && !budgetManager.isWithinBudget(effectivePrompt, ContextBudgetManager.DEFAULT_MAX_INPUT_TOKENS)) {
+            log.warn("[SUPERVISOR-BUDGET] 输入 Prompt 估算 Token 超标: estimated={}, limit={}",
+                    budgetManager.estimateTokens(effectivePrompt), ContextBudgetManager.DEFAULT_MAX_INPUT_TOKENS);
+            effectivePrompt = budgetManager.truncateToBudget(effectivePrompt, ContextBudgetManager.DEFAULT_MAX_INPUT_TOKENS);
         }
 
         try (AutoCloseable ignored = ResearchToolContext.withContext(toolCtx)) {

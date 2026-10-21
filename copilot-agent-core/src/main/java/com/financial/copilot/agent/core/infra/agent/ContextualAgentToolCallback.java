@@ -7,6 +7,8 @@ import com.financial.copilot.agent.core.infra.runtime.ResearchExecutionContext;
 import com.financial.copilot.agent.core.infra.tool.ResearchToolContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ToolContext;
+import com.financial.copilot.agent.core.infra.guardrail.ActionGuardrail;
+import com.financial.copilot.common.guardrail.GuardrailAction;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -15,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -39,6 +42,7 @@ public class ContextualAgentToolCallback implements ToolCallback {
     private final AgentRole role;
     private final AgentOperationLedger operationLedger;
     private final EvidenceMergeCoordinator evidenceCoordinator;
+    private final ActionGuardrail actionGuardrail;
 
     public ContextualAgentToolCallback(
             ToolCallback delegate,
@@ -46,10 +50,21 @@ public class ContextualAgentToolCallback implements ToolCallback {
             AgentOperationLedger operationLedger,
             EvidenceMergeCoordinator evidenceCoordinator
     ) {
+        this(delegate, role, operationLedger, evidenceCoordinator, null);
+    }
+
+    public ContextualAgentToolCallback(
+            ToolCallback delegate,
+            AgentRole role,
+            AgentOperationLedger operationLedger,
+            EvidenceMergeCoordinator evidenceCoordinator,
+            ActionGuardrail actionGuardrail
+    ) {
         this.delegate = Objects.requireNonNull(delegate, "delegate ToolCallback cannot be null");
         this.role = Objects.requireNonNull(role, "role cannot be null");
         this.operationLedger = Objects.requireNonNull(operationLedger, "operationLedger cannot be null");
         this.evidenceCoordinator = Objects.requireNonNull(evidenceCoordinator, "evidenceCoordinator cannot be null");
+        this.actionGuardrail = actionGuardrail;
     }
 
     @Override
@@ -103,6 +118,16 @@ public class ContextualAgentToolCallback implements ToolCallback {
 
         log.info("[SUBAGENT-INVOKE] role={}, tool={}, workflowRunId={}, agentRunId={}",
                 role, toolName, workflowRunId, agentRunId);
+
+        if (actionGuardrail != null) {
+            GuardrailAction guardAction = actionGuardrail.evaluateAction(
+                    workflowRunId, toolName, Map.of("input", toolInput != null ? toolInput : ""), null
+            );
+            if (guardAction == GuardrailAction.DENY) {
+                log.warn("[SUBAGENT-ACTION-GUARDRAIL-DENIED] toolName={}, workflowRunId={}", toolName, workflowRunId);
+                return "{\"error\": \"Tool call denied by ActionGuardrail: detected cycle or prohibited action pattern.\"}";
+            }
+        }
 
         final ToolContext childContext = (execCtx != null && store != null)
                 ? ResearchToolContext.createToolContext(execCtx, store, role, agentRunId)
