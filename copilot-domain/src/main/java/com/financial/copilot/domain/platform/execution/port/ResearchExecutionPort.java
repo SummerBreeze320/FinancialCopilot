@@ -32,12 +32,12 @@ public interface ResearchExecutionPort {
      * @param userId          用户 ID
      * @param runId           运行 ID
      * @param status          目标状态
-     * @param graphSnapshot   最新的图快照 JSON
-     * @param expectedVersion 期望的乐观锁版本
-     * @param now             更新时间
+     * @param executionSnapshot 最新执行与证据链快照 JSON
+     * @param expectedVersion   期望的乐观锁版本
+     * @param now               更新时间
      * @return 更新是否成功（版本匹配时为 true）
      */
-    boolean updateRunState(Long userId, UUID runId, String status, String graphSnapshot, Long expectedVersion, Instant now);
+    boolean updateRunState(Long userId, UUID runId, String status, String executionSnapshot, Long expectedVersion, Instant now);
 
     /**
      * 查询指定用户下的运行状态

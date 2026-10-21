@@ -19,7 +19,8 @@ class NoLegacyExecutionArchitectureTest {
                 "ExecutionGraph", "GraphPatch", "AgentScopeAgentFactory",
                 "import io.agentscope",
                 "FundComparatorPrompt", "ReviewerPrompt", "read_research_artifacts",
-                "graph_initialized", "node_started", "node_completed", "graphInitialized", "nodeReady"
+                "graph_initialized", "node_started", "node_completed", "graphInitialized", "nodeReady",
+                "graphSnapshot", "NodeAttempt"
         );
 
         Path sourceRoot = Path.of("src/main/java/com/financial/copilot/agent/core");

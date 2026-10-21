@@ -9,16 +9,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 /**
- * <h1>投研运行时指标观测器 (Runtime Metrics)</h1>
+ * <h1>多智能体运行时指标观测器 (RuntimeMetrics)</h1>
  * <p>
- * 集中管理投研 Agent 运行时的低基数核心观测指标，严格杜绝 userId、conversationId 或 runId 等高基数维度入标。
- * 覆盖活跃/排队运行数、排队等待耗时、节点耗时与取消、模型并发与调用错误、以及分布式租约接管。
+ * 集中管理 Supervisor-Subagent 架构下的低基数核心观测指标，严格杜绝 userId、conversationId 或 runId 等高基数维度入标。
+ * 覆盖活跃/排队运行数、排队等待耗时、各角色子智能体耗时分布、任务取消、模型调用并发与异常、以及安全护栏拦截。
  * </p>
  *
  * @author FinancialCopilot
@@ -29,11 +28,12 @@ public class RuntimeMetrics {
     public static final String METRIC_RUNS_ACTIVE = "copilot.runtime.runs.active";
     public static final String METRIC_RUNS_QUEUED = "copilot.runtime.runs.queued";
     public static final String METRIC_QUEUE_WAIT = "copilot.runtime.queue.wait";
-    public static final String METRIC_NODES_DURATION = "copilot.runtime.nodes.duration";
-    public static final String METRIC_NODES_CANCELLED = "copilot.runtime.nodes.cancelled";
+    public static final String METRIC_AGENTS_DURATION = "copilot.runtime.agents.duration";
+    public static final String METRIC_RUNS_CANCELLED = "copilot.runtime.runs.cancelled";
+    public static final String METRIC_OPERATIONS_TOTAL = "copilot.runtime.operations.total";
+    public static final String METRIC_GUARDRAILS_INTERCEPTED = "copilot.runtime.guardrails.intercepted";
     public static final String METRIC_LLM_ACTIVE = "copilot.runtime.llm.active";
     public static final String METRIC_LLM_ERRORS = "copilot.runtime.llm.errors";
-    public static final String METRIC_LEASES_TAKEOVER = "copilot.runtime.leases.takeover";
 
     private final MeterRegistry registry;
 
@@ -42,10 +42,11 @@ public class RuntimeMetrics {
     private final AtomicInteger activeLlmGauge = new AtomicInteger(0);
 
     private final Timer queueWaitTimer;
-    private final Counter nodesCancelledCounter;
-    private final Counter leasesTakeoverCounter;
+    private final Counter runsCancelledCounter;
 
-    private final ConcurrentHashMap<String, Timer> nodeDurationTimers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Timer> agentDurationTimers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Counter> operationCounters = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Counter> guardrailCounters = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Counter> llmErrorCounters = new ConcurrentHashMap<>();
 
     @Autowired
@@ -68,12 +69,8 @@ public class RuntimeMetrics {
                 .description("投研任务在准入队列中的等待耗时")
                 .register(this.registry);
 
-        this.nodesCancelledCounter = Counter.builder(METRIC_NODES_CANCELLED)
-                .description("图节点被取消执行的总次数")
-                .register(this.registry);
-
-        this.leasesTakeoverCounter = Counter.builder(METRIC_LEASES_TAKEOVER)
-                .description("分布式节点租约超时后被其他 Worker 抢占接管的总次数")
+        this.runsCancelledCounter = Counter.builder(METRIC_RUNS_CANCELLED)
+                .description("投研运行任务被用户或系统取消的总次数")
                 .register(this.registry);
     }
 
@@ -81,9 +78,6 @@ public class RuntimeMetrics {
         this(new SimpleMeterRegistry());
     }
 
-    /**
-     * 绑定活跃运行数动态提供函数
-     */
     public void bindActiveRunsSupplier(Supplier<Number> supplier) {
         if (supplier == null) return;
         Gauge.builder(METRIC_RUNS_ACTIVE, supplier, s -> s.get().doubleValue())
@@ -91,9 +85,6 @@ public class RuntimeMetrics {
                 .register(registry);
     }
 
-    /**
-     * 绑定排队等待运行数动态提供函数
-     */
     public void bindQueuedRunsSupplier(Supplier<Number> supplier) {
         if (supplier == null) return;
         Gauge.builder(METRIC_RUNS_QUEUED, supplier, s -> s.get().doubleValue())
@@ -101,9 +92,6 @@ public class RuntimeMetrics {
                 .register(registry);
     }
 
-    /**
-     * 绑定活跃 LLM 并发调用数动态提供函数
-     */
     public void bindActiveLlmSupplier(Supplier<Number> supplier) {
         if (supplier == null) return;
         Gauge.builder(METRIC_LLM_ACTIVE, supplier, s -> s.get().doubleValue())
@@ -129,19 +117,37 @@ public class RuntimeMetrics {
         }
     }
 
-    public void recordNodeDuration(String role, Duration duration) {
+    public void recordAgentDuration(String role, Duration duration) {
         if (duration != null && !duration.isNegative()) {
             String cleanRole = role != null && !role.isBlank() ? role.trim().toLowerCase() : "unknown";
-            nodeDurationTimers.computeIfAbsent(cleanRole, r -> Timer.builder(METRIC_NODES_DURATION)
+            agentDurationTimers.computeIfAbsent(cleanRole, r -> Timer.builder(METRIC_AGENTS_DURATION)
                     .tag("role", r)
-                    .description("图节点执行耗时分布")
+                    .description("智能体角色执行耗时分布")
                     .register(registry))
                     .record(duration);
         }
     }
 
-    public void recordNodeCancelled() {
-        nodesCancelledCounter.increment();
+    public void recordRunCancelled() {
+        runsCancelledCounter.increment();
+    }
+
+    public void recordOperation(String role) {
+        String cleanRole = role != null && !role.isBlank() ? role.trim().toLowerCase() : "unknown";
+        operationCounters.computeIfAbsent(cleanRole, r -> Counter.builder(METRIC_OPERATIONS_TOTAL)
+                .tag("role", r)
+                .description("多智能体协同流水操作执行总次数")
+                .register(registry))
+                .increment();
+    }
+
+    public void recordGuardrailIntercepted(String type) {
+        String cleanType = type != null && !type.isBlank() ? type.trim().toLowerCase() : "unknown";
+        guardrailCounters.computeIfAbsent(cleanType, t -> Counter.builder(METRIC_GUARDRAILS_INTERCEPTED)
+                .tag("type", t)
+                .description("安全守卫拦截总次数")
+                .register(registry))
+                .increment();
     }
 
     public void recordLlmError(String provider, String errorType) {
@@ -154,10 +160,6 @@ public class RuntimeMetrics {
                 .description("大模型执行网关调用失败异常计数")
                 .register(registry))
                 .increment();
-    }
-
-    public void recordLeaseTakeover() {
-        leasesTakeoverCounter.increment();
     }
 
     public MeterRegistry registry() {

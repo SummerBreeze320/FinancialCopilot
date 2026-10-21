@@ -61,11 +61,11 @@ public class PostgresResearchExecutionAdapter implements ResearchExecutionPort {
 
     @Override
     @Transactional("jdbcTransactionManager")
-    public boolean updateRunState(Long userId, UUID runId, String status, String graphSnapshot, Long expectedVersion, Instant now) {
+    public boolean updateRunState(Long userId, UUID runId, String status, String executionSnapshot, Long expectedVersion, Instant now) {
         Objects.requireNonNull(userId, "userId cannot be null");
         Objects.requireNonNull(runId, "runId cannot be null");
         Objects.requireNonNull(status, "status cannot be null");
-        String snapshot = graphSnapshot != null ? graphSnapshot : "{}";
+        String snapshot = executionSnapshot != null ? executionSnapshot : "{}";
         int rows = runStateMapper.updateStateOptimistic(userId, runId, status, snapshot, expectedVersion, toLocalDateTime(now));
         return rows > 0;
     }

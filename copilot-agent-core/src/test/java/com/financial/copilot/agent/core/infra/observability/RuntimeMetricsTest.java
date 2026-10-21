@@ -53,25 +53,43 @@ class RuntimeMetricsTest {
     }
 
     @Test
-    void recordsNodeDurationWithBoundedRoleTag() {
-        metrics.recordNodeDuration("fund_analyst", Duration.ofMillis(1200));
-        metrics.recordNodeDuration("fund_analyst", Duration.ofMillis(800));
+    void recordsAgentDurationWithBoundedRoleTag() {
+        metrics.recordAgentDuration("fund_research_agent", Duration.ofMillis(1200));
+        metrics.recordAgentDuration("fund_research_agent", Duration.ofMillis(800));
 
-        Timer timer = registry.find(RuntimeMetrics.METRIC_NODES_DURATION)
-                .tag("role", "fund_analyst")
+        Timer timer = registry.find(RuntimeMetrics.METRIC_AGENTS_DURATION)
+                .tag("role", "fund_research_agent")
                 .timer();
         assertThat(timer).isNotNull();
         assertThat(timer.count()).isEqualTo(2);
     }
 
     @Test
-    void recordsNodeCancelledCounter() {
-        metrics.recordNodeCancelled();
-        metrics.recordNodeCancelled();
+    void recordsRunCancelledCounter() {
+        metrics.recordRunCancelled();
+        metrics.recordRunCancelled();
 
-        Counter counter = registry.find(RuntimeMetrics.METRIC_NODES_CANCELLED).counter();
+        Counter counter = registry.find(RuntimeMetrics.METRIC_RUNS_CANCELLED).counter();
         assertThat(counter).isNotNull();
         assertThat(counter.count()).isEqualTo(2.0);
+    }
+
+    @Test
+    void recordsOperationAndGuardrailCounters() {
+        metrics.recordOperation("fund_research_agent");
+        metrics.recordGuardrailIntercepted("input");
+
+        Counter opCounter = registry.find(RuntimeMetrics.METRIC_OPERATIONS_TOTAL)
+                .tag("role", "fund_research_agent")
+                .counter();
+        assertThat(opCounter).isNotNull();
+        assertThat(opCounter.count()).isEqualTo(1.0);
+
+        Counter guardCounter = registry.find(RuntimeMetrics.METRIC_GUARDRAILS_INTERCEPTED)
+                .tag("type", "input")
+                .counter();
+        assertThat(guardCounter).isNotNull();
+        assertThat(guardCounter.count()).isEqualTo(1.0);
     }
 
     @Test
@@ -84,16 +102,5 @@ class RuntimeMetricsTest {
                 .counter();
         assertThat(counter).isNotNull();
         assertThat(counter.count()).isEqualTo(1.0);
-    }
-
-    @Test
-    void recordsLeaseTakeoverCounter() {
-        metrics.recordLeaseTakeover();
-        metrics.recordLeaseTakeover();
-        metrics.recordLeaseTakeover();
-
-        Counter counter = registry.find(RuntimeMetrics.METRIC_LEASES_TAKEOVER).counter();
-        assertThat(counter).isNotNull();
-        assertThat(counter.count()).isEqualTo(3.0);
     }
 }
