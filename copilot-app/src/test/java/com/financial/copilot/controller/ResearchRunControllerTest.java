@@ -1,6 +1,6 @@
 package com.financial.copilot.controller;
 
-import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunHandle;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunHandle;
 import com.financial.copilot.agent.core.infra.security.UserPrincipal;
 import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;

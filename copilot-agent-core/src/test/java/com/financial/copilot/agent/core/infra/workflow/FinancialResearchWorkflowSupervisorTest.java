@@ -1,11 +1,11 @@
 package com.financial.copilot.agent.core.infra.workflow;
 
-import com.financial.copilot.agent.core.infra.supervisor.admission.ConversationAdmissionController;
-import com.financial.copilot.agent.core.infra.supervisor.admission.ConversationBusyException;
-import com.financial.copilot.agent.core.infra.supervisor.admission.RuntimeCapacityProperties;
-import com.financial.copilot.agent.core.infra.supervisor.agent.ResearchSupervisor;
-import com.financial.copilot.agent.core.infra.supervisor.event.FrameworkEventBridge;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.*;
+import com.financial.copilot.agent.core.infra.admission.ConversationAdmissionController;
+import com.financial.copilot.agent.core.infra.admission.ConversationBusyException;
+import com.financial.copilot.agent.core.infra.admission.RuntimeCapacityProperties;
+import com.financial.copilot.agent.core.infra.agent.ResearchSupervisor;
+import com.financial.copilot.agent.core.infra.event.FrameworkEventBridge;
+import com.financial.copilot.agent.core.infra.runtime.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

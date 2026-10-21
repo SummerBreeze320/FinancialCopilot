@@ -2,11 +2,11 @@ package com.financial.copilot.controller;
 
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
 import com.financial.copilot.agent.core.platform.conversation.ConversationService;
-import com.financial.copilot.agent.core.infra.supervisor.admission.ConversationAdmissionController;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunHandle;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunResult;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.RunMode;
+import com.financial.copilot.agent.core.infra.admission.ConversationAdmissionController;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunHandle;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunResult;
+import com.financial.copilot.agent.core.infra.runtime.RunMode;
 import com.financial.copilot.gateway.model.LlmResponse;
 import com.financial.copilot.agent.core.platform.user.service.UserService;
 import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
@@ -139,8 +139,8 @@ public class ResearchAgentController {
         List<LlmResponse> usages = new CopyOnWriteArrayList<>();
         AtomicLong accumulatedActualPoints = new AtomicLong(0L);
         try {
-            com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest runRequest =
-                    new com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest(
+            com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest runRequest =
+                    new com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest(
                             run.runId().toString(),
                             1L,
                             uid,

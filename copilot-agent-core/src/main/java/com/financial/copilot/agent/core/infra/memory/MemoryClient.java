@@ -2,7 +2,7 @@ package com.financial.copilot.agent.core.infra.memory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.financial.copilot.agent.core.infra.context.ExecutionIdentity;
+import com.financial.copilot.agent.core.infra.runtime.ExecutionIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

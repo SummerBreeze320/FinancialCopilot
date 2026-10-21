@@ -1,10 +1,12 @@
 package com.financial.copilot.agent.core.infra.workflow;
 
-import com.financial.copilot.agent.core.infra.supervisor.admission.ConversationAdmissionController;
-import com.financial.copilot.agent.core.infra.supervisor.admission.RunAdmission;
-import com.financial.copilot.agent.core.infra.supervisor.agent.ResearchSupervisor;
-import com.financial.copilot.agent.core.infra.supervisor.event.FrameworkEventBridge;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.*;
+import com.financial.copilot.agent.core.infra.admission.ConversationAdmissionController;
+import com.financial.copilot.agent.core.infra.admission.RunAdmission;
+import com.financial.copilot.agent.core.infra.agent.ResearchSupervisor;
+import com.financial.copilot.agent.core.infra.context.ConversationContextSnapshot;
+import com.financial.copilot.agent.core.infra.context.ConversationContextSnapshotFactory;
+import com.financial.copilot.agent.core.infra.event.FrameworkEventBridge;
+import com.financial.copilot.agent.core.infra.runtime.*;
 import com.financial.copilot.agent.core.infra.thread.VirtualThreadSchedulers;
 import com.financial.copilot.common.event.ResearchStreamEvent;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +39,7 @@ public class FinancialResearchWorkflow {
     private final ConversationAdmissionController admissionController;
     private final SupervisorRunRegistry runRegistry;
     private final FrameworkEventBridge eventBridge;
-    private final com.financial.copilot.agent.core.infra.supervisor.context.ConversationContextSnapshotFactory snapshotFactory;
+    private final ConversationContextSnapshotFactory snapshotFactory;
 
     @Autowired
     public FinancialResearchWorkflow(
@@ -45,7 +47,7 @@ public class FinancialResearchWorkflow {
             ConversationAdmissionController admissionController,
             SupervisorRunRegistry runRegistry,
             @Autowired(required = false) FrameworkEventBridge eventBridge,
-            @Autowired(required = false) com.financial.copilot.agent.core.infra.supervisor.context.ConversationContextSnapshotFactory snapshotFactory
+            @Autowired(required = false) ConversationContextSnapshotFactory snapshotFactory
     ) {
         this.researchSupervisor = Objects.requireNonNull(researchSupervisor, "researchSupervisor must not be null");
         this.admissionController = admissionController;

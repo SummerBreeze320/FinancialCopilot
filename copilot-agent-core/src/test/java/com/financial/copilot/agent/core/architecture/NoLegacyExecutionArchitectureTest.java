@@ -39,6 +39,7 @@ class NoLegacyExecutionArchitectureTest {
                     String norm = p.toString().replace('\\', '/');
                     return norm.contains("/infra/dag/")
                             || norm.contains("/infra/agentscope/")
+                            || norm.contains("/infra/supervisor/")
                             || norm.contains("/business/agents/");
                 });
     }
@@ -48,8 +49,7 @@ class NoLegacyExecutionArchitectureTest {
         Path sourceRoot = Path.of("src/main/java/com/financial/copilot/agent/core");
         for (Path file : findJavaSources(sourceRoot)) {
             String normalizedPath = file.toString().replace('\\', '/');
-            if (normalizedPath.contains("/infra/supervisor/llm/")
-                    || normalizedPath.contains("/infra/llm/")) {
+            if (normalizedPath.contains("/infra/llm/")) {
                 continue;
             }
             String content = Files.readString(file);

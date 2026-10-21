@@ -1,7 +1,7 @@
 package com.financial.copilot.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunHandle;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunHandle;
 import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
 import com.financial.copilot.agent.core.platform.conversation.ConversationPersistenceDisabledException;

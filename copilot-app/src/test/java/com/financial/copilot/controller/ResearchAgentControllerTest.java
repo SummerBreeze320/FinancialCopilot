@@ -2,10 +2,10 @@ package com.financial.copilot.controller;
 
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
 import com.financial.copilot.agent.core.platform.conversation.ConversationService;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.ExecutionIdentity;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunHandle;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest;
-import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunResult;
+import com.financial.copilot.agent.core.infra.runtime.ExecutionIdentity;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunHandle;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunResult;
 import com.financial.copilot.agent.core.infra.security.UserPrincipal;
 import com.financial.copilot.agent.core.platform.user.service.UserService;
 import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
@@ -138,8 +138,8 @@ class ResearchAgentControllerTest {
     @Test
     void workflowReceivesImmutableIdentityAndSnapshot() {
         controller.run(request()).contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth)).block();
-        ArgumentCaptor<com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest> captor =
-                ArgumentCaptor.forClass(com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest.class);
+        ArgumentCaptor<com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest> captor =
+                ArgumentCaptor.forClass(com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest.class);
         verify(workflow).run(captor.capture());
         var captured = captor.getValue();
         assertThat(captured.identity()).isNotNull();
@@ -200,7 +200,7 @@ class ResearchAgentControllerTest {
         );
 
         doAnswer(call -> {
-            com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest req = call.getArgument(0);
+            com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest req = call.getArgument(0);
             return ResearchRunHandle.of(req.workflowRunId(), identity,
                     Flux.just(
                             ResearchStreamEvent.runQueued(req.workflowRunId(), conversationId.toString(), "QUEUED_CONVERSATION", 1),
@@ -229,7 +229,7 @@ class ResearchAgentControllerTest {
         java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean(false);
         var identity = new ExecutionIdentity(1L, 7L, conversationId);
         doAnswer(call -> {
-            com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest req = call.getArgument(0);
+            com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest req = call.getArgument(0);
             return ResearchRunHandle.of(req.workflowRunId(), identity,
                     Flux.never(),
                     new CompletableFuture<>(),
@@ -246,10 +246,10 @@ class ResearchAgentControllerTest {
 
     @Test
     void healthCheckReturnsCapacityDetails() {
-        com.financial.copilot.agent.core.infra.supervisor.admission.ConversationAdmissionController admission = mock(com.financial.copilot.agent.core.infra.supervisor.admission.ConversationAdmissionController.class);
+        com.financial.copilot.agent.core.infra.admission.ConversationAdmissionController admission = mock(com.financial.copilot.agent.core.infra.admission.ConversationAdmissionController.class);
         when(admission.getActiveRunCount()).thenReturn(3);
         when(admission.getQueuedRunCount()).thenReturn(0);
-        when(admission.properties()).thenReturn(com.financial.copilot.agent.core.infra.supervisor.admission.RuntimeCapacityProperties.builder()
+        when(admission.properties()).thenReturn(com.financial.copilot.agent.core.infra.admission.RuntimeCapacityProperties.builder()
                 .maxActiveRunsGlobal(10)
                 .maxQueuedRuns(20)
                 .maxLlmConcurrency(8)
