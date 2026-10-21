@@ -24,13 +24,21 @@ class FundScreeningState(TypedDict, total=False):
     normalized_query: str
     previous_dsl: dict[str, Any] | None
     intent: Literal["CREATE", "EDIT"]
+    intent_decision: dict[str, Any] | None
     edit_complexity: Literal["NONE", "SIMPLE", "COMPLEX"]
     route: Literal["direct", "simple", "full"]
+    route_reason: str | None
+    llm_calls: int
 
     recall_plan: dict[str, Any] | None
+    semantic_plan: dict[str, Any] | None
+    edit_plan: dict[str, Any] | None
+    conditions_to_recall: list[str] | None
+    by_condition: dict[str, Any] | None
     candidate_pool: list[dict[str, Any]]
     candidate_contract_index: dict[str, dict[str, Any]]
     decision: dict[str, Any] | None
+    adjudication_result: dict[str, Any] | None
 
     draft_dsl: dict[str, Any] | None
     final_dsl: dict[str, Any] | None
@@ -38,6 +46,7 @@ class FundScreeningState(TypedDict, total=False):
     repairs: list[dict[str, Any]]
     clarification: ClarificationPayload | None
     repair_attempts: int
+    as_of_date: str | None
     trace: list[TraceEvent]
 
 
@@ -45,15 +54,20 @@ def empty_state(
     query: str,
     conversation_id: str | None = None,
     previous_dsl: dict[str, Any] | None = None,
+    as_of_date: str | None = None,
 ) -> FundScreeningState:
     state: FundScreeningState = {
         "request_id": str(uuid.uuid4()),
         "conversation_id": conversation_id,
         "query": query,
         "normalized_query": query,
-        "intent": "EDIT" if previous_dsl else "CREATE",
+        "as_of_date": as_of_date,
+        "intent": "CREATE",
+        "intent_decision": None,
         "edit_complexity": "NONE",
         "route": "full",
+        "route_reason": None,
+        "llm_calls": 0,
         "candidate_pool": [],
         "candidate_contract_index": {},
         "draft_dsl": None,

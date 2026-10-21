@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 import pytest
 
 from app.config import Settings
 from app.graph.state import empty_state
-from app.models.dsl import FundScreeningDsl
+from app.models.dsl import FundScreeningDsl, metric_leaves
 from app.runtime import build_production_compiler
 
 pytestmark = pytest.mark.skipif(
@@ -16,7 +17,21 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture(scope="function")
 def real_compiler():
-    settings = Settings()
+    service_root = Path(__file__).resolve().parents[2]
+    repo_root = service_root
+    while repo_root.parent != repo_root:
+        if (repo_root / "docs" / "temp" / "metrics.json").exists():
+            break
+        repo_root = repo_root.parent
+    metrics_path = repo_root / "docs" / "temp" / "metrics.json"
+    sectors_path = repo_root / "docs" / "temp" / "sectors.json"
+    entity_path = service_root / "tests" / "fixtures" / "entities-small.json"
+
+    settings = Settings(
+        metrics_catalog_path=os.getenv("FUND_SCREENING_METRICS_CATALOG_PATH", str(metrics_path)),
+        sectors_catalog_path=os.getenv("FUND_SCREENING_SECTORS_CATALOG_PATH", str(sectors_path)),
+        entity_catalog_path=os.getenv("FUND_SCREENING_ENTITY_CATALOG_PATH", str(entity_path)),
+    )
     return build_production_compiler(settings)
 
 
@@ -38,6 +53,10 @@ async def test_real_simple_route_smoke(real_compiler) -> None:
     assert result.dsl is not None
     assert isinstance(result.dsl, FundScreeningDsl)
     assert result.trace["route"] == "simple"
+    assert result.trace["condition_count"] == 2
+    assert {leaf.metric for leaf in metric_leaves(result.dsl)} == {
+        "f_netasset_total", "f_info_existingyear"
+    }
 
 
 @pytest.mark.asyncio

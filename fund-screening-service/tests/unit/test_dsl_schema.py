@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.dsl import BusinessGroup, FundScreeningDsl, MetricExpression
+from app.models.dsl import BusinessGroup, FundScreeningDsl, MetricNodeAdapter
 
 
 PREDICATE = {"metric": "f_return_3y", "operator": ">=", "value": 30, "unit": "PERCENT"}
@@ -33,4 +33,4 @@ def test_business_group_requires_sector_and_metric() -> None:
 
 def test_not_requires_exactly_one_child() -> None:
     with pytest.raises(ValidationError):
-        MetricExpression.model_validate({"operator": "NOT", "children": [PREDICATE, PREDICATE]})
+        MetricNodeAdapter.validate_python({"operator": "NOT", "children": [PREDICATE, PREDICATE]})

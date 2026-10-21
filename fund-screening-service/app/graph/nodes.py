@@ -1,16 +1,30 @@
-from __future__ import annotations
-
+import inspect
 import re
 import time
 from typing import Any
 
-
+from app.graph.direct_probe import probe_strict_direct
+from app.graph.router import classify_plan_route
 from app.graph.state import FundScreeningState, TraceEvent
 from app.models.candidate import CandidateContract
 from app.models.dsl import FundScreeningDsl
+from app.models.edit_plan import EditPlan, EditOperation
+from app.models.semantic_plan import (
+    AdjudicationResult,
+    SemanticPlan,
+    PlanGroup,
+    MetricTree,
+    ScopeTree,
+    MetricLeaf,
+    ScopeLeaf,
+    SortMention,
+)
 from app.pipeline.analysis import AnalysisService, CandidatePool, ConditionPlan, RecallPlan
 from app.pipeline.builder import CommandBuilder
 from app.pipeline.preprocess import preprocess
+from app.pipeline.editor import apply_edit_plan, classify_edit, summarize_plan_for_edit
+from app.pipeline.intent_funnel import IntentFunnel
+from app.pipeline.metric_resolution import MetricResolutionPolicy
 from app.pipeline.validator import validate_and_repair
 
 
@@ -69,23 +83,351 @@ def _dict_to_candidate(c: dict[str, Any]) -> CandidateContract:
     )
 
 
+def _reconstruct_semantic_plan_from_dsl(dsl_dict: dict[str, Any]) -> SemanticPlan:
+    groups = []
+    sort_mentions = []
+    limit = dsl_dict.get("limit", 20)
+
+    for idx, g in enumerate(dsl_dict.get("children", [])):
+        gid = f"g{idx+1}"
+        s_leaves = []
+        m_leaves = []
+
+        sector_tree = g.get("sector")
+        if sector_tree:
+            for s_idx, s in enumerate(sector_tree.get("children", [])):
+                cid = f"s_{idx+1}_{s_idx+1}"
+                mention = s.get("sectorId") or s.get("sector_id") or ""
+                s_leaves.append(ScopeLeaf(conditionId=cid, mention=mention))
+
+        metric_tree = g.get("metric")
+        if metric_tree:
+            def _extract_metric_preds(node: dict[str, Any]):
+                if "metric" in node and node["metric"]:
+                    cid = f"m_{idx+1}_{len(m_leaves)+1}"
+                    m_leaves.append(
+                        MetricLeaf(
+                            conditionId=cid,
+                            mention=node["metric"],
+                            operatorHint=node.get("operator", "="),
+                            valueHint=node.get("value"),
+                            unitHint=node.get("unit"),
+                        )
+                    )
+                for ch in node.get("children", []):
+                    _extract_metric_preds(ch)
+
+            _extract_metric_preds(metric_tree)
+
+        groups.append(
+            PlanGroup(
+                groupId=gid,
+                scopeTree=ScopeTree(operator="OR", children=s_leaves),
+                metricTree=MetricTree(operator="AND", children=m_leaves),
+            )
+        )
+
+    for s in dsl_dict.get("sort", []):
+        sort_mentions.append(SortMention(mention=s.get("metric", ""), direction=s.get("direction", "DESC")))
+
+    return SemanticPlan(
+        intent="EDIT",
+        groups=groups,
+        sort_mentions=sort_mentions,
+        limit=limit,
+    )
+
+
 class ScreeningGraphNodes:
-    def __init__(self, analysis: AnalysisService, builder: CommandBuilder | None = None) -> None:
+    def __init__(
+        self,
+        analysis: AnalysisService,
+        builder: CommandBuilder | None = None,
+        candidates_catalog: list[CandidateContract] | None = None,
+        intent_funnel: IntentFunnel | None = None,
+    ) -> None:
         self._analysis = analysis
         self._builder = builder or CommandBuilder()
+        self._candidates_catalog = candidates_catalog or []
+        self._intent_funnel = intent_funnel or IntentFunnel()
 
     async def query_preprocess(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
         prev = state.get("previous_dsl") or state.get("final_dsl") or state.get("draft_dsl")
         prep = preprocess(state["query"], prev)
-        intent = "EDIT" if prev else "CREATE"
-        complexity = "SIMPLE" if prep.edit_kind == "simple" else ("COMPLEX" if intent == "EDIT" else "NONE")
-        event = _make_trace("query_preprocess", t0, {"intent": intent, "complexity": complexity})
+        decision = await self._intent_funnel.classify(
+            prep.normalized_query, prev, state.get("clarification")
+        )
+        edit_kind = classify_edit(prep.normalized_query, prev)
+        intent = decision.intent
+        complexity = "SIMPLE" if intent == "EDIT" and edit_kind.value == "simple" else ("COMPLEX" if intent == "EDIT" else "NONE")
+        event = _make_trace(
+            "query_preprocess", t0,
+            {"intent": intent, "complexity": complexity, "source": decision.source, "reasonCodes": decision.reason_codes},
+        )
         return {
             "normalized_query": prep.normalized_query,
             "previous_dsl": prev,
             "intent": intent,
+            "intent_decision": decision.model_dump(by_alias=True, exclude_none=True),
             "edit_complexity": complexity,
+            "trace": [*state.get("trace", []), event],
+        }
+
+    async def strict_direct_probe(self, state: FundScreeningState) -> dict[str, Any]:
+        t0 = time.perf_counter()
+        query = state.get("normalized_query") or state.get("query", "")
+        if state.get("intent") == "EDIT" and state.get("edit_complexity") == "SIMPLE" and state.get("previous_dsl"):
+            event = _make_trace("strict_direct_probe", t0, {"route": "simple_edit", "reason": "SIMPLE_EDIT"})
+            return {
+                "route": "simple_edit",
+                "route_reason": "SIMPLE_EDIT",
+                "trace": [*state.get("trace", []), event],
+            }
+
+        is_direct, direct_dsl, reason = probe_strict_direct(
+            query,
+            self._candidates_catalog,
+            previous_dsl=state.get("previous_dsl"),
+        )
+        if is_direct and direct_dsl is not None:
+            event = _make_trace("strict_direct_probe", t0, {"route": "direct", "reason": reason})
+            return {
+                "route": "direct",
+                "route_reason": reason,
+                "draft_dsl": direct_dsl.model_dump(by_alias=True, exclude_none=True),
+                "trace": [*state.get("trace", []), event],
+            }
+
+        event = _make_trace("strict_direct_probe", t0, {"route": "semantic_plan", "reason": reason})
+        return {
+            "route": "semantic_plan",
+            "route_reason": reason,
+            "trace": [*state.get("trace", []), event],
+        }
+
+    async def semantic_plan(self, state: FundScreeningState) -> dict[str, Any]:
+        t0 = time.perf_counter()
+        query = state["normalized_query"]
+        intent = state.get("intent")
+        complexity = state.get("edit_complexity")
+
+        # EDIT COMPLEX with previous DSL / Plan
+        if intent == "EDIT" and complexity == "COMPLEX" and hasattr(self._analysis, "generate_edit_plan"):
+            prev_plan_raw = state.get("semantic_plan")
+            if prev_plan_raw:
+                prev_plan = SemanticPlan.model_validate(prev_plan_raw) if isinstance(prev_plan_raw, dict) else prev_plan_raw
+            else:
+                prev_dsl = state.get("previous_dsl")
+                prev_plan = _reconstruct_semantic_plan_from_dsl(prev_dsl) if prev_dsl else SemanticPlan(intent="CREATE", groups=[])
+
+            summary = summarize_plan_for_edit(prev_plan)
+            res = self._analysis.generate_edit_plan(query, summary)
+            edit_plan = await res if inspect.isawaitable(res) else res
+            new_plan, recall_ids = apply_edit_plan(prev_plan, edit_plan)
+
+            event = _make_trace("semantic_plan", t0, {"mode": "edit_plan", "operations": len(edit_plan.operations), "recallConditions": len(recall_ids)})
+            return {
+                "semantic_plan": new_plan.model_dump(by_alias=True, exclude_none=True),
+                "edit_plan": edit_plan.model_dump(by_alias=True, exclude_none=True),
+                "conditions_to_recall": recall_ids,
+                "llm_calls": state.get("llm_calls", 0) + 1,
+                "trace": [*state.get("trace", []), event],
+            }
+
+        if hasattr(self._analysis, "generate_semantic_plan"):
+            res = self._analysis.generate_semantic_plan(query, state.get("previous_dsl"))
+            plan = await res if inspect.isawaitable(res) else res
+        else:
+            res = self._analysis._make_plan(query)
+            plan = await res if inspect.isawaitable(res) else res
+
+        if isinstance(plan, RecallPlan) or not hasattr(plan, "groups"):
+            plan_dict = {
+                "domains": list(plan.domains) if hasattr(plan, "domains") else ["metric", "scope", "entity"],
+                "conditions": [
+                    {"condition_id": c.condition_id, "mention": c.mention, "domain": c.domain}
+                    for c in getattr(plan, "conditions", [])
+                ],
+            }
+            event = _make_trace("pre_recall_plan", t0, {"condition_count": len(getattr(plan, "conditions", []))})
+            return {
+                "recall_plan": plan_dict,
+                "llm_calls": state.get("llm_calls", 0) + 1,
+                "trace": [*state.get("trace", []), event],
+            }
+
+        extra_llm_calls = 0
+        if isinstance(plan, SemanticPlan):
+            from app.pipeline.semantic_coverage import check_semantic_coverage
+            cov = check_semantic_coverage(query, plan)
+            if not cov.is_valid and hasattr(self._analysis, "generate_semantic_plan"):
+                missing = ", ".join(cov.missing_fragments) if cov.missing_fragments else "部分数值条件"
+                retry_prompt = f"{query}\n[系统提示：上一次解析遗漏了以下条件，请务必完整保留所有条件且严禁填0占位：{missing}]"
+                try:
+                    retry_res = self._analysis.generate_semantic_plan(retry_prompt, state.get("previous_dsl"))
+                    retry_plan = await retry_res if inspect.isawaitable(retry_res) else retry_res
+                    if isinstance(retry_plan, SemanticPlan):
+                        extra_llm_calls = 1
+                        retry_cov = check_semantic_coverage(query, retry_plan)
+                        if retry_cov.is_valid or len(retry_cov.missing_fragments) < len(cov.missing_fragments):
+                            plan = retry_plan
+                except Exception:
+                    pass
+
+        plan_dict = plan.model_dump(by_alias=True, exclude_none=True) if hasattr(plan, "model_dump") else plan
+        event = _make_trace("semantic_plan", t0, {"groups": len(getattr(plan, "groups", []))})
+        return {
+            "semantic_plan": plan_dict,
+            "llm_calls": state.get("llm_calls", 0) + 1 + extra_llm_calls,
+            "trace": [*state.get("trace", []), event],
+        }
+
+    async def recall_by_condition(self, state: FundScreeningState) -> dict[str, Any]:
+        t0 = time.perf_counter()
+        if not state.get("semantic_plan") and state.get("recall_plan"):
+            return await self.parallel_recall(state)
+
+        plan_raw = state.get("semantic_plan") or {}
+        plan = SemanticPlan.model_validate(plan_raw) if isinstance(plan_raw, dict) else plan_raw
+        target_condition_ids = state.get("conditions_to_recall")
+
+        if hasattr(self._analysis, "recall_by_condition"):
+            try:
+                res = self._analysis.recall_by_condition(plan, target_condition_ids=target_condition_ids)
+            except TypeError:
+                res = self._analysis.recall_by_condition(plan)
+            by_condition, contract_index = await res if inspect.isawaitable(res) else res
+        else:
+            by_condition, contract_index = {}, {}
+
+        serialized_by_cond = dict(state.get("by_condition") or {})
+        for cid, info in by_condition.items():
+            candidates = info.get("candidates", []) if isinstance(info, dict) else getattr(info, "candidates", [])
+            serialized_by_cond[cid] = {
+                "mention": info.get("mention") if isinstance(info, dict) else getattr(info, "mention", ""),
+                "domain": info.get("domain") if isinstance(info, dict) else getattr(info, "domain", ""),
+                "candidates": [_candidate_to_dict(c) for c in candidates],
+            }
+
+        raw_contract_index = dict(state.get("candidate_contract_index") or {})
+        for k, c in contract_index.items():
+            raw_contract_index[k] = _candidate_to_dict(c) if isinstance(c, CandidateContract) else c
+
+        all_candidates = list(raw_contract_index.values())
+        event = _make_trace("recall_by_condition", t0, {"conditions": len(serialized_by_cond), "candidates": len(all_candidates)})
+        return {
+            "by_condition": serialized_by_cond,
+            "candidate_contract_index": raw_contract_index,
+            "candidate_pool": all_candidates,
+            "trace": [*state.get("trace", []), event],
+        }
+
+    async def simple_full_router(self, state: FundScreeningState) -> dict[str, Any]:
+        t0 = time.perf_counter()
+        if not state.get("semantic_plan") and state.get("recall_plan"):
+            from app.graph.router import classify_screening_route
+            route = classify_screening_route(state)
+            event = _make_trace("simple_full_router", t0, {"route": route, "reason": "LEGACY_ROUTE"})
+            return {
+                "route": route,
+                "route_reason": "LEGACY_ROUTE",
+                "trace": [*state.get("trace", []), event],
+            }
+
+        plan_raw = state.get("semantic_plan") or {}
+        plan = SemanticPlan.model_validate(plan_raw) if isinstance(plan_raw, dict) else plan_raw
+        by_condition = state.get("by_condition") or {}
+        route, reason = classify_plan_route(plan, by_condition)
+        event = _make_trace("simple_full_router", t0, {"route": route, "reason": reason})
+        return {
+            "route": route,
+            "route_reason": reason,
+            "trace": [*state.get("trace", []), event],
+        }
+
+    async def simple_adjudication(self, state: FundScreeningState) -> dict[str, Any]:
+        return await self._run_adjudication(state, route="simple")
+
+    async def full_adjudication(self, state: FundScreeningState) -> dict[str, Any]:
+        return await self._run_adjudication(state, route="full")
+
+    async def _run_adjudication(self, state: FundScreeningState, route: str) -> dict[str, Any]:
+        t0 = time.perf_counter()
+        if not state.get("semantic_plan") and state.get("recall_plan"):
+            if route == "simple":
+                return await self.simple_semantic_parse(state)
+            else:
+                return await self.candidate_adjudication(state)
+
+        plan_raw = state.get("semantic_plan") or {}
+        plan = SemanticPlan.model_validate(plan_raw) if isinstance(plan_raw, dict) else plan_raw
+        by_condition = state.get("by_condition") or {}
+
+        if hasattr(self._analysis, "adjudicate_candidates"):
+            res = self._analysis.adjudicate_candidates(plan, by_condition, route=route)
+            adj = await res if inspect.isawaitable(res) else res
+        else:
+            adj = AdjudicationResult()
+
+        existing_adj = state.get("adjudication_result") or {}
+        existing_bindings = {
+            b["conditionId"]: b
+            for b in existing_adj.get("conditionBindings", [])
+            if "conditionId" in b
+        }
+
+        # Handle removals or reset from EditPlan
+        edit_plan_dict = state.get("edit_plan") or {}
+        for op in edit_plan_dict.get("operations", []):
+            if op.get("action") == "REMOVE" and op.get("targetConditionId"):
+                existing_bindings.pop(op["targetConditionId"], None)
+            elif op.get("action") == "RESET":
+                existing_bindings.clear()
+
+        new_bindings = [
+            b.model_dump(by_alias=True, exclude_none=True) if hasattr(b, "model_dump") else b
+            for b in getattr(adj, "condition_bindings", [])
+        ]
+        for b in new_bindings:
+            if "conditionId" in b:
+                existing_bindings[b["conditionId"]] = b
+
+        merged_adj = {
+            "conditionBindings": list(existing_bindings.values()),
+            "sortBindings": [
+                s.model_dump(by_alias=True, exclude_none=True) if hasattr(s, "model_dump") else s
+                for s in getattr(adj, "sort_bindings", [])
+            ] or existing_adj.get("sortBindings", []),
+            "clarifications": [
+                c.model_dump(by_alias=True, exclude_none=True) if hasattr(c, "model_dump") else c
+                for c in getattr(adj, "clarifications", [])
+            ] or existing_adj.get("clarifications", []),
+        }
+
+        # Validate binding coverage
+        from app.pipeline.semantic_coverage import check_binding_coverage
+        try:
+            adj_model = AdjudicationResult.model_validate(merged_adj)
+            b_cov = check_binding_coverage(plan, adj_model)
+            if not b_cov.is_valid:
+                unbound_clarifications = merged_adj.get("clarifications", [])
+                existing_clarified = {c.get("conditionId") for c in unbound_clarifications if isinstance(c, dict)}
+                for u_id in b_cov.unbound_condition_ids:
+                    if u_id not in existing_clarified:
+                        unbound_clarifications.append({
+                            "conditionId": u_id,
+                            "code": "UNBOUND_CONDITION",
+                            "message": f"条件 {u_id} 未能成功匹配有效候选",
+                        })
+                merged_adj["clarifications"] = unbound_clarifications
+        except Exception:
+            pass
+
+        event = _make_trace(f"{route}_adjudication", t0, {"bindings": len(merged_adj["conditionBindings"])})
+        return {
+            "adjudication_result": merged_adj,
+            "llm_calls": state.get("llm_calls", 0) + 1,
             "trace": [*state.get("trace", []), event],
         }
 
@@ -102,6 +444,7 @@ class ScreeningGraphNodes:
         event = _make_trace("pre_recall_plan", t0, {"condition_count": len(plan.conditions)})
         return {
             "recall_plan": plan_dict,
+            "llm_calls": state.get("llm_calls", 0) + 1,
             "trace": [*state.get("trace", []), event],
         }
 
@@ -138,18 +481,71 @@ class ScreeningGraphNodes:
         event = _make_trace("candidate_adjudication", t0, {"group_count": len(decision.get("groups", []))})
         return {
             "decision": decision,
+            "llm_calls": state.get("llm_calls", 0) + 1,
             "trace": [*state.get("trace", []), event],
         }
 
     async def command_build(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
-        contracts = [_dict_to_candidate(c) for c in state.get("candidate_pool", [])]
-        keys = {c.key for c in contracts}
-        if self._builder._default_sector_id not in keys:
-            contracts.append(CandidateContract("scope", self._builder._default_sector_id, "全市场"))
-        pool = CandidatePool(contracts)
-        dsl = self._builder.build(state["decision"], pool)
-        event = _make_trace("command_build", t0, {"limit": dsl.limit, "children_count": len(dsl.children)})
+        if state.get("draft_dsl") is not None:
+            event = _make_trace("command_build", t0, {"mode": "already_built"})
+            return {"trace": [*state.get("trace", []), event]}
+
+        resolutions = []
+        if state.get("semantic_plan") and state.get("adjudication_result"):
+            plan = SemanticPlan.model_validate(state["semantic_plan"])
+            adj = AdjudicationResult.model_validate(state["adjudication_result"])
+            contracts = {
+                c["key"]: _dict_to_candidate(c)
+                for c in state.get("candidate_pool", [])
+            }
+            catalog_map = {c.key: c for c in self._candidates_catalog}
+            policy = MetricResolutionPolicy()
+            as_of = state.get("as_of_date")
+
+            def _get_metric_leaves(tree: Any) -> list[Any]:
+                leaves = []
+                for ch in getattr(tree, "children", []):
+                    if hasattr(ch, "children") and not hasattr(ch, "mention"):
+                        leaves.extend(_get_metric_leaves(ch))
+                    else:
+                        leaves.append(ch)
+                return leaves
+
+            binding_map = {b.condition_id: b for b in adj.condition_bindings}
+            for grp in plan.groups:
+                for leaf in _get_metric_leaves(grp.metric_tree):
+                    if getattr(leaf, "time_hint", None) is not None:
+                        res = policy.resolve(leaf.time_hint, as_of=as_of)
+                        if res.metric in catalog_map:
+                            contracts[res.metric] = catalog_map[res.metric]
+                        cid = leaf.condition_id
+                        if cid in binding_map:
+                            b = binding_map[cid]
+                            b.candidate_key = res.metric
+                            for pk, pv in res.params.items():
+                                b.params[pk] = pv
+                        resolutions.append({
+                            "condition_id": cid,
+                            "metric": res.metric,
+                            "strategy": res.strategy,
+                        })
+
+            if self._builder._default_sector_id not in contracts:
+                contracts[self._builder._default_sector_id] = CandidateContract("scope", self._builder._default_sector_id, "全市场")
+            dsl = self._builder.build_from_plan(plan, adj, contracts)
+        else:
+            contracts = [_dict_to_candidate(c) for c in state.get("candidate_pool", [])]
+            keys = {c.key for c in contracts}
+            if self._builder._default_sector_id not in keys:
+                contracts.append(CandidateContract("scope", self._builder._default_sector_id, "全市场"))
+            pool = CandidatePool(contracts)
+            dsl = self._builder.build(state.get("decision", {"groups": []}), pool)
+
+        summary = {"limit": dsl.limit, "children_count": len(dsl.children)}
+        if resolutions:
+            summary["metric_resolutions"] = resolutions
+        event = _make_trace("command_build", t0, summary)
         return {
             "draft_dsl": dsl.model_dump(by_alias=True, exclude_none=True),
             "trace": [*state.get("trace", []), event],
@@ -159,33 +555,71 @@ class ScreeningGraphNodes:
         t0 = time.perf_counter()
         dsl = FundScreeningDsl.model_validate(state["draft_dsl"])
         contracts = {
-            c["key"]: _dict_to_candidate(c)
-            for c in state.get("candidate_pool", [])
-            if c.get("domain") == "metric"
+            c.key: c
+            for c in self._candidates_catalog
+            if getattr(c, "domain", "metric") == "metric"
         }
-        res = validate_and_repair(dsl, contracts)
+        for c in state.get("candidate_pool", []):
+            if c.get("domain") == "metric":
+                contracts[c["key"]] = _dict_to_candidate(c)
+        as_of_date = state.get("as_of_date")
+        res = validate_and_repair(dsl, contracts, as_of_date=as_of_date)
         errors = [{"code": res.clarification.code, "message": res.clarification.message}] if res.clarification else []
         repairs = [{"code": r} for r in res.repairs]
-        event = _make_trace("validator", t0, {"errors": len(errors), "repairs": len(repairs)})
-        return {
+        event = _make_trace("validator", t0, {"status": res.status, "errors": len(errors), "repairs": len(repairs)})
+        updates: dict[str, Any] = {
             "draft_dsl": res.dsl.model_dump(by_alias=True, exclude_none=True),
             "validation_errors": errors,
             "repairs": [*state.get("repairs", []), *repairs],
             "repair_attempts": state.get("repair_attempts", 0) + (1 if repairs else 0),
             "trace": [*state.get("trace", []), event],
         }
+        if res.status == "REJECT_OR_CLARIFY":
+            if res.clarification_plan is not None:
+                updates["clarification"] = res.clarification_plan.model_dump(by_alias=True)
+            elif res.clarification is not None:
+                updates["clarification"] = {"code": res.clarification.code, "message": res.clarification.message}
+        return updates
 
     async def command_finalize(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
-        final_dsl = state["draft_dsl"] if not state.get("validation_errors") and not state.get("clarification") else None
-        event = _make_trace("command_finalize", t0, {"valid": final_dsl is not None})
-        res: dict[str, Any] = {
-            "final_dsl": final_dsl,
+        validation_errors = state.get("validation_errors", [])
+        clarification = state.get("clarification")
+        draft_dsl = state.get("draft_dsl")
+
+        if validation_errors or clarification or not draft_dsl:
+            event = _make_trace("command_finalize", t0, {"valid": False, "reason": "existing_errors"})
+            return {
+                "final_dsl": None,
+                "trace": [*state.get("trace", []), event],
+            }
+
+        from app.pipeline.validator import validate_execution_gate
+        contracts = {
+            c["key"]: _dict_to_candidate(c)
+            for c in state.get("candidate_pool", [])
+            if c.get("domain") == "metric"
+        }
+        is_valid, gate_errors = validate_execution_gate(draft_dsl, contracts)
+        if not is_valid:
+            first_err = gate_errors[0]
+            event = _make_trace("command_finalize", t0, {"valid": False, "reason": first_err["code"]})
+            return {
+                "final_dsl": None,
+                "clarification": {
+                    "code": first_err["code"],
+                    "message": first_err["message"],
+                },
+                "validation_errors": gate_errors,
+                "trace": [*state.get("trace", []), event],
+            }
+
+        event = _make_trace("command_finalize", t0, {"valid": True})
+        return {
+            "final_dsl": draft_dsl,
+            "previous_dsl": draft_dsl,
             "trace": [*state.get("trace", []), event],
         }
-        if final_dsl is not None:
-            res["previous_dsl"] = final_dsl
-        return res
 
     async def pre_route_recall(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
@@ -309,7 +743,14 @@ class ScreeningGraphNodes:
         if decision is None:
             decision = _build_decision_from_contracts(query, pool, self._builder._default_sector_id)
 
-        dsl = self._builder.build(decision, pool)
+        semantic_plan = state.get("semantic_plan")
+        adjudication = state.get("adjudication")
+        if semantic_plan and adjudication and hasattr(self._builder, "build_from_plan"):
+            contract_map = getattr(pool, "_contracts", {})
+            dsl = self._builder.build_from_plan(semantic_plan, adjudication, contract_map)
+        else:
+            dsl = self._builder.build(decision, pool)
+
         event = _make_trace("simple_semantic_parse", t0, {"limit": dsl.limit})
         return {
             "draft_dsl": dsl.model_dump(by_alias=True, exclude_none=True),
@@ -318,6 +759,10 @@ class ScreeningGraphNodes:
 
     async def direct_build(self, state: FundScreeningState) -> dict[str, Any]:
         t0 = time.perf_counter()
+        if state.get("draft_dsl") is not None:
+            event = _make_trace("direct_build", t0, {"mode": "probed"})
+            return {"trace": [*state.get("trace", []), event]}
+
         pool = state.get("candidate_pool") or []
         query = (state.get("normalized_query") or state.get("query", "")).strip()
 
@@ -445,11 +890,14 @@ def _build_decision_from_contracts(query: str, pool: CandidatePool, default_sect
 
         if best_candidate is not None:
             matched_metric_keys.add(best_candidate.key)
+            unit_val = best_candidate.value_type
+            if unit_val in ("NUMBER", "DECIMAL", "INTEGER", "BOOLEAN", "STRING", "DATE"):
+                unit_val = "BILLION_CNY" if best_candidate.key == "f_info_fundscale" else ("PERCENT" if "return" in best_candidate.key or "downside" in best_candidate.key else None)
             metrics.append({
                 "metric": best_candidate.key,
                 "operator": best_op,
                 "value": best_val,
-                "unit": best_candidate.value_type,
+                "unit": unit_val,
             })
 
     entities = []

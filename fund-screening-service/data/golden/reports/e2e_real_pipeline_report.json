@@ -1,0 +1,344 @@
+[
+  {
+    "case_id": "scenario-vague-return-clarification",
+    "category": "scenario",
+    "difficulty": "ambiguous",
+    "query": "收益好的基金",
+    "expected_outcome": "CLARIFICATION",
+    "actual_outcome": "DSL",
+    "route": "simple",
+    "passed": false,
+    "outcome_match": false,
+    "latency_ms": 73678.13380000007,
+    "dsl_match": {},
+    "clar_match": {},
+    "failure_reason": "Generated DSL instead of Clarification",
+    "actual_dsl": {
+      "version": "fund-screening/v1",
+      "operator": "AND",
+      "children": [
+        {
+          "sector": {
+            "operator": "OR",
+            "children": [
+              {
+                "sectorId": "1000019220000000",
+                "match": "SELF_OR_DESCENDANT"
+              }
+            ]
+          },
+          "metric": {
+            "operator": "AND",
+            "params": [],
+            "children": [
+              {
+                "operator": ">",
+                "metric": "f_info_existingyear",
+                "value": 0,
+                "unit": "年",
+                "params": [
+                  {
+                    "key": "endDate",
+                    "value": "LATEST_TRADE_DATE"
+                  }
+                ]
+              }
+            ]
+          },
+          "sort": []
+        }
+      ],
+      "sort": [],
+      "limit": 20
+    },
+    "actual_clarification": null,
+    "trace": {
+      "route": "simple",
+      "repairs": [
+        {
+          "code": "DEFAULT_METRIC_PARAMETER"
+        }
+      ],
+      "candidate_count": 0
+    }
+  },
+  {
+    "case_id": "scenario-vague-risk-clarification",
+    "category": "scenario",
+    "difficulty": "ambiguous",
+    "query": "风险低的固收基金",
+    "expected_outcome": "CLARIFICATION",
+    "actual_outcome": "DSL",
+    "route": "simple",
+    "passed": false,
+    "outcome_match": false,
+    "latency_ms": 71299.56440000024,
+    "dsl_match": {},
+    "clar_match": {},
+    "failure_reason": "Generated DSL instead of Clarification",
+    "actual_dsl": {
+      "version": "fund-screening/v1",
+      "operator": "AND",
+      "children": [
+        {
+          "sector": {
+            "operator": "OR",
+            "children": [
+              {
+                "sectorId": "1000019220000000",
+                "match": "SELF_OR_DESCENDANT"
+              }
+            ]
+          },
+          "metric": {
+            "operator": "AND",
+            "params": [],
+            "children": [
+              {
+                "operator": ">",
+                "metric": "f_info_existingyear",
+                "value": 0,
+                "unit": "年",
+                "params": [
+                  {
+                    "key": "endDate",
+                    "value": "LATEST_TRADE_DATE"
+                  }
+                ]
+              }
+            ]
+          },
+          "sort": []
+        }
+      ],
+      "sort": [],
+      "limit": 20
+    },
+    "actual_clarification": null,
+    "trace": {
+      "route": "simple",
+      "repairs": [
+        {
+          "code": "DEFAULT_METRIC_PARAMETER"
+        }
+      ],
+      "candidate_count": 0
+    }
+  },
+  {
+    "case_id": "scenario-multi-condition-and",
+    "category": "scenario",
+    "difficulty": "complex",
+    "query": "规模大于10亿且成立年限大于3年，按近1年收益降序取前20只",
+    "expected_outcome": "DSL",
+    "actual_outcome": "DSL",
+    "route": "simple",
+    "passed": false,
+    "outcome_match": true,
+    "latency_ms": 72980.82449999856,
+    "dsl_match": {
+      "exact_match": false,
+      "structural_match": false,
+      "metrics_match": false,
+      "sectors_match": true,
+      "params_match": false,
+      "sort_match": false,
+      "limit_match": true,
+      "overall_score": 0.4
+    },
+    "clar_match": {},
+    "failure_reason": "Missing DSL output",
+    "actual_dsl": {
+      "version": "fund-screening/v1",
+      "operator": "AND",
+      "children": [
+        {
+          "sector": {
+            "operator": "OR",
+            "children": [
+              {
+                "sectorId": "1000019220000000",
+                "match": "SELF_OR_DESCENDANT"
+              }
+            ]
+          },
+          "metric": {
+            "operator": "AND",
+            "params": [],
+            "children": [
+              {
+                "operator": ">",
+                "metric": "f_info_existingyear",
+                "value": 0,
+                "unit": "年",
+                "params": [
+                  {
+                    "key": "endDate",
+                    "value": "LATEST_TRADE_DATE"
+                  }
+                ]
+              }
+            ]
+          },
+          "sort": []
+        }
+      ],
+      "sort": [],
+      "limit": 20
+    },
+    "actual_clarification": null,
+    "trace": {
+      "route": "simple",
+      "repairs": [
+        {
+          "code": "DEFAULT_METRIC_PARAMETER"
+        }
+      ],
+      "candidate_count": 0
+    }
+  },
+  {
+    "case_id": "scenario-negative-max-drawdown",
+    "category": "scenario",
+    "difficulty": "clear",
+    "query": "最大回撤小于15%",
+    "expected_outcome": "DSL",
+    "actual_outcome": "DSL",
+    "route": "simple",
+    "passed": false,
+    "outcome_match": true,
+    "latency_ms": 64078.27699999871,
+    "dsl_match": {
+      "exact_match": false,
+      "structural_match": false,
+      "metrics_match": false,
+      "sectors_match": true,
+      "params_match": false,
+      "sort_match": true,
+      "limit_match": true,
+      "overall_score": 0.6
+    },
+    "clar_match": {},
+    "failure_reason": "Missing DSL output",
+    "actual_dsl": {
+      "version": "fund-screening/v1",
+      "operator": "AND",
+      "children": [
+        {
+          "sector": {
+            "operator": "OR",
+            "children": [
+              {
+                "sectorId": "1000019220000000",
+                "match": "SELF_OR_DESCENDANT"
+              }
+            ]
+          },
+          "metric": {
+            "operator": "AND",
+            "params": [],
+            "children": [
+              {
+                "operator": ">",
+                "metric": "f_info_existingyear",
+                "value": 0,
+                "unit": "年",
+                "params": [
+                  {
+                    "key": "endDate",
+                    "value": "LATEST_TRADE_DATE"
+                  }
+                ]
+              }
+            ]
+          },
+          "sort": []
+        }
+      ],
+      "sort": [],
+      "limit": 20
+    },
+    "actual_clarification": null,
+    "trace": {
+      "route": "simple",
+      "repairs": [
+        {
+          "code": "DEFAULT_METRIC_PARAMETER"
+        }
+      ],
+      "candidate_count": 0
+    }
+  },
+  {
+    "case_id": "scenario-date-interval-return",
+    "category": "scenario",
+    "difficulty": "clear",
+    "query": "2024年以来区间收益率大于10%",
+    "expected_outcome": "DSL",
+    "actual_outcome": "DSL",
+    "route": "simple",
+    "passed": false,
+    "outcome_match": true,
+    "latency_ms": 79396.36640000026,
+    "dsl_match": {
+      "exact_match": false,
+      "structural_match": false,
+      "metrics_match": false,
+      "sectors_match": true,
+      "params_match": false,
+      "sort_match": true,
+      "limit_match": true,
+      "overall_score": 0.6
+    },
+    "clar_match": {},
+    "failure_reason": "Missing DSL output",
+    "actual_dsl": {
+      "version": "fund-screening/v1",
+      "operator": "AND",
+      "children": [
+        {
+          "sector": {
+            "operator": "OR",
+            "children": [
+              {
+                "sectorId": "1000019220000000",
+                "match": "SELF_OR_DESCENDANT"
+              }
+            ]
+          },
+          "metric": {
+            "operator": "AND",
+            "params": [],
+            "children": [
+              {
+                "operator": ">",
+                "metric": "f_info_existingyear",
+                "value": 0,
+                "unit": "年",
+                "params": [
+                  {
+                    "key": "endDate",
+                    "value": "LATEST_TRADE_DATE"
+                  }
+                ]
+              }
+            ]
+          },
+          "sort": []
+        }
+      ],
+      "sort": [],
+      "limit": 20
+    },
+    "actual_clarification": null,
+    "trace": {
+      "route": "simple",
+      "repairs": [
+        {
+          "code": "DEFAULT_METRIC_PARAMETER"
+        }
+      ],
+      "candidate_count": 0
+    }
+  }
+]

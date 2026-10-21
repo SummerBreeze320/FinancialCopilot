@@ -30,8 +30,8 @@ async def test_multiturn_graph_editing_with_checkpoint_recovery() -> None:
     class DummyMetricRetriever:
         async def search(self, text: str, top_k: int):
             return [
-                CandidateContract("metric", "f_return_3y", "近三年收益", supported_usage=("filter", "sort")),
-                CandidateContract("metric", "f_info_fundscale", "基金规模", supported_usage=("filter", "sort")),
+                CandidateContract("metric", "f_return_3y", "近三年收益", supported_usage=("filter", "sort"), value_type="PERCENT"),
+                CandidateContract("metric", "f_info_fundscale", "基金规模", supported_usage=("filter", "sort"), value_type="BILLION_CNY"),
             ]
 
     class EmptyRetriever:

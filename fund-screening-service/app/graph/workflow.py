@@ -13,58 +13,65 @@ def build_screening_graph(nodes: ScreeningGraphNodes, checkpointer: Any = None):
 
     # 1. 基础阶段节点
     builder.add_node("query_preprocess", nodes.query_preprocess)
-    builder.add_node("pre_route_recall", nodes.pre_route_recall)
-    builder.add_node("route_classifier", nodes.route_classifier)
-    builder.add_node("simple_edit", nodes.simple_edit)
+    builder.add_node("strict_direct_probe", nodes.strict_direct_probe)
     builder.add_node("direct_build", nodes.direct_build)
-    builder.add_node("simple_semantic_parse", nodes.simple_semantic_parse)
-    builder.add_node("pre_recall_plan", nodes.pre_recall_plan)
-    builder.add_node("parallel_recall", nodes.parallel_recall)
-    builder.add_node("candidate_adjudication", nodes.candidate_adjudication)
+    builder.add_node("simple_edit", nodes.simple_edit)
+    builder.add_node("semantic_plan", nodes.semantic_plan)
+    builder.add_node("recall_by_condition", nodes.recall_by_condition)
+    builder.add_node("simple_full_router", nodes.simple_full_router)
+    builder.add_node("simple_adjudication", nodes.simple_adjudication)
+    builder.add_node("full_adjudication", nodes.full_adjudication)
     builder.add_node("command_build", nodes.command_build)
     builder.add_node("validator", nodes.validator)
     builder.add_node("mechanical_repair", mechanical_repair_node)
     builder.add_node("clarification", clarification_node)
     builder.add_node("command_finalize", nodes.command_finalize)
 
-    # 2. 起始流
+    # 2. 起始与 StrictDirectProbe 分流
     builder.add_edge(START, "query_preprocess")
-    builder.add_edge("query_preprocess", "pre_route_recall")
-    builder.add_edge("pre_route_recall", "route_classifier")
+    builder.add_edge("query_preprocess", "strict_direct_probe")
 
-    # 3. 三级条件路由（包含简单编辑旁路）
-    def route_condition(state: FundScreeningState) -> str:
+    def direct_probe_condition(state: FundScreeningState) -> str:
         if state.get("intent") == "EDIT" and state.get("edit_complexity") == "SIMPLE" and state.get("previous_dsl"):
             return "simple_edit"
-        r = state.get("route", "full")
-        if r == "direct":
+        if state.get("route") == "direct":
             return "direct_build"
-        if r == "simple":
-            return "simple_semantic_parse"
-        return "pre_recall_plan"
+        return "semantic_plan"
 
     builder.add_conditional_edges(
-        "route_classifier",
-        route_condition,
+        "strict_direct_probe",
+        direct_probe_condition,
         {
             "simple_edit": "simple_edit",
             "direct_build": "direct_build",
-            "simple_semantic_parse": "simple_semantic_parse",
-            "pre_recall_plan": "pre_recall_plan",
+            "semantic_plan": "semantic_plan",
         },
     )
 
-    # 4. full 路径串联
-    builder.add_edge("pre_recall_plan", "parallel_recall")
-    builder.add_edge("parallel_recall", "candidate_adjudication")
-    builder.add_edge("candidate_adjudication", "command_build")
+    # 3. 语义规划 -> Condition 级召回 -> Simple/Full 路由
+    builder.add_edge("semantic_plan", "recall_by_condition")
+    builder.add_edge("recall_by_condition", "simple_full_router")
+
+    def router_condition(state: FundScreeningState) -> str:
+        return "simple_adjudication" if state.get("route") == "simple" else "full_adjudication"
+
+    builder.add_conditional_edges(
+        "simple_full_router",
+        router_condition,
+        {
+            "simple_adjudication": "simple_adjudication",
+            "full_adjudication": "full_adjudication",
+        },
+    )
+
+    # 4. 裁决 -> 确定性 AST CommandBuild
+    builder.add_edge("simple_adjudication", "command_build")
+    builder.add_edge("full_adjudication", "command_build")
 
     # 5. 各分支汇入 validator
     builder.add_edge("simple_edit", "validator")
     builder.add_edge("direct_build", "validator")
-    builder.add_edge("simple_semantic_parse", "validator")
     builder.add_edge("command_build", "validator")
-
 
     # 6. 校验与循环修复条件边
     def validation_condition(state: FundScreeningState) -> str:

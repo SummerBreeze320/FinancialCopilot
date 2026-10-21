@@ -1,0 +1,2369 @@
+{
+  "dataset_version": "v1.0",
+  "total_cases": 359,
+  "passed_cases": 37,
+  "failed_cases": 322,
+  "pass_rate": 0.10306406685236769,
+  "channel_metrics": {
+    "entity_lexical": {
+      "hit@1": 0.027855153203342618,
+      "hit@3": 0.027855153203342618,
+      "hit@5": 0.027855153203342618,
+      "hit@10": 0.027855153203342618,
+      "precision@1": 0.027855153203342618,
+      "precision@3": 0.009285051067780872,
+      "precision@5": 0.005571030640668524,
+      "recall@1": 0.01021355617455896,
+      "recall@3": 0.01021355617455896,
+      "recall@5": 0.01021355617455896,
+      "mrr": 0.027855153203342618,
+      "ndcg@3": 0.02078634932763333,
+      "ndcg@5": 0.02078634932763333
+    },
+    "pgvector": {
+      "hit@1": 0.2395543175487465,
+      "hit@3": 0.2395543175487465,
+      "hit@5": 0.2395543175487465,
+      "hit@10": 0.2395543175487465,
+      "precision@1": 0.2395543175487465,
+      "precision@3": 0.16991643454038996,
+      "precision@5": 0.10306406685236769,
+      "recall@1": 0.09865366759517177,
+      "recall@3": 0.19568245125348188,
+      "recall@5": 0.19707520891364902,
+      "mrr": 0.2395543175487465,
+      "ndcg@3": 0.15970457465703716,
+      "ndcg@5": 0.16020554797578468
+    },
+    "lexical": {
+      "hit@1": 0.027855153203342618,
+      "hit@3": 0.027855153203342618,
+      "hit@5": 0.027855153203342618,
+      "hit@10": 0.027855153203342618,
+      "precision@1": 0.027855153203342618,
+      "precision@3": 0.009285051067780872,
+      "precision@5": 0.005571030640668524,
+      "recall@1": 0.01021355617455896,
+      "recall@3": 0.01021355617455896,
+      "recall@5": 0.01021355617455896,
+      "mrr": 0.027855153203342618,
+      "ndcg@3": 0.02078634932763333,
+      "ndcg@5": 0.02078634932763333
+    },
+    "merged": {
+      "hit@1": 0.2395543175487465,
+      "hit@3": 0.2395543175487465,
+      "hit@5": 0.2395543175487465,
+      "hit@10": 0.2395543175487465,
+      "precision@1": 0.2395543175487465,
+      "precision@3": 0.17920148560817084,
+      "precision@5": 0.10863509749303621,
+      "recall@1": 0.09865366759517177,
+      "recall@3": 0.20589600742804087,
+      "recall@5": 0.207288765088208,
+      "mrr": 0.2395543175487465,
+      "ndcg@3": 0.1707004161735003,
+      "ndcg@5": 0.1712013894922478
+    },
+    "scope_pgvector": {
+      "hit@1": 0.0584958217270195,
+      "hit@3": 0.0584958217270195,
+      "hit@5": 0.0584958217270195,
+      "hit@10": 0.0584958217270195,
+      "precision@1": 0.0584958217270195,
+      "precision@3": 0.021355617455896005,
+      "precision@5": 0.012813370473537606,
+      "recall@1": 0.018802228412256268,
+      "recall@3": 0.0201949860724234,
+      "recall@5": 0.0201949860724234,
+      "mrr": 0.0584958217270195,
+      "ndcg@3": 0.03884805547767122,
+      "ndcg@5": 0.03790675236186234
+    },
+    "metric_pgvector": {
+      "hit@1": 0.2395543175487465,
+      "hit@3": 0.2395543175487465,
+      "hit@5": 0.2395543175487465,
+      "hit@10": 0.2395543175487465,
+      "precision@1": 0.2395543175487465,
+      "precision@3": 0.15041782729805014,
+      "precision@5": 0.09025069637883008,
+      "recall@1": 0.09865366759517177,
+      "recall@3": 0.17688022284122562,
+      "recall@5": 0.17688022284122562,
+      "mrr": 0.2395543175487465,
+      "ndcg@3": 0.14042448014377049,
+      "ndcg@5": 0.13969766415917165
+    }
+  },
+  "e2e_metrics": {
+    "exact_match_rate": 0.0,
+    "structural_match_rate": 0.1069364161849711,
+    "matched_rate": 0.0,
+    "code_matched_rate": 0.0
+  },
+  "failure_attribution": {
+    "plan_error": 40,
+    "validator_error": 11,
+    "alias_missing": 257,
+    "vector_recall_weak": 14
+  },
+  "actionable_backlog": [
+    {
+      "case_id": "composite-metric-and-01",
+      "reason": "plan_error",
+      "query": "筛选基金规模大于10亿且成立年限大于3年的基金，按近3年回报降序取前10只",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-metric-and-04",
+      "reason": "plan_error",
+      "query": "筛选最大回撤小于15%且基金规模大于10亿的基金，按近3年回报降序取前10只",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-metric-and-05",
+      "reason": "plan_error",
+      "query": "筛选基金规模大于10亿且成立年限大于3年的基金，按近3年回报降序取前20只",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-metric-and-08",
+      "reason": "plan_error",
+      "query": "筛选最大回撤小于15%且基金规模大于10亿的基金，按近3年回报降序取前20只",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-metric-and-09",
+      "reason": "plan_error",
+      "query": "筛选基金规模大于10亿且成立年限大于3年的基金，按近3年回报降序取前30只",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-metric-and-12",
+      "reason": "plan_error",
+      "query": "筛选最大回撤小于15%且基金规模大于10亿的基金，按近3年回报降序取前30只",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-metric-and-13",
+      "reason": "plan_error",
+      "query": "筛选基金规模大于10亿且成立年限大于3年的基金，按近3年回报降序取前10只",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-metric-and-16",
+      "reason": "plan_error",
+      "query": "筛选最大回撤小于15%且基金规模大于10亿的基金，按近3年回报降序取前10只",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-metric-and-17",
+      "reason": "plan_error",
+      "query": "筛选基金规模大于10亿且成立年限大于3年的基金，按近3年回报降序取前20只",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-metric-and-20",
+      "reason": "plan_error",
+      "query": "筛选最大回撤小于15%且基金规模大于10亿的基金，按近3年回报降序取前20只",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-metric-01",
+      "reason": "plan_error",
+      "query": "筛选股票型基金中基金规模大于10亿且近3年回报大于20%的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-metric-02",
+      "reason": "plan_error",
+      "query": "筛选偏股混合基金中成立年限大于3年且最大回撤小于15%的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-metric-05",
+      "reason": "plan_error",
+      "query": "筛选股票型基金中基金规模大于10亿且近3年回报大于20%的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-metric-06",
+      "reason": "plan_error",
+      "query": "筛选偏股混合基金中成立年限大于3年且最大回撤小于15%的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-metric-09",
+      "reason": "plan_error",
+      "query": "筛选股票型基金中基金规模大于10亿且近3年回报大于20%的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-metric-10",
+      "reason": "plan_error",
+      "query": "筛选偏股混合基金中成立年限大于3年且最大回撤小于15%的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-metric-13",
+      "reason": "plan_error",
+      "query": "筛选股票型基金中基金规模大于10亿且近3年回报大于20%的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-metric-14",
+      "reason": "plan_error",
+      "query": "筛选偏股混合基金中成立年限大于3年且最大回撤小于15%的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-metric-17",
+      "reason": "plan_error",
+      "query": "筛选股票型基金中基金规模大于10亿且近3年回报大于20%的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-metric-18",
+      "reason": "plan_error",
+      "query": "筛选偏股混合基金中成立年限大于3年且最大回撤小于15%的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-scope-or-01",
+      "reason": "validator_error",
+      "query": "筛选股票型基金或者偏股混合基金，并要求基金规模大于10亿，排除规模过小的基金",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "composite-scope-or-02",
+      "reason": "validator_error",
+      "query": "筛选偏股混合基金或者半导体行业基金，并要求成立年限大于3年，排除规模过小的基金",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "composite-scope-or-03",
+      "reason": "validator_error",
+      "query": "筛选半导体行业基金或者全市场基金，并要求近3年回报大于20%，排除规模过小的基金",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "composite-scope-or-04",
+      "reason": "validator_error",
+      "query": "筛选全市场基金或者股票型基金，并要求最大回撤小于15%，排除规模过小的基金",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "composite-scope-or-05",
+      "reason": "validator_error",
+      "query": "筛选股票型基金或者偏股混合基金，并要求基金规模大于10亿，排除规模过小的基金",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "composite-scope-or-06",
+      "reason": "validator_error",
+      "query": "筛选偏股混合基金或者半导体行业基金，并要求成立年限大于3年，排除规模过小的基金",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "composite-scope-or-07",
+      "reason": "validator_error",
+      "query": "筛选半导体行业基金或者全市场基金，并要求近3年回报大于20%，排除规模过小的基金",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "composite-scope-or-08",
+      "reason": "validator_error",
+      "query": "筛选全市场基金或者股票型基金，并要求最大回撤小于15%，排除规模过小的基金",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "composite-scope-or-09",
+      "reason": "validator_error",
+      "query": "筛选股票型基金或者偏股混合基金，并要求基金规模大于10亿，排除规模过小的基金",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "composite-scope-or-10",
+      "reason": "validator_error",
+      "query": "筛选偏股混合基金或者半导体行业基金，并要求成立年限大于3年，排除规模过小的基金",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "composite-entity-metric-01",
+      "reason": "plan_error",
+      "query": "在招商中证白酒指数相关基金中，筛选基金规模大于10亿，按近3年回报降序",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-entity-metric-02",
+      "reason": "plan_error",
+      "query": "在张坤管理的基金相关基金中，筛选成立年限大于3年，按近3年回报降序",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-entity-metric-03",
+      "reason": "plan_error",
+      "query": "在招商中证白酒指数相关基金中，筛选近3年回报大于20%，按近3年回报降序",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-entity-metric-04",
+      "reason": "plan_error",
+      "query": "在张坤管理的基金相关基金中，筛选最大回撤小于15%，按近3年回报降序",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-entity-metric-05",
+      "reason": "plan_error",
+      "query": "在招商中证白酒指数相关基金中，筛选基金规模大于10亿，按近3年回报降序",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-entity-metric-06",
+      "reason": "plan_error",
+      "query": "在张坤管理的基金相关基金中，筛选成立年限大于3年，按近3年回报降序",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-entity-metric-07",
+      "reason": "plan_error",
+      "query": "在招商中证白酒指数相关基金中，筛选近3年回报大于20%，按近3年回报降序",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-entity-metric-08",
+      "reason": "plan_error",
+      "query": "在张坤管理的基金相关基金中，筛选最大回撤小于15%，按近3年回报降序",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-entity-metric-09",
+      "reason": "plan_error",
+      "query": "在招商中证白酒指数相关基金中，筛选基金规模大于10亿，按近3年回报降序",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-entity-metric-10",
+      "reason": "plan_error",
+      "query": "在张坤管理的基金相关基金中，筛选成立年限大于3年，按近3年回报降序",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-partial-clarification-01",
+      "reason": "plan_error",
+      "query": "筛选股票型基金中基金规模大于10亿且收益好的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-partial-clarification-02",
+      "reason": "plan_error",
+      "query": "筛选偏股混合基金中成立年限大于3年且收益好的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-partial-clarification-03",
+      "reason": "plan_error",
+      "query": "筛选半导体行业基金中近3年回报大于20%且收益好的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-partial-clarification-04",
+      "reason": "plan_error",
+      "query": "筛选全市场基金中最大回撤小于15%且收益好的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-partial-clarification-05",
+      "reason": "plan_error",
+      "query": "筛选股票型基金中基金规模大于10亿且收益好的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-partial-clarification-06",
+      "reason": "plan_error",
+      "query": "筛选偏股混合基金中成立年限大于3年且收益好的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-partial-clarification-07",
+      "reason": "plan_error",
+      "query": "筛选半导体行业基金中近3年回报大于20%且收益好的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-partial-clarification-08",
+      "reason": "plan_error",
+      "query": "筛选全市场基金中最大回撤小于15%且收益好的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-partial-clarification-09",
+      "reason": "plan_error",
+      "query": "筛选股票型基金中基金规模大于10亿且收益好的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "composite-partial-clarification-10",
+      "reason": "plan_error",
+      "query": "筛选偏股混合基金中成立年限大于3年且收益好的基金",
+      "expected": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例",
+      "action": "优化 SemanticPlan 解析 Prompt 或扩充复合/多条件抽取的 Few-Shot 示例"
+    },
+    {
+      "case_id": "entity-company_name:易方达基金",
+      "reason": "alias_missing",
+      "query": "易方达基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '易方达基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '易方达基金')"
+    },
+    {
+      "case_id": "entity-manager_name:张坤",
+      "reason": "validator_error",
+      "query": "张坤",
+      "expected": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界",
+      "action": "检查并修正 AST 语法树生成逻辑或调整语义验证器校验边界"
+    },
+    {
+      "case_id": "entity-track_index_name:沪深300",
+      "reason": "alias_missing",
+      "query": "沪深300",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '沪深300')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '沪深300')"
+    },
+    {
+      "case_id": "entity-stock_name:沪电股份",
+      "reason": "alias_missing",
+      "query": "沪电股份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '沪电股份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '沪电股份')"
+    },
+    {
+      "case_id": "metric-f_prt_totalasset",
+      "reason": "alias_missing",
+      "query": "筛选基金资产总值大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金资产总值大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金资产总值大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_return_1y",
+      "reason": "alias_missing",
+      "query": "筛选近一年收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一年收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一年收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_info_windcode",
+      "reason": "alias_missing",
+      "query": "筛选代码大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选代码大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选代码大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_fullname",
+      "reason": "alias_missing",
+      "query": "筛选基金全称大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金全称大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金全称大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_fundmanager",
+      "reason": "alias_missing",
+      "query": "筛选基金经理(现任)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金经理(现任)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金经理(现任)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_adjustedreturn",
+      "reason": "alias_missing",
+      "query": "筛选复权单位净值增长率（收益率）大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选复权单位净值增长率（收益率）大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选复权单位净值增长率（收益率）大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_netasset_total2",
+      "reason": "vector_recall_weak",
+      "query": "筛选合并规模大于10亿的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_info_relatedcode",
+      "reason": "alias_missing",
+      "query": "筛选关联基金代码大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选关联基金代码大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选关联基金代码大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_sharpe",
+      "reason": "alias_missing",
+      "query": "筛选Sharpe大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sharpe大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sharpe大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_mgrcomp",
+      "reason": "alias_missing",
+      "query": "筛选基金管理人大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金管理人大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金管理人大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_topstockname",
+      "reason": "alias_missing",
+      "query": "筛选重仓股票大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股票大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股票大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_return_3m",
+      "reason": "alias_missing",
+      "query": "筛选近三月收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近三月收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近三月收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_return_5y",
+      "reason": "alias_missing",
+      "query": "筛选近五年收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近五年收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近五年收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_return_6m",
+      "reason": "alias_missing",
+      "query": "筛选近六月收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近六月收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近六月收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_return_ytd",
+      "reason": "alias_missing",
+      "query": "筛选今年以来收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选今年以来收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选今年以来收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_returnyearly",
+      "reason": "alias_missing",
+      "query": "筛选年化收益率大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年化收益率大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年化收益率大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_mmf_annualizedyield",
+      "reason": "alias_missing",
+      "query": "筛选7日年化收益率大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选7日年化收益率大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选7日年化收益率大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_mmf_avgannualizedyield",
+      "reason": "alias_missing",
+      "query": "筛选区间日年化收益率均值大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间日年化收益率均值大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间日年化收益率均值大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnranking_ytd",
+      "reason": "alias_missing",
+      "query": "筛选YTD收益排名大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选YTD收益排名大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选YTD收益排名大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnranking_y",
+      "reason": "alias_missing",
+      "query": "筛选单年度回报排名大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选单年度回报排名大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选单年度回报排名大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_stdevyearly",
+      "reason": "alias_missing",
+      "query": "筛选年化波动率大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年化波动率大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年化波动率大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_stdev",
+      "reason": "alias_missing",
+      "query": "筛选收益标准差大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选收益标准差大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选收益标准差大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_annustdev",
+      "reason": "alias_missing",
+      "query": "筛选收益标准差(年化)大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选收益标准差(年化)大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选收益标准差(年化)大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_quot_benchreturn",
+      "reason": "alias_missing",
+      "query": "筛选业绩比较基准增长率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选业绩比较基准增长率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选业绩比较基准增长率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_navoverbenchreturn",
+      "reason": "alias_missing",
+      "query": "筛选区间净值超越基准收益率大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间净值超越基准收益率大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间净值超越基准收益率大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_navoverbenchannualreturn",
+      "reason": "alias_missing",
+      "query": "筛选区间净值超越基准年化收益率大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间净值超越基准年化收益率大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间净值超越基准年化收益率大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_duration",
+      "reason": "alias_missing",
+      "query": "筛选基金重仓债券组合久期大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金重仓债券组合久期大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金重仓债券组合久期大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_foundleverage",
+      "reason": "alias_missing",
+      "query": "筛选基金杠杆率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金杠杆率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金杠杆率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_managementfeeratio",
+      "reason": "alias_missing",
+      "query": "筛选管理人管理费率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选管理人管理费率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选管理人管理费率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_custodianfeeratio",
+      "reason": "alias_missing",
+      "query": "筛选托管费率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选托管费率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选托管费率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_salefeeratio",
+      "reason": "alias_missing",
+      "query": "筛选销售服务费率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选销售服务费率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选销售服务费率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_purchasefeeratio",
+      "reason": "alias_missing",
+      "query": "筛选最高申购费率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选最高申购费率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选最高申购费率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_topstockcode",
+      "reason": "alias_missing",
+      "query": "筛选重仓股股票代码大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股股票代码大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股股票代码大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_topstockvalue",
+      "reason": "alias_missing",
+      "query": "筛选重仓股持股市值大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股持股市值大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股持股市值大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_topstockholdingchanging",
+      "reason": "alias_missing",
+      "query": "筛选重仓股持仓变动大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股持仓变动大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股持仓变动大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_fundnoofstocks",
+      "reason": "alias_missing",
+      "query": "筛选重仓股票持有基金数大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股票持有基金数大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股票持有基金数大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_bondtonav",
+      "reason": "alias_missing",
+      "query": "筛选债券市值占基金资产净值比大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选债券市值占基金资产净值比大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选债券市值占基金资产净值比大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_bondbycreditratingtonav",
+      "reason": "alias_missing",
+      "query": "筛选按信用评级的债券投资占基金资产净值比大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选按信用评级的债券投资占基金资产净值比大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选按信用评级的债券投资占基金资产净值比大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_convertiblebondtonav",
+      "reason": "alias_missing",
+      "query": "筛选可转债市值占基金资产净值比大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选可转债市值占基金资产净值比大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选可转债市值占基金资产净值比大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_cashtonav",
+      "reason": "alias_missing",
+      "query": "筛选银行存款占基金资产净值比大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选银行存款占基金资产净值比大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选银行存款占基金资产净值比大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_holder_institution_holdingpct",
+      "reason": "alias_missing",
+      "query": "筛选机构投资者持有比例大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选机构投资者持有比例大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选机构投资者持有比例大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_style_styleattribute",
+      "reason": "alias_missing",
+      "query": "筛选风格属性大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选风格属性大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选风格属性大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_style_marketvaluestyleattribute",
+      "reason": "alias_missing",
+      "query": "筛选市值-风格属性大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选市值-风格属性大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选市值-风格属性大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_style_marketvalueattribute",
+      "reason": "alias_missing",
+      "query": "筛选市值属性大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选市值属性大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选市值属性大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_dq_turn",
+      "reason": "alias_missing",
+      "query": "筛选换手率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选换手率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选换手率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_return_1w",
+      "reason": "alias_missing",
+      "query": "筛选近一周收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一周收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一周收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_return_1m",
+      "reason": "alias_missing",
+      "query": "筛选近一月收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一月收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一月收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_return_2y",
+      "reason": "alias_missing",
+      "query": "筛选近两年收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近两年收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近两年收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_return_10y",
+      "reason": "alias_missing",
+      "query": "筛选近十年收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近十年收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近十年收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_return_std",
+      "reason": "alias_missing",
+      "query": "筛选今年以来收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选今年以来收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选今年以来收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_return_m",
+      "reason": "alias_missing",
+      "query": "筛选月度收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选月度收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选月度收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_return_q",
+      "reason": "alias_missing",
+      "query": "筛选季度收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选季度收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选季度收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_return_y",
+      "reason": "alias_missing",
+      "query": "筛选年度收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年度收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年度收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnranking_1w",
+      "reason": "alias_missing",
+      "query": "筛选近一周收益排名大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一周收益排名大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一周收益排名大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnranking_1m",
+      "reason": "alias_missing",
+      "query": "筛选近一月收益排名大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一月收益排名大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一月收益排名大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnranking_3m",
+      "reason": "alias_missing",
+      "query": "筛选近三月收益排名大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近三月收益排名大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近三月收益排名大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnranking_6m",
+      "reason": "alias_missing",
+      "query": "筛选近六月收益排名大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近六月收益排名大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近六月收益排名大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnranking_1y",
+      "reason": "alias_missing",
+      "query": "筛选近一年收益排名大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一年收益排名大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近一年收益排名大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnranking_2y",
+      "reason": "alias_missing",
+      "query": "筛选近两年收益排名大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近两年收益排名大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近两年收益排名大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnranking_3y",
+      "reason": "vector_recall_weak",
+      "query": "筛选近三年收益排名大于10%的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnranking_5y",
+      "reason": "alias_missing",
+      "query": "筛选近五年收益排名大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近五年收益排名大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选近五年收益排名大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_maxdownsideranking",
+      "reason": "vector_recall_weak",
+      "query": "筛选回撤小于15%的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_risk_maxdownside_date",
+      "reason": "vector_recall_weak",
+      "query": "筛选回撤小于15%的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_risk_siml_avgmaxdownside",
+      "reason": "vector_recall_weak",
+      "query": "筛选回撤小于15%的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_risk_maxdownside_recoverdays",
+      "reason": "vector_recall_weak",
+      "query": "筛选回撤小于15%的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_risk_siml_avgsharpe",
+      "reason": "alias_missing",
+      "query": "筛选Sharpe同类平均大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sharpe同类平均大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sharpe同类平均大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_siml_avgsortino",
+      "reason": "alias_missing",
+      "query": "筛选Sortino同类平均大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sortino同类平均大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sortino同类平均大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_siml_avgannusharpe",
+      "reason": "alias_missing",
+      "query": "筛选Sharpe(年化)同类平均大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sharpe(年化)同类平均大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sharpe(年化)同类平均大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_siml_avgannuSortino",
+      "reason": "alias_missing",
+      "query": "筛选Sortino(年化)同类平均大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sortino(年化)同类平均大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sortino(年化)同类平均大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_annusharpe",
+      "reason": "alias_missing",
+      "query": "筛选Sharpe(年化)大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sharpe(年化)大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sharpe(年化)大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_annuSortino",
+      "reason": "alias_missing",
+      "query": "筛选Sortino(年化)大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sortino(年化)大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sortino(年化)大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_info_avgfundscale",
+      "reason": "vector_recall_weak",
+      "query": "筛选合并规模大于10亿的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_info_scaleranking",
+      "reason": "vector_recall_weak",
+      "query": "筛选合并规模大于10亿的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_netasset_total",
+      "reason": "vector_recall_weak",
+      "query": "筛选规模大于10亿的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_netasset_total_cc",
+      "reason": "vector_recall_weak",
+      "query": "筛选合并规模大于10亿的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_risk_annualvolranking",
+      "reason": "alias_missing",
+      "query": "筛选年化波动率同类排名大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年化波动率同类排名大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年化波动率同类排名大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_siml_avgstdevyearly",
+      "reason": "alias_missing",
+      "query": "筛选年化波动率同类平均大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年化波动率同类平均大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年化波动率同类平均大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_adjustedreturn_org",
+      "reason": "vector_recall_weak",
+      "query": "筛选自成立日起复权单位净值增长率大于0的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_nav_adjustedreturn1",
+      "reason": "alias_missing",
+      "query": "筛选当期复权单位净值增长率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选当期复权单位净值增长率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选当期复权单位净值增长率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_navoverbenchreturn_freq",
+      "reason": "alias_missing",
+      "query": "筛选区间净值超越基准收益频率大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间净值超越基准收益频率大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间净值超越基准收益频率大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_navoverbenchreturn_freq2",
+      "reason": "alias_missing",
+      "query": "筛选区间净值超越基准收益频率(百分比)大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间净值超越基准收益频率(百分比)大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间净值超越基准收益频率(百分比)大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_info_firstinvesttype",
+      "reason": "alias_missing",
+      "query": "筛选投资类型(一级分类)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选投资类型(一级分类)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选投资类型(一级分类)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_investtype",
+      "reason": "alias_missing",
+      "query": "筛选投资类型(二级分类)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选投资类型(二级分类)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选投资类型(二级分类)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_setupdate",
+      "reason": "vector_recall_weak",
+      "query": "筛选基金成立日大于0的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "metric-f_info_etfornot",
+      "reason": "alias_missing",
+      "query": "筛选是否ETF基金大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否ETF基金大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否ETF基金大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_alpha",
+      "reason": "alias_missing",
+      "query": "筛选Alpha大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Alpha大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Alpha大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_beta",
+      "reason": "alias_missing",
+      "query": "筛选Beta大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Beta大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Beta大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_sortino",
+      "reason": "alias_missing",
+      "query": "筛选Sortino大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sortino大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Sortino大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_trackerror",
+      "reason": "alias_missing",
+      "query": "筛选跟踪误差大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选跟踪误差大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选跟踪误差大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_redemptionfeeratio",
+      "reason": "alias_missing",
+      "query": "筛选最高赎回费率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选最高赎回费率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选最高赎回费率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_stocktonav",
+      "reason": "alias_missing",
+      "query": "筛选股票市值占基金资产净值比大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股票市值占基金资产净值比大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股票市值占基金资产净值比大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_themetype",
+      "reason": "alias_missing",
+      "query": "筛选所属主题基金类别大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选所属主题基金类别大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选所属主题基金类别大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_calmar",
+      "reason": "alias_missing",
+      "query": "筛选Calmar大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Calmar大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Calmar大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_treynor",
+      "reason": "alias_missing",
+      "query": "筛选Treynor大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Treynor大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Treynor大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_inforatio",
+      "reason": "alias_missing",
+      "query": "筛选信息比率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选信息比率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选信息比率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_inforatioranking",
+      "reason": "alias_missing",
+      "query": "筛选信息比率同类排名大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选信息比率同类排名大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选信息比率同类排名大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_downsidestdev",
+      "reason": "alias_missing",
+      "query": "筛选下行标准差大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选下行标准差大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选下行标准差大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_annutrackerror",
+      "reason": "alias_missing",
+      "query": "筛选跟踪误差(年化)大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选跟踪误差(年化)大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选跟踪误差(年化)大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_dq_amount",
+      "reason": "alias_missing",
+      "query": "筛选成交额大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选成交额大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选成交额大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_pq_amount",
+      "reason": "alias_missing",
+      "query": "筛选区间成交额大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间成交额大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间成交额大于0的基金')"
+    },
+    {
+      "case_id": "metric-s_pq_avgamount",
+      "reason": "alias_missing",
+      "query": "筛选区间日均成交额大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间日均成交额大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间日均成交额大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_pq_avgturn",
+      "reason": "alias_missing",
+      "query": "筛选区间日均换手率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间日均换手率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选区间日均换手率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_stockvalue",
+      "reason": "alias_missing",
+      "query": "筛选股票投资市值大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股票投资市值大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股票投资市值大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_stockvalue_topindustryname2",
+      "reason": "alias_missing",
+      "query": "筛选重仓行业名称大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓行业名称大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓行业名称大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_bondvalue",
+      "reason": "alias_missing",
+      "query": "筛选债券投资市值大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选债券投资市值大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选债券投资市值大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_stocktoasset",
+      "reason": "alias_missing",
+      "query": "筛选股票市值占基金资产总值比大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股票市值占基金资产总值比大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股票市值占基金资产总值比大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_bondtoasset",
+      "reason": "alias_missing",
+      "query": "筛选债券市值占基金资产总值比大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选债券市值占基金资产总值比大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选债券市值占基金资产总值比大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_heavilyheldstocktostock",
+      "reason": "alias_missing",
+      "query": "筛选重仓股市值占股票投资市值比大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股市值占股票投资市值比大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓股市值占股票投资市值比大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_convertiblebondtobond",
+      "reason": "alias_missing",
+      "query": "筛选可转债市值占债券投资市值比大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选可转债市值占债券投资市值比大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选可转债市值占债券投资市值比大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_redemptionfee",
+      "reason": "alias_missing",
+      "query": "筛选赎回费率大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选赎回费率大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选赎回费率大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_redemptionfee2",
+      "reason": "alias_missing",
+      "query": "筛选赎回费率(支持历史)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选赎回费率(支持历史)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选赎回费率(支持历史)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_managementfeeratio2",
+      "reason": "alias_missing",
+      "query": "筛选管理费率(支持历史)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选管理费率(支持历史)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选管理费率(支持历史)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_custodianfeeratio2",
+      "reason": "alias_missing",
+      "query": "筛选托管费率(支持历史)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选托管费率(支持历史)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选托管费率(支持历史)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_salefeeratio2",
+      "reason": "alias_missing",
+      "query": "筛选销售服务费率(支持历史)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选销售服务费率(支持历史)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选销售服务费率(支持历史)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_exchangeshortname",
+      "reason": "alias_missing",
+      "query": "筛选基金场内简称大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金场内简称大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金场内简称大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_trackindexname",
+      "reason": "alias_missing",
+      "query": "筛选跟踪指数名称大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选跟踪指数名称大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选跟踪指数名称大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_trackindexcode",
+      "reason": "alias_missing",
+      "query": "筛选跟踪指数代码大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选跟踪指数代码大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选跟踪指数代码大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_topbondname",
+      "reason": "alias_missing",
+      "query": "筛选重仓债券名称大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓债券名称大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓债券名称大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_topbondsymbol",
+      "reason": "alias_missing",
+      "query": "筛选重仓债券代码大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓债券代码大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓债券代码大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_etffeeder",
+      "reason": "alias_missing",
+      "query": "筛选是否ETF联接基金大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否ETF联接基金大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否ETF联接基金大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_etf_feedercode",
+      "reason": "alias_missing",
+      "query": "筛选ETF关联联接基金代码大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选ETF关联联接基金代码大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选ETF关联联接基金代码大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_customizedfundornot",
+      "reason": "alias_missing",
+      "query": "筛选是否定制基金大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否定制基金大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否定制基金大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_initial",
+      "reason": "alias_missing",
+      "query": "筛选是否初始基金大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否初始基金大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否初始基金大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_investscope",
+      "reason": "alias_missing",
+      "query": "筛选投资范围大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选投资范围大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选投资范围大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_risk_downsiderisk",
+      "reason": "alias_missing",
+      "query": "筛选下行风险大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选下行风险大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选下行风险大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_nav_periodreturnrankingper",
+      "reason": "alias_missing",
+      "query": "筛选同类基金区间收益排名(百分比)大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选同类基金区间收益排名(百分比)大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选同类基金区间收益排名(百分比)大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_mmf_unityield",
+      "reason": "alias_missing",
+      "query": "筛选万份基金单位收益大于10%的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选万份基金单位收益大于10%的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选万份基金单位收益大于10%的基金')"
+    },
+    {
+      "case_id": "metric-f_dq_pctchange",
+      "reason": "alias_missing",
+      "query": "筛选涨跌幅大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选涨跌幅大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选涨跌幅大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_pchredm_largepchmaxamt",
+      "reason": "alias_missing",
+      "query": "筛选单日大额申购限额大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选单日大额申购限额大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选单日大额申购限额大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_maxworkingyears",
+      "reason": "alias_missing",
+      "query": "筛选基金经理最大年限大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金经理最大年限大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金经理最大年限大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_info_investtype2",
+      "reason": "alias_missing",
+      "query": "筛选投资类型大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选投资类型大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选投资类型大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_industryvaluetonav_sw",
+      "reason": "alias_missing",
+      "query": "筛选分行业投资市值占基金资产净值比(申万)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选分行业投资市值占基金资产净值比(申万)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选分行业投资市值占基金资产净值比(申万)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_topgicsindustryname",
+      "reason": "alias_missing",
+      "query": "筛选重仓行业名称(Wind全球行业)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓行业名称(Wind全球行业)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓行业名称(Wind全球行业)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_topindustryname_citic",
+      "reason": "alias_missing",
+      "query": "筛选重仓行业名称(中信)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓行业名称(中信)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓行业名称(中信)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_topindustryname_sw2021",
+      "reason": "alias_missing",
+      "query": "筛选重仓行业名称(申万2021)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓行业名称(申万2021)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓行业名称(申万2021)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_topindustryname_wind",
+      "reason": "alias_missing",
+      "query": "筛选重仓行业名称(Wind)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓行业名称(Wind)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重仓行业名称(Wind)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_issue_deputy",
+      "reason": "alias_missing",
+      "query": "筛选基金销售代理人大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金销售代理人大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金销售代理人大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_countryregioninvestmenttonav",
+      "reason": "alias_missing",
+      "query": "筛选国家/地区投资市值占基金资产净值比例大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选国家/地区投资市值占基金资产净值比例大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选国家/地区投资市值占基金资产净值比例大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_countryregioninvestment",
+      "reason": "alias_missing",
+      "query": "筛选国家/地区投资市值大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选国家/地区投资市值大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选国家/地区投资市值大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_distributionarea",
+      "reason": "alias_missing",
+      "query": "筛选销售地区大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选销售地区大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选销售地区大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_mmf_avgptm",
+      "reason": "alias_missing",
+      "query": "筛选报告期末投资组合平均剩余期限大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选报告期末投资组合平均剩余期限大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选报告期末投资组合平均剩余期限大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_holder_institution_totalholdingpct",
+      "reason": "alias_missing",
+      "query": "筛选机构投资者持有比例(合计)大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选机构投资者持有比例(合计)大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选机构投资者持有比例(合计)大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_prt_stockholding",
+      "reason": "alias_missing",
+      "query": "筛选报告期末持有股票个数(中报、年报)大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选报告期末持有股票个数(中报、年报)大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选报告期末持有股票个数(中报、年报)大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_info_manager_awardrecord",
+      "reason": "alias_missing",
+      "query": "筛选任职基金获奖记录大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选任职基金获奖记录大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选任职基金获奖记录大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_manager_awardrecordnum",
+      "reason": "alias_missing",
+      "query": "筛选履任以来获奖总次数大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选履任以来获奖总次数大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选履任以来获奖总次数大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_holder_single_holdingpct",
+      "reason": "alias_missing",
+      "query": "筛选单一投资者报告期末持有比例大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选单一投资者报告期末持有比例大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选单一投资者报告期末持有比例大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_div_times",
+      "reason": "alias_missing",
+      "query": "筛选年度分红次数大于3年的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年度分红次数大于3年的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选年度分红次数大于3年的基金')"
+    },
+    {
+      "case_id": "metric-f_div_accumulatedtimes",
+      "reason": "alias_missing",
+      "query": "筛选累计分红次数大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选累计分红次数大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选累计分红次数大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_valuationmethod",
+      "reason": "alias_missing",
+      "query": "筛选基金估值方法大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金估值方法大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金估值方法大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_ptmyear",
+      "reason": "alias_missing",
+      "query": "筛选基金存续期大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金存续期大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金存续期大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_ptmday",
+      "reason": "alias_missing",
+      "query": "筛选剩余存续期大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选剩余存续期大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选剩余存续期大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_risklevel",
+      "reason": "alias_missing",
+      "query": "筛选基金风险等级大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金风险等级大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金风险等级大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_mmf_frequencyofdeviation",
+      "reason": "alias_missing",
+      "query": "筛选报告期内偏离度的绝对值在0.25%(含)-0.5%间的次数大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选报告期内偏离度的绝对值在0.25%(含)-0.5%间的次数大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选报告期内偏离度的绝对值在0.25%(含)-0.5%间的次数大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_pchmstatus",
+      "reason": "alias_missing",
+      "query": "筛选申购状态大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选申购状态大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选申购状态大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_benchmark",
+      "reason": "alias_missing",
+      "query": "筛选业绩比较基准大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选业绩比较基准大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选业绩比较基准大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_custodianbank",
+      "reason": "alias_missing",
+      "query": "筛选基金托管人大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金托管人大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金托管人大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_investstyle",
+      "reason": "alias_missing",
+      "query": "筛选投资风格大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选投资风格大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选投资风格大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_lofornot",
+      "reason": "alias_missing",
+      "query": "筛选是否LOF基金大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否LOF基金大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否LOF基金大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_foffundornot",
+      "reason": "alias_missing",
+      "query": "筛选是否FOF基金大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否FOF基金大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否FOF基金大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_t0ornot",
+      "reason": "alias_missing",
+      "query": "筛选是否T+0交易大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否T+0交易大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否T+0交易大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_regulopenfundornot",
+      "reason": "alias_missing",
+      "query": "筛选是否定期开放基金大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否定期开放基金大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否定期开放基金大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_structuredfundornot",
+      "reason": "alias_missing",
+      "query": "筛选是否分级基金大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否分级基金大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选是否分级基金大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_redmstatus",
+      "reason": "alias_missing",
+      "query": "筛选赎回状态大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选赎回状态大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选赎回状态大于0的基金')"
+    },
+    {
+      "case_id": "metric-f_info_etflisteddate",
+      "reason": "alias_missing",
+      "query": "筛选ETF上市日期大于0的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选ETF上市日期大于0的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选ETF上市日期大于0的基金')"
+    },
+    {
+      "case_id": "regression-vague-low-risk-ambiguity",
+      "reason": "alias_missing",
+      "query": "找一只低风险的稳健基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '找一只低风险的稳健基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '找一只低风险的稳健基金')"
+    },
+    {
+      "case_id": "scenario-vague-return-clarification",
+      "reason": "alias_missing",
+      "query": "收益好的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '收益好的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '收益好的基金')"
+    },
+    {
+      "case_id": "scenario-vague-risk-clarification",
+      "reason": "alias_missing",
+      "query": "风险低的固收基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '风险低的固收基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '风险低的固收基金')"
+    },
+    {
+      "case_id": "scenario-date-interval-return",
+      "reason": "alias_missing",
+      "query": "2024年以来区间收益率大于10%",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '2024年以来区间收益率大于10%')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '2024年以来区间收益率大于10%')"
+    },
+    {
+      "case_id": "sector-1000002355000000",
+      "reason": "alias_missing",
+      "query": "筛选开放式基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选开放式基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选开放式基金')"
+    },
+    {
+      "case_id": "sector-1000002356000000",
+      "reason": "alias_missing",
+      "query": "筛选邮储银行",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选邮储银行')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选邮储银行')"
+    },
+    {
+      "case_id": "sector-1000002357000000",
+      "reason": "alias_missing",
+      "query": "筛选财达证券",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选财达证券')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选财达证券')"
+    },
+    {
+      "case_id": "sector-1000002358000000",
+      "reason": "alias_missing",
+      "query": "筛选财富里昂证券",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选财富里昂证券')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选财富里昂证券')"
+    },
+    {
+      "case_id": "sector-1000002359000000",
+      "reason": "alias_missing",
+      "query": "筛选华融证券",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选华融证券')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选华融证券')"
+    },
+    {
+      "case_id": "sector-1000002360000000",
+      "reason": "alias_missing",
+      "query": "筛选五矿证券",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选五矿证券')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选五矿证券')"
+    },
+    {
+      "case_id": "sector-1000002361000000",
+      "reason": "alias_missing",
+      "query": "筛选中航证券",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选中航证券')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选中航证券')"
+    },
+    {
+      "case_id": "sector-1000002362000000",
+      "reason": "alias_missing",
+      "query": "筛选中天证券",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选中天证券')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选中天证券')"
+    },
+    {
+      "case_id": "sector-1000002363000000",
+      "reason": "alias_missing",
+      "query": "筛选渤海银行",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选渤海银行')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选渤海银行')"
+    },
+    {
+      "case_id": "sector-1000002364000000",
+      "reason": "alias_missing",
+      "query": "筛选江苏银行",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选江苏银行')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选江苏银行')"
+    },
+    {
+      "case_id": "sector-1000002379000000",
+      "reason": "alias_missing",
+      "query": "筛选张家港农商",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选张家港农商')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选张家港农商')"
+    },
+    {
+      "case_id": "sector-1000002380000000",
+      "reason": "alias_missing",
+      "query": "筛选洛阳银行",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选洛阳银行')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选洛阳银行')"
+    },
+    {
+      "case_id": "sector-1000002381000000",
+      "reason": "alias_missing",
+      "query": "筛选深圳农商",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选深圳农商')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选深圳农商')"
+    },
+    {
+      "case_id": "sector-1000002382000000",
+      "reason": "alias_missing",
+      "query": "筛选乌鲁木齐银行",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选乌鲁木齐银行')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选乌鲁木齐银行')"
+    },
+    {
+      "case_id": "sector-1000002383000000",
+      "reason": "alias_missing",
+      "query": "筛选烟台银行",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选烟台银行')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选烟台银行')"
+    },
+    {
+      "case_id": "sector-1000002533000000",
+      "reason": "alias_missing",
+      "query": "筛选股票型基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股票型基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股票型基金')"
+    },
+    {
+      "case_id": "sector-1000002534000000",
+      "reason": "alias_missing",
+      "query": "筛选债券型基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选债券型基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选债券型基金')"
+    },
+    {
+      "case_id": "sector-1000002535000000",
+      "reason": "alias_missing",
+      "query": "筛选混合型基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选混合型基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选混合型基金')"
+    },
+    {
+      "case_id": "sector-1000002537000000",
+      "reason": "alias_missing",
+      "query": "筛选指数型基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选指数型基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选指数型基金')"
+    },
+    {
+      "case_id": "sector-1000002540000000",
+      "reason": "alias_missing",
+      "query": "筛选ETF",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选ETF')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选ETF')"
+    },
+    {
+      "case_id": "sector-1000002541000000",
+      "reason": "alias_missing",
+      "query": "筛选LOF",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选LOF')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选LOF')"
+    },
+    {
+      "case_id": "sector-1000002888000000",
+      "reason": "alias_missing",
+      "query": "筛选大连银行",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选大连银行')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选大连银行')"
+    },
+    {
+      "case_id": "sector-1000002889000000",
+      "reason": "alias_missing",
+      "query": "筛选哈尔滨银行",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选哈尔滨银行')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选哈尔滨银行')"
+    },
+    {
+      "case_id": "sector-1000002890000000",
+      "reason": "alias_missing",
+      "query": "筛选齐商银行",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选齐商银行')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选齐商银行')"
+    },
+    {
+      "case_id": "sector-1000002891000000",
+      "reason": "alias_missing",
+      "query": "筛选重庆银行",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重庆银行')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选重庆银行')"
+    },
+    {
+      "case_id": "sector-1000002922000000",
+      "reason": "alias_missing",
+      "query": "筛选大通证券",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选大通证券')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选大通证券')"
+    },
+    {
+      "case_id": "sector-1000002923000000",
+      "reason": "alias_missing",
+      "query": "筛选恒泰长财证券",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选恒泰长财证券')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选恒泰长财证券')"
+    },
+    {
+      "case_id": "sector-1000002924000000",
+      "reason": "alias_missing",
+      "query": "筛选华泰联合证券",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选华泰联合证券')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选华泰联合证券')"
+    },
+    {
+      "case_id": "sector-1000002925000000",
+      "reason": "alias_missing",
+      "query": "筛选天风证券",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选天风证券')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选天风证券')"
+    },
+    {
+      "case_id": "sector-1000002926000000",
+      "reason": "alias_missing",
+      "query": "筛选广发",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选广发')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选广发')"
+    },
+    {
+      "case_id": "sector-1000002933000000",
+      "reason": "alias_missing",
+      "query": "筛选西部利得基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选西部利得基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选西部利得基金')"
+    },
+    {
+      "case_id": "sector-1000002934000000",
+      "reason": "alias_missing",
+      "query": "筛选浙商基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选浙商基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选浙商基金')"
+    },
+    {
+      "case_id": "sector-1000003189000000",
+      "reason": "alias_missing",
+      "query": "筛选已摘牌封闭式基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选已摘牌封闭式基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选已摘牌封闭式基金')"
+    },
+    {
+      "case_id": "sector-1000005968000000",
+      "reason": "alias_missing",
+      "query": "筛选平安基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选平安基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选平安基金')"
+    },
+    {
+      "case_id": "sector-1000005969000000",
+      "reason": "alias_missing",
+      "query": "筛选富安达基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选富安达基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选富安达基金')"
+    },
+    {
+      "case_id": "sector-1000005970000000",
+      "reason": "alias_missing",
+      "query": "筛选财通基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选财通基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选财通基金')"
+    },
+    {
+      "case_id": "sector-1000005971000000",
+      "reason": "alias_missing",
+      "query": "筛选方正富邦基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选方正富邦基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选方正富邦基金')"
+    },
+    {
+      "case_id": "sector-1000005972000000",
+      "reason": "alias_missing",
+      "query": "筛选长安基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选长安基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选长安基金')"
+    },
+    {
+      "case_id": "sector-1000006119000000",
+      "reason": "alias_missing",
+      "query": "筛选基金成份类",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金成份类')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金成份类')"
+    },
+    {
+      "case_id": "sector-1000006120000000",
+      "reason": "alias_missing",
+      "query": "筛选金牛股票成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选金牛股票成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选金牛股票成份')"
+    },
+    {
+      "case_id": "sector-1000006121000000",
+      "reason": "alias_missing",
+      "query": "筛选金牛混合成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选金牛混合成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选金牛混合成份')"
+    },
+    {
+      "case_id": "sector-1000006129000000",
+      "reason": "alias_missing",
+      "query": "筛选国金基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选国金基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选国金基金')"
+    },
+    {
+      "case_id": "sector-1000006130000000",
+      "reason": "alias_missing",
+      "query": "筛选安信基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选安信基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选安信基金')"
+    },
+    {
+      "case_id": "sector-1000006131000000",
+      "reason": "alias_missing",
+      "query": "筛选乐富基金成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选乐富基金成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选乐富基金成份')"
+    },
+    {
+      "case_id": "sector-1000006132000000",
+      "reason": "alias_missing",
+      "query": "筛选深证ETF成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选深证ETF成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选深证ETF成份')"
+    },
+    {
+      "case_id": "sector-1000006133000000",
+      "reason": "alias_missing",
+      "query": "筛选国证基金成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选国证基金成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选国证基金成份')"
+    },
+    {
+      "case_id": "sector-1000006134000000",
+      "reason": "alias_missing",
+      "query": "筛选国证ETF成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选国证ETF成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选国证ETF成份')"
+    },
+    {
+      "case_id": "sector-1000006332000000",
+      "reason": "alias_missing",
+      "query": "筛选船舶主题基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选船舶主题基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选船舶主题基金')"
+    },
+    {
+      "case_id": "sector-1000006333000000",
+      "reason": "alias_missing",
+      "query": "筛选股票型基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股票型基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股票型基金')"
+    },
+    {
+      "case_id": "sector-1000006334000000",
+      "reason": "alias_missing",
+      "query": "筛选混合型基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选混合型基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选混合型基金')"
+    },
+    {
+      "case_id": "sector-1000006335000000",
+      "reason": "alias_missing",
+      "query": "筛选债券型基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选债券型基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选债券型基金')"
+    },
+    {
+      "case_id": "sector-1000006337000000",
+      "reason": "alias_missing",
+      "query": "筛选货币型基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选货币型基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选货币型基金')"
+    },
+    {
+      "case_id": "sector-1000006369000000",
+      "reason": "alias_missing",
+      "query": "筛选北银",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选北银')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选北银')"
+    },
+    {
+      "case_id": "sector-1000006370000000",
+      "reason": "alias_missing",
+      "query": "筛选上银",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选上银')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选上银')"
+    },
+    {
+      "case_id": "sector-1000006371000000",
+      "reason": "alias_missing",
+      "query": "筛选券商ETF",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选券商ETF')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选券商ETF')"
+    },
+    {
+      "case_id": "sector-1000006543000000",
+      "reason": "alias_missing",
+      "query": "筛选短期理财基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选短期理财基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选短期理财基金')"
+    },
+    {
+      "case_id": "sector-1000006544000000",
+      "reason": "alias_missing",
+      "query": "筛选股指期货基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股指期货基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选股指期货基金')"
+    },
+    {
+      "case_id": "sector-1000006565000000",
+      "reason": "alias_missing",
+      "query": "筛选ETF联接",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选ETF联接')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选ETF联接')"
+    },
+    {
+      "case_id": "sector-1000006571000000",
+      "reason": "alias_missing",
+      "query": "筛选按日结转货基",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选按日结转货基')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选按日结转货基')"
+    },
+    {
+      "case_id": "sector-1000006572000000",
+      "reason": "alias_missing",
+      "query": "筛选按月结转货基",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选按月结转货基')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选按月结转货基')"
+    },
+    {
+      "case_id": "sector-1000007757000000",
+      "reason": "alias_missing",
+      "query": "筛选净值类基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选净值类基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选净值类基金')"
+    },
+    {
+      "case_id": "sector-1000007758000000",
+      "reason": "alias_missing",
+      "query": "筛选行情类基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选行情类基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选行情类基金')"
+    },
+    {
+      "case_id": "sector-1000007760000000",
+      "reason": "alias_missing",
+      "query": "筛选基金概念",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金概念')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选基金概念')"
+    },
+    {
+      "case_id": "sector-1000007761000000",
+      "reason": "alias_missing",
+      "query": "筛选封基",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选封基')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选封基')"
+    },
+    {
+      "case_id": "sector-1000007762000000",
+      "reason": "alias_missing",
+      "query": "筛选创业板指数增强",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选创业板指数增强')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选创业板指数增强')"
+    },
+    {
+      "case_id": "sector-1000007763000000",
+      "reason": "alias_missing",
+      "query": "筛选红利主题基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选红利主题基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选红利主题基金')"
+    },
+    {
+      "case_id": "sector-1000007764000000",
+      "reason": "alias_missing",
+      "query": "筛选能源主题基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选能源主题基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选能源主题基金')"
+    },
+    {
+      "case_id": "sector-1000007765000000",
+      "reason": "alias_missing",
+      "query": "筛选中低风险",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选中低风险')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选中低风险')"
+    },
+    {
+      "case_id": "sector-1000007789000000",
+      "reason": "vector_recall_weak",
+      "query": "筛选近1月成立的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "sector-1000007790000000",
+      "reason": "vector_recall_weak",
+      "query": "筛选近3月成立的基金",
+      "expected": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示",
+      "action": "优化 pgvector 相似度阈值或增加 Top-K 检索深度，调优向量模型表示"
+    },
+    {
+      "case_id": "sector-1000007791000000",
+      "reason": "alias_missing",
+      "query": "筛选1月内到期的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选1月内到期的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选1月内到期的基金')"
+    },
+    {
+      "case_id": "sector-1000007792000000",
+      "reason": "alias_missing",
+      "query": "筛选3月内到期的基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选3月内到期的基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选3月内到期的基金')"
+    },
+    {
+      "case_id": "sector-1000007793000000",
+      "reason": "alias_missing",
+      "query": "筛选定开基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选定开基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选定开基金')"
+    },
+    {
+      "case_id": "sector-1000007946000000",
+      "reason": "alias_missing",
+      "query": "筛选全部基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选全部基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选全部基金')"
+    },
+    {
+      "case_id": "sector-1000007986000000",
+      "reason": "alias_missing",
+      "query": "筛选发起式",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选发起式')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选发起式')"
+    },
+    {
+      "case_id": "sector-1000007987000000",
+      "reason": "alias_missing",
+      "query": "筛选德邦基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选德邦基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选德邦基金')"
+    },
+    {
+      "case_id": "sector-1000007988000000",
+      "reason": "alias_missing",
+      "query": "筛选红塔红土基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选红塔红土基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选红塔红土基金')"
+    },
+    {
+      "case_id": "sector-1000007989000000",
+      "reason": "alias_missing",
+      "query": "筛选华宸未来基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选华宸未来基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选华宸未来基金')"
+    },
+    {
+      "case_id": "sector-1000007990000000",
+      "reason": "alias_missing",
+      "query": "筛选英大基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选英大基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选英大基金')"
+    },
+    {
+      "case_id": "sector-1000008492000000",
+      "reason": "alias_missing",
+      "query": "筛选全部基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选全部基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选全部基金')"
+    },
+    {
+      "case_id": "sector-1000008583000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind中国基金总成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind中国基金总成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind中国基金总成份')"
+    },
+    {
+      "case_id": "sector-1000008584000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind开放式基金(非货币)成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind开放式基金(非货币)成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind开放式基金(非货币)成份')"
+    },
+    {
+      "case_id": "sector-1000008585000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind股票型基金总成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind股票型基金总成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind股票型基金总成份')"
+    },
+    {
+      "case_id": "sector-1000008586000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind混合型基金总成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind混合型基金总成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind混合型基金总成份')"
+    },
+    {
+      "case_id": "sector-1000008587000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind封闭式基金(创新)净值成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind封闭式基金(创新)净值成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind封闭式基金(创新)净值成份')"
+    },
+    {
+      "case_id": "sector-1000008588000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind封闭式基金(创新)价格成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind封闭式基金(创新)价格成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind封闭式基金(创新)价格成份')"
+    },
+    {
+      "case_id": "sector-1000008589000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind封闭式基金净值成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind封闭式基金净值成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind封闭式基金净值成份')"
+    },
+    {
+      "case_id": "sector-1000008590000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind封闭式基金价格成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind封闭式基金价格成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind封闭式基金价格成份')"
+    },
+    {
+      "case_id": "sector-1000008610000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind中国基金(加权)总成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind中国基金(加权)总成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind中国基金(加权)总成份')"
+    },
+    {
+      "case_id": "sector-1000008611000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind开放式基金(非货币加权)成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind开放式基金(非货币加权)成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind开放式基金(非货币加权)成份')"
+    },
+    {
+      "case_id": "sector-1000008612000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind股票型基金(加权)总成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind股票型基金(加权)总成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind股票型基金(加权)总成份')"
+    },
+    {
+      "case_id": "sector-1000008613000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind混合型基金(加权)总成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind混合型基金(加权)总成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind混合型基金(加权)总成份')"
+    },
+    {
+      "case_id": "sector-1000008614000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind指数型基金(加权)成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind指数型基金(加权)成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind指数型基金(加权)成份')"
+    },
+    {
+      "case_id": "sector-1000008615000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind债券型基金(加权)成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind债券型基金(加权)成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind债券型基金(加权)成份')"
+    },
+    {
+      "case_id": "sector-1000008616000000",
+      "reason": "alias_missing",
+      "query": "筛选WindQDII基金(加权)成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选WindQDII基金(加权)成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选WindQDII基金(加权)成份')"
+    },
+    {
+      "case_id": "sector-1000008617000000",
+      "reason": "alias_missing",
+      "query": "筛选Wind封闭式基金净值(加权)成份",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind封闭式基金净值(加权)成份')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选Wind封闭式基金净值(加权)成份')"
+    },
+    {
+      "case_id": "sector-1000008698000000",
+      "reason": "alias_missing",
+      "query": "筛选交易型货币基金",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选交易型货币基金')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选交易型货币基金')"
+    },
+    {
+      "case_id": "sector-1000008700000000",
+      "reason": "alias_missing",
+      "query": "筛选T+0货基",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选T+0货基')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选T+0货基')"
+    },
+    {
+      "case_id": "sector-1000009160000000",
+      "reason": "alias_missing",
+      "query": "筛选上市ETF",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选上市ETF')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选上市ETF')"
+    },
+    {
+      "case_id": "sector-1000009161000000",
+      "reason": "alias_missing",
+      "query": "筛选按上市场所分类",
+      "expected": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选按上市场所分类')",
+      "action": "在指标/板块/实体字典中为候选对象补充 aliases 别名映射 (query: '筛选按上市场所分类')"
+    }
+  ],
+  "metadata": {},
+  "timestamp": "2026-09-29T16:37:41.557484+00:00"
+}

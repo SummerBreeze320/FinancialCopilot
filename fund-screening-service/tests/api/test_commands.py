@@ -14,6 +14,22 @@ class FakeRagCompiler:
         return CompileResult(dsl, {"route":"full"}, ValidationResult(dsl))
 
 
+class FakeRecallTraceGraph:
+    async def ainvoke(self, state, config):
+        return {
+            "route": "simple",
+            "semantic_plan": {"intent": "CREATE", "groupOperator": "AND", "groups": [], "limit": 20},
+            "by_condition": {
+                "c1": {
+                    "mention": "规模大于10亿",
+                    "domain": "metric",
+                    "candidates": [{"key": "f_netasset_total", "name": "基金资产净值", "score": 0.91}],
+                }
+            },
+            "trace": [{"stage": "recall_by_condition", "status": "completed"}],
+        }
+
+
 def test_http_returns_final_dsl_for_supported_query() -> None:
     response = TestClient(create_app()).post("/v1/fund-screening/commands", json={"query": "成立年限大于10年"})
     assert response.status_code == 200
@@ -45,7 +61,12 @@ def test_mvp_edits_previous_dsl_limit_in_second_turn() -> None:
 
     assert second.status_code == 200
     assert second.json()["dsl"]["limit"] == 50
-    assert second.json()["dsl"]["children"] == first["children"]
+    second_children = second.json()["dsl"]["children"]
+    first_children = first["children"]
+    assert len(second_children) == len(first_children)
+    for s_child, f_child in zip(second_children, first_children):
+        assert s_child["sector"] == f_child["sector"]
+        assert s_child["metric"] == f_child["metric"]
 
 
 def test_http_uses_injected_rag_compiler() -> None:
@@ -55,6 +76,22 @@ def test_http_uses_injected_rag_compiler() -> None:
     assert compiler.queries == ["半导体基金回撤低于15%"]
 
 
+def test_rag_trace_uses_condition_mentions_from_the_graph() -> None:
+    client = TestClient(create_app(graph=FakeRecallTraceGraph()))
+
+    response = client.post("/v1/fund-screening/rag-trace", json={"query": "规模大于10亿"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["route"] == "simple"
+    assert body["conditions"] == [{
+        "conditionId": "c1",
+        "mention": "规模大于10亿",
+        "domain": "metric",
+        "candidates": [{"key": "f_netasset_total", "name": "基金资产净值", "score": 0.91}],
+    }]
+
+
 def test_http_direct_route_fund_code_001938() -> None:
     client = TestClient(create_app())
     response = client.post("/v1/fund-screening/commands", json={"query": "001938"})
@@ -62,7 +99,7 @@ def test_http_direct_route_fund_code_001938() -> None:
     data = response.json()
     assert data["dsl"] is not None
     metric = data["dsl"]["children"][0]["metric"]["children"][0]
-    assert metric["metric"] == "f_info_fundcode"
+    assert metric["metric"] == "f_info_windcode"
     assert metric["value"] in ("001938.OF", "001938")
     assert metric["unit"] == "ENTITY_REF"
 

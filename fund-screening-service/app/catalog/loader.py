@@ -4,6 +4,15 @@ from pathlib import Path
 from app.models.candidate import CandidateContract
 
 
+DEFAULT_SECTOR_PRIORITIES = {
+    "1000002540000000": 100,  # ETF(场内) canonical ETF sector
+}
+
+DEFAULT_METRIC_PRIORITIES = {
+    "f_netasset_total": 10,
+}
+
+
 class Catalog:
     def __init__(self, metrics: list[CandidateContract], scopes: list[CandidateContract], entities: list[CandidateContract]) -> None:
         self.metrics, self.scopes, self.entities = metrics, scopes, entities
@@ -25,6 +34,7 @@ class Catalog:
             aliases = tuple(item.get("aliases") or infer_aliases(item))
             supported_ops = tuple(res_contract.get("supportedOperators") or item.get("supported_operators") or (">", ">=", "<", "<=", "="))
             params = tuple(MetricParameterDefinition.model_validate(p) for p in item.get("parameters", ()))
+            metric_priority = int(item.get("default_priority") or DEFAULT_METRIC_PRIORITIES.get(item["mnemonic"], 0))
             metrics.append(CandidateContract(
                 domain="metric",
                 key=item["mnemonic"],
@@ -37,8 +47,19 @@ class Catalog:
                 result_contract=res_contract,
                 parameter_schema_version=item.get("parameter_schema_version", 1),
                 contract_status=item.get("contract_status", "INFERRED"),
+                default_priority=metric_priority,
             ))
-        scopes = [CandidateContract("scope", item["source_sector_id"], item["name"], tuple(item.get("aliases", ()))) for item in read(sectors_path) if item.get("enabled", True)]
+        scopes = [
+            CandidateContract(
+                domain="scope",
+                key=item["source_sector_id"],
+                name=item["name"],
+                aliases=tuple(item.get("aliases", ())),
+                default_priority=int(item.get("default_priority") or DEFAULT_SECTOR_PRIORITIES.get(item["source_sector_id"], 0)),
+            )
+            for item in read(sectors_path)
+            if item.get("enabled", True)
+        ]
         entity_source = read(entities_path)
         if isinstance(entity_source, dict):
             bindings = {

@@ -5,6 +5,8 @@ from app.models.candidate import CandidateContract
 from app.pipeline.analysis import AnalysisService, CandidatePool, ConditionPlan, RecallPlan
 from app.pipeline.builder import CommandBuilder
 from app.graph.workflow import build_screening_graph
+from app.models.intent import IntentDecision
+from app.pipeline.intent_funnel import IntentFunnel
 
 
 
@@ -55,6 +57,60 @@ async def test_nodes_execute_stages_and_produce_trace() -> None:
     p7 = await nodes.command_finalize({**state, **p1, **p2, **p3, **p4, **p5, **p6})
     assert p7["final_dsl"] is not None
     assert p7["trace"][-1]["stage"] == "command_finalize"
+
+
+@pytest.mark.asyncio
+async def test_query_preprocess_defaults_to_create_for_independent_request() -> None:
+    """防止上一轮 DSL 使独立需求被错误复用。"""
+    nodes = ScreeningGraphNodes(
+        analysis=AnalysisService(lambda q: RecallPlan(("metric",)), FakeRetriever(), FakeRetriever(), FakeRetriever())
+    )
+    state = empty_state(
+        "筛选规模大于10亿的主动权益基金",
+        previous_dsl={"version": "fund-screening/v1", "operator": "AND", "children": [], "limit": 20},
+    )
+
+    update = await nodes.query_preprocess(state)
+
+    assert update["intent"] == "CREATE"
+    assert update["edit_complexity"] == "NONE"
+
+
+@pytest.mark.asyncio
+async def test_query_preprocess_marks_explicit_limit_change_as_simple_edit() -> None:
+    """防止明确编辑上一轮条件时被误当作新建请求。"""
+    nodes = ScreeningGraphNodes(
+        analysis=AnalysisService(lambda q: RecallPlan(("metric",)), FakeRetriever(), FakeRetriever(), FakeRetriever())
+    )
+    state = empty_state(
+        "改成前10只",
+        previous_dsl={"version": "fund-screening/v1", "operator": "AND", "children": [], "limit": 20},
+    )
+
+    update = await nodes.query_preprocess(state)
+
+    assert update["intent"] == "EDIT"
+    assert update["edit_complexity"] == "SIMPLE"
+
+
+@pytest.mark.asyncio
+async def test_query_preprocess_uses_context_intent_funnel_for_ambiguous_reference() -> None:
+    async def context_classifier(query, previous_dsl, clarification):
+        return IntentDecision(intent="EDIT", confidence=0.90, evidence=["刚才那个"], source="CONTEXT_MODEL")
+
+    nodes = ScreeningGraphNodes(
+        analysis=AnalysisService(lambda q: RecallPlan(("metric",)), FakeRetriever(), FakeRetriever(), FakeRetriever()),
+        intent_funnel=IntentFunnel(context_classifier=context_classifier),
+    )
+    state = empty_state(
+        "刚才那个",
+        previous_dsl={"version": "fund-screening/v1", "operator": "AND", "children": [], "limit": 20},
+    )
+
+    update = await nodes.query_preprocess(state)
+
+    assert update["intent"] == "EDIT"
+    assert update["intent_decision"]["source"] == "CONTEXT_MODEL"
 
 
 @pytest.mark.asyncio
