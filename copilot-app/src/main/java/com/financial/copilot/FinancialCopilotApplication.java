@@ -15,7 +15,15 @@ import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
  *
  * @author FinancialCopilot
  */
-@SpringBootApplication(scanBasePackages = "com.financial.copilot", exclude = Neo4jAutoConfiguration.class)
+@SpringBootApplication(
+        scanBasePackages = "com.financial.copilot",
+        exclude = {
+                Neo4jAutoConfiguration.class,
+                org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration.class,
+                org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration.class,
+                org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration.class
+        }
+)
 @MapperScan(
         basePackages = {
                 "com.financial.copilot.data.fund.mapper",

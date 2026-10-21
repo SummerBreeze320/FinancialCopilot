@@ -1,7 +1,7 @@
 package com.financial.copilot.agent.core.infra.prompt;
 
-import com.financial.copilot.agent.core.infra.llm.dto.LlmRequest;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmSettingsDTO;
+import com.financial.copilot.gateway.model.LlmRequest;
+import com.financial.copilot.gateway.model.LlmSettingsDTO;
 import lombok.Builder;
 import lombok.Getter;
 

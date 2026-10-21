@@ -1,6 +1,6 @@
 package com.financial.copilot.controller;
 
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunHandle;
+import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunHandle;
 import com.financial.copilot.agent.core.infra.security.UserPrincipal;
 import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
@@ -99,7 +99,7 @@ class ResearchRunControllerTest {
         ResearchRunEvent persisted1 = new ResearchRunEvent(runId, 8L, 1L, "node_started", "{\"type\":\"node_started\"}", Instant.now());
         when(executionPort.getEventsAfter(8L, runId, 0L)).thenReturn(List.of(persisted1));
 
-        GraphRunHandle activeHandle = mock(GraphRunHandle.class);
+        ResearchRunHandle activeHandle = mock(ResearchRunHandle.class);
         ResearchStreamEvent liveDup = ResearchStreamEvent.builder().type("node_started").sequenceNo(1L).build();
         ResearchStreamEvent liveNew = ResearchStreamEvent.builder().type("node_completed").sequenceNo(2L).build();
         when(activeHandle.events()).thenReturn(reactor.core.publisher.Flux.just(liveDup, liveNew));

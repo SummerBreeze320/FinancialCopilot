@@ -1,17 +1,14 @@
 package com.financial.copilot.controller;
 
-import com.financial.copilot.agent.core.infra.context.ConversationContextSnapshot;
-import com.financial.copilot.agent.core.infra.context.ExecutionIdentity;
-import com.financial.copilot.agent.core.business.agents.AgentRoleCatalog;
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
 import com.financial.copilot.agent.core.platform.conversation.ConversationService;
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunHandle;
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunRequest;
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunResult;
-import com.financial.copilot.agent.core.infra.dag.runtime.RunMode;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
+import com.financial.copilot.agent.core.infra.supervisor.admission.ConversationAdmissionController;
+import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunHandle;
+import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest;
+import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunResult;
+import com.financial.copilot.agent.core.infra.supervisor.runtime.RunMode;
+import com.financial.copilot.gateway.model.LlmResponse;
 import com.financial.copilot.agent.core.platform.user.service.UserService;
-import com.financial.copilot.agent.core.infra.dag.scheduler.RunAdmissionController;
 import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.common.event.ResearchStreamEvent;
 import com.financial.copilot.common.exception.WalletInsufficientException;
@@ -107,16 +104,21 @@ public class ResearchAgentController {
                         .map(result -> ApiResult.success(toResponse(started, result))));
     }
 
-    private ResearchRunResponse toResponse(StartedRun started, GraphRunResult result) {
+    private ResearchRunResponse toResponse(StartedRun started, ResearchRunResult result) {
         List<LlmResponse> usages = started.usages();
+        long executionTimeMs = (result.startedAt() != null && result.completedAt() != null)
+                ? Duration.between(result.startedAt(), result.completedAt()).toMillis()
+                : 0L;
         return ResearchRunResponse.builder().runId(result.runId())
-                .conversationId(started.run().conversationId()).report(ResearchRunLifecycle.report(result))
+                .conversationId(started.run().conversationId())
+                .report(result.finalReport())
                 .model(usages.isEmpty() ? null : usages.getLast().getModel())
                 .promptTokens(usages.stream().mapToInt(LlmResponse::getPromptTokens).sum())
                 .completionTokens(usages.stream().mapToInt(LlmResponse::getCompletionTokens).sum())
-                .totalNodes(result.graph().getNodes().size()).graphRevision(result.graph().getRevision())
-                .summary("ExecutionGraph revision " + result.graph().getRevision())
-                .executionTimeMs(Duration.between(result.startedAt(), result.completedAt()).toMillis())
+                .totalNodes(1)
+                .graphRevision(1)
+                .summary("Supervisor research run completed")
+                .executionTimeMs(executionTimeMs)
                 .timestamp(System.currentTimeMillis()).build();
     }
 
@@ -131,23 +133,18 @@ public class ResearchAgentController {
         List<LlmResponse> usages = new CopyOnWriteArrayList<>();
         AtomicLong accumulatedActualPoints = new AtomicLong(0L);
         try {
-            ConversationContextSnapshot snapshot = conversations.snapshot(
-                    uid, run.conversationId(), key, request.getPrompt(),
-                    userService.getInvestmentProfile(uid), 20);
-            ExecutionIdentity identity = new ExecutionIdentity(
-                    "DEFAULT", uid, run.conversationId(), run.runId().toString(), key);
-            GraphRunHandle handle = workflow.run(new GraphRunRequest(
-                    identity, snapshot, run.assistantMessageId(),
-                    Boolean.TRUE.equals(request.getEnableThinking()),
-                    usage -> {
-                        long pts = billingService.calculatePoints(usage.getModel(), usage.getPromptTokens(), usage.getCompletionTokens());
-                        accumulatedActualPoints.addAndGet(pts);
-                        billingService.recordUsage(uid, key, "LLM_CALL", usage.getProvider().name(), usage.getModel(),
-                                usage.getPromptTokens(), usage.getCompletionTokens(), usage.getLatencyMs(), pts);
-                        usages.add(usage);
-                    }, mode,
-                    () -> conversations.snapshot(uid, run.conversationId(), key, request.getPrompt(),
-                            userService.getInvestmentProfile(uid), 20)));
+            com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest runRequest =
+                    new com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunRequest(
+                            run.runId().toString(),
+                            1L,
+                            uid,
+                            run.conversationId(),
+                            run.assistantMessageId(),
+                            request.getPrompt(),
+                            Boolean.TRUE.equals(request.getEnableThinking()),
+                            mode
+                    );
+            ResearchRunHandle handle = workflow.run(runRequest);
             return new StartedRun(run, handle, lifecycle.observe(uid, run, key, request.getPrompt(), handle, accumulatedActualPoints::get), usages);
         } catch (RuntimeException error) {
             billingService.release(uid, runId.toString());
@@ -156,8 +153,8 @@ public class ResearchAgentController {
         }
     }
 
-    private record StartedRun(ConversationRun run, GraphRunHandle handle,
-                              CompletableFuture<GraphRunResult> completion, List<LlmResponse> usages) {}
+    private record StartedRun(ConversationRun run, ResearchRunHandle handle,
+                              CompletableFuture<ResearchRunResult> completion, List<LlmResponse> usages) {}
 
     /** 积分余额不足时返回充值引导所需信息。 */
     @ExceptionHandler(WalletInsufficientException.class)
@@ -172,13 +169,13 @@ public class ResearchAgentController {
     /** 返回公开健康状态与已注册的研究角色及容量指标。 */
     @GetMapping("/health")
     public ApiResult<Map<String, Object>> healthCheck() {
-        RunAdmissionController admission = workflow.getAdmissionController();
+        ConversationAdmissionController admission = workflow.getAdmissionController();
         Map<String, Object> capacity = Map.of(
                 "activeRuns", admission != null ? admission.getActiveRunCount() : 0,
                 "queuedRuns", admission != null ? admission.getQueuedRunCount() : 0,
-                "maxActiveRuns", admission != null ? admission.properties().getMaxActiveRuns() : 0,
-                "maxQueuedRuns", admission != null ? admission.properties().getMaxQueuedRuns() : 0,
-                "maxLlmConcurrency", admission != null ? admission.properties().getMaxLlmConcurrency() : 0
+                "maxActiveRuns", admission != null && admission.properties() != null ? admission.properties().getMaxActiveRuns() : 0,
+                "maxQueuedRuns", admission != null && admission.properties() != null ? admission.properties().getMaxQueuedRuns() : 0,
+                "maxLlmConcurrency", admission != null && admission.properties() != null ? admission.properties().getMaxLlmConcurrency() : 0
         );
 
         return ApiResult.success(Map.of(
@@ -186,7 +183,7 @@ public class ResearchAgentController {
                 "system", "Financial Research Agent",
                 "activeDomain", "FUND",
                 "extensibleDomains", new String[]{"STOCK", "FUTURES", "WEALTH"},
-                "pipelineCapabilities", AgentRoleCatalog.taskTypes().stream().sorted().toArray(String[]::new),
+                "pipelineCapabilities", new String[]{"fund_research_agent", "market_research_agent", "report_agent", "risk_review_agent", "stock_research_agent"},
                 "orm", "Lombok + MyBatis-Plus 3.5.7 + PGVector",
                 "capacity", capacity,
                 "timestamp", System.currentTimeMillis()

@@ -54,6 +54,7 @@ public class DefaultLlmGatewayClient implements LlmGatewayClient {
      * @param capacityLimiter   并发限流器
      * @param auditSink         审计接收器
      */
+    @org.springframework.beans.factory.annotation.Autowired
     public DefaultLlmGatewayClient(
             GatewayCredentialManager credentialManager,
             LlmRouter router,

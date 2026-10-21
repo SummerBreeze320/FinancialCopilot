@@ -1,7 +1,7 @@
 package com.financial.copilot.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunHandle;
+import com.financial.copilot.agent.core.infra.supervisor.runtime.ResearchRunHandle;
 import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
 import com.financial.copilot.agent.core.platform.conversation.ConversationPersistenceDisabledException;
@@ -67,11 +67,9 @@ public class ResearchRunController {
     @GetMapping("/{runId}")
     public Mono<ApiResult<Map<String, Object>>> status(@PathVariable String runId) {
         return SecurityUtils.requireCurrentUserId(null).map(uid -> {
-            var checkpointOpt = workflow.findCheckpoint(uid, runId);
-            if (checkpointOpt.isPresent()) {
-                var checkpoint = checkpointOpt.get();
-                return ApiResult.success(Map.of("runId", runId, "revision", checkpoint.graph().revision(),
-                        "statuses", checkpoint.nodeStatuses(), "savedAt", checkpoint.savedAt()));
+            Optional<ResearchRunHandle> activeHandle = workflow.findRun(uid, runId);
+            if (activeHandle.isPresent()) {
+                return ApiResult.success(Map.of("runId", runId, "status", "RUNNING"));
             }
             if (executionPort != null) {
                 UUID runUuid = parseRunId(runId);
@@ -117,7 +115,7 @@ public class ResearchRunController {
             long highestSeq = replayed.isEmpty() ? afterSeq : replayed.get(replayed.size() - 1).getSequenceNo();
             Flux<ResearchStreamEvent> replayFlux = Flux.fromIterable(replayed);
 
-            Optional<GraphRunHandle> activeHandle = workflow.findRun(uid, runId);
+            Optional<ResearchRunHandle> activeHandle = workflow.findRun(uid, runId);
             if (activeHandle.isPresent()) {
                 Flux<ResearchStreamEvent> liveFlux = activeHandle.get().events()
                         .filter(e -> e.getSequenceNo() == null || e.getSequenceNo() > highestSeq);
@@ -181,10 +179,7 @@ public class ResearchRunController {
             UUID runUuid = parseRunId(runId);
             // 持久化启用时，先验证 run 归属
             verifyRunOwnership(uid, runUuid);
-            var checkpoint = workflow.findCheckpoint(uid, runId).orElseThrow(this::notFound);
-            workflow.resume(uid, runId, usage -> billing.deductTokenPoints(uid, checkpoint.sessionKey(), "LLM_CALL",
-                    usage.getProvider().name(), usage.getModel(), usage.getPromptTokens(), usage.getCompletionTokens(), usage.getLatencyMs()));
-            return ApiResult.success(Map.of("runId", runId, "status", "RESUMED"));
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "DURABLE_RESUME_UNAVAILABLE");
         });
     }
 

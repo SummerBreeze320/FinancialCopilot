@@ -1,6 +1,5 @@
 package com.financial.copilot.agent.core.infra.tool;
 
-import io.agentscope.core.tool.ToolParam;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -50,10 +49,6 @@ public class ToolExecutionGate {
         ToolConstraint constraint = param.getAnnotation(ToolConstraint.class);
         if (constraint != null && !constraint.name().isBlank()) {
             return constraint.name();
-        }
-        ToolParam toolParam = param.getAnnotation(ToolParam.class);
-        if (toolParam != null && !toolParam.name().isBlank()) {
-            return toolParam.name();
         }
         return param.getName();
     }

@@ -39,15 +39,24 @@
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
-        <!-- AgentScope Java -->
+        <!-- Spring AI Alibaba Agent Framework -->
         <dependency>
-            <groupId>io.agentscope</groupId>
-            <artifactId>agentscope</artifactId>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
         </dependency>
+
+        <!-- Spring AI OpenAI Starter -->
         <dependency>
-            <groupId>io.github.a2asdk</groupId>
-            <artifactId>a2a-java-sdk-spec</artifactId>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
         </dependency>
+
+        <!-- OpenAI Java Core -->
+        <dependency>
+            <groupId>com.openai</groupId>
+            <artifactId>openai-java-core</artifactId>
+        </dependency>
+
 
         <!-- Spring Boot Security (用于密码加密与安全工具) -->
         <dependency>

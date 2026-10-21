@@ -1,6 +1,6 @@
 package com.financial.copilot.agent.core.infra.prompt;
 
-import com.financial.copilot.agent.core.infra.llm.dto.LlmRequest;
+import com.financial.copilot.gateway.model.LlmRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -81,28 +81,5 @@ class RTCFPromptSpecTest {
         assertTrue(userPrompt.contains("### [USER GOAL]"));
         assertTrue(userPrompt.contains("生成终审报告"));
         assertTrue(userPrompt.contains("【输出格式与约束 (Format)】"));
-    }
-
-    @Test
-    @DisplayName("测试 GraphPlannerPrompt RTCF 规范与静态前缀对齐")
-    void testGraphPlannerPrompt() {
-        String planSys = GraphPlannerPrompt.PLAN_SYSTEM_PROMPT;
-        assertTrue(planSys.contains("GraphPlannerAgent"));
-        assertTrue(planSys.contains("【能力按需发现】"));
-        assertTrue(planSys.contains("【拓扑无环契约】"));
-
-        String patchSys = GraphPlannerPrompt.PATCH_SYSTEM_PROMPT;
-        assertTrue(patchSys.contains("GraphPatchAgent"));
-        assertTrue(patchSys.contains("NO_PATCH"));
-
-        RTCFPromptSpec planSpec = GraphPlannerPrompt.buildPlanSpec("筛选消费基金", "sess-123", null);
-        String userPrompt = planSpec.renderUserPrompt();
-
-        assertTrue(userPrompt.contains("【当前任务 (Task)】"));
-        assertTrue(userPrompt.contains("### [USER GOAL]"));
-        assertTrue(userPrompt.contains("筛选消费基金"));
-        assertTrue(userPrompt.contains("### [SESSION KEY]"));
-        assertTrue(userPrompt.contains("sess-123"));
-        assertTrue(userPrompt.contains("GraphPlan"));
     }
 }
