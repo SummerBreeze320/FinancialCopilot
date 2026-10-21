@@ -70,10 +70,6 @@ public class ResearchAgentController {
         private String model;
         private String supervisorRole;
         private List<String> evidenceIds;
-        @Deprecated
-        private int totalNodes;
-        @Deprecated
-        private int graphRevision;
         private String summary;
         private long executionTimeMs;
         private int promptTokens;
@@ -121,8 +117,6 @@ public class ResearchAgentController {
                 .evidenceIds(result.evidenceIds())
                 .promptTokens(usages.stream().mapToInt(LlmResponse::getPromptTokens).sum())
                 .completionTokens(usages.stream().mapToInt(LlmResponse::getCompletionTokens).sum())
-                .totalNodes(1)
-                .graphRevision(1)
                 .summary("Supervisor research run completed")
                 .executionTimeMs(executionTimeMs)
                 .timestamp(System.currentTimeMillis()).build();

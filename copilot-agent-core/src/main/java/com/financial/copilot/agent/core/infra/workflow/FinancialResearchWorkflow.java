@@ -173,7 +173,8 @@ public class FinancialResearchWorkflow {
 
                 eventBridge.emitContentChunk(eventSink, request.workflowRunId(), reportText);
                 long duration = Duration.between(start, Instant.now()).toMillis();
-                eventBridge.emitRunCompleted(eventSink, request.workflowRunId(), duration);
+                int evCount = runResult.evidenceIds() != null ? runResult.evidenceIds().size() : 0;
+                eventBridge.emitRunCompleted(eventSink, request.workflowRunId(), duration, evCount);
                 eventSink.tryEmitComplete();
 
                 completion.complete(runResult);

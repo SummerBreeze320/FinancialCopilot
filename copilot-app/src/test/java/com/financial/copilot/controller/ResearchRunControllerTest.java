@@ -68,8 +68,8 @@ class ResearchRunControllerTest {
                 .thenReturn(Optional.of(mock(com.financial.copilot.domain.platform.conversation.entity.ConversationRun.class)));
         when(workflow.findRun(eq(8L), eq(runId.toString()))).thenReturn(Optional.empty());
 
-        ResearchRunEvent event1 = new ResearchRunEvent(runId, 8L, 1L, "node_started", "{\"type\":\"node_started\"}", Instant.now());
-        ResearchRunEvent event2 = new ResearchRunEvent(runId, 8L, 2L, "node_completed", "{\"type\":\"node_completed\"}", Instant.now());
+        ResearchRunEvent event1 = new ResearchRunEvent(runId, 8L, 1L, "subagent_started", "{\"type\":\"subagent_started\"}", Instant.now());
+        ResearchRunEvent event2 = new ResearchRunEvent(runId, 8L, 2L, "subagent_completed", "{\"type\":\"subagent_completed\"}", Instant.now());
         when(executionPort.getEventsAfter(8L, runId, 0L)).thenReturn(List.of(event1, event2));
 
         ResearchRunController controller = new ResearchRunController(workflow, mock(WalletBillingService.class),
@@ -96,12 +96,12 @@ class ResearchRunControllerTest {
         when(conversationService.findRun(eq(8L), eq(runId)))
                 .thenReturn(Optional.of(mock(com.financial.copilot.domain.platform.conversation.entity.ConversationRun.class)));
 
-        ResearchRunEvent persisted1 = new ResearchRunEvent(runId, 8L, 1L, "node_started", "{\"type\":\"node_started\"}", Instant.now());
+        ResearchRunEvent persisted1 = new ResearchRunEvent(runId, 8L, 1L, "subagent_started", "{\"type\":\"subagent_started\"}", Instant.now());
         when(executionPort.getEventsAfter(8L, runId, 0L)).thenReturn(List.of(persisted1));
 
         ResearchRunHandle activeHandle = mock(ResearchRunHandle.class);
-        ResearchStreamEvent liveDup = ResearchStreamEvent.builder().type("node_started").sequenceNo(1L).build();
-        ResearchStreamEvent liveNew = ResearchStreamEvent.builder().type("node_completed").sequenceNo(2L).build();
+        ResearchStreamEvent liveDup = ResearchStreamEvent.builder().type("subagent_started").sequenceNo(1L).build();
+        ResearchStreamEvent liveNew = ResearchStreamEvent.builder().type("subagent_completed").sequenceNo(2L).build();
         when(activeHandle.events()).thenReturn(reactor.core.publisher.Flux.just(liveDup, liveNew));
         when(workflow.findRun(eq(8L), eq(runId.toString()))).thenReturn(Optional.of(activeHandle));
 
