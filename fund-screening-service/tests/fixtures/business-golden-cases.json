@@ -1,0 +1,34 @@
+[
+  {
+    "query": "规模大于10亿且成立超过5年",
+    "metrics": ["f_netasset_total", "f_info_existingyear"]
+  },
+  {
+    "query": "最大回撤低于15%",
+    "metrics": ["f_risk_maxdownside"]
+  },
+  {
+    "query": "季度收益大于10%",
+    "metrics": ["f_nav_adjustedreturn"]
+  },
+  {
+    "query": "主动权益基金按近3年收益降序取前20只",
+    "limit": 20
+  },
+  {
+    "query": "易方达管理的基金",
+    "entityRole": "FUND_COMPANY"
+  },
+  {
+    "query": "张坤管理的基金",
+    "entityRole": "FUND_MANAGER"
+  },
+  {
+    "query": "重仓沪电股份的基金",
+    "entityRole": "HOLDING_STOCK"
+  },
+  {
+    "query": "跟踪沪深300的基金",
+    "entityRole": "TRACKED_INDEX"
+  }
+]

@@ -14,46 +14,19 @@ class SortItem(BaseModel):
     nulls: Literal["FIRST", "LAST"] = "LAST"
 
 
-class MetricPredicate(BaseModel):
-    metric: str
-    operator: Literal[">", ">=", "<", "<=", "=", "!="]
-    value: Any
-    unit: str
-    period: dict[str, Any] | None = None
-    params: list[dict[str, Any]] = Field(default_factory=list)
+from pydantic import BaseModel, ConfigDict, Field, model_validator, TypeAdapter
+from app.models.dsl_nodes import MetricPredicate, MetricLogicNode, MetricNode
 
+MetricCondition = MetricPredicate
+MetricNodeAdapter = TypeAdapter(MetricNode)
+MetricExpression = MetricNode
 
-class MetricExpression(BaseModel):
-    """递归指标表达式；叶子含 metric，非叶子含 children。"""
-
-    operator: str
-    metric: str | None = None
-    value: Any | None = None
-    unit: str | None = None
-    period: dict[str, Any] | None = None
-    params: list[dict[str, Any]] = Field(default_factory=list)
-    children: list[MetricExpression] | None = None
-
-    @model_validator(mode="after")
-    def validate_shape(self) -> MetricExpression:
-        if self.metric is not None:
-            if self.operator not in {">", ">=", "<", "<=", "=", "!="} or self.unit is None:
-                raise ValueError("metric predicate requires a comparison operator and unit")
-            if self.children is not None:
-                raise ValueError("metric predicate cannot have children")
-            return self
-        if self.operator not in {"AND", "OR", "NOT"} or not self.children:
-            raise ValueError("metric group requires a logical operator and children")
-        if self.operator == "NOT" and len(self.children) != 1:
-            raise ValueError("NOT requires exactly one child")
-        return self
 
 
 class SectorLeaf(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
 
     sector_id: str = Field(alias="sectorId")
-    match: Literal["SELF", "SELF_OR_DESCENDANT"] = "SELF_OR_DESCENDANT"
 
 
 class SectorExpression(BaseModel):
@@ -71,9 +44,11 @@ class SectorExpression(BaseModel):
 
 class BusinessGroup(BaseModel):
     sector: SectorExpression
-    metric: MetricExpression
+    metric: MetricNode
     sort: list[SortItem] = Field(default_factory=list)
-    limit: int | None = Field(default=None, gt=0)
+    limit: int = Field(default=20, gt=0)
+
+
 
 
 class FundScreeningDsl(BaseModel):
@@ -90,3 +65,18 @@ class FundScreeningDsl(BaseModel):
         if self.operator == "NOT" and len(self.children) != 1:
             raise ValueError("NOT requires exactly one child")
         return self
+
+
+def metric_leaves(node_or_dsl: Any) -> list[MetricPredicate]:
+    leaves: list[MetricPredicate] = []
+    if isinstance(node_or_dsl, FundScreeningDsl):
+        for grp in node_or_dsl.children:
+            leaves.extend(metric_leaves(grp.metric))
+    elif isinstance(node_or_dsl, BusinessGroup):
+        leaves.extend(metric_leaves(node_or_dsl.metric))
+    elif isinstance(node_or_dsl, MetricPredicate):
+        leaves.append(node_or_dsl)
+    elif isinstance(node_or_dsl, MetricLogicNode):
+        for child in node_or_dsl.children:
+            leaves.extend(metric_leaves(child))
+    return leaves

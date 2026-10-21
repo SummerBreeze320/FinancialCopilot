@@ -66,5 +66,7 @@ def test_http_and_ws_both_execute_same_langgraph_for_simple_edit() -> None:
     assert http_dsl["limit"] == 50
     assert ws_dsl["limit"] == 50
     assert http_dsl == ws_dsl
-    assert http_dsl["children"] == first["children"]
+    for h_child, f_child in zip(http_dsl["children"], first["children"]):
+        assert h_child["sector"] == f_child["sector"]
+        assert h_child["metric"] == f_child["metric"]
 

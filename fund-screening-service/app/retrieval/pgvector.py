@@ -60,6 +60,8 @@ class _PgVectorRetriever:
         self._client = client
 
     async def search(self, text: str, top_k: int) -> list[CandidateContract]:
+        from app.catalog.loader import DEFAULT_SECTOR_PRIORITIES
+
         hits = await self._client.search(self.collection, text, top_k)
         return [CandidateContract(
             domain=self.domain,
@@ -68,6 +70,7 @@ class _PgVectorRetriever:
             aliases=tuple(hit.get("aliases") or ()),
             supported_usage=tuple(hit.get("supported_usage") or ("filter",)),
             score=float(hit.get("score", 0)),
+            default_priority=int(hit.get("default_priority") or DEFAULT_SECTOR_PRIORITIES.get(hit[self.key_field], 0)),
         ) for hit in hits]
 
 
@@ -114,6 +117,9 @@ class PgVectorMetricRetriever(_PgVectorRetriever):
                 or (">", ">=", "<", "<=", "=", "!=")
             )
 
+            from app.catalog.loader import DEFAULT_METRIC_PRIORITIES
+            metric_priority = int(hit.get("default_priority") or DEFAULT_METRIC_PRIORITIES.get(hit[self.key_field], 0))
+
             candidates.append(CandidateContract(
                 domain=self.domain,
                 key=hit[self.key_field],
@@ -127,6 +133,7 @@ class PgVectorMetricRetriever(_PgVectorRetriever):
                 result_contract=raw_res,
                 parameter_schema_version=int(hit.get("parameter_schema_version", 1)),
                 contract_status=str(hit.get("contract_status", "INFERRED")),
+                default_priority=metric_priority,
             ))
         return candidates
 

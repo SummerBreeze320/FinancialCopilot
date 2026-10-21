@@ -8,12 +8,23 @@ def test_validator_fills_default_trade_date() -> None:
     param_def = MetricParameterDefinition(
         key="endDate", valueType="DATE", required=True, defaultValue="LATEST_TRADE_DATE"
     )
-    errors, filled, repairs = validate_metric_parameters("f_return_1y", [], [param_def])
+    errors, filled, repairs = validate_metric_parameters(
+        "f_return_1y", [], [param_def], as_of_date="20260930"
+    )
     assert errors == []
     assert len(filled) == 1
     assert filled[0]["key"] == "endDate"
-    assert filled[0]["value"] == "LATEST_TRADE_DATE"
+    assert filled[0]["value"] == "20260930"
     assert "DEFAULT_METRIC_PARAMETER" in repairs
+    assert "RESOLVE_DYNAMIC_DATE" in repairs
+
+
+def test_validator_rejects_unknown_dynamic_default() -> None:
+    param_def = MetricParameterDefinition(
+        key="endDate", valueType="DATE", required=True, defaultValue="LATEST_INVALID_DATE"
+    )
+    errors, filled, repairs = validate_metric_parameters("f_return_1y", [], [param_def])
+    assert any(err["code"] == "UNRESOLVED_DYNAMIC_DEFAULT" for err in errors)
 
 
 def test_validator_rejects_invalid_enum_option() -> None:

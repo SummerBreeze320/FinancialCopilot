@@ -1,0 +1,1103 @@
+{
+  "summary": {
+    "total_metrics": 169,
+    "catalog_path": "docs/temp/metrics.json",
+    "schema_version": 1,
+    "validation": {
+      "valid": 169,
+      "total": 169,
+      "errors_count": 0,
+      "errors": []
+    }
+  },
+  "by_family": {
+    "portfolio_holder_style": 35,
+    "return_market_event": 51,
+    "risk": 31,
+    "info": 52
+  },
+  "by_contract_status": {
+    "INFERRED": 157,
+    "NEEDS_REVIEW": 12
+  },
+  "by_parameter_value_type": {
+    "STRING": 181,
+    "DATE": 154,
+    "INTEGER": 22,
+    "ENUM": 4
+  },
+  "by_result_value_type": {
+    "DECIMAL": 97,
+    "STRING": 36,
+    "INTEGER": 23,
+    "DATE": 3,
+    "BOOLEAN": 9,
+    "ENUM": 1
+  },
+  "by_symbol_unit": {
+    "元": 15,
+    "%": 65,
+    "null": 61,
+    "名": 14,
+    "年": 5,
+    "只": 2,
+    "天": 2,
+    "次": 5
+  },
+  "by_supported_operators": {
+    "> >= < <= = !=": 123,
+    "= !=": 46
+  },
+  "precision_coverage": {
+    "decimal_metrics_total": 97,
+    "metrics_with_precision": 97,
+    "metrics_with_display_scale": 97,
+    "non_decimal_with_precision": 0
+  },
+  "storage_conventions": [
+    {
+      "metric": "f_risk_maxdownside",
+      "storageConvention": "NEGATIVE_PERCENT"
+    },
+    {
+      "metric": "f_risk_siml_avgmaxdownside",
+      "storageConvention": "NEGATIVE_PERCENT"
+    }
+  ],
+  "result_enums": [
+    {
+      "metric": "f_info_risklevel",
+      "options": [
+        {
+          "value": 1,
+          "label": "低风险 (R1)",
+          "aliases": [
+            "R1",
+            "低风险"
+          ]
+        },
+        {
+          "value": 2,
+          "label": "中低风险 (R2)",
+          "aliases": [
+            "R2",
+            "中低风险"
+          ]
+        },
+        {
+          "value": 3,
+          "label": "中风险 (R3)",
+          "aliases": [
+            "R3",
+            "中风险"
+          ]
+        },
+        {
+          "value": 4,
+          "label": "中高风险 (R4)",
+          "aliases": [
+            "R4",
+            "中高风险"
+          ]
+        },
+        {
+          "value": 5,
+          "label": "高风险 (R5)",
+          "aliases": [
+            "R5",
+            "高风险"
+          ]
+        }
+      ]
+    }
+  ],
+  "parameter_enums": [
+    {
+      "metric": "f_prt_bondbycreditratingtonav",
+      "parameter": "ratingTerm",
+      "position": 3,
+      "options": [
+        {
+          "value": 1,
+          "label": "长期信用评级",
+          "aliases": [
+            "长期",
+            "长期评级"
+          ]
+        },
+        {
+          "value": 2,
+          "label": "短期信用评级",
+          "aliases": [
+            "短期",
+            "短期评级"
+          ]
+        }
+      ]
+    },
+    {
+      "metric": "f_prt_bondbycreditratingtonav",
+      "parameter": "creditRating",
+      "position": 4,
+      "options": [
+        {
+          "value": 1,
+          "label": "AAA",
+          "aliases": [
+            "AAA级",
+            "3A"
+          ]
+        },
+        {
+          "value": 2,
+          "label": "AA+",
+          "aliases": [
+            "AA+级"
+          ]
+        },
+        {
+          "value": 3,
+          "label": "AA",
+          "aliases": [
+            "AA级"
+          ]
+        },
+        {
+          "value": 4,
+          "label": "AA-",
+          "aliases": [
+            "AA-级"
+          ]
+        },
+        {
+          "value": 5,
+          "label": "A+",
+          "aliases": [
+            "A+级"
+          ]
+        },
+        {
+          "value": 6,
+          "label": "A及以下",
+          "aliases": [
+            "A",
+            "A级",
+            "其他"
+          ]
+        }
+      ]
+    },
+    {
+      "metric": "f_info_redemptionfee",
+      "parameter": "chargeType",
+      "position": 2,
+      "options": [
+        {
+          "value": 1,
+          "label": "前端收费",
+          "aliases": [
+            "前端"
+          ]
+        },
+        {
+          "value": 2,
+          "label": "后端收费",
+          "aliases": [
+            "后端"
+          ]
+        }
+      ]
+    },
+    {
+      "metric": "f_info_redemptionfee2",
+      "parameter": "chargeType",
+      "position": 3,
+      "options": [
+        {
+          "value": 1,
+          "label": "前端收费",
+          "aliases": [
+            "前端"
+          ]
+        },
+        {
+          "value": 2,
+          "label": "后端收费",
+          "aliases": [
+            "后端"
+          ]
+        }
+      ]
+    }
+  ],
+  "defaults": [
+    {
+      "metric": "f_prt_totalasset",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_1y",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_maxdownside",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_adjustedreturn",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_netasset_total2",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_sharpe",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_topstockname",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_3m",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_5y",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_6m",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_ytd",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_returnyearly",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_mmf_annualizedyield",
+      "parameter": "date",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_mmf_avgannualizedyield",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_periodreturnranking_ytd",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_stdevyearly",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_stdev",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_annustdev",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_quot_benchreturn",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_navoverbenchreturn",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_navoverbenchannualreturn",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_navoverbenchannualreturn",
+      "parameter": "indexCode",
+      "position": 4,
+      "defaultValue": "FUND_BENCHMARK",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_duration",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_foundleverage",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_topstockcode",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_topstockvalue",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_topstockholdingchanging",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_fundnoofstocks",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_bondtonav",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_bondbycreditratingtonav",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_convertiblebondtonav",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_cashtonav",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_holder_institution_holdingpct",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_style_styleattribute",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_style_marketvaluestyleattribute",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_style_marketvalueattribute",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_dq_turn",
+      "parameter": "date",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_1w",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_1m",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_2y",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_3y",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_10y",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_return_std",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_periodreturnranking_1w",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_periodreturnranking_1m",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_periodreturnranking_3m",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_periodreturnranking_6m",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_periodreturnranking_1y",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_periodreturnranking_2y",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_periodreturnranking_3y",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_periodreturnranking_5y",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_maxdownsideranking",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_maxdownside_date",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_siml_avgmaxdownside",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_maxdownside_recoverdays",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_siml_avgsharpe",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_siml_avgsortino",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_siml_avgannusharpe",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_siml_avgannuSortino",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_annusharpe",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_annuSortino",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_netasset_total",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_netasset_total_cc",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_netasset_total_cc",
+      "parameter": "currency",
+      "position": 3,
+      "defaultValue": "CNY",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_annualvolranking",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_siml_avgstdevyearly",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_adjustedreturn_org",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_adjustedreturn1",
+      "parameter": "date",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_navoverbenchreturn_freq2",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_info_existingyear",
+      "parameter": "endDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_alpha",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_alpha",
+      "parameter": "indexCode",
+      "position": 4,
+      "defaultValue": "FUND_BENCHMARK",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_beta",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_beta",
+      "parameter": "indexCode",
+      "position": 4,
+      "defaultValue": "FUND_BENCHMARK",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_sortino",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_trackerror",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_trackerror",
+      "parameter": "indexCode",
+      "position": 4,
+      "defaultValue": "FUND_BENCHMARK",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_stocktonav",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_calmar",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_treynor",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_treynor",
+      "parameter": "indexCode",
+      "position": 4,
+      "defaultValue": "FUND_BENCHMARK",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_inforatio",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_inforatio",
+      "parameter": "indexCode",
+      "position": 4,
+      "defaultValue": "FUND_BENCHMARK",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_inforatioranking",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_inforatioranking",
+      "parameter": "indexCode",
+      "position": 4,
+      "defaultValue": "FUND_BENCHMARK",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_downsidestdev",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_annutrackerror",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_annutrackerror",
+      "parameter": "indexCode",
+      "position": 4,
+      "defaultValue": "FUND_BENCHMARK",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_dq_amount",
+      "parameter": "date",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_pq_amount",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "s_pq_avgamount",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_pq_avgturn",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_stockvalue",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_stockvalue_topindustryname2",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_bondvalue",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_stocktoasset",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_bondtoasset",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_heavilyheldstocktostock",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_convertiblebondtobond",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_info_redemptionfee2",
+      "parameter": "tradeDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_info_managementfeeratio2",
+      "parameter": "tradeDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_info_custodianfeeratio2",
+      "parameter": "tradeDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_info_salefeeratio2",
+      "parameter": "tradeDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_topbondname",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_topbondsymbol",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_risk_downsiderisk",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_nav_periodreturnrankingper",
+      "parameter": "endDate",
+      "position": 3,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_mmf_unityield",
+      "parameter": "date",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_dq_pctchange",
+      "parameter": "date",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_pchredm_largepchmaxamt",
+      "parameter": "date",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_industryvaluetonav_sw",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_topgicsindustryname",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_topindustryname_citic",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_topindustryname_sw2021",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_topindustryname_wind",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_countryregioninvestmenttonav",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_countryregioninvestment",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_mmf_avgptm",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_holder_institution_totalholdingpct",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_prt_stockholding",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_holder_single_holdingpct",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_div_accumulatedtimes",
+      "parameter": "date",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_mmf_frequencyofdeviation",
+      "parameter": "reportDate",
+      "position": 2,
+      "defaultValue": "LATEST_REPORT_DATE",
+      "defaultDynamic": null
+    },
+    {
+      "metric": "f_info_pchmstatus",
+      "parameter": "tradeDate",
+      "position": 2,
+      "defaultValue": "LATEST_TRADE_DATE",
+      "defaultDynamic": null
+    }
+  ]
+}

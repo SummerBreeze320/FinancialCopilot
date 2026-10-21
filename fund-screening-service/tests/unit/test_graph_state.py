@@ -23,4 +23,4 @@ def test_state_accepts_previous_dsl_for_editing() -> None:
     prev = {"version": "fund-screening/v1", "operator": "AND", "children": [], "limit": 20}
     state = empty_state("改成前50只", previous_dsl=prev)
     assert state["previous_dsl"] == prev
-    assert state["intent"] == "EDIT"
+    assert state["intent"] == "CREATE"

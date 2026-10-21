@@ -1,0 +1,57 @@
+{
+  "sync_timestamp": "2026-09-29T16:59:44Z",
+  "metrics_file": "D:\\BaiduSyncdisk\\IdeaProjects\\FinancialCopilot\\.worktrees\\fund-screening-agent\\docs\\temp\\metrics.json",
+  "sectors_file": "D:\\BaiduSyncdisk\\IdeaProjects\\FinancialCopilot\\.worktrees\\fund-screening-agent\\docs\\temp\\sectors.json",
+  "metrics_hash": "1e14bba06bad97eb9377361d19a6b1217caf9a323f78e2a5ed741e110699f0ce",
+  "sectors_hash": "03d89739e8942fcf218daccc04d58c62918ee42975ab2e06be345cac3757885f",
+  "model_name": "qwen3-embedding:0.6b",
+  "embedding_dims": 1024,
+  "batch_size": 32,
+  "dry_run": false,
+  "metrics_stats": {
+    "total_enabled": 168,
+    "inserted": 0,
+    "updated": 168
+  },
+  "sectors_stats": {
+    "total_enabled": 1712,
+    "inserted": 0,
+    "updated": 1712
+  },
+  "verification": {
+    "passed": true,
+    "metrics_count": 168,
+    "metrics_embedding_count": 168,
+    "metrics_vector_dims": [
+      1024
+    ],
+    "sectors_count": 1712,
+    "sectors_embedding_count": 1712,
+    "sectors_vector_dims": [
+      1024
+    ],
+    "top_k_queries": [
+      {
+        "query": "近1年收益率",
+        "domain": "metric",
+        "top_hits": [
+          "f_return_1y:近1年回报",
+          "f_risk_returnyearly:年化收益率",
+          "f_return_10y:近10年回报"
+        ],
+        "matched": true
+      },
+      {
+        "query": "开放式基金",
+        "domain": "sector",
+        "top_hits": [
+          "1000002355000000:开放式基金(非货币和QDII)",
+          "a201010500000000:开放式基金(非货币)",
+          "a201010400000000:开放式基金"
+        ],
+        "matched": true
+      }
+    ]
+  },
+  "elapsed_seconds": 57.3
+}

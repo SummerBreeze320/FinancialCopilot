@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     llm_api_key: str = "local-agy"
     llm_model: str = "gemini-3.8-flash-low"
     llm_reasoning_effort: str = "low"
+    llm_timeout_seconds: float = 240.0
     embedding_base_url: str = "http://127.0.0.1:11434/v1"
     embedding_api_key: str = "local"
     embedding_model: str = "qwen3-embedding:0.6b"

@@ -11,6 +11,12 @@ STAGES = ("query_preprocess", "query_analysis_and_recall", "command_build", "val
 
 NODE_TO_STAGE = {
     "query_preprocess": "query_preprocess",
+    "strict_direct_probe": "query_preprocess",
+    "semantic_plan": "query_analysis_and_recall",
+    "recall_by_condition": "query_analysis_and_recall",
+    "simple_full_router": "query_analysis_and_recall",
+    "simple_adjudication": "query_analysis_and_recall",
+    "full_adjudication": "query_analysis_and_recall",
     "pre_route_recall": "query_analysis_and_recall",
     "route_classifier": "query_analysis_and_recall",
     "pre_recall_plan": "query_analysis_and_recall",
@@ -39,6 +45,41 @@ class ScreeningOrchestrator:
         self._compiler = compiler
         self._graph = graph
 
+    async def run_with_trace(
+        self,
+        query: str,
+        previous_dsl: dict[str, Any] | None = None,
+        conversation_id: str | None = None,
+    ) -> dict[str, Any]:
+        if self._graph is not None:
+            from app.graph.checkpoint import make_graph_config
+            from app.graph.state import empty_state
+
+            state = empty_state(query, conversation_id=conversation_id, previous_dsl=previous_dsl)
+            config = make_graph_config(conversation_id)
+            final_state = state
+            async for update in self._graph.astream(state, config=config, stream_mode="updates"):
+                for _, node_update in update.items():
+                    final_state = {**final_state, **node_update}
+
+            raw_dsl = final_state.get("final_dsl") or final_state.get("draft_dsl")
+            clarification = final_state.get("clarification")
+            dsl_dump = (
+                FundScreeningDsl.model_validate(raw_dsl).model_dump(by_alias=True, exclude_none=True)
+                if raw_dsl
+                else None
+            )
+            return {
+                "dsl": dsl_dump,
+                "clarification": clarification,
+                "route": final_state.get("route", "full"),
+                "trace": final_state.get("trace", []),
+                "repairs": final_state.get("repairs", []),
+                "candidateCount": len(final_state.get("candidate_pool", [])),
+            }
+        dsl = await self.run(query, previous_dsl=previous_dsl, conversation_id=conversation_id)
+        return {"dsl": dsl.model_dump(by_alias=True, exclude_none=True), "clarification": None, "route": "simple"}
+
     async def run(
         self,
         query: str,
@@ -55,6 +96,7 @@ class ScreeningOrchestrator:
             config = make_graph_config(conversation_id)
 
             final_state = state
+            stage_order = {s: i for i, s in enumerate(STAGES)}
             emitted_stages = set()
             async for update in self._graph.astream(state, config=config, stream_mode="updates"):
                 for node_name, node_update in update.items():
@@ -63,17 +105,41 @@ class ScreeningOrchestrator:
                         trace_list = node_update.get("trace", [])
                         summary = trace_list[-1]["summary"] if trace_list else {}
 
-                        # 映射并发射兼容历史客户端的五段事件（去重保证单阶段只触发一次 started/completed）
                         mapped_stage = NODE_TO_STAGE.get(node_name)
-                        if mapped_stage and mapped_stage not in emitted_stages:
-                            emitted_stages.add(mapped_stage)
-                            await emit({"type": "stage_started", "stage": mapped_stage})
-                            await emit({
-                                "type": "stage_completed",
-                                "stage": mapped_stage,
-                                "status": "completed",
-                                "summary": summary,
-                            })
+                        if mapped_stage:
+                            target_idx = stage_order.get(mapped_stage, 0)
+                            for prev_stage in STAGES[:target_idx]:
+                                if prev_stage not in emitted_stages:
+                                    emitted_stages.add(prev_stage)
+                                    await emit({"type": "stage_started", "stage": prev_stage})
+                                    await emit({
+                                        "type": "stage_completed",
+                                        "stage": prev_stage,
+                                        "status": "completed",
+                                        "summary": {"bypassed": True},
+                                    })
+
+                            if mapped_stage not in emitted_stages:
+                                emitted_stages.add(mapped_stage)
+                                await emit({"type": "stage_started", "stage": mapped_stage})
+                                await emit({
+                                    "type": "stage_completed",
+                                    "stage": mapped_stage,
+                                    "status": "completed",
+                                    "summary": summary,
+                                })
+
+            if emit:
+                for rem_stage in STAGES:
+                    if rem_stage not in emitted_stages:
+                        emitted_stages.add(rem_stage)
+                        await emit({"type": "stage_started", "stage": rem_stage})
+                        await emit({
+                            "type": "stage_completed",
+                            "stage": rem_stage,
+                            "status": "completed",
+                            "summary": {"bypassed": True},
+                        })
 
             raw_dsl = final_state.get("final_dsl") or final_state.get("draft_dsl")
             if raw_dsl:

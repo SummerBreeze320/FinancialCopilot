@@ -12,12 +12,8 @@ from app.pipeline.validator import validate_and_repair
 
 
 @pytest.fixture(scope="module")
-def catalog():
-    service_root = Path(__file__).resolve().parents[2]
-    metrics_path = service_root.parent / "docs" / "temp" / "metrics.json"
-    sectors_path = service_root / "tests" / "fixtures" / "sectors-small.json"
-    entities_path = service_root / "tests" / "fixtures" / "entities-small.json"
-    return Catalog.from_files(metrics_path, sectors_path, entities_path)
+def catalog(real_candidates_catalog: Catalog) -> Catalog:
+    return real_candidates_catalog
 
 
 def test_completion_report_date_parameter(catalog):
@@ -179,9 +175,11 @@ def test_pipeline_validation_and_repair_for_contracts(catalog):
     pred = res_repaired.dsl.children[0].metric.children[0]
     assert pred.value == -15
     assert pred.operator == ">="
-    # 验证 endDate 被默认补全
+    # 验证 endDate 被默认补全并解析为具体日期
     param_dict = {p["key"]: p["value"] for p in pred.params}
-    assert param_dict["endDate"] == "LATEST_TRADE_DATE"
+    import re
+    assert re.match(r"^\d{8}$", param_dict["endDate"])
+    assert "RESOLVE_DYNAMIC_DATE" in res_repaired.repairs
 
     # 2. 缺少必填参数触发 Clarification
     dsl_missing_param = FundScreeningDsl.model_validate({

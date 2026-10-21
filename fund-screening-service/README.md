@@ -59,90 +59,75 @@ query_preprocess ──► pre_route_recall ──► route_classifier
    - **三路并行召回 (`parallel_recall`)**: 分别通过 PGVector (metric/scope) 与 Lexical (entity) 召回候选。
    - **LLM Call 2 (`candidate_adjudication`)**: 调用 `ChatOpenAI.with_structured_output(DecisionOutput)`，在受限候选池内完成裁决填参，杜绝幻觉。
 
-### 3. 指标参数契约与端到端校验 (Parameter Contracts)
+### 3. 指标参数与结果契约 (Parameter & Result Contracts)
 
-- **169 个指标 100% 参数覆盖**:
-  - 全量指标库位于 `docs/temp/metrics.json`，覆盖率报告位于 `docs/temp/metric-parameter-coverage.json`。
-  - 参数族系推导：
-    - `f_risk_` 基准风险指标：必填 `windCode`, `startDate`, `endDate` (默认 `LATEST_TRADE_DATE`), `indexCode` (默认 `FUND_BENCHMARK`)。
-    - `f_prt_`, `f_netasset_`, `f_holder_`, `f_style_` 报告期指标：必填 `reportDate` (默认 `LATEST_REPORT_DATE`)。
-    - `f_return_`, `f_nav_`, `f_mmf_` 收益净值指标：必填 `endDate` (默认 `LATEST_TRADE_DATE`)。
-- **端到端契约穿透**:
-  - 从 CandidateContract → CandidatePool → DecisionOutput → CommandBuilder → MetricPredicate → Validator 全链路携带并校验参数。
-  - 自动填充缺省默认参数（生成 `DEFAULT_METRIC_PARAMETER` 修复事件）。
-  - 缺少必填参数或非法枚举值自动触发澄清分支，终止并提示用户。
+- **169 个基金指标 100% 全量人工标注与校验**:
+  - 全量指标目录位于 `docs/temp/metrics.json`，契约规范 Schema 位于 `docs/temp/metric-parameter-contract.schema.json`。
+  - 只读覆盖率报告：`docs/temp/metric-parameter-contract-coverage.json`。
+  - **结果契约 (Result Contract)** 规范：
+    - `DECIMAL`: 严格配置 `precision` (`totalDigits`, `scale`, `roundingMode: HALF_UP`) 与可选 `displayScale`；非数值类型禁止出现 `precision`。
+    - `unit`: 采用真实物理符号 (`"%"`, `"元"`, `"天"`, `"年"`, `"名"`, `"次"`, `"只"`, `"户"`) 或 `null`；杜绝英文代码 (`PERCENT`, `YUAN`)。
+    - `supportedOperators`: 枚举/字符串仅允许 `["=", "!="]`，禁止大小运算符；数值型指标提供标准运算符集合。
+    - `storageConvention`: 最大回撤指标配置为 `"NEGATIVE_PERCENT"`，下游编译器读取契约自动执行负数口径翻转，不再按指标名称硬编码。
+    - 枚举映射：输入参数枚举 (`ratingTerm`, `creditRating`) 与结果枚举 (`f_info_risklevel`) 均维护整数值 `value`、展示标签 `label` 及别名集合 `aliases`。
+- **纯标准库校验器 (Zero External Dependencies)**:
+  - 位于 `scripts/data_sync/validate_metric_parameter_contracts.py`，不依赖第三方 `jsonschema` 库，支持严格层级校验。
+- **PostgreSQL 契约元数据与数据同步**:
+  - 数据库迁移脚本：`docker/postgres/migrations/20260929_add_metric_parameter_contracts.sql`，在 `rag_fund_metric` 表中增加 `parameters JSONB NOT NULL DEFAULT '[]'` 与 `result_contract JSONB NOT NULL DEFAULT '{}'` 字段。
+  - 同步运维命令 (`scripts/data_sync/sync_metric_contracts.py`)：
+    ```powershell
+    # 1. 模拟试跑 (dry-run)
+    python scripts/data_sync/sync_metric_contracts.py --dry-run
+    
+    # 2. 正式同步 (apply - 零向量扰动，仅更新契约字段)
+    python scripts/data_sync/sync_metric_contracts.py --apply
+    
+    # 3. 校验数据库一致性 (verify-only)
+    python scripts/data_sync/sync_metric_contracts.py --verify-only
+    ```
+- **生成只读覆盖率报告**:
+  ```powershell
+  python scripts/data_sync/generate_coverage_report.py
+  ```
+- **确定性函数序列化与执行**:
+  - `serialize_metric_call(metric_name, contract, values)`：严格按契约中的 `position` 顺序编译为 `f_name(windCode, arg2, ...)` 形式。
+  - 自动补全规则：
+    - 报告期缺省自动补齐 `reportDate="LATEST_REPORT_DATE"`；
+    - 截止日期缺省自动补齐 `endDate="LATEST_TRADE_DATE"`；
+    - 风险基准缺省自动补齐 `indexCode="FUND_BENCHMARK"`；
+    - 区间校验强制保证 `startDate <= endDate`；
+    - 缺少必填参数或传入非法枚举选项时，安全触发澄清请求 (`Clarification`)，绝不生成损坏的函数调用。
 
-### 4. 有界校验循环与机械修复 (Bounded Repair Loop)
-
-- 针对系统可确定修复的问题（如负向回撤口径转换 `NEGATIVE_DRAWDOWN_STORAGE`、默认排序 `DEFAULT_GROUP_SORT`、默认参数填充 `DEFAULT_METRIC_PARAMETER`），进行自动化修复。
-- 循环边界：最多执行 2 次修复尝试。若仍存在校验错误，安全转移到 `clarification` 节点并提供结构化修复建议，防止死循环。
-
-### 5. 多轮 Checkpoint 与会话持久化 (Multi-turn Checkpoint)
-
-- **无感状态恢复**: 用户在多轮编辑时，无需再次回传庞大的 `previousDsl`，仅需提供 `conversationId`，系统自动从 Checkpoint 恢复上一轮已 finalize 的 DSL。
-- **原子修改节点 (`simple_edit`)**: 当检测到意图为简单修改（调整 limit、改变排序方向、删除非关键条件）时，直接对上轮 DSL 进行 AST 编辑，耗时 < 5ms。
-- **Redis 持久化支持**: 实现 `RedisCheckpointSaver`，原生使用 Redis Hash 结构持久化 Checkpoint 元数据、通道值 Blobs 与 Writes。当 Redis 不可用时无缝自动回退到内存 `MemorySaver`。
-
-### 6. HTTP / WebSocket 统一编排
-
-- `POST /v1/fund-screening/commands` 与 WebSocket `/v1/fund-screening/ws` 统一调用相同的 StateGraph 编译执行管道。
-- 统一向客户端发射 5 阶段生命周期事件：
-  - `query_preprocess`
-  - `query_analysis_and_recall`
-  - `command_build`
-  - `validator_and_repair`
-  - `command_finalize`
-
----
-
-## 快速上手与运行
-
-### 1. 环境准备与依赖安装
-
-```powershell
-cd fund-screening-service
-python -m pip install -e ".[dev]"
-```
-
-### 2. 运行自动化测试套件
+### 4. 运行自动化测试套件
 
 ```powershell
-# 运行全量单元测试与 API 测试 (78 passed, 4 skipped)
+# 运行数据同步与契约校验测试套件 (31 tests)
+python -m unittest discover -s scripts/data_sync/tests -p "test_*.py"
+
+# 运行基金筛选服务全量测试套件 (105 passed, 5 skipped)
 pytest
 
-# 运行特定模块测试
-pytest -v tests/unit/test_structured_llm.py
-pytest -v tests/unit/test_graph_routing.py
-pytest -v tests/unit/test_metric_parameter_validation.py
-pytest -v tests/unit/test_graph_checkpoint.py
-pytest -v tests/api/test_commands.py
-pytest -v tests/api/test_websocket.py
+# 运行业务场景集成测试 (11 business scenarios)
+pytest -v tests/integration/test_business_scenarios.py
+pytest -v tests/integration/test_metric_parameter_completion.py
+pytest -v tests/unit/test_metric_function_serializer.py
 ```
 
-### 3. 指标参数全量推导与覆盖率报告生成
+
+### 4. 运行真实依赖 Smoke Test 与 Agy Gate
+
+在具有本地真实 LLM（如 Agy Bridge 运行于 http://127.0.0.1:8000/v1）、PgVector、Redis 环境下：
 
 ```powershell
-python scripts/enrich_metric_parameters.py ../docs/temp/metrics.json ../docs/temp/metrics.json --report ../docs/temp/metric-parameter-coverage.json
-```
+# 1. 检查服务就绪状态 (Readiness Probe)
+curl http://127.0.0.1:8810/ready
 
-输出示例：
-```json
-{
-  "total_metrics": 169,
-  "enriched_metrics": 169,
-  "coverage_rate": 1.0,
-  "by_parameter_count": { "2": 83, "3": 27, "1": 55, "4": 4 },
-  "by_parameter_type": { "FUND_CODE": 169, "DATE": 145, "INDEX_CODE": 4 }
-}
-```
-
-### 4. 运行真实依赖 Smoke Test
-
-在具有本地真实 LLM（如 Codex Bridge）、PgVector、Redis 环境下：
-
-```powershell
+# 2. 运行真实图引擎端到端 Smoke 测试
 $env:RUN_REAL_FUND_SCREENING_TESTS = "1"
 pytest -v tests/integration/test_real_graph_smoke.py
+
+# 3. 运行集成参数补全测试 (使用真实 Catalog fixture)
+pytest -v tests/integration/test_metric_parameter_completion.py
 ```
 
 ### 5. 启动 HTTP / WebSocket 服务

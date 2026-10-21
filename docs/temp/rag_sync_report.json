@@ -1,0 +1,36 @@
+{
+  "sync_timestamp": "2026-09-30T06:32:53Z",
+  "metrics_file": "docs/temp/metrics.json",
+  "sectors_file": "docs/temp/sectors.json",
+  "metrics_hash": "d2af6d5c84cd727bb5a673edb48aba02d1e90c1e029231010b6b6ea07af256ba",
+  "sectors_hash": "f3b17ddca2d9abf586506a4e0c527915095ef235eb633363e0d33edc33ab9348",
+  "model_name": "qwen3-embedding:0.6b",
+  "embedding_dims": 1024,
+  "batch_size": 32,
+  "dry_run": true,
+  "metrics_stats": {
+    "total_enabled": 168,
+    "inserted": 0,
+    "updated": 168
+  },
+  "sectors_stats": {
+    "total_enabled": 1712,
+    "inserted": 0,
+    "updated": 1712
+  },
+  "verification": {
+    "passed": true,
+    "metrics_count": 170,
+    "metrics_embedding_count": 170,
+    "metrics_vector_dims": [
+      1024
+    ],
+    "sectors_count": 1715,
+    "sectors_embedding_count": 1715,
+    "sectors_vector_dims": [
+      1024
+    ],
+    "top_k_queries": []
+  },
+  "elapsed_seconds": 60.68
+}
