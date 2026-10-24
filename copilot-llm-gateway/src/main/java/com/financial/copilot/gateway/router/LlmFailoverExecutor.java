@@ -34,19 +34,28 @@ public class LlmFailoverExecutor {
     private final GatewayCapacityLimiter capacityLimiter;
     private final GatewayAuditSink auditSink;
     private final EndpointInvoker invoker;
+    private final io.micrometer.tracing.Tracer tracer;
 
-    @Autowired
     public LlmFailoverExecutor(GatewayCapacityLimiter capacityLimiter,
                                GatewayAuditSink auditSink) {
-        this(capacityLimiter, auditSink, new DefaultWebClientEndpointInvoker());
+        this(capacityLimiter, auditSink, new DefaultWebClientEndpointInvoker(), null);
     }
 
     public LlmFailoverExecutor(GatewayCapacityLimiter capacityLimiter,
                                GatewayAuditSink auditSink,
                                EndpointInvoker invoker) {
+        this(capacityLimiter, auditSink, invoker, null);
+    }
+
+    @Autowired
+    public LlmFailoverExecutor(GatewayCapacityLimiter capacityLimiter,
+                               GatewayAuditSink auditSink,
+                               @Autowired(required = false) EndpointInvoker invoker,
+                               @Autowired(required = false) io.micrometer.tracing.Tracer tracer) {
         this.capacityLimiter = Objects.requireNonNull(capacityLimiter, "capacityLimiter must not be null");
         this.auditSink = Objects.requireNonNull(auditSink, "auditSink must not be null");
-        this.invoker = Objects.requireNonNull(invoker, "invoker must not be null");
+        this.invoker = invoker != null ? invoker : new DefaultWebClientEndpointInvoker();
+        this.tracer = tracer;
     }
 
     /**
@@ -142,6 +151,12 @@ public class LlmFailoverExecutor {
     private String resolveTraceId(LlmGatewayRequest request) {
         if (request != null && request.metadata() != null && request.metadata().containsKey("traceId")) {
             return String.valueOf(request.metadata().get("traceId"));
+        }
+        if (tracer != null) {
+            io.micrometer.tracing.Span current = tracer.currentSpan();
+            if (current != null && current.context() != null && current.context().traceId() != null) {
+                return current.context().traceId();
+            }
         }
         return UUID.randomUUID().toString().replace("-", "");
     }

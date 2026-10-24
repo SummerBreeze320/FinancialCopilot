@@ -1,6 +1,7 @@
 package com.financial.copilot.agent.tools.fund;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financial.copilot.agent.tools.cache.ToolCacheable;
 import com.financial.copilot.domain.business.fund.entity.FundInfo;
 import com.financial.copilot.domain.business.fund.port.FundDataPort;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ public class FundProfileTool {
      * @param query 6 位纯数字基金代码 (如 "005827") 或基金中文名称/关键词 (如 "易方达蓝筹精选" / "易方达蓝筹")
      * @return 格式化的 JSON 字符串
      */
+    @ToolCacheable(value = "fund_profile", ttlSeconds = 600)
     public String getFundProfile(String query) {
         log.info("[TOOL CALL-FUND-PROFILE] 查询基金档案: query={}", query);
         if (query == null || query.isBlank()) {

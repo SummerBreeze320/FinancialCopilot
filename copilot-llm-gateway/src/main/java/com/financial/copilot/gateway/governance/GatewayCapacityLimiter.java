@@ -43,7 +43,9 @@ public class GatewayCapacityLimiter {
                 int current = activeCount.get();
                 if (current < maxCapacity) {
                     if (activeCount.compareAndSet(current, current + 1)) {
-                        return Mono.just(new DefaultCapacityPermit(this));
+                        DefaultCapacityPermit permit = new DefaultCapacityPermit(this);
+                        return Mono.just((CapacityPermit) permit)
+                                .doOnCancel(permit::release);
                     }
                 } else {
                     Sinks.One<CapacityPermit> sink = Sinks.one();
@@ -54,7 +56,8 @@ public class GatewayCapacityLimiter {
                         drainQueue();
                     }
 
-                    return sink.asMono();
+                    return sink.asMono()
+                            .doOnCancel(() -> waitQueue.remove(sink));
                 }
             }
         });

@@ -10,7 +10,7 @@ import com.financial.copilot.agent.core.infra.dag.artifact.payload.FundPool;
 import com.financial.copilot.agent.core.infra.dag.model.GraphNode;
 import com.financial.copilot.agent.core.infra.dag.runtime.*;
 import com.financial.copilot.agent.core.infra.dag.runtime.context.CancellationToken;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmSettingsDTO;
+import com.financial.copilot.gateway.model.LlmSettingsDTO;
 import com.financial.copilot.agent.tools.fund.FundScreeningTool;
 import io.agentscope.core.message.*;
 import io.agentscope.core.model.*;

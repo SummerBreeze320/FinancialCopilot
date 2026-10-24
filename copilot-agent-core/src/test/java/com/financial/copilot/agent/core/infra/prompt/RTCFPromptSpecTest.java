@@ -1,6 +1,6 @@
 package com.financial.copilot.agent.core.infra.prompt;
 
-import com.financial.copilot.agent.core.infra.llm.dto.LlmRequest;
+import com.financial.copilot.gateway.model.LlmRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -1,6 +1,7 @@
 package com.financial.copilot.agent.tools.stock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financial.copilot.agent.tools.cache.ToolCacheable;
 import com.financial.copilot.common.stock.dto.StockMetricsDTO;
 import com.financial.copilot.domain.business.stock.port.StockDataPort;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ public class StockQuantAnalysisTool {
      * @param stockCode 股票代码 (如 "600519.SH")
      * @return 包含估值、财务与贝塔指标的 JSON 文本
      */
+    @ToolCacheable(value = "stock_metrics", ttlSeconds = 300)
     public String getStockMetrics(String stockCode) {
         log.info("[TOOL CALL-STOCK] 正在查询个股基本面与量化指标: stockCode={}", stockCode);
         try {

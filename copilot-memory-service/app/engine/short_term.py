@@ -30,27 +30,37 @@ class ShortTermMemoryEngine:
         self._max_messages = settings.short_term.max_messages
         self._in_memory_store: dict[str, list[dict]] = {}
         self._in_memory_owners: dict[str, str] = {}
+        self._redis_last_attempt: float = 0.0
+        self._redis_retry_cooldown: float = 15.0
 
     async def _get_redis(self) -> aioredis.Redis | None:
-        if self._redis is None:
-            try:
-                cfg = settings.redis
-                client = aioredis.Redis(
-                    host=cfg.host,
-                    port=cfg.port,
-                    password=cfg.password,
-                    db=cfg.db,
-                    decode_responses=True,
-                )
-                await client.ping()
-                self._redis = client
-            except Exception:
-                self._redis = None
+        if self._redis is not None:
+            return self._redis
+        import time
+        now = time.time()
+        if now - self._redis_last_attempt < self._redis_retry_cooldown:
+            return None
+        self._redis_last_attempt = now
+        try:
+            cfg = settings.redis
+            client = aioredis.Redis(
+                host=cfg.host,
+                port=cfg.port,
+                password=cfg.password,
+                db=cfg.db,
+                decode_responses=True,
+                socket_connect_timeout=0.3,
+                socket_timeout=0.3,
+            )
+            await client.ping()
+            self._redis = client
+        except Exception:
+            self._redis = None
         return self._redis
 
     async def add_message(
         self,
-        user_id_or_session: str,
+        user_id_or_session: str | None = None,
         conversation_id_or_user: str | None = None,
         role: MessageRole | str = MessageRole.USER,
         content: str = "",
@@ -62,12 +72,12 @@ class ShortTermMemoryEngine:
         if user_id is not None and session_id is not None:
             actual_user_id = user_id
             actual_conversation_id = session_id
-        elif conversation_id_or_user is not None and not isinstance(conversation_id_or_user, MessageRole) and not (isinstance(conversation_id_or_user, str) and conversation_id_or_user in ("user", "assistant", "system")):
+        elif user_id_or_session is not None and conversation_id_or_user is not None and not isinstance(conversation_id_or_user, MessageRole) and not (isinstance(conversation_id_or_user, str) and conversation_id_or_user in ("user", "assistant", "system")):
             actual_user_id = user_id_or_session
             actual_conversation_id = conversation_id_or_user
         else:
-            # session_id, role, content passed positionally
-            actual_conversation_id = user_id_or_session
+            # session_id, role, content passed positionally or with keywords
+            actual_conversation_id = session_id or user_id_or_session or "default"
             actual_user_id = user_id or "default"
             if isinstance(conversation_id_or_user, (MessageRole, str)):
                 role = conversation_id_or_user
@@ -124,6 +134,20 @@ class ShortTermMemoryEngine:
             )
         except Exception as e:
             logger.warning("Graphiti episode write failed (non-blocking): %s", e)
+
+        # 触发词“记住”即刻写入长期记忆库
+        if role_str == "user":
+            try:
+                from app.engine.explicit_memory import explicit_memory_engine
+                from app.engine.long_term import long_term_engine
+                if explicit_memory_engine.is_explicit_trigger(content):
+                    await long_term_engine.add_explicit_memory(
+                        user_id=actual_user_id,
+                        content=content,
+                        session_id=actual_conversation_id,
+                    )
+            except Exception as e:
+                logger.warning("Automatic explicit memory trigger failed: %s", e)
 
         return {"session_id": actual_conversation_id, "user_id": actual_user_id, "message_count": count}
 

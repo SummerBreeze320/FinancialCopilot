@@ -2,7 +2,7 @@ package com.financial.copilot.agent.core.infra.dag.runtime;
 
 import com.financial.copilot.agent.core.infra.context.ConversationContextSnapshot;
 import com.financial.copilot.agent.core.infra.context.ExecutionIdentity;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
+import com.financial.copilot.gateway.model.LlmResponse;
 import com.financial.copilot.domain.platform.user.entity.UserInvestmentProfile;
 
 import java.time.Instant;

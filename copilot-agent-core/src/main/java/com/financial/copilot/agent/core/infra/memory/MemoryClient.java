@@ -98,15 +98,22 @@ public class MemoryClient {
     // ── 长期记忆 ──────────────────────────────────────────────
 
     public List<String> searchMemory(String query, int maxResults) {
-        return searchMemory(null, MemoryScope.GLOBAL_MARKET, query, maxResults);
+        return searchMemory(null, MemoryScope.GLOBAL_MARKET, null, query, maxResults);
     }
 
     public List<String> searchMemory(ExecutionIdentity identity, MemoryScope scope, String query, int maxResults) {
+        return searchMemory(identity, scope, null, query, maxResults);
+    }
+
+    public List<String> searchMemory(ExecutionIdentity identity, MemoryScope scope, String category, String query, int maxResults) {
         try {
             Map<String, Object> body = new HashMap<>();
             body.put("query", query);
             body.put("max_results", maxResults);
             body.put("scope", scope != null ? scope.name() : MemoryScope.USER.name());
+            if (category != null && !category.isBlank()) {
+                body.put("category", category);
+            }
             if (identity != null) {
                 body.put("user_id", String.valueOf(identity.userId()));
                 body.put("conversation_id", identity.conversationId().toString());
@@ -134,6 +141,32 @@ public class MemoryClient {
         } catch (Exception e) {
             log.warn("searchMemory failed: {}", e.getMessage());
             return List.of();
+        }
+    }
+
+    public String addExplicitMemory(String userId, String content, String category, String scenario, String reason) {
+        try {
+            Map<String, Object> body = new HashMap<>();
+            body.put("user_id", userId);
+            body.put("content", content);
+            if (category != null) body.put("category", category);
+            if (scenario != null) body.put("scenario", scenario);
+            if (reason != null) body.put("reason", reason);
+
+            var request = webClient.post().uri("/v1/memory/explicit");
+            if (serviceToken != null && !serviceToken.isBlank()) {
+                request.header("X-Copilot-Service-Token", serviceToken);
+            }
+
+            return request.contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(timeout)
+                    .block();
+        } catch (Exception e) {
+            log.warn("addExplicitMemory failed: {}", e.getMessage());
+            return null;
         }
     }
 

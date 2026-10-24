@@ -5,7 +5,7 @@ import com.financial.copilot.agent.core.infra.agentscope.AgentScopeAgentFactory;
 import com.financial.copilot.agent.core.infra.dag.artifact.ArtifactType;
 import com.financial.copilot.agent.core.infra.dag.model.*;
 import com.financial.copilot.agent.core.infra.dag.planner.tool.*;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmSettingsDTO;
+import com.financial.copilot.gateway.model.LlmSettingsDTO;
 import com.financial.copilot.agent.core.infra.memory.MemoryClient;
 import io.agentscope.core.message.*;
 import io.agentscope.core.model.*;

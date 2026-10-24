@@ -1,7 +1,7 @@
 package com.financial.copilot.agent.core.infra.llm.execution;
 
 import com.financial.copilot.agent.core.infra.context.ExecutionIdentity;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
+import com.financial.copilot.gateway.model.LlmResponse;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.core.model.ChatResponse;
 import io.agentscope.core.model.ChatUsage;
@@ -56,6 +56,9 @@ class LlmExecutionGatewayTest {
                 .thenCancel()
                 .verify();
 
+        for (int i = 0; i < 50 && limiter.availablePermits() < 1; i++) {
+            try { Thread.sleep(50); } catch (InterruptedException ignored) {}
+        }
         assertThat(limiter.availablePermits()).isEqualTo(1);
     }
 

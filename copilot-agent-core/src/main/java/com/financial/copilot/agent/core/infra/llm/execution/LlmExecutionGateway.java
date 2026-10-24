@@ -1,7 +1,7 @@
 package com.financial.copilot.agent.core.infra.llm.execution;
 
 import com.financial.copilot.agent.core.infra.dag.scheduler.RuntimeCapacityProperties;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
+import com.financial.copilot.gateway.model.LlmResponse;
 import com.financial.copilot.agent.core.infra.observability.RuntimeMetrics;
 import io.agentscope.core.model.ChatResponse;
 import io.agentscope.core.model.ChatUsage;

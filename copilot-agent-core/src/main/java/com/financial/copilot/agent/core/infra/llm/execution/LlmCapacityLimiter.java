@@ -1,42 +1,46 @@
 package com.financial.copilot.agent.core.infra.llm.execution;
 
-import com.financial.copilot.agent.core.infra.thread.VirtualThreadSchedulers;
+import com.financial.copilot.gateway.governance.GatewayCapacityLimiter;
 import reactor.core.publisher.Mono;
 
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * <h1>全局 LLM 调用容量限制器</h1>
- * 严格控制对下游大模型 Provider 的并发请求数量，避免触发供应商限流或造成单机过载。
+ * <h1>全局 LLM 调用容量限制器适配器 (LlmCapacityLimiter)</h1>
+ * <p>
+ * 统一委托至 {@link GatewayCapacityLimiter}，消除 DAG 运行时与网关层的双重限流与配额竞争。
+ * </p>
+ *
+ * @author FinancialCopilot
  */
 public class LlmCapacityLimiter {
 
-    private final int maxConcurrency;
-    private final Semaphore semaphore;
+    private final GatewayCapacityLimiter delegate;
     private final AtomicInteger currentConcurrency = new AtomicInteger(0);
     private final AtomicInteger maxObserved = new AtomicInteger(0);
 
     public LlmCapacityLimiter(int maxConcurrency) {
-        if (maxConcurrency < 1) {
-            throw new IllegalArgumentException("maxConcurrency must be positive: " + maxConcurrency);
-        }
-        this.maxConcurrency = maxConcurrency;
-        this.semaphore = new Semaphore(maxConcurrency, true);
+        this.delegate = new GatewayCapacityLimiter(maxConcurrency);
+    }
+
+    public LlmCapacityLimiter(GatewayCapacityLimiter delegate) {
+        this.delegate = delegate != null ? delegate : new GatewayCapacityLimiter(16);
     }
 
     public Mono<Permit> acquireReactive() {
-        return Mono.fromCallable(() -> {
-            semaphore.acquire();
-            int active = currentConcurrency.incrementAndGet();
-            maxObserved.updateAndGet(cur -> Math.max(cur, active));
-            return new Permit();
-        }).subscribeOn(VirtualThreadSchedulers.scheduler());
+        return delegate.acquire()
+                .map(gatewayPermit -> {
+                    int active = currentConcurrency.incrementAndGet();
+                    maxObserved.updateAndGet(cur -> Math.max(cur, active));
+                    return new Permit(gatewayPermit);
+                })
+                .doOnDiscard(GatewayCapacityLimiter.CapacityPermit.class, GatewayCapacityLimiter.CapacityPermit::release)
+                .doOnDiscard(Permit.class, Permit::close);
     }
 
     public int availablePermits() {
-        return semaphore.availablePermits();
+        return delegate.availablePermits();
     }
 
     public int maxObservedConcurrency() {
@@ -44,17 +48,24 @@ public class LlmCapacityLimiter {
     }
 
     public int maxConcurrency() {
-        return maxConcurrency;
+        return delegate.maxCapacity();
     }
 
     public final class Permit implements AutoCloseable {
+        private final GatewayCapacityLimiter.CapacityPermit gatewayPermit;
         private final AtomicBoolean closed = new AtomicBoolean(false);
+
+        public Permit(GatewayCapacityLimiter.CapacityPermit gatewayPermit) {
+            this.gatewayPermit = gatewayPermit;
+        }
 
         @Override
         public void close() {
             if (closed.compareAndSet(false, true)) {
                 currentConcurrency.decrementAndGet();
-                semaphore.release();
+                if (gatewayPermit != null) {
+                    gatewayPermit.close();
+                }
             }
         }
     }

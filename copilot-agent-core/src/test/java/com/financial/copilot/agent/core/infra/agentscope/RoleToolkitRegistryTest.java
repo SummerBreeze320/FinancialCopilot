@@ -13,7 +13,7 @@ import com.financial.copilot.agent.core.infra.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.infra.dag.runtime.NodeInput;
 import com.financial.copilot.agent.core.infra.dag.runtime.RunMode;
 import com.financial.copilot.agent.core.infra.dag.runtime.context.CancellationToken;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmSettingsDTO;
+import com.financial.copilot.gateway.model.LlmSettingsDTO;
 import com.financial.copilot.agent.core.infra.memory.MemoryClient;
 import com.financial.copilot.agent.tools.fund.FundHoldingsQueryTool;
 import com.financial.copilot.agent.tools.fund.FundQuantAnalysisTool;

@@ -1,25 +1,29 @@
 package com.financial.copilot.agent.core.infra.agentscope;
 
 import com.financial.copilot.agent.core.infra.dag.runtime.NodeExecutionContext;
-import com.financial.copilot.agent.core.infra.llm.config.LlmConfigManager;
+import com.financial.copilot.agent.core.infra.llm.execution.LlmCallContext;
+import com.financial.copilot.agent.core.infra.llm.execution.LlmCapacityLimiter;
+import com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway;
 import com.financial.copilot.agent.core.infra.memory.MemoryClient;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmSettingsDTO;
+import com.financial.copilot.gateway.client.LlmGatewayClient;
+import com.financial.copilot.gateway.config.LlmConfigManager;
+import com.financial.copilot.gateway.model.LlmResponse;
+import com.financial.copilot.gateway.model.LlmRoutingScene;
+import com.financial.copilot.gateway.model.LlmSettingsDTO;
 import io.agentscope.core.ReActAgent;
+import io.agentscope.core.agent.AgentBase;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.message.Msg;
+import io.agentscope.core.message.TextBlock;
+import io.agentscope.core.message.ToolResultBlock;
 import io.agentscope.core.model.ChatResponse;
 import io.agentscope.core.model.GenerateOptions;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.ToolSchema;
 import com.financial.copilot.agent.core.infra.agentscope.loop.AgentLoopSupervisor;
 import com.financial.copilot.agent.core.infra.agentscope.loop.AgentTerminationStatus;
-import io.agentscope.core.message.TextBlock;
-import io.agentscope.core.message.ToolResultBlock;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.extensions.model.openai.OpenAIChatModel;
-import com.financial.copilot.gateway.client.LlmGatewayClient;
-import com.financial.copilot.gateway.model.LlmRoutingScene;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -29,24 +33,43 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/** Creates and runs an isolated AgentScope ReActAgent for one DAG node invocation. */
+/**
+ * <h1>AgentScope 2.0 官方规范单例无状态智能体工厂 (AgentScopeAgentFactory)</h1>
+ * <p>
+ * 遵循 AgentScope 2.0 官方无状态单例最佳实践与平台治理规范：
+ * <ul>
+ *     <li>基于 {@link AgentDefinition} 单例缓存与全局复用 {@link ReActAgent} 实例，消除每次请求重建开销；</li>
+ *     <li>系统提示词静态化，用户个性化 Profile 通过运行时用户提示词安全注入；</li>
+ *     <li>基于 Reactor 上下文传播 ({@link Flux#deferContextual}) 穿透响应式线程切换，安全绑定瞬态请求数据；</li>
+ *     <li>模型层采用纯无状态代理 {@link GovernedModel}，单次运行上下文由 {@link RuntimeContext} 外部透传；</li>
+ *     <li>常驻单例，废弃 {@code agent.close()}，支持高并发无状态复用与精确会话中断。</li>
+ * </ul>
+ * </p>
+ *
+ * @author FinancialCopilot
+ */
 @Component
 public class AgentScopeAgentFactory {
 
     private final Supplier<LlmSettingsDTO> settingsSupplier;
     private final Function<LlmSettingsDTO, Model> modelProvider;
     private final MemoryClient memoryClient;
-    private final com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway;
+    private final LlmExecutionGateway gateway;
+    private final Model governedModel;
+
+    private final Map<AgentDefinition, ReActAgent> agentCache = new ConcurrentHashMap<>();
 
     @Autowired
     public AgentScopeAgentFactory(LlmConfigManager configManager, MemoryClient memoryClient,
-                                  com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway,
+                                  LlmExecutionGateway gateway,
                                   @Autowired(required = false) LlmGatewayClient gatewayClient) {
         this(configManager::getActiveSettings,
                 settings -> gatewayClient != null
@@ -59,7 +82,7 @@ public class AgentScopeAgentFactory {
     }
 
     public AgentScopeAgentFactory(LlmConfigManager configManager, MemoryClient memoryClient,
-                                  com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway) {
+                                  LlmExecutionGateway gateway) {
         this(configManager, memoryClient, gateway, null);
     }
 
@@ -67,19 +90,18 @@ public class AgentScopeAgentFactory {
                                   Function<LlmSettingsDTO, Model> modelProvider,
                                   MemoryClient memoryClient) {
         this(settingsSupplier, modelProvider, memoryClient,
-                new com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway(
-                        new com.financial.copilot.agent.core.infra.llm.execution.LlmCapacityLimiter(16)));
+                new LlmExecutionGateway(new LlmCapacityLimiter(16)));
     }
 
     public AgentScopeAgentFactory(Supplier<LlmSettingsDTO> settingsSupplier,
                                   Function<LlmSettingsDTO, Model> modelProvider,
                                   MemoryClient memoryClient,
-                                  com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway) {
-        this.settingsSupplier = Objects.requireNonNull(settingsSupplier);
-        this.modelProvider = Objects.requireNonNull(modelProvider);
+                                  LlmExecutionGateway gateway) {
+        this.settingsSupplier = Objects.requireNonNull(settingsSupplier, "settingsSupplier cannot be null");
+        this.modelProvider = Objects.requireNonNull(modelProvider, "modelProvider cannot be null");
         this.memoryClient = memoryClient;
-        this.gateway = gateway != null ? gateway : new com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway(
-                new com.financial.copilot.agent.core.infra.llm.execution.LlmCapacityLimiter(16));
+        this.gateway = gateway != null ? gateway : new LlmExecutionGateway(new LlmCapacityLimiter(16));
+        this.governedModel = new GovernedModel();
     }
 
     public Msg invoke(AgentDefinition definition, String prompt, NodeExecutionContext executionContext) {
@@ -87,7 +109,7 @@ public class AgentScopeAgentFactory {
     }
 
     /**
-     * 响应式非阻塞执行 AgentScope ReActAgent 调用链路
+     * 响应式非阻塞执行 AgentScope ReActAgent 调用链路（基于单例无状态复用）。
      *
      * @param definition       Agent 拓扑元数据定义
      * @param prompt           用户/上游指令提示词
@@ -104,44 +126,51 @@ public class AgentScopeAgentFactory {
             return Mono.error(e);
         }
 
-        LlmSettingsDTO settings = settingsSupplier.get();
         RuntimeContext runtimeContext = runtimeContext(executionContext);
         Map<String, List<ToolResultBlock>> observations = new ConcurrentHashMap<>();
         AgentLoopSupervisor loopSupervisor = new AgentLoopSupervisor(definition.maxIterations(), 2, 2);
-        Model meteredModel = new MeteredModel(modelProvider.apply(settings), settings, executionContext, observations, gateway, loopSupervisor);
-        String enhancedSystemPrompt = enhanceWithProfile(definition.systemPrompt(), executionContext);
-        ReActAgent agent = ReActAgent.builder()
-                .name(definition.name())
-                .description(definition.description())
-                .sysPrompt(enhancedSystemPrompt)
-                .model(meteredModel)
-                .toolkit(definition.toolkit())
-                .maxIters(definition.maxIterations())
-                .generateOptions(generateOptions(settings))
-                .build();
+        CallContext callCtx = new CallContext(executionContext, observations, loopSupervisor);
+        runtimeContext.put(CallContext.class, callCtx);
+        runtimeContext.put(AgentLoopSupervisor.class, loopSupervisor);
+
+        // 用户个性化 Profile 注入（在请求 Prompt 中组装，保持 Agent 的 systemPrompt 纯净单例可共享）
+        String effectivePrompt = enhancePromptWithProfile(prompt, executionContext);
+
+        // 从单例池获取或构建单例 ReActAgent
+        ReActAgent agent = getOrCreateAgent(definition);
+
         executionContext.cancellationToken().onCancel(() -> {
             loopSupervisor.recordCancellation();
             agent.interrupt(runtimeContext);
         });
 
-        return agent.call(prompt == null ? "" : prompt, runtimeContext)
-                .map(result -> {
-                    if (result == null) {
-                        throw new IllegalStateException(definition.name() + " returned no result");
-                    }
-                    Map<String, List<ToolResultBlock>> snapshot = new HashMap<>();
-                    observations.forEach((name, results) -> snapshot.put(name, List.copyOf(results)));
-                    AgentTerminationStatus status = loopSupervisor.getTerminationStatus() != null
-                            ? loopSupervisor.getTerminationStatus()
-                            : AgentTerminationStatus.TASK_COMPLETED;
-                    return new AgentScopeInvocation(
-                            result,
-                            Map.copyOf(snapshot),
-                            status.isDegraded(),
-                            status
-                    );
-                })
-                .doFinally(signal -> agent.close());
+        return Mono.defer(() -> {
+            AutoCloseable scope = ScopedCallContext.open(callCtx);
+            return agent.call(effectivePrompt == null ? "" : effectivePrompt, runtimeContext)
+                    .map(result -> {
+                        if (result == null) {
+                            throw new IllegalStateException(definition.name() + " returned no result");
+                        }
+                        Map<String, List<ToolResultBlock>> snapshot = new HashMap<>();
+                        observations.forEach((name, results) -> snapshot.put(name, List.copyOf(results)));
+                        AgentTerminationStatus status = loopSupervisor.getTerminationStatus() != null
+                                ? loopSupervisor.getTerminationStatus()
+                                : AgentTerminationStatus.TASK_COMPLETED;
+                        return new AgentScopeInvocation(
+                                result,
+                                Map.copyOf(snapshot),
+                                status.isDegraded(),
+                                status
+                        );
+                    })
+                    .contextWrite(ctx -> ctx.put(AgentBase.RUNTIME_CONTEXT_KEY, runtimeContext))
+                    .doFinally(signal -> {
+                        try {
+                            scope.close();
+                        } catch (Exception ignored) {
+                        }
+                    });
+        });
     }
 
     public AgentScopeInvocation invokeWithTrace(AgentDefinition definition, String prompt,
@@ -151,6 +180,25 @@ public class AgentScopeAgentFactory {
             throw new IllegalStateException(definition.name() + " returned null invocation");
         }
         return invocation;
+    }
+
+    Map<AgentDefinition, ReActAgent> getAgentCache() {
+        return java.util.Collections.unmodifiableMap(agentCache);
+    }
+
+    private ReActAgent getOrCreateAgent(AgentDefinition definition) {
+        return agentCache.computeIfAbsent(definition, def -> {
+            LlmSettingsDTO settings = settingsSupplier.get();
+            return ReActAgent.builder()
+                    .name(def.name())
+                    .description(def.description())
+                    .sysPrompt(def.systemPrompt()) // 静态角色设定，不包含个性化画像
+                    .model(governedModel)          // 全局单例无状态治理模型代理
+                    .toolkit(def.toolkit())
+                    .maxIters(def.maxIterations())
+                    .generateOptions(generateOptions(settings))
+                    .build();
+        });
     }
 
     RuntimeContext runtimeContext(NodeExecutionContext context) {
@@ -184,18 +232,19 @@ public class AgentScopeAgentFactory {
         return builder.build();
     }
 
-    private String enhanceWithProfile(String baseSystemPrompt, NodeExecutionContext context) {
-        if (context.request() == null || context.request().userId() == null) {
-            return baseSystemPrompt;
+    private String enhancePromptWithProfile(String basePrompt, NodeExecutionContext context) {
+        if (context.request() == null || context.request().userId() == null || memoryClient == null) {
+            return basePrompt;
         }
         try {
             String profilePrompt = memoryClient.getProfilePrompt(String.valueOf(context.request().userId()));
             if (profilePrompt == null || profilePrompt.isBlank()) {
-                return baseSystemPrompt;
+                return basePrompt;
             }
-            return baseSystemPrompt + "\n\n" + profilePrompt;
+            String base = basePrompt == null ? "" : basePrompt;
+            return base + "\n\n[用户个性化投资偏好与背景]:\n" + profilePrompt;
         } catch (Exception e) {
-            return baseSystemPrompt;
+            return basePrompt;
         }
     }
 
@@ -242,88 +291,104 @@ public class AgentScopeAgentFactory {
         }
     }
 
-    private static final class MeteredModel implements Model {
-        private final Model delegate;
-        private final LlmSettingsDTO settings;
-        private final NodeExecutionContext context;
-        private final Map<String, List<ToolResultBlock>> observations;
-        private final com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway;
-        private final AgentLoopSupervisor loopSupervisor;
-        private final java.util.Set<String> observedIds = ConcurrentHashMap.newKeySet();
-
-        private MeteredModel(Model delegate, LlmSettingsDTO settings, NodeExecutionContext context,
-                             Map<String, List<ToolResultBlock>> observations,
-                             com.financial.copilot.agent.core.infra.llm.execution.LlmExecutionGateway gateway,
-                             AgentLoopSupervisor loopSupervisor) {
-            this.delegate = Objects.requireNonNull(delegate);
-            this.settings = Objects.requireNonNull(settings);
-            this.context = context;
-            this.observations = observations;
-            this.gateway = Objects.requireNonNull(gateway);
-            this.loopSupervisor = Objects.requireNonNull(loopSupervisor);
-        }
+    /**
+     * <h1>单例无状态治理模型代理 (GovernedModel)</h1>
+     * <p>
+     * 不持有任何请求特定字段，所有运行时状态由 Reactor 响应式上下文与 {@link RuntimeContext} 动态提供。
+     * 统一负责调用 LLM 网关限流、防死循环结果校验与流式 Token 推送。
+     * </p>
+     */
+    private final class GovernedModel implements Model {
 
         @Override
         public Flux<ChatResponse> stream(List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
-            List<ToolResultBlock> newResults = new ArrayList<>();
-            messages.stream().flatMap(message -> message
-                    .getContentBlocks(ToolResultBlock.class).stream())
-                    .filter(result -> observedIds.add(result.getId()))
-                    .forEach(result -> {
-                        observations.computeIfAbsent(result.getName(), ignored -> new CopyOnWriteArrayList<>()).add(result);
-                        newResults.add(result);
-                    });
+            return Flux.deferContextual(contextView -> {
+                RuntimeContext rc = contextView.hasKey(AgentBase.RUNTIME_CONTEXT_KEY)
+                        ? contextView.get(AgentBase.RUNTIME_CONTEXT_KEY)
+                        : null;
+                CallContext callCtx = (rc != null && rc.get(CallContext.class) != null)
+                        ? rc.get(CallContext.class)
+                        : ScopedCallContext.current();
 
-            if (!newResults.isEmpty()) {
-                loopSupervisor.recordObservations(newResults);
-            }
+                NodeExecutionContext context = callCtx != null ? callCtx.executionContext() : null;
+                Map<String, List<ToolResultBlock>> observations = callCtx != null ? callCtx.observations() : new ConcurrentHashMap<>();
+                AgentLoopSupervisor loopSupervisor = callCtx != null ? callCtx.loopSupervisor() : null;
+                Set<String> observedIds = callCtx != null ? callCtx.observedIds() : ConcurrentHashMap.newKeySet();
 
-            com.financial.copilot.agent.core.infra.llm.execution.LlmCallContext callContext =
-                    new com.financial.copilot.agent.core.infra.llm.execution.LlmCallContext(
-                            context.nodeId() != null ? context.nodeId() : "agent",
-                            context.request() != null ? context.request().identity() : null,
-                            delegate.getModelName(),
-                            context.request() != null ? context.request().usageConsumer() : null,
-                            null
-                    );
+                if (loopSupervisor != null) {
+                    List<ToolResultBlock> newResults = new ArrayList<>();
+                    messages.stream().flatMap(message -> message
+                            .getContentBlocks(ToolResultBlock.class).stream())
+                            .filter(result -> observedIds.add(result.getId()))
+                            .forEach(result -> {
+                                observations.computeIfAbsent(result.getName(), ignored -> new CopyOnWriteArrayList<>()).add(result);
+                                newResults.add(result);
+                            });
 
-            return gateway.execute(callContext, () -> delegate.stream(messages, tools, options))
-                    .map(chatResponse -> loopSupervisor.inspectAndGuard(chatResponse, observations))
-                    .doOnNext(chatResponse -> {
-                        if (context != null && context.chunkConsumer() != null && chatResponse != null) {
-                            var content = chatResponse.getContent();
-                            if (content != null) {
-                                for (var block : content) {
-                                    if (block instanceof TextBlock textBlock) {
-                                        String text = textBlock.getText();
-                                        if (text != null && !text.isEmpty()) {
-                                            context.chunkConsumer().accept(text);
+                    if (!newResults.isEmpty()) {
+                        loopSupervisor.recordObservations(newResults);
+                    }
+                }
+
+                LlmSettingsDTO settings = settingsSupplier.get();
+                Model delegate = modelProvider.apply(settings);
+
+                String nodeId = (context != null && context.nodeId() != null) ? context.nodeId() : "agent";
+                com.financial.copilot.agent.core.infra.context.ExecutionIdentity identity =
+                        (context != null && context.request() != null) ? context.request().identity() : null;
+                Consumer<LlmResponse> usageConsumer =
+                        (context != null && context.request() != null) ? context.request().usageConsumer() : null;
+
+                LlmCallContext callContext = new LlmCallContext(
+                        nodeId,
+                        identity,
+                        delegate.getModelName(),
+                        usageConsumer,
+                        null
+                );
+
+                return gateway.execute(callContext, () -> delegate.stream(messages, tools, options))
+                        .map(chatResponse -> loopSupervisor != null ? loopSupervisor.inspectAndGuard(chatResponse, observations) : chatResponse)
+                        .doOnNext(chatResponse -> {
+                            if (context != null && context.chunkConsumer() != null && chatResponse != null) {
+                                var content = chatResponse.getContent();
+                                if (content != null) {
+                                    for (var block : content) {
+                                        if (block instanceof TextBlock textBlock) {
+                                            String text = textBlock.getText();
+                                            if (text != null && !text.isEmpty()) {
+                                                context.chunkConsumer().accept(text);
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    });
+                        });
+            });
         }
 
         @Override
         public String getModelName() {
-            return delegate.getModelName();
+            Model delegate = modelProvider.apply(settingsSupplier.get());
+            return delegate != null ? delegate.getModelName() : "governed-model";
         }
 
         @Override
         public boolean supportsNativeStructuredOutput() {
-            return delegate.supportsNativeStructuredOutput();
+            Model delegate = modelProvider.apply(settingsSupplier.get());
+            return delegate != null && delegate.supportsNativeStructuredOutput();
         }
 
         @Override
         public boolean supportsNativeStructuredOutputWithTools() {
-            return delegate.supportsNativeStructuredOutputWithTools();
+            Model delegate = modelProvider.apply(settingsSupplier.get());
+            return delegate != null && delegate.supportsNativeStructuredOutputWithTools();
         }
 
         @Override
         public int getContextWindowSize() {
-            return delegate.getContextWindowSize();
+            Model delegate = modelProvider.apply(settingsSupplier.get());
+            return delegate != null ? delegate.getContextWindowSize() : 8192;
         }
     }
 }

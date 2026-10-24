@@ -1,6 +1,7 @@
 package com.financial.copilot.agent.tools.stock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financial.copilot.agent.tools.cache.ToolCacheable;
 import com.financial.copilot.common.stock.dto.StockScreeningCriteria;
 import com.financial.copilot.domain.business.stock.entity.StockInfo;
 import com.financial.copilot.domain.business.stock.port.StockDataPort;
@@ -42,6 +43,7 @@ public class StockScreeningTool {
      * @param criteria 股票结构化筛选条件
      * @return 命中的股票实体 JSON 数组字符串
      */
+    @ToolCacheable(value = "stock_screening", ttlSeconds = 300)
     public String screenStocks(StockScreeningCriteria criteria) {
         log.info("[TOOL CALL-STOCK] 正在执行多因子股票筛选: criteria={}", criteria);
         try {

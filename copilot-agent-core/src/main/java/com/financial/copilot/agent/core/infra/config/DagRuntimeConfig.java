@@ -13,6 +13,7 @@ import com.financial.copilot.agent.core.infra.dag.scheduler.RunAdmissionControll
 import com.financial.copilot.agent.core.infra.dag.scheduler.RuntimeCapacityProperties;
 import com.financial.copilot.agent.core.infra.llm.execution.LlmCapacityLimiter;
 import com.financial.copilot.agent.core.infra.observability.RuntimeMetrics;
+import com.financial.copilot.gateway.governance.GatewayCapacityLimiter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -91,7 +92,11 @@ public class DagRuntimeConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    public LlmCapacityLimiter llmCapacityLimiter(RuntimeCapacityProperties properties) {
+    public LlmCapacityLimiter llmCapacityLimiter(RuntimeCapacityProperties properties,
+                                                 @Autowired(required = false) GatewayCapacityLimiter gatewayCapacityLimiter) {
+        if (gatewayCapacityLimiter != null) {
+            return new LlmCapacityLimiter(gatewayCapacityLimiter);
+        }
         return new LlmCapacityLimiter(properties.getMaxLlmConcurrency());
     }
 

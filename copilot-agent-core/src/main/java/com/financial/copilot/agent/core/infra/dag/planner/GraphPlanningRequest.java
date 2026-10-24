@@ -1,6 +1,6 @@
 package com.financial.copilot.agent.core.infra.dag.planner;
 
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
+import com.financial.copilot.gateway.model.LlmResponse;
 import com.financial.copilot.domain.platform.user.entity.UserInvestmentProfile;
 
 import java.util.function.Consumer;

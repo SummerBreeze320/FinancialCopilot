@@ -5,8 +5,10 @@ import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunRequest;
 import com.financial.copilot.agent.core.infra.dag.runtime.NodeExecutionContext;
 import com.financial.copilot.agent.core.infra.dag.runtime.RunMode;
 import com.financial.copilot.agent.core.infra.dag.runtime.context.CancellationToken;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmSettingsDTO;
+import com.financial.copilot.gateway.client.LlmGatewayClient;
+import com.financial.copilot.gateway.config.LlmConfigManager;
+import com.financial.copilot.gateway.model.LlmResponse;
+import com.financial.copilot.gateway.model.LlmSettingsDTO;
 import com.financial.copilot.agent.core.infra.memory.MemoryClient;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.TextBlock;
@@ -169,8 +171,8 @@ class AgentScopeAgentFactoryTest {
 
     @Test
     void shouldWireLlmGatewayClientSuccessfully() {
-        com.financial.copilot.gateway.client.LlmGatewayClient mockGatewayClient = org.mockito.Mockito.mock(com.financial.copilot.gateway.client.LlmGatewayClient.class);
-        com.financial.copilot.agent.core.infra.llm.config.LlmConfigManager configManager = org.mockito.Mockito.mock(com.financial.copilot.agent.core.infra.llm.config.LlmConfigManager.class);
+        LlmGatewayClient mockGatewayClient = org.mockito.Mockito.mock(LlmGatewayClient.class);
+        LlmConfigManager configManager = org.mockito.Mockito.mock(LlmConfigManager.class);
         org.mockito.Mockito.when(configManager.getActiveSettings()).thenReturn(LlmSettingsDTO.builder().model("test-model").build());
 
         AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
@@ -180,5 +182,37 @@ class AgentScopeAgentFactoryTest {
                 mockGatewayClient
         );
         assertThat(factory).isNotNull();
+    }
+
+    @Test
+    void agentInstanceIsReusedAsSingletonAcrossMultipleCalls() {
+        ScriptedModel model = new ScriptedModel();
+        AgentScopeAgentFactory factory = new AgentScopeAgentFactory(
+                () -> LlmSettingsDTO.builder().model("scripted").build(),
+                ignored -> model,
+                mock(MemoryClient.class)
+        );
+        Toolkit toolkit = new Toolkit();
+        toolkit.registerTool(new EchoTool());
+        AgentScopeAgentFactory.AgentDefinition definition = new AgentScopeAgentFactory.AgentDefinition(
+                "SingletonAgent", "singleton test", "Call echo and return result.", toolkit, 3
+        );
+
+        NodeExecutionContext context1 = nodeContext("wf-s1", "node-s1", 1);
+        NodeExecutionContext context2 = nodeContext("wf-s2", "node-s2", 1);
+
+        assertThat(factory.getAgentCache()).isEmpty();
+
+        Msg result1 = factory.invoke(definition, "hello 1", context1);
+        assertThat(result1.getTextContent()).isEqualTo("observed:HELLO");
+        assertThat(factory.getAgentCache()).hasSize(1);
+        io.agentscope.core.ReActAgent cachedAgent = factory.getAgentCache().get(definition);
+        assertThat(cachedAgent).isNotNull();
+
+        // 再次触发相同的 definition，断言底层 Agent 复用单例实例，不再重复 build
+        Msg result2 = factory.invoke(definition, "hello 2", context2);
+        assertThat(result2.getTextContent()).isEqualTo("observed:HELLO");
+        assertThat(factory.getAgentCache()).hasSize(1);
+        assertThat(factory.getAgentCache().get(definition)).isSameAs(cachedAgent);
     }
 }

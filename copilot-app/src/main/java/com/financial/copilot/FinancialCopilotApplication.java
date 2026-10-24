@@ -37,6 +37,7 @@ public class FinancialCopilotApplication {
      * @param args 命令行启动参数
      */
     public static void main(String[] args) {
+        reactor.core.publisher.Hooks.enableAutomaticContextPropagation();
         SpringApplication.run(FinancialCopilotApplication.class, args);
     }
 }

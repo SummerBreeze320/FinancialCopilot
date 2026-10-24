@@ -1,7 +1,7 @@
 package com.financial.copilot.agent.core.infra.llm.execution;
 
 import com.financial.copilot.agent.core.infra.context.ExecutionIdentity;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
+import com.financial.copilot.gateway.model.LlmResponse;
 
 import java.time.Duration;
 import java.util.Objects;

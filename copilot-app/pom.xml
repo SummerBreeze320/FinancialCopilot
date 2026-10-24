@@ -19,11 +19,29 @@
             <groupId>com.financial.copilot</groupId>
             <artifactId>copilot-agent-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.financial.copilot</groupId>
+            <artifactId>copilot-llm-gateway</artifactId>
+        </dependency>
 
         <!-- Spring Boot WebFlux (响应式与 SSE 引擎) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Actuator 与 OpenTelemetry 分布式链路追踪 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
 
         <!-- Spring Boot Security -->

@@ -9,7 +9,7 @@ import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunHandle;
 import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunRequest;
 import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunResult;
 import com.financial.copilot.agent.core.infra.dag.runtime.RunMode;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
+import com.financial.copilot.gateway.model.LlmResponse;
 import com.financial.copilot.agent.core.platform.user.service.UserService;
 import com.financial.copilot.agent.core.infra.dag.scheduler.RunAdmissionController;
 import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;

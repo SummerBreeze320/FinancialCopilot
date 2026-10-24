@@ -33,6 +33,7 @@ import com.financial.copilot.domain.platform.execution.entity.NodeAttempt;
 import com.financial.copilot.domain.platform.execution.entity.ResearchRunEvent;
 import com.financial.copilot.domain.platform.execution.entity.ResearchRunState;
 import com.financial.copilot.domain.platform.execution.port.ResearchExecutionPort;
+import com.financial.copilot.gateway.model.LlmResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -284,7 +285,7 @@ public class DagRuntime implements AutoCloseable {
 
     /** Restores an owned run from durable state in a fresh runtime instance. */
     public GraphRunHandle resume(Long userId, String runId,
-                                 Consumer<com.financial.copilot.agent.core.infra.llm.dto.LlmResponse> usageConsumer) {
+                                 Consumer<LlmResponse> usageConsumer) {
         Optional<DagCheckpoint> checkpoint = checkpointStore.load(userId, runId);
         if (checkpoint.isEmpty() || checkpoint.get().graph() == null) {
             CompletableFuture<GraphRunResult> missing = CompletableFuture.failedFuture(

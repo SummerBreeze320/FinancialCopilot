@@ -12,12 +12,14 @@ import com.financial.copilot.agent.core.infra.dag.scheduler.GlobalReadyScheduler
 import com.financial.copilot.agent.core.infra.dag.scheduler.RunAdmissionController;
 import com.financial.copilot.agent.core.infra.observability.RuntimeMetrics;
 import com.financial.copilot.agent.core.infra.event.WorkflowFinishedEvent;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
+import com.financial.copilot.gateway.model.LlmResponse;
 import com.financial.copilot.agent.core.infra.memory.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financial.copilot.domain.platform.execution.entity.ResearchRunEvent;
 import com.financial.copilot.domain.platform.execution.port.ResearchExecutionPort;
 import com.financial.copilot.agent.core.infra.supervisor.SupervisorWorkflow;
+import com.financial.copilot.agent.core.infra.observability.AgentTracer;
+import io.micrometer.tracing.Span;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,7 @@ public class FinancialResearchWorkflow {
     private final ResearchExecutionPort executionPort;
     private final RuntimeMetrics runtimeMetrics;
     private final SupervisorWorkflow supervisorWorkflow;
+    private final AgentTracer agentTracer;
 
     public FinancialResearchWorkflow(
             AgentNodeRouter agentRouter,
@@ -52,7 +55,7 @@ public class FinancialResearchWorkflow {
             NodeQualityGate qualityGate,
             ReplanPolicy replanPolicy,
             GraphRunRegistry registry) {
-        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, null, null, null, null, null, null);
+        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, null, null, null, null, null, null, null);
     }
 
     public FinancialResearchWorkflow(
@@ -66,7 +69,7 @@ public class FinancialResearchWorkflow {
             GlobalReadyScheduler globalReadyScheduler,
             RunAdmissionController admissionController,
             ResearchExecutionPort executionPort) {
-        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, globalReadyScheduler, admissionController, executionPort, null, null, null);
+        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, globalReadyScheduler, admissionController, executionPort, null, null, null, null);
     }
 
     public FinancialResearchWorkflow(
@@ -81,7 +84,7 @@ public class FinancialResearchWorkflow {
             RunAdmissionController admissionController,
             ResearchExecutionPort executionPort,
             RuntimeMetrics runtimeMetrics) {
-        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, globalReadyScheduler, admissionController, executionPort, runtimeMetrics, null, null);
+        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, globalReadyScheduler, admissionController, executionPort, runtimeMetrics, null, null, null);
     }
 
     public FinancialResearchWorkflow(
@@ -97,7 +100,24 @@ public class FinancialResearchWorkflow {
             ResearchExecutionPort executionPort,
             RuntimeMetrics runtimeMetrics,
             SupervisorWorkflow supervisorWorkflow) {
-        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, globalReadyScheduler, admissionController, executionPort, runtimeMetrics, null, supervisorWorkflow);
+        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, globalReadyScheduler, admissionController, executionPort, runtimeMetrics, null, supervisorWorkflow, null);
+    }
+
+    public FinancialResearchWorkflow(
+            AgentNodeRouter agentRouter,
+            GraphPlannerAgent planner,
+            ResourceManager resources,
+            DagCheckpointStore checkpointStore,
+            NodeQualityGate qualityGate,
+            ReplanPolicy replanPolicy,
+            GraphRunRegistry registry,
+            GlobalReadyScheduler globalReadyScheduler,
+            RunAdmissionController admissionController,
+            ResearchExecutionPort executionPort,
+            RuntimeMetrics runtimeMetrics,
+            DagRuntime dagRuntime,
+            SupervisorWorkflow supervisorWorkflow) {
+        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, globalReadyScheduler, admissionController, executionPort, runtimeMetrics, dagRuntime, supervisorWorkflow, null);
     }
 
     @Autowired
@@ -114,7 +134,8 @@ public class FinancialResearchWorkflow {
             @Autowired(required = false) ResearchExecutionPort executionPort,
             @Autowired(required = false) RuntimeMetrics runtimeMetrics,
             @Autowired(required = false) DagRuntime dagRuntime,
-            @Autowired(required = false) SupervisorWorkflow supervisorWorkflow) {
+            @Autowired(required = false) SupervisorWorkflow supervisorWorkflow,
+            @Autowired(required = false) AgentTracer agentTracer) {
         this.agentRouter = agentRouter;
         this.planner = planner;
         this.executionPort = executionPort;
@@ -123,6 +144,7 @@ public class FinancialResearchWorkflow {
         this.checkpointStore = checkpointStore == null ? new InMemoryDagCheckpointStore() : checkpointStore;
         this.admissionController = admissionController;
         this.runtimeMetrics = runtimeMetrics;
+        this.agentTracer = agentTracer;
         if (dagRuntime != null) {
             this.runtime = dagRuntime;
         } else {
@@ -149,13 +171,22 @@ public class FinancialResearchWorkflow {
     }
 
     public GraphRunHandle run(GraphRunRequest request) {
+        Span workflowSpan = agentTracer != null
+                ? agentTracer.startWorkflowSpan(request.runId(), String.valueOf(request.userId()), request.prompt())
+                : null;
         if (admissionController != null) {
             RunAdmissionController.AdmissionTicket ticket = admissionController.requestAdmission(
                     request.tenantId(), request.userId(), request.conversationId(), request.runId());
             if (ticket.decision() == com.financial.copilot.agent.core.infra.dag.scheduler.AdmissionDecision.REJECTED_SYSTEM_CAPACITY) {
+                if (agentTracer != null && workflowSpan != null) {
+                    agentTracer.endSpan(workflowSpan, new com.financial.copilot.common.exception.SystemCapacityExceededException("系统排队容量已达上限，请稍后重试"));
+                }
                 throw new com.financial.copilot.common.exception.SystemCapacityExceededException("系统排队容量已达上限，请稍后重试");
             }
             if (ticket.decision() == com.financial.copilot.agent.core.infra.dag.scheduler.AdmissionDecision.REJECTED_USER_LIMIT) {
+                if (agentTracer != null && workflowSpan != null) {
+                    agentTracer.endSpan(workflowSpan, new com.financial.copilot.common.exception.UserLimitExceededException(request.userId(), "用户并发运行或排队已达上限，请稍后重试"));
+                }
                 throw new com.financial.copilot.common.exception.UserLimitExceededException(request.userId(), "用户并发运行或排队已达上限，请稍后重试");
             }
             if (ticket.decision() == com.financial.copilot.agent.core.infra.dag.scheduler.AdmissionDecision.ADMITTED) {
@@ -165,10 +196,15 @@ public class FinancialResearchWorkflow {
                 GraphRunHandle innerHandle = supervisorWorkflow != null
                         ? supervisorWorkflow.runHandle(effectiveRequest, graph)
                         : runtime.run(effectiveRequest, graph);
+                innerHandle.completion().whenComplete((res, err) -> {
+                    if (agentTracer != null && workflowSpan != null) {
+                        agentTracer.endSpan(workflowSpan, err);
+                    }
+                });
                 GraphRunHandle handle = registry.register(effectiveRequest.userId(), innerHandle);
                 return handle;
             }
-            return handleQueuedRun(request, ticket);
+            return handleQueuedRun(request, ticket, workflowSpan);
         }
 
         GraphRunRequest effectiveRequest = request.resolveSnapshot();
@@ -177,11 +213,16 @@ public class FinancialResearchWorkflow {
         GraphRunHandle innerHandle = supervisorWorkflow != null
                 ? supervisorWorkflow.runHandle(effectiveRequest, graph)
                 : runtime.run(effectiveRequest, graph);
+        innerHandle.completion().whenComplete((res, err) -> {
+            if (agentTracer != null && workflowSpan != null) {
+                agentTracer.endSpan(workflowSpan, err);
+            }
+        });
         GraphRunHandle handle = registry.register(effectiveRequest.userId(), innerHandle);
         return handle;
     }
 
-    private GraphRunHandle handleQueuedRun(GraphRunRequest request, RunAdmissionController.AdmissionTicket ticket) {
+    private GraphRunHandle handleQueuedRun(GraphRunRequest request, RunAdmissionController.AdmissionTicket ticket, Span workflowSpan) {
         com.financial.copilot.agent.core.infra.dag.runtime.context.CancellationToken cancellationToken =
                 new com.financial.copilot.agent.core.infra.dag.runtime.context.CancellationToken(request.runId());
         com.financial.copilot.agent.core.infra.dag.event.NodeEventBus eventBus =
@@ -205,12 +246,18 @@ public class FinancialResearchWorkflow {
             if (admissionController != null) {
                 admissionController.cancelQueuedRun(request.runId());
             }
+            if (agentTracer != null && workflowSpan != null) {
+                agentTracer.endSpan(workflowSpan, null);
+            }
             completion.cancel(true);
         });
 
         // 2. 挂接异步准入监听
         ticket.onAdmittedFuture().whenComplete((decision, error) -> {
             if (error != null) {
+                if (agentTracer != null && workflowSpan != null) {
+                    agentTracer.endSpan(workflowSpan, error);
+                }
                 eventBus.emit(com.financial.copilot.common.event.ResearchStreamEvent.runFailed(request.runId(), error.getMessage()));
                 eventBus.complete();
                 completion.completeExceptionally(error);
@@ -219,6 +266,9 @@ public class FinancialResearchWorkflow {
             if (cancellationToken.isCancelled()) {
                 if (admissionController != null) {
                     admissionController.onRunCompleted(request.runId());
+                }
+                if (agentTracer != null && workflowSpan != null) {
+                    agentTracer.endSpan(workflowSpan, null);
                 }
                 eventBus.emit(com.financial.copilot.common.event.ResearchStreamEvent.runCancelled(request.runId(), "Cancelled before execution"));
                 eventBus.complete();
@@ -250,6 +300,9 @@ public class FinancialResearchWorkflow {
                         eventBus::complete
                 );
                 innerHandle.completion().whenComplete((res, err) -> {
+                    if (agentTracer != null && workflowSpan != null) {
+                        agentTracer.endSpan(workflowSpan, err);
+                    }
                     if (err != null) {
                         completion.completeExceptionally(err);
                     } else {
@@ -259,6 +312,9 @@ public class FinancialResearchWorkflow {
             } catch (Throwable t) {
                 if (admissionController != null) {
                     admissionController.onRunCompleted(activeRequest.runId());
+                }
+                if (agentTracer != null && workflowSpan != null) {
+                    agentTracer.endSpan(workflowSpan, t);
                 }
                 eventBus.emit(com.financial.copilot.common.event.ResearchStreamEvent.runFailed(activeRequest.runId(), t.getMessage()));
                 eventBus.complete();
@@ -292,9 +348,20 @@ public class FinancialResearchWorkflow {
 
     private Artifact<?> dispatch(GraphNode node, NodeInput input, NodeExecutionContext context) {
         Instant start = Instant.now();
-        try {
+        Span nodeSpan = agentTracer != null && node != null
+                ? agentTracer.startSubagentSpan(node.getTaskType(), node.getNodeId())
+                : null;
+        Throwable error = null;
+        try (com.financial.copilot.agent.core.infra.observability.AgentTracer.TraceScope scope =
+                     agentTracer != null ? agentTracer.withSpan(nodeSpan) : com.financial.copilot.agent.core.infra.observability.AgentTracer.noopScope()) {
             return agentRouter.execute(node, input, context);
+        } catch (Throwable t) {
+            error = t;
+            throw t;
         } finally {
+            if (agentTracer != null && nodeSpan != null) {
+                agentTracer.endSpan(nodeSpan, error);
+            }
             if (runtimeMetrics != null && node != null) {
                 runtimeMetrics.recordNodeDuration(node.getTaskType(), Duration.between(start, Instant.now()));
             }

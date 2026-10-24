@@ -24,10 +24,10 @@ class RedisConfig:
 
 @dataclass(frozen=True)
 class LlmConfig:
-    api_key: str = os.getenv("LLM_API_KEY", "sk-placeholder")
-    base_url: str = os.getenv("LLM_BASE_URL", "https://api.deepseek.com/v1")
-    model: str = os.getenv("LLM_MODEL", "deepseek-chat")
-    small_model: str = os.getenv("LLM_SMALL_MODEL", "deepseek-chat")
+    api_key: str = os.getenv("LLM_API_KEY", "local-agy")
+    base_url: str = os.getenv("LLM_BASE_URL", "http://127.0.0.1:9090/v1")
+    model: str = os.getenv("LLM_MODEL", "gemini-3.8-flash-low")
+    small_model: str = os.getenv("LLM_SMALL_MODEL", "gemini-3.8-flash-low")
 
 
 @dataclass(frozen=True)
