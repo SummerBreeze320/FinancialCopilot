@@ -48,8 +48,8 @@ class NeuralReranker:
         :param model_name: HuggingFace 或本地模型路径，默认使用配置的 bge-reranker-large
         :param device: 推理设备，默认 cuda 优先，无显卡自动降级为 cpu
         """
-        self.model_name = model_name or settings.reranker_model
-        self.device = device or ("cuda" if settings.device == "cuda" else "cpu")
+        self.model_name = model_name or settings.reranker_model_path
+        self.device = device or settings.reranker_device
         self._model = None
 
     def _ensure_model(self) -> Any:
