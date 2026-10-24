@@ -133,9 +133,31 @@
 
 ---
 
-## 3. 存储结构与数据库模式设计 (PostgreSQL + pgvector)
 
-在现有的 PostgreSQL 实例 `127.0.0.1:15432/financial_copilot` 中建立知识库专用物理表。
+## 3. 金融知识库分层分级治理模型 (Taxonomy & Governance Matrix)
+
+### 3.1 四层十类认知分类树
+系统采用「四层认知本体模型」彻底解耦事实与观点，并通过「实体穿透标签」跨越基金、股票与宏观：
+
+1. **规范公理层 (`AXIOM`)**：
+   * `AXIOM_METRIC`：金融指标与量化公式（夏普比率、卡玛比率、Sortino、VaR、ROE、自由现金流）；
+   * `AXIOM_ACCOUNTING`：财务会计准则（CAS/IFRS 收入确认、研发支出资本化口径）；
+   * `AXIOM_REGULATION`：监管风控法规（基金双十原则、减持新规、信息披露合规红线）。
+   * *特点*：绝对常青基准，零时间衰减，永久保存。
+2. **法定事实层 (`GROUND_TRUTH`)**：
+   * `FACT_PERIODIC`：上市公司年报/中报/季报、基金定期运作报告、法定招股书（表格最密集，审计事实）；
+   * `FACT_EVENT`：重大事件临时公告（资本运作、分红派息、高管变更、基金经理变动、立案处罚）。
+   * *特点*：不可篡改事实，以报告期（Point-in-Time）为基准，最新期覆盖但保留历史回溯。
+3. **观点投研层 (`OPINION`)**：
+   * `OPINION_BROKER`：卖方券商研报（个股深度、行业专题、宏观大势、盈利预测与目标价）；
+   * `OPINION_MEMO`：业绩说明会问答纪要 (Earnings Call)、专家访谈与调研纪要、内部投决会备忘录。
+   * *特点*：主观视角与预测性，半衰期 90~180 天，随新财报发布自动折旧。
+4. **动态信号层 (`SIGNAL`)**：
+   * `SIGNAL_FLASH`：财经通讯社快讯、突发盘中异动、宏观数据发布（PMI/CPI/非农）；
+   * `SIGNAL_SENTIMENT`：市场舆情监测与热帖分析。
+   * *特点*：高时效流数据，半衰期 24~72 小时，30 天后自动归档至冷库。
+
+### 3.2 存储结构与数据库模式设计 (PostgreSQL + pgvector)
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -145,14 +167,18 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE TABLE IF NOT EXISTS knowledge_documents (
     id VARCHAR(64) PRIMARY KEY,
     title VARCHAR(256) NOT NULL,
-    doc_type VARCHAR(32) NOT NULL,
+    cognitive_layer VARCHAR(32) NOT NULL,        -- AXIOM, GROUND_TRUTH, OPINION, SIGNAL
+    category_path VARCHAR(128) NOT NULL,        -- 例: GROUND_TRUTH.PERIODIC.STOCK_ANNUAL
     institution VARCHAR(128),
     author VARCHAR(128),
     publish_date DATE,
+    report_period VARCHAR(32),                   -- 例: 2024Q3, 2024-ANNUAL
+    is_latest_period BOOLEAN DEFAULT FALSE,      -- 是否最新报告期
+    authority_score FLOAT DEFAULT 1.0,           -- 权威度打分: 1.0(法定), 0.85(券商), 0.65(快讯)
     file_path VARCHAR(512),
     file_hash VARCHAR(64) UNIQUE,
     chunk_count INT DEFAULT 0,
-    status VARCHAR(32) DEFAULT 'PROCESSING',
+    status VARCHAR(32) DEFAULT 'PROCESSING',     -- PROCESSING, READY, FAILED, SUPERSEDED
     error_message TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -168,13 +194,20 @@ CREATE TABLE IF NOT EXISTS knowledge_chunks (
     content TEXT NOT NULL,
     content_length INT NOT NULL,
     embedding vector(1024),
-    metadata JSONB DEFAULT '{}'::jsonb,
-    tsv_content tsvector,
+    cognitive_layer VARCHAR(32) NOT NULL,        -- AXIOM, GROUND_TRUTH, OPINION, SIGNAL
+    category_path VARCHAR(128) NOT NULL,        -- 例: GROUND_TRUTH.PERIODIC.STOCK_ANNUAL
+    stock_codes TEXT[] DEFAULT '{}',             -- 关联股票代码: ['300750']
+    fund_codes TEXT[] DEFAULT '{}',              -- 关联基金代码: ['005827']
+    metadata JSONB DEFAULT '{}'::jsonb,          -- 表格标记 has_table, 流程图 mermaid 等
+    tsv_content tsvector,                        -- 全文检索向量
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 建立复合索引
 CREATE INDEX IF NOT EXISTS idx_chunks_doc_id ON knowledge_chunks(document_id);
+CREATE INDEX IF NOT EXISTS idx_chunks_category ON knowledge_chunks(category_path);
+CREATE INDEX IF NOT EXISTS idx_chunks_stocks ON knowledge_chunks USING GIN(stock_codes);
+CREATE INDEX IF NOT EXISTS idx_chunks_funds ON knowledge_chunks USING GIN(fund_codes);
 CREATE INDEX IF NOT EXISTS idx_chunks_metadata ON knowledge_chunks USING GIN(metadata);
 CREATE INDEX IF NOT EXISTS idx_chunks_tsv ON knowledge_chunks USING GIN(tsv_content);
 

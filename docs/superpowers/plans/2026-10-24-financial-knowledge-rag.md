@@ -150,9 +150,10 @@ pytest tests/unit/test_models.py -v
 - [ ] **Step 3: 实现 `app/api/models.py` 完整 Pydantic 模型**
 
 包含：
-- `FilterParams`: `stock_codes`, `doc_types`, `institutions`, `publish_date_start`, `publish_date_end`；
+- `CognitiveLayer`: `AXIOM`, `GROUND_TRUTH`, `OPINION`, `SIGNAL`；
+- `FilterParams`: `stock_codes`, `fund_codes`, `cognitive_layers`, `category_paths`, `doc_types`, `institutions`, `publish_date_start`, `publish_date_end`；
 - `RetrieveRequest`: `query`, `top_k`, `score_threshold`, `filters`, `rerank_strategy`, `explain`；
-- `ChunkDTO`: `chunk_id`, `document_id`, `document_title`, `institution`, `publish_date`, `page_number`, `section_title`, `content`, `score`, `recall_sources`, `has_table`, `metadata`；
+- `ChunkDTO`: `chunk_id`, `document_id`, `document_title`, `cognitive_layer`, `category_path`, `institution`, `publish_date`, `page_number`, `section_title`, `content`, `score`, `recall_sources`, `has_table`, `metadata`；
 - `DiagnosticsDTO`: `latency_breakdown_ms`, `recall_funnel`, `candidate_rank_shift`, `warnings`；
 - `RetrieveResponse`: `query`, `total_candidates`, `chunks`, `diagnostics`。
 
@@ -172,7 +173,7 @@ git commit -m "feat(rag): add domain DTO models and request response schemas"
 
 ---
 
-### Task 3: 多格式文档解析器与表格感知切块器实现 (Excel/Word/MD/PDF)
+### Task 3: 多格式文档解析器、表格感知切块器与目录批量摄取脚本 (Excel/Word/MD/PDF)
 
 **Files:**
 - Create: `financial-knowledge-rag/app/ingest/__init__.py`
@@ -182,6 +183,7 @@ git commit -m "feat(rag): add domain DTO models and request response schemas"
 - Create: `financial-knowledge-rag/app/ingest/markdown_parser.py`
 - Create: `financial-knowledge-rag/app/ingest/pdf_parser.py`
 - Create: `financial-knowledge-rag/app/ingest/parser_registry.py`
+- Create: `financial-knowledge-rag/scripts/ingest_folder.py`
 - Test: `financial-knowledge-rag/tests/unit/test_parsers.py`
 
 **Interfaces:**
