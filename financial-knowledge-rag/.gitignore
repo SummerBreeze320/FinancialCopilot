@@ -6,3 +6,4 @@ data/uploads/*
 !data/uploads/.gitkeep
 data/samples/*
 !data/samples/.gitkeep
+!data/samples/*.md
