@@ -4,6 +4,13 @@
 """
 
 from app.retrieval.embedding_client import EmbeddingClient
+from app.retrieval.hybrid_retriever import HybridRetriever
 from app.retrieval.pgvector_store import PgVectorStore
+from app.retrieval.reranker import NeuralReranker
 
-__all__ = ["EmbeddingClient", "PgVectorStore"]
+__all__ = [
+    "EmbeddingClient",
+    "PgVectorStore",
+    "HybridRetriever",
+    "NeuralReranker",
+]
