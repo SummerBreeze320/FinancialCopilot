@@ -1,5 +1,7 @@
 package com.financial.copilot.data.execution.po;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +30,7 @@ public class NodeAttemptPO {
     /**
      * 运行唯一标识 UUID
      */
+    @TableId(value = "run_id", type = IdType.INPUT)
     private UUID runId;
 
     /**

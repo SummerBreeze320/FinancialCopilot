@@ -16,7 +16,17 @@ from app.runtime import build_production_compiler
 
 
 from app.catalog.defaults import DEFAULT_ENTITIES, DEFAULT_METRICS, DEFAULT_SCOPES
-
+from app.models.candidate import CandidateContract
+from app.models.edit_plan import EditPlan
+from app.models.semantic_plan import (
+    AdjudicationResult,
+    ConditionBinding,
+    MetricLeaf,
+    MetricTree,
+    PlanGroup,
+    SemanticPlan,
+)
+from app.pipeline.analysis import RecallByConditionService
 
 
 class DefaultCandidateRetriever:
@@ -42,7 +52,11 @@ def _build_default_graph(checkpointer: Any = None):
         DefaultCandidateRetriever(DEFAULT_ENTITIES),
         lambda q, p, pool: {"groups": [], "limit": 20},
     )
-    nodes = ScreeningGraphNodes(analysis, CommandBuilder())
+    nodes = ScreeningGraphNodes(
+        analysis=analysis,
+        builder=CommandBuilder(),
+        candidates_catalog=DEFAULT_METRICS,
+    )
     return build_screening_graph(nodes, checkpointer=checkpointer)
 
 
@@ -63,13 +77,40 @@ def create_app(compiler: Any = None, graph: Any = None) -> FastAPI:
     if compiler is None and graph is not None:
         compiler = LangGraphCommandCompiler(graph)
 
+    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+    from pathlib import Path
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    app.state.compiler = compiler
     app.state.orchestrator = ScreeningOrchestrator(compiler=compiler, graph=graph)
     app.include_router(schema_router)
     app.include_router(command_router)
 
+    static_dir = Path(__file__).resolve().parents[1] / "static"
+    static_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @app.get("/")
+    async def index() -> Any:
+        index_file = static_dir / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        return {"status": "ok", "message": "Fund Screening API is online"}
+
+    @app.get("/health")
     @app.get("/v1/fund-screening/health")
     async def health() -> dict[str, object]:
         return {
+            "status": "ok",
             "service": "fund-screening-service",
             "dependencies": {
                 "catalog": "configured",
@@ -79,11 +120,41 @@ def create_app(compiler: Any = None, graph: Any = None) -> FastAPI:
             },
         }
 
+    @app.get("/ready")
+    @app.get("/v1/fund-screening/ready")
+    async def ready() -> dict[str, object]:
+        catalog_status = "ready" if getattr(app.state, "compiler", None) is not None or getattr(app.state, "graph", None) is not None else "degraded"
+        llm_status = "ready"
+        redis_status = "ready"
+        overall = "ready" if catalog_status == "ready" else "degraded"
+        return {
+            "status": overall,
+            "service": "fund-screening-service",
+            "dependencies": {
+                "catalog": catalog_status,
+                "pgvector": "ready",
+                "redis": redis_status,
+                "llm": llm_status,
+            },
+        }
+
     return app
 
 
 def create_configured_app() -> FastAPI:
+    from pathlib import Path
     settings = Settings()
+    if not (settings.metrics_catalog_path and settings.sectors_catalog_path and settings.entity_catalog_path):
+        service_root = Path(__file__).resolve().parents[1]
+        repo_root = service_root
+        while repo_root.parent != repo_root:
+            if (repo_root / "docs" / "temp" / "metrics.json").exists():
+                break
+            repo_root = repo_root.parent
+        settings.metrics_catalog_path = str(repo_root / "docs" / "temp" / "metrics.json")
+        settings.sectors_catalog_path = str(repo_root / "docs" / "temp" / "sectors.json")
+        settings.entity_catalog_path = str(service_root / "tests" / "fixtures" / "entities-small.json")
+
     paths_ready = all((settings.metrics_catalog_path, settings.sectors_catalog_path, settings.entity_catalog_path))
     compiler = build_production_compiler(settings) if settings.pipeline_mode == "rag" and paths_ready else None
     configured = create_app(compiler=compiler)

@@ -26,6 +26,18 @@ public class LlmCapacityLimiter {
         this.semaphore = new Semaphore(maxConcurrency, true);
     }
 
+    public Permit acquire() {
+        try {
+            semaphore.acquire();
+            int active = currentConcurrency.incrementAndGet();
+            maxObserved.updateAndGet(cur -> Math.max(cur, active));
+            return new Permit();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while acquiring LLM capacity permit", e);
+        }
+    }
+
     public Mono<Permit> acquireReactive() {
         return Mono.fromCallable(() -> {
             semaphore.acquire();

@@ -19,9 +19,9 @@
         <module>copilot-math-core</module>
         <module>copilot-data-engine</module>
         <module>copilot-agent-tools</module>
+        <module>copilot-llm-gateway</module>
         <module>copilot-agent-core</module>
         <module>copilot-app</module>
-        <module>copilot-mcp-service</module>
     </modules>
 
     <properties>
@@ -30,6 +30,8 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>3.3.3</spring-boot.version>
+        <spring-ai.version>1.1.2</spring-ai.version>
+        <spring-ai-alibaba.version>1.1.2.2</spring-ai-alibaba.version>
         <agentscope.version>2.0.0</agentscope.version>
         <postgresql.version>42.7.4</postgresql.version>
         <pgvector.version>0.1.6</pgvector.version>
@@ -49,6 +51,36 @@
                 <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <!-- Spring AI BOM -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Spring AI Alibaba BOM -->
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-bom</artifactId>
+                <version>${spring-ai-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+                <version>${spring-ai-alibaba.version}</version>
+            </dependency>
+
+            <!-- OpenAI Java Core -->
+            <dependency>
+                <groupId>com.openai</groupId>
+                <artifactId>openai-java-core</artifactId>
+                <version>4.39.1</version>
             </dependency>
 
             <!-- MyBatis-Plus Spring Boot 3 Starter -->
@@ -91,7 +123,7 @@
             </dependency>
             <dependency>
                 <groupId>com.financial.copilot</groupId>
-                <artifactId>copilot-mcp-service</artifactId>
+                <artifactId>copilot-llm-gateway</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -101,6 +133,7 @@
                 <artifactId>agentscope</artifactId>
                 <version>${agentscope.version}</version>
             </dependency>
+
 
             <!-- PGVector -->
             <dependency>

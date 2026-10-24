@@ -2,13 +2,10 @@ package com.financial.copilot.controller;
 
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
 import com.financial.copilot.agent.core.platform.conversation.ConversationService;
-import com.financial.copilot.agent.core.infra.dag.artifact.Artifact;
-import com.financial.copilot.agent.core.infra.dag.artifact.ArtifactType;
-import com.financial.copilot.agent.core.infra.dag.artifact.payload.FinalSynthesisReport;
-import com.financial.copilot.agent.core.infra.dag.model.ExecutionGraph;
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunHandle;
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunRequest;
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunResult;
+import com.financial.copilot.agent.core.infra.runtime.ExecutionIdentity;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunHandle;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunResult;
 import com.financial.copilot.agent.core.infra.security.UserPrincipal;
 import com.financial.copilot.agent.core.platform.user.service.UserService;
 import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
@@ -66,16 +63,24 @@ class ResearchAgentControllerTest {
                 .thenAnswer(call -> new ConversationContextSnapshot(
                         List.of(), call.getArgument(4), call.getArgument(3), Instant.now()));
         when(workflow.run(any())).thenAnswer(call -> {
-            GraphRunRequest request = call.getArgument(0);
+            ResearchRunRequest request = call.getArgument(0);
             if (request == null) return null;
-            var graph = new ExecutionGraph("g");
-            Artifact<?> report = Artifact.of("r", ArtifactType.FINAL_REPORT, "s",
-                    FinalSynthesisReport.of("summary", "# report"));
-            var result = new GraphRunResult(request.runId(), graph, Map.of(), Map.of("s", report),
-                    Instant.now(), Instant.now());
-            return new GraphRunHandle(request.runId(),
-                    Flux.just(ResearchStreamEvent.runCompleted(request.runId(), "SUCCEEDED", 1L)),
-                    CompletableFuture.completedFuture(result), ignored -> {});
+            var result = new ResearchRunResult(
+                    request.workflowRunId(),
+                    request.identity(),
+                    "# report",
+                    "SUCCEEDED",
+                    List.of(),
+                    Instant.now(),
+                    Instant.now()
+            );
+            return ResearchRunHandle.of(
+                    request.workflowRunId(),
+                    request.identity(),
+                    Flux.just(ResearchStreamEvent.runCompleted(request.workflowRunId(), "SUCCEEDED", 1L)),
+                    CompletableFuture.completedFuture(result),
+                    ignored -> {}
+            );
         });
     }
 
@@ -133,15 +138,15 @@ class ResearchAgentControllerTest {
     @Test
     void workflowReceivesImmutableIdentityAndSnapshot() {
         controller.run(request()).contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth)).block();
-        ArgumentCaptor<GraphRunRequest> captor = ArgumentCaptor.forClass(GraphRunRequest.class);
+        ArgumentCaptor<com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest> captor =
+                ArgumentCaptor.forClass(com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest.class);
         verify(workflow).run(captor.capture());
-        GraphRunRequest captured = captor.getValue();
+        var captured = captor.getValue();
         assertThat(captured.identity()).isNotNull();
         assertThat(captured.identity().userId()).isEqualTo(7L);
         assertThat(captured.identity().conversationId()).isEqualTo(conversationId);
-        assertThat(captured.identity().tenantId()).isEqualTo("DEFAULT");
-        assertThat(captured.snapshot()).isNotNull();
-        assertThat(captured.snapshot().currentPrompt()).isEqualTo("分析基金");
+        assertThat(captured.identity().tenantId()).isEqualTo(1L);
+        assertThat(captured.prompt()).isEqualTo("分析基金");
     }
 
     @Test
@@ -188,20 +193,20 @@ class ResearchAgentControllerTest {
 
     @Test
     void queuedSseEmitsQueueLifecycleEvents() {
-        var graph = new ExecutionGraph("g");
-        Artifact<?> report = Artifact.of("r", ArtifactType.FINAL_REPORT, "s",
-                FinalSynthesisReport.of("summary", "# report"));
-        var result = new GraphRunResult(conversationId.toString(), graph, Map.of(), Map.of("s", report),
-                Instant.now(), Instant.now());
+        var identity = new ExecutionIdentity(1L, 7L, conversationId);
+        var result = new ResearchRunResult(
+                conversationId.toString(), identity, "# report", "SUCCEEDED", List.of(),
+                Instant.now(), Instant.now()
+        );
 
         doAnswer(call -> {
-            GraphRunRequest req = call.getArgument(0);
-            return new GraphRunHandle(req.runId(),
+            com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest req = call.getArgument(0);
+            return ResearchRunHandle.of(req.workflowRunId(), identity,
                     Flux.just(
-                            ResearchStreamEvent.runQueued(req.runId(), conversationId.toString(), "QUEUED_CONVERSATION", 1),
-                            ResearchStreamEvent.runAdmitted(req.runId(), conversationId.toString()),
-                            ResearchStreamEvent.runStarted(req.runId(), conversationId.toString()),
-                            ResearchStreamEvent.runCompleted(req.runId(), "SUCCEEDED", 100L)
+                            ResearchStreamEvent.runQueued(req.workflowRunId(), conversationId.toString(), "QUEUED_CONVERSATION", 1),
+                            ResearchStreamEvent.runAdmitted(req.workflowRunId(), conversationId.toString()),
+                            ResearchStreamEvent.runStarted(req.workflowRunId(), conversationId.toString()),
+                            ResearchStreamEvent.runCompleted(req.workflowRunId(), "SUCCEEDED", 100L)
                     ),
                     CompletableFuture.completedFuture(result),
                     ignored -> {});
@@ -222,9 +227,10 @@ class ResearchAgentControllerTest {
     @Test
     void sseCancellationCancelsHandle() {
         java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean(false);
+        var identity = new ExecutionIdentity(1L, 7L, conversationId);
         doAnswer(call -> {
-            GraphRunRequest req = call.getArgument(0);
-            return new GraphRunHandle(req.runId(),
+            com.financial.copilot.agent.core.infra.runtime.ResearchRunRequest req = call.getArgument(0);
+            return ResearchRunHandle.of(req.workflowRunId(), identity,
                     Flux.never(),
                     new CompletableFuture<>(),
                     reason -> cancelled.set(true));
@@ -240,11 +246,11 @@ class ResearchAgentControllerTest {
 
     @Test
     void healthCheckReturnsCapacityDetails() {
-        com.financial.copilot.agent.core.infra.dag.scheduler.RunAdmissionController admission = mock(com.financial.copilot.agent.core.infra.dag.scheduler.RunAdmissionController.class);
+        com.financial.copilot.agent.core.infra.admission.ConversationAdmissionController admission = mock(com.financial.copilot.agent.core.infra.admission.ConversationAdmissionController.class);
         when(admission.getActiveRunCount()).thenReturn(3);
-        when(admission.getQueuedRunCount()).thenReturn(5);
-        when(admission.properties()).thenReturn(com.financial.copilot.agent.core.infra.dag.scheduler.RuntimeCapacityProperties.builder()
-                .maxActiveRuns(10)
+        when(admission.getQueuedRunCount()).thenReturn(0);
+        when(admission.properties()).thenReturn(com.financial.copilot.agent.core.infra.admission.RuntimeCapacityProperties.builder()
+                .maxActiveRunsGlobal(10)
                 .maxQueuedRuns(20)
                 .maxLlmConcurrency(8)
                 .build());
@@ -256,7 +262,7 @@ class ResearchAgentControllerTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> capacity = (Map<String, Object>) response.getData().get("capacity");
         assertThat(capacity).containsEntry("activeRuns", 3);
-        assertThat(capacity).containsEntry("queuedRuns", 5);
+        assertThat(capacity).containsEntry("queuedRuns", 0);
         assertThat(capacity).containsEntry("maxActiveRuns", 10);
         assertThat(capacity).containsEntry("maxQueuedRuns", 20);
         assertThat(capacity).containsEntry("maxLlmConcurrency", 8);

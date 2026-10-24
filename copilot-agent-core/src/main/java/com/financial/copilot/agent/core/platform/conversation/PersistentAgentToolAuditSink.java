@@ -1,5 +1,7 @@
 package com.financial.copilot.agent.core.platform.conversation;
-import com.financial.copilot.agent.core.infra.agentscope.*;
+
+import com.financial.copilot.agent.core.infra.tool.AgentToolAuditSink;
+import com.financial.copilot.agent.core.infra.tool.ToolAuditEvent;
 import com.financial.copilot.domain.platform.conversation.entity.AgentToolAudit;
 import com.financial.copilot.domain.platform.conversation.model.ToolAuditStatus;
 import com.financial.copilot.domain.platform.conversation.port.AgentToolAuditPort;

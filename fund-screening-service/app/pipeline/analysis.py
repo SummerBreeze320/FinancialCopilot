@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 import inspect
+from typing import Any
 
 from app.models.candidate import CandidateContract
 
@@ -69,3 +72,83 @@ class AnalysisService:
             for domain in plan.domains:
                 results.extend(await self._retrievers[domain].search(query, 10))
         return CandidatePool(list({(item.domain, item.key): item for item in results}.values()))
+
+
+class RecallByConditionService:
+    """依据 SemanticPlan 中每个 condition 的领域分发召回，并生成 byCondition 约束与 contractIndex。"""
+
+    def __init__(self, metric_retriever: Any, scope_retriever: Any, entity_retriever: Any) -> None:
+        self._retrievers = {
+            "metric": metric_retriever,
+            "scope": scope_retriever,
+            "entity": entity_retriever,
+        }
+
+    async def recall(
+        self, plan: Any, target_condition_ids: list[str] | None = None
+    ) -> tuple[dict[str, Any], dict[str, CandidateContract]]:
+        by_condition: dict[str, Any] = {}
+        contract_index: dict[str, CandidateContract] = {}
+
+        # 辅助递归提取叶子
+        def extract_scope_leaves(tree: Any) -> list[Any]:
+            leaves = []
+            for child in getattr(tree, "children", []):
+                if hasattr(child, "domain") and getattr(child, "domain") == "scope":
+                    leaves.append(child)
+                elif hasattr(child, "children"):
+                    leaves.extend(extract_scope_leaves(child))
+            return leaves
+
+        def extract_metric_leaves(tree: Any) -> list[Any]:
+            leaves = []
+            for child in getattr(tree, "children", []):
+                if hasattr(child, "domain") and getattr(child, "domain") in ("metric", "entity"):
+                    leaves.append(child)
+                elif hasattr(child, "children"):
+                    leaves.extend(extract_metric_leaves(child))
+            return leaves
+
+        all_leaves = []
+        for group in getattr(plan, "groups", []):
+            if hasattr(group, "scope_tree"):
+                all_leaves.extend(extract_scope_leaves(group.scope_tree))
+            if hasattr(group, "metric_tree"):
+                all_leaves.extend(extract_metric_leaves(group.metric_tree))
+
+        if target_condition_ids is not None:
+            target_set = set(target_condition_ids)
+            all_leaves = [
+                leaf for leaf in all_leaves
+                if (getattr(leaf, "condition_id", None) or getattr(leaf, "conditionId", None)) in target_set
+            ]
+
+        for leaf in all_leaves:
+            cid = getattr(leaf, "condition_id", None) or getattr(leaf, "conditionId", None)
+            mention = getattr(leaf, "mention", "")
+            domain = getattr(leaf, "domain", "metric")
+
+            retriever = self._retrievers.get(domain) or self._retrievers["metric"]
+            raw_candidates = await retriever.search(mention, 10)
+            from app.retrieval.candidate_ranker import rank_candidates
+            candidates = rank_candidates(mention, raw_candidates)
+
+            by_condition[cid] = {
+                "mention": mention,
+                "domain": domain,
+                "candidates": candidates,
+                "candidate_details": [
+                    {
+                        "key": c.key,
+                        "name": c.name,
+                        "raw_score": c.score,
+                        "rank": idx + 1,
+                        "default_priority": getattr(c, "default_priority", 0),
+                    }
+                    for idx, c in enumerate(candidates)
+                ],
+            }
+            for c in candidates:
+                contract_index[c.key] = c
+
+        return by_condition, contract_index

@@ -136,4 +136,20 @@ class DatabaseFundDataAdapterTest {
         assertTrue(metrics.getAnnualizedReturn().compareTo(BigDecimal.ZERO) > 0);
         assertTrue(metrics.getMaxDrawdown().compareTo(BigDecimal.ZERO) >= 0);
     }
+
+    @Test
+    @DisplayName("验证根据关键词模糊检索基金标的")
+    void testSearchFundsByCodeOrName() {
+        FundInfoPO fundPO = FundInfoPO.builder()
+                .fundCode("005827")
+                .fundName("易方达蓝筹精选混合")
+                .fundType("偏股混合型基金")
+                .build();
+        when(mockFundInfoMapper.selectList(any())).thenReturn(List.of(fundPO));
+
+        List<FundInfo> list = adapter.searchFunds("蓝筹", 5);
+        assertNotNull(list);
+        assertFalse(list.isEmpty());
+        assertEquals("005827", list.getFirst().getFundCode());
+    }
 }

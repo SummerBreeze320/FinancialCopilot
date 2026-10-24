@@ -1,6 +1,6 @@
 package com.financial.copilot.controller;
 
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunHandle;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunHandle;
 import com.financial.copilot.agent.core.infra.security.UserPrincipal;
 import com.financial.copilot.agent.core.infra.workflow.FinancialResearchWorkflow;
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
@@ -31,7 +31,7 @@ class ResearchRunControllerTest {
     @Test
     void foreignOrMissingRunReturnsNotFound() {
         FinancialResearchWorkflow workflow = mock(FinancialResearchWorkflow.class);
-        when(workflow.findCheckpoint(8L, "owned-by-7")).thenReturn(Optional.empty());
+        when(workflow.findRun(8L, "owned-by-7")).thenReturn(Optional.empty());
         ResearchRunController controller = new ResearchRunController(workflow, mock(WalletBillingService.class),
                 mock(ConversationService.class));
         var auth = new UsernamePasswordAuthenticationToken(UserPrincipal.builder().userId(8L).build(), null, List.of());
@@ -68,8 +68,8 @@ class ResearchRunControllerTest {
                 .thenReturn(Optional.of(mock(com.financial.copilot.domain.platform.conversation.entity.ConversationRun.class)));
         when(workflow.findRun(eq(8L), eq(runId.toString()))).thenReturn(Optional.empty());
 
-        ResearchRunEvent event1 = new ResearchRunEvent(runId, 8L, 1L, "node_started", "{\"type\":\"node_started\"}", Instant.now());
-        ResearchRunEvent event2 = new ResearchRunEvent(runId, 8L, 2L, "node_completed", "{\"type\":\"node_completed\"}", Instant.now());
+        ResearchRunEvent event1 = new ResearchRunEvent(runId, 8L, 1L, "subagent_started", "{\"type\":\"subagent_started\"}", Instant.now());
+        ResearchRunEvent event2 = new ResearchRunEvent(runId, 8L, 2L, "subagent_completed", "{\"type\":\"subagent_completed\"}", Instant.now());
         when(executionPort.getEventsAfter(8L, runId, 0L)).thenReturn(List.of(event1, event2));
 
         ResearchRunController controller = new ResearchRunController(workflow, mock(WalletBillingService.class),
@@ -96,12 +96,12 @@ class ResearchRunControllerTest {
         when(conversationService.findRun(eq(8L), eq(runId)))
                 .thenReturn(Optional.of(mock(com.financial.copilot.domain.platform.conversation.entity.ConversationRun.class)));
 
-        ResearchRunEvent persisted1 = new ResearchRunEvent(runId, 8L, 1L, "node_started", "{\"type\":\"node_started\"}", Instant.now());
+        ResearchRunEvent persisted1 = new ResearchRunEvent(runId, 8L, 1L, "subagent_started", "{\"type\":\"subagent_started\"}", Instant.now());
         when(executionPort.getEventsAfter(8L, runId, 0L)).thenReturn(List.of(persisted1));
 
-        GraphRunHandle activeHandle = mock(GraphRunHandle.class);
-        ResearchStreamEvent liveDup = ResearchStreamEvent.builder().type("node_started").sequenceNo(1L).build();
-        ResearchStreamEvent liveNew = ResearchStreamEvent.builder().type("node_completed").sequenceNo(2L).build();
+        ResearchRunHandle activeHandle = mock(ResearchRunHandle.class);
+        ResearchStreamEvent liveDup = ResearchStreamEvent.builder().type("subagent_started").sequenceNo(1L).build();
+        ResearchStreamEvent liveNew = ResearchStreamEvent.builder().type("subagent_completed").sequenceNo(2L).build();
         when(activeHandle.events()).thenReturn(reactor.core.publisher.Flux.just(liveDup, liveNew));
         when(workflow.findRun(eq(8L), eq(runId.toString()))).thenReturn(Optional.of(activeHandle));
 

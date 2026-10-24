@@ -1,14 +1,14 @@
 package com.financial.copilot.controller.admin;
 
-import com.financial.copilot.agent.core.infra.llm.config.LlmConfigManager;
-import com.financial.copilot.agent.core.infra.llm.config.LlmProperties;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmConnectionTestRequest;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmConnectionTestResult;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmSettingsDTO;
-import com.financial.copilot.agent.core.infra.llm.provider.LlmProviderMetadata;
-import com.financial.copilot.agent.core.infra.llm.provider.LlmProviderRegistry;
-import com.financial.copilot.agent.core.infra.llm.provider.LlmProviderType;
-import com.financial.copilot.agent.core.infra.llm.service.LlmService;
+import com.financial.copilot.gateway.config.LlmConfigManager;
+import com.financial.copilot.gateway.config.LlmProperties;
+import com.financial.copilot.gateway.model.LlmConnectionTestRequest;
+import com.financial.copilot.gateway.model.LlmConnectionTestResult;
+import com.financial.copilot.gateway.model.LlmSettingsDTO;
+import com.financial.copilot.gateway.catalog.LlmProviderMetadata;
+import com.financial.copilot.gateway.catalog.LlmProviderRegistry;
+import com.financial.copilot.gateway.catalog.LlmProviderType;
+import com.financial.copilot.gateway.service.LlmService;
 import com.financial.copilot.common.result.ApiResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

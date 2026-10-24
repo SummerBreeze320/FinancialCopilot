@@ -1,6 +1,6 @@
 package com.financial.copilot.agent.core.infra.prompt;
 
-import com.financial.copilot.agent.core.infra.llm.dto.LlmRequest;
+import com.financial.copilot.gateway.model.LlmRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -47,62 +47,44 @@ class RTCFPromptSpecTest {
     }
 
     @Test
-    @DisplayName("测试 FundComparatorPrompt RTCF 规范与静态前缀对齐")
-    void testFundComparatorPrompt() {
-        String sysPrompt = FundComparatorPrompt.SYSTEM_PROMPT;
-        assertTrue(sysPrompt.contains("FundComparatorAgent"));
-        assertTrue(sysPrompt.contains("【对称对标原则】"));
-        assertTrue(sysPrompt.contains("【Tool-as-Truth】"));
-
-        RTCFPromptSpec spec = FundComparatorPrompt.buildSpec(
-                "对比这两只医疗基金", List.of("003095.OF", "005827.OF"), null);
-        String userPrompt = spec.renderUserPrompt();
-
-        assertTrue(userPrompt.contains("【当前任务 (Task)】"));
-        assertTrue(userPrompt.contains("003095.OF"));
-        assertTrue(userPrompt.contains("### [USER GOAL]"));
-        assertTrue(userPrompt.contains("对比这两只医疗基金"));
-        assertTrue(userPrompt.contains("### [TARGET CODES]"));
-        assertTrue(userPrompt.contains("【输出格式与约束 (Format)】"));
+    @DisplayName("测试 SupervisorPrompts RTCF 规范与静态系统提示词前缀")
+    void testSupervisorPrompts() {
+        String sysPrompt = SupervisorPrompts.SYSTEM_PROMPT;
+        assertTrue(sysPrompt.contains("research_supervisor"));
+        assertTrue(sysPrompt.contains("【精准分工委派】"));
+        assertTrue(sysPrompt.contains("【Tool-as-Truth 客观事实】"));
+        assertTrue(sysPrompt.contains("【风控合规前置】"));
+        assertTrue(sysPrompt.contains("【复杂研报合成】"));
     }
 
     @Test
-    @DisplayName("测试 ReportSynthesizerPrompt RTCF 规范与静态前缀对齐")
-    void testReportSynthesizerPrompt() {
-        String sysPrompt = ReportSynthesizerPrompt.SYSTEM_PROMPT;
-        assertTrue(sysPrompt.contains("ReportSynthesizerAgent"));
-        assertTrue(sysPrompt.contains("【证据强闭环约束】"));
-        assertTrue(sysPrompt.contains("read_research_artifacts"));
+    @DisplayName("测试 SubagentPrompts 5大专业子智能体系统提示词渲染")
+    void testSubagentPrompts() {
+        // 1. 基金智能体
+        String fundPrompt = SubagentPrompts.FUND_AGENT_SYSTEM_PROMPT;
+        assertTrue(fundPrompt.contains("fund_research_agent"));
+        assertTrue(fundPrompt.contains("Tool-as-Truth"));
 
-        RTCFPromptSpec spec = ReportSynthesizerPrompt.buildSpec("生成终审报告", null);
-        String userPrompt = spec.renderUserPrompt();
+        // 2. 股票智能体
+        String stockPrompt = SubagentPrompts.STOCK_AGENT_SYSTEM_PROMPT;
+        assertTrue(stockPrompt.contains("stock_research_agent"));
+        assertTrue(stockPrompt.contains("真实财报锚定"));
 
-        assertTrue(userPrompt.contains("【当前任务 (Task)】"));
-        assertTrue(userPrompt.contains("### [USER GOAL]"));
-        assertTrue(userPrompt.contains("生成终审报告"));
-        assertTrue(userPrompt.contains("【输出格式与约束 (Format)】"));
-    }
+        // 3. 市场智能体
+        String marketPrompt = SubagentPrompts.MARKET_AGENT_SYSTEM_PROMPT;
+        assertTrue(marketPrompt.contains("market_research_agent"));
+        assertTrue(marketPrompt.contains("权威指标释义"));
 
-    @Test
-    @DisplayName("测试 GraphPlannerPrompt RTCF 规范与静态前缀对齐")
-    void testGraphPlannerPrompt() {
-        String planSys = GraphPlannerPrompt.PLAN_SYSTEM_PROMPT;
-        assertTrue(planSys.contains("GraphPlannerAgent"));
-        assertTrue(planSys.contains("【能力按需发现】"));
-        assertTrue(planSys.contains("【拓扑无环契约】"));
+        // 4. 风控审查智能体
+        String riskPrompt = SubagentPrompts.RISK_REVIEW_SYSTEM_PROMPT;
+        assertTrue(riskPrompt.contains("risk_review_agent"));
+        assertTrue(riskPrompt.contains("只读证据链核验"));
+        assertTrue(riskPrompt.contains("适格性穿透审查"));
 
-        String patchSys = GraphPlannerPrompt.PATCH_SYSTEM_PROMPT;
-        assertTrue(patchSys.contains("GraphPatchAgent"));
-        assertTrue(patchSys.contains("NO_PATCH"));
-
-        RTCFPromptSpec planSpec = GraphPlannerPrompt.buildPlanSpec("筛选消费基金", "sess-123", null);
-        String userPrompt = planSpec.renderUserPrompt();
-
-        assertTrue(userPrompt.contains("【当前任务 (Task)】"));
-        assertTrue(userPrompt.contains("### [USER GOAL]"));
-        assertTrue(userPrompt.contains("筛选消费基金"));
-        assertTrue(userPrompt.contains("### [SESSION KEY]"));
-        assertTrue(userPrompt.contains("sess-123"));
-        assertTrue(userPrompt.contains("GraphPlan"));
+        // 5. 研报合成智能体
+        String reportPrompt = SubagentPrompts.REPORT_AGENT_SYSTEM_PROMPT;
+        assertTrue(reportPrompt.contains("report_agent"));
+        assertTrue(reportPrompt.contains("全量证据闭环"));
+        assertTrue(reportPrompt.contains("机构级研报架构"));
     }
 }

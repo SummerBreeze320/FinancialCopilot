@@ -1,309 +1,260 @@
 package com.financial.copilot.agent.core.infra.workflow;
 
-import com.financial.copilot.agent.core.business.agents.*;
-import com.financial.copilot.agent.core.infra.dag.artifact.*;
-import com.financial.copilot.agent.core.infra.dag.guard.*;
-import com.financial.copilot.agent.core.infra.dag.model.*;
-import com.financial.copilot.agent.core.infra.dag.planner.*;
-import com.financial.copilot.agent.core.infra.dag.runtime.*;
-import com.financial.copilot.agent.core.infra.dag.runtime.checkpoint.*;
-import com.financial.copilot.agent.core.infra.dag.runtime.resource.ResourceManager;
-import com.financial.copilot.agent.core.infra.dag.scheduler.GlobalReadyScheduler;
-import com.financial.copilot.agent.core.infra.dag.scheduler.RunAdmissionController;
-import com.financial.copilot.agent.core.infra.observability.RuntimeMetrics;
-import com.financial.copilot.agent.core.infra.event.WorkflowFinishedEvent;
-import com.financial.copilot.agent.core.infra.llm.dto.LlmResponse;
-import com.financial.copilot.agent.core.infra.memory.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.financial.copilot.domain.platform.execution.entity.ResearchRunEvent;
-import com.financial.copilot.domain.platform.execution.port.ResearchExecutionPort;
-import com.financial.copilot.agent.core.infra.supervisor.SupervisorWorkflow;
+import com.financial.copilot.agent.core.infra.admission.ConversationAdmissionController;
+import com.financial.copilot.agent.core.infra.admission.RunAdmission;
+import com.financial.copilot.agent.core.infra.agent.ResearchSupervisor;
+import com.financial.copilot.agent.core.infra.context.ConversationContextSnapshot;
+import com.financial.copilot.agent.core.infra.context.ConversationContextSnapshotFactory;
+import com.financial.copilot.agent.core.infra.event.FrameworkEventBridge;
+import com.financial.copilot.agent.core.infra.guardrail.InputGuardrail;
+import com.financial.copilot.agent.core.infra.guardrail.OutputGuardrail;
+import com.financial.copilot.agent.core.infra.runtime.*;
+import com.financial.copilot.agent.core.infra.thread.VirtualThreadSchedulers;
+import com.financial.copilot.common.event.ResearchStreamEvent;
+import com.financial.copilot.common.intent.IntentClassificationResult;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import jakarta.annotation.PreDestroy;
+import reactor.core.publisher.Sinks;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-/** Sole application entry for planning and executing financial research graphs. */
+/**
+ * <h1>金融投研多智能体工作流统一调度器 (FinancialResearchWorkflow)</h1>
+ * <p>
+ * 基于 Spring AI Alibaba 官方 Supervisor / Subagents 架构，
+ * 统一调度中心化总控智能体 (ResearchSupervisor) 与领域专业子智能体。
+ * 融合输入防注入护栏 (InputGuardrail) 与输出 PII 脱敏/免责护栏 (OutputGuardrail)，
+ * 屏蔽底层调度细节，对外暴露纯净的响应式流与异步句柄契约 (ResearchRunHandle)。
+ * </p>
+ *
+ * @author FinancialCopilot
+ */
 @Service
 public class FinancialResearchWorkflow {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final AgentNodeRouter agentRouter;
-    private final GraphPlannerAgent planner;
-    private final DagRuntime runtime;
-    private final GraphRunRegistry registry;
-    private final DagCheckpointStore checkpointStore;
-    private final RunAdmissionController admissionController;
-    private final ResearchExecutionPort executionPort;
-    private final RuntimeMetrics runtimeMetrics;
-    private final SupervisorWorkflow supervisorWorkflow;
-
-    public FinancialResearchWorkflow(
-            AgentNodeRouter agentRouter,
-            GraphPlannerAgent planner,
-            ResourceManager resources,
-            DagCheckpointStore checkpointStore,
-            NodeQualityGate qualityGate,
-            ReplanPolicy replanPolicy,
-            GraphRunRegistry registry) {
-        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, null, null, null, null, null, null);
-    }
-
-    public FinancialResearchWorkflow(
-            AgentNodeRouter agentRouter,
-            GraphPlannerAgent planner,
-            ResourceManager resources,
-            DagCheckpointStore checkpointStore,
-            NodeQualityGate qualityGate,
-            ReplanPolicy replanPolicy,
-            GraphRunRegistry registry,
-            GlobalReadyScheduler globalReadyScheduler,
-            RunAdmissionController admissionController,
-            ResearchExecutionPort executionPort) {
-        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, globalReadyScheduler, admissionController, executionPort, null, null, null);
-    }
-
-    public FinancialResearchWorkflow(
-            AgentNodeRouter agentRouter,
-            GraphPlannerAgent planner,
-            ResourceManager resources,
-            DagCheckpointStore checkpointStore,
-            NodeQualityGate qualityGate,
-            ReplanPolicy replanPolicy,
-            GraphRunRegistry registry,
-            GlobalReadyScheduler globalReadyScheduler,
-            RunAdmissionController admissionController,
-            ResearchExecutionPort executionPort,
-            RuntimeMetrics runtimeMetrics) {
-        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, globalReadyScheduler, admissionController, executionPort, runtimeMetrics, null, null);
-    }
-
-    public FinancialResearchWorkflow(
-            AgentNodeRouter agentRouter,
-            GraphPlannerAgent planner,
-            ResourceManager resources,
-            DagCheckpointStore checkpointStore,
-            NodeQualityGate qualityGate,
-            ReplanPolicy replanPolicy,
-            GraphRunRegistry registry,
-            GlobalReadyScheduler globalReadyScheduler,
-            RunAdmissionController admissionController,
-            ResearchExecutionPort executionPort,
-            RuntimeMetrics runtimeMetrics,
-            SupervisorWorkflow supervisorWorkflow) {
-        this(agentRouter, planner, resources, checkpointStore, qualityGate, replanPolicy, registry, globalReadyScheduler, admissionController, executionPort, runtimeMetrics, null, supervisorWorkflow);
-    }
+    private final ResearchSupervisor researchSupervisor;
+    private final ConversationAdmissionController admissionController;
+    private final SupervisorRunRegistry runRegistry;
+    private final FrameworkEventBridge eventBridge;
+    private final ConversationContextSnapshotFactory snapshotFactory;
+    private final InputGuardrail inputGuardrail;
+    private final OutputGuardrail outputGuardrail;
+    private final com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer;
 
     @Autowired
     public FinancialResearchWorkflow(
-            AgentNodeRouter agentRouter,
-            GraphPlannerAgent planner,
-            @Autowired(required = false) ResourceManager resources,
-            @Autowired(required = false) DagCheckpointStore checkpointStore,
-            @Autowired(required = false) NodeQualityGate qualityGate,
-            @Autowired(required = false) ReplanPolicy replanPolicy,
-            @Autowired(required = false) GraphRunRegistry registry,
-            @Autowired(required = false) GlobalReadyScheduler globalReadyScheduler,
-            @Autowired(required = false) RunAdmissionController admissionController,
-            @Autowired(required = false) ResearchExecutionPort executionPort,
-            @Autowired(required = false) RuntimeMetrics runtimeMetrics,
-            @Autowired(required = false) DagRuntime dagRuntime,
-            @Autowired(required = false) SupervisorWorkflow supervisorWorkflow) {
-        this.agentRouter = agentRouter;
-        this.planner = planner;
-        this.executionPort = executionPort;
-        this.registry = registry != null ? registry
-                : (executionPort == null ? new GraphRunRegistry() : new GraphRunRegistry(executionPort));
-        this.checkpointStore = checkpointStore == null ? new InMemoryDagCheckpointStore() : checkpointStore;
+            ResearchSupervisor researchSupervisor,
+            ConversationAdmissionController admissionController,
+            SupervisorRunRegistry runRegistry,
+            @Autowired(required = false) FrameworkEventBridge eventBridge,
+            @Autowired(required = false) ConversationContextSnapshotFactory snapshotFactory,
+            @Autowired(required = false) InputGuardrail inputGuardrail,
+            @Autowired(required = false) OutputGuardrail outputGuardrail,
+            @Autowired(required = false) com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer
+    ) {
+        this.researchSupervisor = Objects.requireNonNull(researchSupervisor, "researchSupervisor must not be null");
         this.admissionController = admissionController;
-        this.runtimeMetrics = runtimeMetrics;
-        if (dagRuntime != null) {
-            this.runtime = dagRuntime;
-        } else {
-            NodeExecutor dispatcher = this::dispatch;
-            this.runtime = new DagRuntime(dispatcher,
-                    resources == null ? ResourceManager.defaultManager() : resources,
-                    this.checkpointStore,
-                    qualityGate == null ? new DefaultNodeQualityGate() : qualityGate,
-                    replanPolicy == null ? ReplanPolicy.heuristic() : replanPolicy,
-                    planner,
-                    globalReadyScheduler,
-                    admissionController,
-                    executionPort);
-        }
-        this.supervisorWorkflow = supervisorWorkflow;
+        this.runRegistry = runRegistry != null ? runRegistry : new SupervisorRunRegistry();
+        this.eventBridge = eventBridge != null ? eventBridge : new FrameworkEventBridge();
+        this.snapshotFactory = snapshotFactory;
+        this.inputGuardrail = inputGuardrail;
+        this.outputGuardrail = outputGuardrail;
+        this.agentTracer = agentTracer;
     }
 
-    public RunAdmissionController getAdmissionController() {
-        return admissionController;
+    public FinancialResearchWorkflow(
+            ResearchSupervisor researchSupervisor,
+            ConversationAdmissionController admissionController,
+            SupervisorRunRegistry runRegistry,
+            FrameworkEventBridge eventBridge,
+            ConversationContextSnapshotFactory snapshotFactory,
+            InputGuardrail inputGuardrail,
+            OutputGuardrail outputGuardrail
+    ) {
+        this(researchSupervisor, admissionController, runRegistry, eventBridge, snapshotFactory, inputGuardrail, outputGuardrail, null);
     }
 
-    public SupervisorWorkflow getSupervisorWorkflow() {
-        return supervisorWorkflow;
+    public FinancialResearchWorkflow(
+            ResearchSupervisor researchSupervisor,
+            ConversationAdmissionController admissionController,
+            SupervisorRunRegistry runRegistry,
+            FrameworkEventBridge eventBridge
+    ) {
+        this(researchSupervisor, admissionController, runRegistry, eventBridge, null, null, null);
     }
 
-    public GraphRunHandle run(GraphRunRequest request) {
+    public FinancialResearchWorkflow(
+            ResearchSupervisor researchSupervisor,
+            ConversationAdmissionController admissionController,
+            SupervisorRunRegistry runRegistry,
+            FrameworkEventBridge eventBridge,
+            ConversationContextSnapshotFactory snapshotFactory
+    ) {
+        this(researchSupervisor, admissionController, runRegistry, eventBridge, snapshotFactory, null, null);
+    }
+
+    /**
+     * 核心投研运行入口，执行单写串行准入控制、事件流绑定与 Supervisor 异步调用。
+     */
+    public ResearchRunHandle run(ResearchRunRequest request) {
+        Objects.requireNonNull(request, "request cannot be null");
+        ExecutionIdentity identity = request.identity();
+
+        RunAdmission admission = null;
         if (admissionController != null) {
-            RunAdmissionController.AdmissionTicket ticket = admissionController.requestAdmission(
-                    request.tenantId(), request.userId(), request.conversationId(), request.runId());
-            if (ticket.decision() == com.financial.copilot.agent.core.infra.dag.scheduler.AdmissionDecision.REJECTED_SYSTEM_CAPACITY) {
-                throw new com.financial.copilot.common.exception.SystemCapacityExceededException("系统排队容量已达上限，请稍后重试");
-            }
-            if (ticket.decision() == com.financial.copilot.agent.core.infra.dag.scheduler.AdmissionDecision.REJECTED_USER_LIMIT) {
-                throw new com.financial.copilot.common.exception.UserLimitExceededException(request.userId(), "用户并发运行或排队已达上限，请稍后重试");
-            }
-            if (ticket.decision() == com.financial.copilot.agent.core.infra.dag.scheduler.AdmissionDecision.ADMITTED) {
-                GraphRunRequest effectiveRequest = request.resolveSnapshot();
-                ExecutionGraph graph = planner.plan(new GraphPlanningRequest(effectiveRequest.prompt(), effectiveRequest.sessionKey(),
-                        effectiveRequest.profile(), effectiveRequest.usageConsumer(), effectiveRequest.enableThinking(), effectiveRequest));
-                GraphRunHandle innerHandle = supervisorWorkflow != null
-                        ? supervisorWorkflow.runHandle(effectiveRequest, graph)
-                        : runtime.run(effectiveRequest, graph);
-                GraphRunHandle handle = registry.register(effectiveRequest.userId(), innerHandle);
-                return handle;
-            }
-            return handleQueuedRun(request, ticket);
+            admission = admissionController.acquire(identity);
         }
 
-        GraphRunRequest effectiveRequest = request.resolveSnapshot();
-        ExecutionGraph graph = planner.plan(new GraphPlanningRequest(effectiveRequest.prompt(), effectiveRequest.sessionKey(),
-                effectiveRequest.profile(), effectiveRequest.usageConsumer(), effectiveRequest.enableThinking(), effectiveRequest));
-        GraphRunHandle innerHandle = supervisorWorkflow != null
-                ? supervisorWorkflow.runHandle(effectiveRequest, graph)
-                : runtime.run(effectiveRequest, graph);
-        GraphRunHandle handle = registry.register(effectiveRequest.userId(), innerHandle);
-        return handle;
-    }
+        final RunAdmission finalAdmission = admission;
+        Sinks.Many<ResearchStreamEvent> eventSink = Sinks.many().unicast().onBackpressureBuffer();
+        CompletableFuture<ResearchRunResult> completion = new CompletableFuture<>();
+        AtomicBoolean cancelled = new AtomicBoolean(false);
 
-    private GraphRunHandle handleQueuedRun(GraphRunRequest request, RunAdmissionController.AdmissionTicket ticket) {
-        com.financial.copilot.agent.core.infra.dag.runtime.context.CancellationToken cancellationToken =
-                new com.financial.copilot.agent.core.infra.dag.runtime.context.CancellationToken(request.runId());
-        com.financial.copilot.agent.core.infra.dag.event.NodeEventBus eventBus =
-                new com.financial.copilot.agent.core.infra.dag.event.NodeEventBus(cancellationToken, event -> {
-                    if (executionPort != null && event != null) {
-                        try {
-                            UUID runUuid = UUID.fromString(request.runId());
-                            String payload = OBJECT_MAPPER.writeValueAsString(event);
-                            ResearchRunEvent persisted = executionPort.appendEvent(runUuid, request.userId(), event.getType(), payload, Instant.now());
-                            event.setSequenceNo(persisted.sequenceNo());
-                        } catch (Exception ex) {}
-                    }
-                });
-
-        // 1. 发射排队初始事件 (含排队位次)
-        eventBus.publishRunQueued(request.runId(), request.conversationId().toString(),
-                ticket.decision().name(), ticket.queuePosition());
-
-        CompletableFuture<GraphRunResult> completion = new CompletableFuture<>();
-        cancellationToken.onCancel(() -> {
-            if (admissionController != null) {
-                admissionController.cancelQueuedRun(request.runId());
-            }
-            completion.cancel(true);
-        });
-
-        // 2. 挂接异步准入监听
-        ticket.onAdmittedFuture().whenComplete((decision, error) -> {
-            if (error != null) {
-                eventBus.emit(com.financial.copilot.common.event.ResearchStreamEvent.runFailed(request.runId(), error.getMessage()));
-                eventBus.complete();
-                completion.completeExceptionally(error);
-                return;
-            }
-            if (cancellationToken.isCancelled()) {
-                if (admissionController != null) {
-                    admissionController.onRunCompleted(request.runId());
+        Consumer<String> cancelAction = reason -> {
+            if (cancelled.compareAndSet(false, true)) {
+                if (finalAdmission != null) {
+                    finalAdmission.close();
                 }
-                eventBus.emit(com.financial.copilot.common.event.ResearchStreamEvent.runCancelled(request.runId(), "Cancelled before execution"));
-                eventBus.complete();
+                if (runRegistry != null) {
+                    runRegistry.cancel(request.userId(), request.workflowRunId(), reason);
+                }
+                eventBridge.emitRunCancelled(eventSink, request.workflowRunId(), reason);
+                eventSink.tryEmitComplete();
                 completion.cancel(true);
-                return;
             }
+        };
 
-            // 准入通知
-            eventBus.publishRunAdmitted(request.runId(), request.conversationId().toString());
-            eventBus.publishRunStarted(request.runId(), request.conversationId().toString());
-
-            // 捕获最新上下文快照并规划图
-            GraphRunRequest activeRequest = request.resolveSnapshot();
-            try {
-                ExecutionGraph graph = planner.plan(new GraphPlanningRequest(
-                        activeRequest.prompt(), activeRequest.sessionKey(),
-                        activeRequest.profile(), activeRequest.usageConsumer(),
-                        activeRequest.enableThinking(), activeRequest));
-
-                GraphRunHandle innerHandle = supervisorWorkflow != null
-                        ? supervisorWorkflow.runHandle(activeRequest, graph)
-                        : runtime.run(activeRequest, graph);
-                innerHandle.events().subscribe(
-                        eventBus::emit,
-                        err -> {
-                            eventBus.error(err);
-                            completion.completeExceptionally(err);
-                        },
-                        eventBus::complete
-                );
-                innerHandle.completion().whenComplete((res, err) -> {
-                    if (err != null) {
-                        completion.completeExceptionally(err);
-                    } else {
-                        completion.complete(res);
-                    }
-                });
-            } catch (Throwable t) {
-                if (admissionController != null) {
-                    admissionController.onRunCompleted(activeRequest.runId());
-                }
-                eventBus.emit(com.financial.copilot.common.event.ResearchStreamEvent.runFailed(activeRequest.runId(), t.getMessage()));
-                eventBus.complete();
-                completion.completeExceptionally(t);
+        completion.whenComplete((res, err) -> {
+            if (finalAdmission != null) {
+                finalAdmission.close();
             }
         });
 
-        GraphRunHandle handle = new GraphRunHandle(request.runId(), eventBus.flux(), completion, cancellationToken::cancel);
-        registry.register(request.userId(), handle);
+        eventBridge.emitRunStarted(eventSink, request.workflowRunId(), request.conversationId().toString());
+
+        VirtualThreadSchedulers.executor().execute(() -> {
+            if (cancelled.get()) return;
+            Instant start = Instant.now();
+            io.micrometer.tracing.Span workflowSpan = agentTracer != null
+                    ? agentTracer.startWorkflowSpan(request.workflowRunId(), String.valueOf(request.userId()), request.prompt())
+                    : null;
+            Throwable workflowError = null;
+            try (com.financial.copilot.agent.core.infra.observability.AgentTracer.TraceScope traceScope = agentTracer != null ? agentTracer.withSpan(workflowSpan) : com.financial.copilot.agent.core.infra.observability.AgentTracer.noopScope()) {
+                if (inputGuardrail != null) {
+                    io.micrometer.tracing.Span inputGuardSpan = agentTracer != null
+                            ? agentTracer.startGuardrailSpan("INPUT", request.workflowRunId())
+                            : null;
+                    Throwable inputGuardErr = null;
+                    try (com.financial.copilot.agent.core.infra.observability.AgentTracer.TraceScope igScope = agentTracer != null ? agentTracer.withSpan(inputGuardSpan) : com.financial.copilot.agent.core.infra.observability.AgentTracer.noopScope()) {
+                        IntentClassificationResult audit = inputGuardrail.auditAndSanitize(request.prompt(), null);
+                        if (audit != null && audit.isOutOfDomain()) {
+                            String blockedMsg = audit.clarificationPrompt() != null ? audit.clarificationPrompt() : "输入包含违规敏感内容";
+                            ResearchRunResult rejected = new ResearchRunResult(
+                                    request.workflowRunId(), identity, blockedMsg, "REJECTED", List.of(), start, Instant.now()
+                            );
+                            eventBridge.emitContentChunk(eventSink, request.workflowRunId(), blockedMsg);
+                            eventBridge.emitRunFailed(eventSink, request.workflowRunId(), blockedMsg);
+                            eventSink.tryEmitComplete();
+                            completion.complete(rejected);
+                            return;
+                        }
+                    } catch (Throwable gt) {
+                        inputGuardErr = gt;
+                        throw gt;
+                    } finally {
+                        if (agentTracer != null) {
+                            agentTracer.endSpan(inputGuardSpan, inputGuardErr);
+                        }
+                    }
+                }
+
+                eventBridge.emitSupervisorThinking(eventSink, request.workflowRunId());
+
+                ConversationContextSnapshot snapshot = (snapshotFactory != null)
+                        ? snapshotFactory.create(identity, request.prompt())
+                        : ConversationContextSnapshot.of(List.of(), null, request.prompt(), "");
+
+                ResearchExecutionContext execCtx = ResearchExecutionContext.start(
+                        identity, request.workflowRunId(), "supervisor-root", snapshot
+                );
+
+                ResearchRunResult runResult = researchSupervisor.execute(execCtx, request.prompt());
+
+                if (cancelled.get()) return;
+
+                String reportText = runResult.finalReport();
+                if (outputGuardrail != null) {
+                    io.micrometer.tracing.Span outputGuardSpan = agentTracer != null
+                            ? agentTracer.startGuardrailSpan("OUTPUT", request.workflowRunId())
+                            : null;
+                    Throwable outputGuardErr = null;
+                    try (com.financial.copilot.agent.core.infra.observability.AgentTracer.TraceScope ogScope = agentTracer != null ? agentTracer.withSpan(outputGuardSpan) : com.financial.copilot.agent.core.infra.observability.AgentTracer.noopScope()) {
+                        reportText = outputGuardrail.sanitize(reportText);
+                        runResult = new ResearchRunResult(
+                                runResult.workflowRunId(),
+                                runResult.identity(),
+                                reportText,
+                                runResult.status(),
+                                runResult.evidenceIds(),
+                                runResult.startedAt(),
+                                runResult.completedAt()
+                        );
+                    } catch (Throwable ogt) {
+                        outputGuardErr = ogt;
+                        throw ogt;
+                    } finally {
+                        if (agentTracer != null) {
+                            agentTracer.endSpan(outputGuardSpan, outputGuardErr);
+                        }
+                    }
+                }
+
+                eventBridge.emitContentChunk(eventSink, request.workflowRunId(), reportText);
+                long duration = Duration.between(start, Instant.now()).toMillis();
+                int evCount = runResult.evidenceIds() != null ? runResult.evidenceIds().size() : 0;
+                eventBridge.emitRunCompleted(eventSink, request.workflowRunId(), duration, evCount);
+                eventSink.tryEmitComplete();
+
+                completion.complete(runResult);
+            } catch (Throwable t) {
+                workflowError = t;
+                if (!cancelled.get()) {
+                    eventBridge.emitRunFailed(eventSink, request.workflowRunId(), t.getMessage());
+                    eventSink.tryEmitComplete();
+                    completion.completeExceptionally(t);
+                }
+            } finally {
+                if (agentTracer != null) {
+                    agentTracer.endSpan(workflowSpan, workflowError);
+                }
+            }
+        });
+
+        ResearchRunHandle handle = ResearchRunHandle.of(
+                request.workflowRunId(), identity, eventSink.asFlux(), completion, cancelAction
+        );
+        if (runRegistry != null) {
+            runRegistry.register(request.userId(), handle);
+        }
         return handle;
     }
 
-    public Optional<GraphRunHandle> findRun(Long userId, String runId) {
-        return registry.find(userId, runId);
-    }
-
-    public Optional<DagCheckpoint> findCheckpoint(Long userId, String runId) {
-        return checkpointStore.load(userId, runId);
+    public Optional<ResearchRunHandle> findRun(Long userId, String runId) {
+        return runRegistry != null ? runRegistry.find(userId, runId) : Optional.empty();
     }
 
     public boolean cancel(Long userId, String runId, String reason) {
-        if (admissionController != null) {
-            admissionController.cancelQueuedRun(runId);
-        }
-        return registry.cancel(userId, runId, reason);
+        return runRegistry != null && runRegistry.cancel(userId, runId, reason);
     }
 
-    public GraphRunHandle resume(Long userId, String runId, Consumer<LlmResponse> usageConsumer) {
-        return registry.register(userId, runtime.resume(userId, runId, usageConsumer));
+    public ConversationAdmissionController getAdmissionController() {
+        return this.admissionController;
     }
-
-    private Artifact<?> dispatch(GraphNode node, NodeInput input, NodeExecutionContext context) {
-        Instant start = Instant.now();
-        try {
-            return agentRouter.execute(node, input, context);
-        } finally {
-            if (runtimeMetrics != null && node != null) {
-                runtimeMetrics.recordNodeDuration(node.getTaskType(), Duration.between(start, Instant.now()));
-            }
-        }
-    }
-
-    @PreDestroy
-    void closeRuntime() {
-        runtime.close();
-    }
-
 }

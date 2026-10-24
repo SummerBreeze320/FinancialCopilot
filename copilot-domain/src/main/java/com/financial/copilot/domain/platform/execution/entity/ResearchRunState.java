@@ -7,14 +7,14 @@ import java.util.UUID;
 /**
  * <h1>集群化运行状态实体 (Research Run State)</h1>
  * <p>
- * 对应多实例集群下的单次图执行运行状态，具备乐观锁版本控制。
+ * 对应多智能体体系下单次运行的执行状态，具备乐观锁版本控制与执行成果/证据链快照。
  * </p>
  *
  * @param runId 运行唯一标识 UUID
  * @param userId 用户 ID
  * @param conversationId 对话会话 ID
  * @param status 运行状态（PENDING, RUNNING, SUCCEEDED, FAILED, CANCELLED）
- * @param graphSnapshot 图拓扑及节点执行状态快照 JSON 字符串
+ * @param executionSnapshot 执行状态与事实证据链快照 JSON 字符串
  * @param version 乐观锁版本号
  * @param createdAt 创建时间戳
  * @param updatedAt 更新时间戳
@@ -25,7 +25,7 @@ public record ResearchRunState(
         Long userId,
         UUID conversationId,
         String status,
-        String graphSnapshot,
+        String executionSnapshot,
         Long version,
         Instant createdAt,
         Instant updatedAt
@@ -38,8 +38,8 @@ public record ResearchRunState(
         if (version == null) {
             version = 0L;
         }
-        if (graphSnapshot == null) {
-            graphSnapshot = "{}";
+        if (executionSnapshot == null) {
+            executionSnapshot = "{}";
         }
         if (createdAt == null) {
             createdAt = Instant.now();
@@ -47,5 +47,14 @@ public record ResearchRunState(
         if (updatedAt == null) {
             updatedAt = createdAt;
         }
+    }
+
+    /**
+     * 向前兼容旧图快照访问器
+     *
+     * @return 执行快照 JSON 字符串
+     */
+    public String graphSnapshot() {
+        return executionSnapshot;
     }
 }

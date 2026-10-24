@@ -40,9 +40,10 @@ public class FundDomainStrategy implements AssetDomainStrategy {
 
     @Override
     public List<AssetProfile> searchAssets(String keyword) {
-        return fundDataPort.getFundByCode(keyword)
-                .map(f -> List.of(toAssetProfile(f)))
-                .orElseGet(List::of);
+        return fundDataPort.searchFunds(keyword, 20)
+                .stream()
+                .map(this::toAssetProfile)
+                .toList();
     }
 
     private AssetProfile toAssetProfile(FundInfo fund) {

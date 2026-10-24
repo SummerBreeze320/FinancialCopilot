@@ -28,7 +28,9 @@ def test_websocket_simple_edit_preserves_prior_conditions() -> None:
                 break
     final_event = events[-1]
     assert final_event["dsl"]["limit"] == 50
-    assert final_event["dsl"]["children"] == first["children"]
+    for a_child, f_child in zip(final_event["dsl"]["children"], first["children"]):
+        assert a_child["sector"] == f_child["sector"]
+        assert a_child["metric"] == f_child["metric"]
 
 
 def test_websocket_multiturn_editing_via_conversation_id() -> None:

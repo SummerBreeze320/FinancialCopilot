@@ -72,6 +72,8 @@ public class WebFluxSecurityConfig {
                         .pathMatchers("/api/v1/auth/**").permitAll()
                         // 放行健康检查与公共路由
                         .pathMatchers("/api/v1/research/health").permitAll()
+                        // 放行标准协议自发现与公用元数据路由
+                        .pathMatchers("/.well-known/**").permitAll()
                         // 放行文档与静态资源
                         .pathMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/**", "/favicon.ico").permitAll()
                         // 管理端路由需要 ADMIN 角色

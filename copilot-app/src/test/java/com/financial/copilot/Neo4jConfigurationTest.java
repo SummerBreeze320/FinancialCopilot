@@ -16,6 +16,7 @@ class Neo4jConfigurationTest {
             .withPropertyValues("spring.sql.init.mode=never",
                     "spring.datasource.url=jdbc:postgresql://localhost:1/unavailable",
                     "spring.neo4j.uri=bolt://localhost:1",
+                    "spring.ai.openai.api-key=local-agy",
                     "copilot.llm.api-key=sk-placeholder");
 
     @Test

@@ -1,9 +1,7 @@
 package com.financial.copilot.controller;
 
-import com.financial.copilot.agent.core.infra.dag.artifact.ArtifactType;
-import com.financial.copilot.agent.core.infra.dag.artifact.payload.FinalSynthesisReport;
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunHandle;
-import com.financial.copilot.agent.core.infra.dag.runtime.GraphRunResult;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunHandle;
+import com.financial.copilot.agent.core.infra.runtime.ResearchRunResult;
 import com.financial.copilot.agent.core.platform.billing.WalletBillingService;
 import com.financial.copilot.agent.core.platform.conversation.ConversationService;
 import com.financial.copilot.domain.platform.conversation.entity.ConversationRun;
@@ -45,9 +43,9 @@ public class ResearchRunLifecycle {
     /**
      * 观察运行执行并在终态进行消息落库与算力扣减结算。
      */
-    public CompletableFuture<GraphRunResult> observe(Long userId, ConversationRun run,
-                                                     String sessionKey, String prompt,
-                                                     GraphRunHandle handle) {
+    public CompletableFuture<ResearchRunResult> observe(Long userId, ConversationRun run,
+                                                        String sessionKey, String prompt,
+                                                        ResearchRunHandle handle) {
         return observe(userId, run, sessionKey, prompt, handle, () -> 0L);
     }
 
@@ -62,10 +60,10 @@ public class ResearchRunLifecycle {
      * @param actualPointsSupplier 实际发生消耗积分提供者
      * @return 运行结果异步 Future
      */
-    public CompletableFuture<GraphRunResult> observe(Long userId, ConversationRun run,
-                                                     String sessionKey, String prompt,
-                                                     GraphRunHandle handle,
-                                                     LongSupplier actualPointsSupplier) {
+    public CompletableFuture<ResearchRunResult> observe(Long userId, ConversationRun run,
+                                                        String sessionKey, String prompt,
+                                                        ResearchRunHandle handle,
+                                                        LongSupplier actualPointsSupplier) {
         return handle.completion().handle((result, error) -> {
             if (error != null) {
                 Throwable cause = error;
@@ -88,16 +86,14 @@ public class ResearchRunLifecycle {
                 billing.release(userId, run.runId().toString());
             }
             conversations.complete(userId, run, sessionKey, prompt, report(result),
-                    Map.of("graphRevision", result.graph().getRevision(),
-                            "artifactIds", result.artifacts().values().stream().map(a -> a.id()).toList()));
+                    Map.of("status", result.status(),
+                            "evidenceIds", result.evidenceIds()));
             return result;
         });
     }
 
     /** 提取最终用户可见报告，不保存 Agent 的中间推理。 */
-    public static String report(GraphRunResult result) {
-        return result.artifacts().values().stream().filter(a -> a.type() == ArtifactType.FINAL_REPORT)
-                .map(a -> a.payload()).filter(FinalSynthesisReport.class::isInstance)
-                .map(FinalSynthesisReport.class::cast).map(FinalSynthesisReport::markdownReport).findFirst().orElse("");
+    public static String report(ResearchRunResult result) {
+        return result != null && result.finalReport() != null ? result.finalReport() : "";
     }
 }

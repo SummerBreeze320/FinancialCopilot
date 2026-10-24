@@ -41,11 +41,10 @@ public class StockDomainStrategy implements AssetDomainStrategy {
 
     @Override
     public List<AssetProfile> searchAssets(String keyword) {
-        return stockDataPort.screenStocks(
-                new com.financial.copilot.common.stock.dto.StockScreeningCriteria(
-                        null, keyword, null, null, null, null, null, null, null, 20
-                )
-        ).stream().map(this::toAssetProfile).toList();
+        return stockDataPort.searchStocks(keyword, 20)
+                .stream()
+                .map(this::toAssetProfile)
+                .toList();
     }
 
     private AssetProfile toAssetProfile(StockInfo info) {
