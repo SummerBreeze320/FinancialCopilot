@@ -42,6 +42,7 @@ public class GatewayAgentScopeModelAdapter implements Model {
     private final GatewayCapacityLimiter capacityLimiter;
     private final GatewayAuditSink auditSink;
     private final Function<ProviderEndpointSpec, Model> delegateFactory;
+    private final io.micrometer.tracing.Tracer tracer;
 
     /**
      * 生产环境标准构造器
@@ -59,7 +60,7 @@ public class GatewayAgentScopeModelAdapter implements Model {
             GatewayCapacityLimiter capacityLimiter,
             GatewayAuditSink auditSink
     ) {
-        this(scene, preferredModel, router, capacityLimiter, auditSink, GatewayAgentScopeModelAdapter::createDefaultDelegate);
+        this(scene, preferredModel, router, capacityLimiter, auditSink, GatewayAgentScopeModelAdapter::createDefaultDelegate, null);
     }
 
     /**
@@ -80,12 +81,25 @@ public class GatewayAgentScopeModelAdapter implements Model {
             GatewayAuditSink auditSink,
             Function<ProviderEndpointSpec, Model> delegateFactory
     ) {
+        this(scene, preferredModel, router, capacityLimiter, auditSink, delegateFactory, null);
+    }
+
+    public GatewayAgentScopeModelAdapter(
+            LlmRoutingScene scene,
+            String preferredModel,
+            LlmRouter router,
+            GatewayCapacityLimiter capacityLimiter,
+            GatewayAuditSink auditSink,
+            Function<ProviderEndpointSpec, Model> delegateFactory,
+            io.micrometer.tracing.Tracer tracer
+    ) {
         this.scene = Objects.requireNonNull(scene, "scene must not be null");
         this.preferredModel = preferredModel;
         this.router = Objects.requireNonNull(router, "router must not be null");
         this.capacityLimiter = Objects.requireNonNull(capacityLimiter, "capacityLimiter must not be null");
         this.auditSink = Objects.requireNonNull(auditSink, "auditSink must not be null");
         this.delegateFactory = Objects.requireNonNull(delegateFactory, "delegateFactory must not be null");
+        this.tracer = tracer;
     }
 
     @Override
@@ -95,7 +109,7 @@ public class GatewayAgentScopeModelAdapter implements Model {
             return Flux.error(new IllegalStateException("No available LLM routes configured for scene: " + scene));
         }
 
-        String traceId = UUID.randomUUID().toString().replace("-", "");
+        String traceId = resolveTraceId();
         long startTime = System.currentTimeMillis();
 
         return Flux.usingWhen(
@@ -103,6 +117,16 @@ public class GatewayAgentScopeModelAdapter implements Model {
                 permit -> executeRouteChainWithFailover(routes, messages, tools, options, traceId, startTime),
                 permit -> Mono.fromRunnable(permit::release)
         );
+    }
+
+    private String resolveTraceId() {
+        if (tracer != null) {
+            io.micrometer.tracing.Span current = tracer.currentSpan();
+            if (current != null && current.context() != null && current.context().traceId() != null) {
+                return current.context().traceId();
+            }
+        }
+        return UUID.randomUUID().toString().replace("-", "");
     }
 
     private Flux<ChatResponse> executeRouteChainWithFailover(

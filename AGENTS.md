@@ -13,7 +13,7 @@ Keep each change within the narrowest layer that owns the behavior:
 - `copilot-agent-tools`: tool-facing adapters and tool implementations.
 - `copilot-agent-core`: workflow, DAG runtime, planning, agent coordination, and platform services.
 - `copilot-app`: Spring Boot wiring, controllers, WebFlux/SSE endpoints, and configuration.
-- `copilot-mcp-service`: independent WebFlux MCP 2024-11-05 tool discovery and execution service (port 8085).
+- `copilot-mcp-service`: separately runnable Python FastMCP 2024-11-05 tool discovery and execution service (port 8085). Use its `pyproject.toml` and tests when changing it.
 - `copilot-ner-service`: separately runnable Python entity-recognition service (port 8800). Use its `pyproject.toml` and tests when changing it.
 - `copilot-memory-service`: separately runnable Python Graphiti temporal knowledge-graph and memory service (port 8700).
 

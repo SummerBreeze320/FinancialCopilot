@@ -29,21 +29,53 @@ public class GovernedChatModel implements ChatModel {
 
     private final ChatModel delegate;
     private final LlmCapacityLimiter limiter;
+    private final com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer;
 
     public GovernedChatModel(ChatModelDelegateFactory factory, LlmCapacityLimiter limiter) {
-        this(factory.getOrCreateDefault(), limiter);
+        this(factory.getOrCreateDefault(), limiter, null);
+    }
+
+    public GovernedChatModel(ChatModelDelegateFactory factory, LlmCapacityLimiter limiter, com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer) {
+        this(factory.getOrCreateDefault(), limiter, agentTracer);
     }
 
     public GovernedChatModel(ChatModel delegate, LlmCapacityLimiter limiter) {
+        this(delegate, limiter, null);
+    }
+
+    public GovernedChatModel(ChatModel delegate, LlmCapacityLimiter limiter, com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer) {
         this.delegate = Objects.requireNonNull(delegate, "delegate ChatModel cannot be null");
         this.limiter = Objects.requireNonNull(limiter, "limiter cannot be null");
+        this.agentTracer = agentTracer;
     }
 
     @Override
     public ChatResponse call(Prompt prompt) {
         Objects.requireNonNull(prompt, "prompt cannot be null");
-        try (LlmCapacityLimiter.Permit ignored = limiter.acquire()) {
-            return delegate.call(prompt);
+        String modelName = prompt.getOptions() != null && prompt.getOptions().getModel() != null
+                ? prompt.getOptions().getModel() : "default";
+        io.micrometer.tracing.Span span = agentTracer != null ? agentTracer.startLlmSpan(modelName) : null;
+        Throwable error = null;
+        try (com.financial.copilot.agent.core.infra.observability.AgentTracer.TraceScope traceScope = agentTracer != null ? agentTracer.withSpan(span) : com.financial.copilot.agent.core.infra.observability.AgentTracer.noopScope()) {
+            try (LlmCapacityLimiter.Permit ignored = limiter.acquire()) {
+                ChatResponse response = delegate.call(prompt);
+                if (agentTracer != null && span != null && response != null && response.getMetadata() != null) {
+                    var usage = response.getMetadata().getUsage();
+                    if (usage != null) {
+                        span.tag("gen_ai.usage.prompt_tokens", String.valueOf(usage.getPromptTokens()));
+                        span.tag("gen_ai.usage.completion_tokens", String.valueOf(usage.getCompletionTokens()));
+                        span.tag("gen_ai.usage.total_tokens", String.valueOf(usage.getTotalTokens()));
+                    }
+                }
+                return response;
+            }
+        } catch (Throwable t) {
+            error = t;
+            throw t;
+        } finally {
+            if (agentTracer != null) {
+                agentTracer.endSpan(span, error);
+            }
         }
     }
 

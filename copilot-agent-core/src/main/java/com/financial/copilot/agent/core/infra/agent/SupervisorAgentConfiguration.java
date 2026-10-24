@@ -41,10 +41,11 @@ public class SupervisorAgentConfiguration {
     @ConditionalOnMissingBean(name = "governedChatModel")
     public ChatModel governedChatModel(
             ChatModelDelegateFactory delegateFactory,
-            @Autowired(required = false) RuntimeCapacityProperties capacityProperties
+            @Autowired(required = false) RuntimeCapacityProperties capacityProperties,
+            @Autowired(required = false) com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer
     ) {
         int concurrency = capacityProperties != null ? capacityProperties.getMaxLlmConcurrency() : 16;
-        return new GovernedChatModel(delegateFactory, new LlmCapacityLimiter(concurrency));
+        return new GovernedChatModel(delegateFactory, new LlmCapacityLimiter(concurrency), agentTracer);
     }
 
     @Bean(name = "fundResearchAgent")

@@ -88,6 +88,7 @@ services:
     networks:
       - myservice_network
 
+
 networks:
   myservice_network:
     external: true

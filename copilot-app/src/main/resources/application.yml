@@ -108,6 +108,14 @@ copilot:
     enabled: ${COPILOT_MCP_ENABLED:true}
     base-url: ${COPILOT_MCP_BASE_URL:http://127.0.0.1:8085}
     timeout-seconds: ${COPILOT_MCP_TIMEOUT_SECONDS:15}
+  gateway:
+    langfuse:
+      enabled: ${LANGFUSE_ENABLED:true}
+      host: ${LANGFUSE_HOST:https://cloud.langfuse.com}
+      public-key: ${LANGFUSE_PUBLIC_KEY:}
+      secret-key: ${LANGFUSE_SECRET_KEY:}
+      environment: ${LANGFUSE_ENV:development}
+      timeout-seconds: ${LANGFUSE_TIMEOUT_SECONDS:5}
   agent-roles:
     fund-analyzer:
       - fund_metrics
@@ -136,3 +144,15 @@ copilot:
 logging:
   level:
     com.financial.copilot: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:}

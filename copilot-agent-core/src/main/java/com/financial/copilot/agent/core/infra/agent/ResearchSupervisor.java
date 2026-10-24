@@ -42,13 +42,24 @@ public class ResearchSupervisor {
     private final EvidenceMergeCoordinator evidenceCoordinator;
     private final SkillMatcher skillMatcher;
     private final ContextBudgetManager budgetManager;
+    private final com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer;
 
     public ResearchSupervisor(
             @Qualifier("researchSupervisorAgent") ReactAgent supervisorAgent,
             RunEvidenceStore evidenceStore,
             EvidenceMergeCoordinator evidenceCoordinator
     ) {
-        this(supervisorAgent, evidenceStore, evidenceCoordinator, null, null);
+        this(supervisorAgent, evidenceStore, evidenceCoordinator, null, null, null);
+    }
+
+    public ResearchSupervisor(
+            @Qualifier("researchSupervisorAgent") ReactAgent supervisorAgent,
+            RunEvidenceStore evidenceStore,
+            EvidenceMergeCoordinator evidenceCoordinator,
+            SkillMatcher skillMatcher,
+            ContextBudgetManager budgetManager
+    ) {
+        this(supervisorAgent, evidenceStore, evidenceCoordinator, skillMatcher, budgetManager, null);
     }
 
     @Autowired
@@ -57,13 +68,15 @@ public class ResearchSupervisor {
             RunEvidenceStore evidenceStore,
             EvidenceMergeCoordinator evidenceCoordinator,
             @Autowired(required = false) SkillMatcher skillMatcher,
-            @Autowired(required = false) ContextBudgetManager budgetManager
+            @Autowired(required = false) ContextBudgetManager budgetManager,
+            @Autowired(required = false) com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer
     ) {
         this.supervisorAgent = Objects.requireNonNull(supervisorAgent, "supervisorAgent cannot be null");
         this.evidenceStore = Objects.requireNonNull(evidenceStore, "evidenceStore cannot be null");
         this.evidenceCoordinator = Objects.requireNonNull(evidenceCoordinator, "evidenceCoordinator cannot be null");
         this.skillMatcher = skillMatcher;
         this.budgetManager = budgetManager != null ? budgetManager : new ContextBudgetManager();
+        this.agentTracer = agentTracer;
     }
 
     /**
@@ -124,35 +137,47 @@ public class ResearchSupervisor {
             effectivePrompt = budgetManager.truncateToBudget(effectivePrompt, ContextBudgetManager.DEFAULT_MAX_INPUT_TOKENS);
         }
 
-        try (AutoCloseable ignored = ResearchToolContext.withContext(toolCtx)) {
-            AssistantMessage response = supervisorAgent.call(new UserMessage(effectivePrompt), config);
-            String reportText = (response != null && response.getText() != null) ? response.getText() : "";
+        String userId = context.identity() != null ? String.valueOf(context.identity().userId()) : "";
+        io.micrometer.tracing.Span supervisorSpan = agentTracer != null
+                ? agentTracer.startSupervisorSpan(context.workflowRunId(), userId)
+                : null;
+        Throwable error = null;
+        try (com.financial.copilot.agent.core.infra.observability.AgentTracer.TraceScope traceScope = agentTracer != null ? agentTracer.withSpan(supervisorSpan) : com.financial.copilot.agent.core.infra.observability.AgentTracer.noopScope()) {
+            try (AutoCloseable ignored = ResearchToolContext.withContext(toolCtx)) {
+                AssistantMessage response = supervisorAgent.call(new UserMessage(effectivePrompt), config);
+                String reportText = (response != null && response.getText() != null) ? response.getText() : "";
 
-            // 依据版本号确定性提取归并事实证据
-            long finalRev = evidenceCoordinator.getCurrentRevision(context.workflowRunId());
-            List<AgentEvidence> evidences = (finalRev > 0)
-                    ? evidenceCoordinator.mergeSnapshot(context.workflowRunId(), finalRev)
-                    : evidenceStore.getSnapshot(context.workflowRunId());
+                // 依据版本号确定性提取归并事实证据
+                long finalRev = evidenceCoordinator.getCurrentRevision(context.workflowRunId());
+                List<AgentEvidence> evidences = (finalRev > 0)
+                        ? evidenceCoordinator.mergeSnapshot(context.workflowRunId(), finalRev)
+                        : evidenceStore.getSnapshot(context.workflowRunId());
 
-            List<String> evidenceRefs = evidences.stream()
-                    .map(AgentEvidence::evidenceId)
-                    .toList();
+                List<String> evidenceRefs = evidences.stream()
+                        .map(AgentEvidence::evidenceId)
+                        .toList();
 
-            log.info("[SUPERVISOR-RUN-COMPLETE] workflowRunId={}, evidencesCount={}",
-                    context.workflowRunId(), evidences.size());
+                log.info("[SUPERVISOR-RUN-COMPLETE] workflowRunId={}, evidencesCount={}",
+                        context.workflowRunId(), evidences.size());
 
-            return new ResearchRunResult(
-                    context.workflowRunId(),
-                    context.identity(),
-                    reportText,
-                    "SUCCEEDED",
-                    evidenceRefs,
-                    context.startedAt(),
-                    Instant.now()
-            );
+                return new ResearchRunResult(
+                        context.workflowRunId(),
+                        context.identity(),
+                        reportText,
+                        "SUCCEEDED",
+                        evidenceRefs,
+                        context.startedAt(),
+                        Instant.now()
+                );
+            }
         } catch (Exception e) {
+            error = e;
             log.error("[SUPERVISOR-RUN-FAILED] workflowRunId={}", context.workflowRunId(), e);
             throw new RuntimeException("Supervisor execution failed for " + context.workflowRunId() + ": " + e.getMessage(), e);
+        } finally {
+            if (agentTracer != null) {
+                agentTracer.endSpan(supervisorSpan, error);
+            }
         }
     }
 }

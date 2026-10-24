@@ -22,7 +22,6 @@
         <module>copilot-llm-gateway</module>
         <module>copilot-agent-core</module>
         <module>copilot-app</module>
-        <module>copilot-mcp-service</module>
     </modules>
 
     <properties>
@@ -125,11 +124,6 @@
             <dependency>
                 <groupId>com.financial.copilot</groupId>
                 <artifactId>copilot-llm-gateway</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.financial.copilot</groupId>
-                <artifactId>copilot-mcp-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

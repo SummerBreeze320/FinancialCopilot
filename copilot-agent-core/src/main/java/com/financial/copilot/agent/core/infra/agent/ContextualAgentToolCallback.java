@@ -43,6 +43,7 @@ public class ContextualAgentToolCallback implements ToolCallback {
     private final AgentOperationLedger operationLedger;
     private final EvidenceMergeCoordinator evidenceCoordinator;
     private final ActionGuardrail actionGuardrail;
+    private final com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer;
 
     public ContextualAgentToolCallback(
             ToolCallback delegate,
@@ -50,7 +51,7 @@ public class ContextualAgentToolCallback implements ToolCallback {
             AgentOperationLedger operationLedger,
             EvidenceMergeCoordinator evidenceCoordinator
     ) {
-        this(delegate, role, operationLedger, evidenceCoordinator, null);
+        this(delegate, role, operationLedger, evidenceCoordinator, null, null);
     }
 
     public ContextualAgentToolCallback(
@@ -60,11 +61,23 @@ public class ContextualAgentToolCallback implements ToolCallback {
             EvidenceMergeCoordinator evidenceCoordinator,
             ActionGuardrail actionGuardrail
     ) {
+        this(delegate, role, operationLedger, evidenceCoordinator, actionGuardrail, null);
+    }
+
+    public ContextualAgentToolCallback(
+            ToolCallback delegate,
+            AgentRole role,
+            AgentOperationLedger operationLedger,
+            EvidenceMergeCoordinator evidenceCoordinator,
+            ActionGuardrail actionGuardrail,
+            com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer
+    ) {
         this.delegate = Objects.requireNonNull(delegate, "delegate ToolCallback cannot be null");
         this.role = Objects.requireNonNull(role, "role cannot be null");
         this.operationLedger = Objects.requireNonNull(operationLedger, "operationLedger cannot be null");
         this.evidenceCoordinator = Objects.requireNonNull(evidenceCoordinator, "evidenceCoordinator cannot be null");
         this.actionGuardrail = actionGuardrail;
+        this.agentTracer = agentTracer;
     }
 
     @Override
@@ -133,19 +146,31 @@ public class ContextualAgentToolCallback implements ToolCallback {
                 ? ResearchToolContext.createToolContext(execCtx, store, role, agentRunId)
                 : toolContext;
 
-        try (AutoCloseable ignored = ResearchToolContext.withContext(childContext)) {
-            return operationLedger.executeOnce(
-                    idempotencyKey,
-                    workflowRunId,
-                    agentRunId,
-                    role,
-                    toolName,
-                    () -> delegate.call(toolInput, childContext)
-            );
+        io.micrometer.tracing.Span span = agentTracer != null
+                ? agentTracer.startSubagentSpan(role, workflowRunId, agentRunId, toolName)
+                : null;
+        Throwable error = null;
+        try (com.financial.copilot.agent.core.infra.observability.AgentTracer.TraceScope traceScope = agentTracer != null ? agentTracer.withSpan(span) : com.financial.copilot.agent.core.infra.observability.AgentTracer.noopScope()) {
+            try (AutoCloseable ignored = ResearchToolContext.withContext(childContext)) {
+                return operationLedger.executeOnce(
+                        idempotencyKey,
+                        workflowRunId,
+                        agentRunId,
+                        role,
+                        toolName,
+                        () -> delegate.call(toolInput, childContext)
+                );
+            }
         } catch (RuntimeException re) {
+            error = re;
             throw re;
         } catch (Exception e) {
+            error = e;
             throw new RuntimeException("Subagent invocation failed: " + e.getMessage(), e);
+        } finally {
+            if (agentTracer != null) {
+                agentTracer.endSpan(span, error);
+            }
         }
     }
 

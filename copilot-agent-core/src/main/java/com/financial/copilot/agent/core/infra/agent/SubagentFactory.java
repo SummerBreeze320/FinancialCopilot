@@ -45,6 +45,7 @@ public class SubagentFactory {
     private final StockResearchTools stockResearchTools;
     private final MarketResearchTools marketResearchTools;
     private final ResearchEvidenceTools evidenceTools;
+    private final com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer;
 
     private final Map<AgentRole, ReactAgent> agentCache = new ConcurrentHashMap<>();
 
@@ -55,11 +56,24 @@ public class SubagentFactory {
             MarketResearchTools marketResearchTools,
             ResearchEvidenceTools evidenceTools
     ) {
+        this(chatModel, fundResearchTools, stockResearchTools, marketResearchTools, evidenceTools, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public SubagentFactory(
+            @Qualifier("governedChatModel") ChatModel chatModel,
+            FundResearchTools fundResearchTools,
+            StockResearchTools stockResearchTools,
+            MarketResearchTools marketResearchTools,
+            ResearchEvidenceTools evidenceTools,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer
+    ) {
         this.chatModel = Objects.requireNonNull(chatModel, "chatModel cannot be null");
         this.fundResearchTools = Objects.requireNonNull(fundResearchTools, "fundResearchTools cannot be null");
         this.stockResearchTools = Objects.requireNonNull(stockResearchTools, "stockResearchTools cannot be null");
         this.marketResearchTools = Objects.requireNonNull(marketResearchTools, "marketResearchTools cannot be null");
         this.evidenceTools = Objects.requireNonNull(evidenceTools, "evidenceTools cannot be null");
+        this.agentTracer = agentTracer;
     }
 
     /**
@@ -99,7 +113,8 @@ public class SubagentFactory {
                 role,
                 operationLedger,
                 evidenceCoordinator,
-                actionGuardrail
+                actionGuardrail,
+                agentTracer
         );
     }
 

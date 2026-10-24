@@ -46,6 +46,7 @@ public class FinancialResearchWorkflow {
     private final ConversationContextSnapshotFactory snapshotFactory;
     private final InputGuardrail inputGuardrail;
     private final OutputGuardrail outputGuardrail;
+    private final com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer;
 
     @Autowired
     public FinancialResearchWorkflow(
@@ -55,7 +56,8 @@ public class FinancialResearchWorkflow {
             @Autowired(required = false) FrameworkEventBridge eventBridge,
             @Autowired(required = false) ConversationContextSnapshotFactory snapshotFactory,
             @Autowired(required = false) InputGuardrail inputGuardrail,
-            @Autowired(required = false) OutputGuardrail outputGuardrail
+            @Autowired(required = false) OutputGuardrail outputGuardrail,
+            @Autowired(required = false) com.financial.copilot.agent.core.infra.observability.AgentTracer agentTracer
     ) {
         this.researchSupervisor = Objects.requireNonNull(researchSupervisor, "researchSupervisor must not be null");
         this.admissionController = admissionController;
@@ -64,6 +66,19 @@ public class FinancialResearchWorkflow {
         this.snapshotFactory = snapshotFactory;
         this.inputGuardrail = inputGuardrail;
         this.outputGuardrail = outputGuardrail;
+        this.agentTracer = agentTracer;
+    }
+
+    public FinancialResearchWorkflow(
+            ResearchSupervisor researchSupervisor,
+            ConversationAdmissionController admissionController,
+            SupervisorRunRegistry runRegistry,
+            FrameworkEventBridge eventBridge,
+            ConversationContextSnapshotFactory snapshotFactory,
+            InputGuardrail inputGuardrail,
+            OutputGuardrail outputGuardrail
+    ) {
+        this(researchSupervisor, admissionController, runRegistry, eventBridge, snapshotFactory, inputGuardrail, outputGuardrail, null);
     }
 
     public FinancialResearchWorkflow(
@@ -127,19 +142,36 @@ public class FinancialResearchWorkflow {
         VirtualThreadSchedulers.executor().execute(() -> {
             if (cancelled.get()) return;
             Instant start = Instant.now();
-            try {
+            io.micrometer.tracing.Span workflowSpan = agentTracer != null
+                    ? agentTracer.startWorkflowSpan(request.workflowRunId(), String.valueOf(request.userId()), request.prompt())
+                    : null;
+            Throwable workflowError = null;
+            try (com.financial.copilot.agent.core.infra.observability.AgentTracer.TraceScope traceScope = agentTracer != null ? agentTracer.withSpan(workflowSpan) : com.financial.copilot.agent.core.infra.observability.AgentTracer.noopScope()) {
                 if (inputGuardrail != null) {
-                    IntentClassificationResult audit = inputGuardrail.auditAndSanitize(request.prompt(), null);
-                    if (audit != null && audit.isOutOfDomain()) {
-                        String blockedMsg = audit.clarificationPrompt() != null ? audit.clarificationPrompt() : "输入包含违规敏感内容";
-                        ResearchRunResult rejected = new ResearchRunResult(
-                                request.workflowRunId(), identity, blockedMsg, "REJECTED", List.of(), start, Instant.now()
-                        );
-                        eventBridge.emitContentChunk(eventSink, request.workflowRunId(), blockedMsg);
-                        eventBridge.emitRunFailed(eventSink, request.workflowRunId(), blockedMsg);
-                        eventSink.tryEmitComplete();
-                        completion.complete(rejected);
-                        return;
+                    io.micrometer.tracing.Span inputGuardSpan = agentTracer != null
+                            ? agentTracer.startGuardrailSpan("INPUT", request.workflowRunId())
+                            : null;
+                    Throwable inputGuardErr = null;
+                    try (com.financial.copilot.agent.core.infra.observability.AgentTracer.TraceScope igScope = agentTracer != null ? agentTracer.withSpan(inputGuardSpan) : com.financial.copilot.agent.core.infra.observability.AgentTracer.noopScope()) {
+                        IntentClassificationResult audit = inputGuardrail.auditAndSanitize(request.prompt(), null);
+                        if (audit != null && audit.isOutOfDomain()) {
+                            String blockedMsg = audit.clarificationPrompt() != null ? audit.clarificationPrompt() : "输入包含违规敏感内容";
+                            ResearchRunResult rejected = new ResearchRunResult(
+                                    request.workflowRunId(), identity, blockedMsg, "REJECTED", List.of(), start, Instant.now()
+                            );
+                            eventBridge.emitContentChunk(eventSink, request.workflowRunId(), blockedMsg);
+                            eventBridge.emitRunFailed(eventSink, request.workflowRunId(), blockedMsg);
+                            eventSink.tryEmitComplete();
+                            completion.complete(rejected);
+                            return;
+                        }
+                    } catch (Throwable gt) {
+                        inputGuardErr = gt;
+                        throw gt;
+                    } finally {
+                        if (agentTracer != null) {
+                            agentTracer.endSpan(inputGuardSpan, inputGuardErr);
+                        }
                     }
                 }
 
@@ -159,16 +191,29 @@ public class FinancialResearchWorkflow {
 
                 String reportText = runResult.finalReport();
                 if (outputGuardrail != null) {
-                    reportText = outputGuardrail.sanitize(reportText);
-                    runResult = new ResearchRunResult(
-                            runResult.workflowRunId(),
-                            runResult.identity(),
-                            reportText,
-                            runResult.status(),
-                            runResult.evidenceIds(),
-                            runResult.startedAt(),
-                            runResult.completedAt()
-                    );
+                    io.micrometer.tracing.Span outputGuardSpan = agentTracer != null
+                            ? agentTracer.startGuardrailSpan("OUTPUT", request.workflowRunId())
+                            : null;
+                    Throwable outputGuardErr = null;
+                    try (com.financial.copilot.agent.core.infra.observability.AgentTracer.TraceScope ogScope = agentTracer != null ? agentTracer.withSpan(outputGuardSpan) : com.financial.copilot.agent.core.infra.observability.AgentTracer.noopScope()) {
+                        reportText = outputGuardrail.sanitize(reportText);
+                        runResult = new ResearchRunResult(
+                                runResult.workflowRunId(),
+                                runResult.identity(),
+                                reportText,
+                                runResult.status(),
+                                runResult.evidenceIds(),
+                                runResult.startedAt(),
+                                runResult.completedAt()
+                        );
+                    } catch (Throwable ogt) {
+                        outputGuardErr = ogt;
+                        throw ogt;
+                    } finally {
+                        if (agentTracer != null) {
+                            agentTracer.endSpan(outputGuardSpan, outputGuardErr);
+                        }
+                    }
                 }
 
                 eventBridge.emitContentChunk(eventSink, request.workflowRunId(), reportText);
@@ -179,10 +224,15 @@ public class FinancialResearchWorkflow {
 
                 completion.complete(runResult);
             } catch (Throwable t) {
+                workflowError = t;
                 if (!cancelled.get()) {
                     eventBridge.emitRunFailed(eventSink, request.workflowRunId(), t.getMessage());
                     eventSink.tryEmitComplete();
                     completion.completeExceptionally(t);
+                }
+            } finally {
+                if (agentTracer != null) {
+                    agentTracer.endSpan(workflowSpan, workflowError);
                 }
             }
         });
