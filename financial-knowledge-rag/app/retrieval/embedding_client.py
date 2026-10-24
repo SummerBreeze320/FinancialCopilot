@@ -30,10 +30,10 @@ class EmbeddingClient:
         :param batch_size: 单次批量向量化切片数，避免一次性请求显存超载
         :param timeout: 请求超时秒数
         """
-        self.base_url = (base_url or settings.ollama_base_url).rstrip("/")
-        self.api_key = api_key or settings.ollama_api_key
+        self.base_url = (base_url or settings.embedding_base_url).rstrip("/")
+        self.api_key = api_key or settings.embedding_api_key
         self.model = model or settings.embedding_model
-        self.dim = dim or settings.embedding_dimension
+        self.dim = dim or settings.embedding_dim
         self.batch_size = batch_size
         self.timeout = timeout
 
