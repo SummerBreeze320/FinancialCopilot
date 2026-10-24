@@ -61,6 +61,12 @@ class Settings(BaseSettings):
 
     # 神经重排器与检索漏斗参数
     reranker_type: str = Field(default="neural", validation_alias="RERANKER_TYPE")
+    reranker_backend: str = Field(default="service", validation_alias="RERANKER_BACKEND")
+    reranker_service_url: str = Field(
+        default="http://127.0.0.1:8088/v1/rerank",
+        validation_alias="RERANKER_SERVICE_URL"
+    )
+    reranker_timeout: float = Field(default=15.0, validation_alias="RERANKER_TIMEOUT")
     reranker_model_path: str = Field(
         default="BAAI/bge-reranker-large",
         validation_alias="RERANKER_MODEL_PATH"
