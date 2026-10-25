@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     # 神经重排器与检索漏斗参数
     reranker_type: str = Field(default="neural", validation_alias="RERANKER_TYPE")
     reranker_model_path: str = Field(
-        default="BAAI/bge-reranker-large",
+        default="BAAI/bge-reranker-base",
         validation_alias="RERANKER_MODEL_PATH"
     )
     reranker_device: str = Field(default="cuda", validation_alias="RERANKER_DEVICE")

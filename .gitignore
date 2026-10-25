@@ -86,3 +86,4 @@ docker/postgres/data/
 # Entity service local state
 ner-service/.env
 entity-service/data/*.json
+docs/temp/

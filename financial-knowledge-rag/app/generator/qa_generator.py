@@ -29,6 +29,58 @@ class QaGenerator:
         self.api_key = api_key or settings.llm_api_key
         self.model = model or settings.llm_model
 
+    async def generate(
+        self,
+        query: str,
+        chunks: List[Dict[str, Any]],
+    ) -> str:
+        """非流式调用本地 Codex-Bridge LLM 生成包含引用角标的完整回答。"""
+        context_parts: List[str] = []
+        for idx, chunk in enumerate(chunks, start=1):
+            title = chunk.get("doc_title") or chunk.get("document_title") or "未知文档"
+            page = chunk.get("page_number", "-")
+            inst = chunk.get("institution") or "公开渠道"
+            content = chunk.get("content", "")
+            context_parts.append(
+                f"[{idx}] 《{title}》 (机构: {inst}, 页码: {page}):\n{content}"
+            )
+        context_str = "\n\n".join(context_parts)
+
+        system_prompt = (
+            "你是一个严谨客观的金融投研高级分析师。\n"
+            "请严格且仅依据下面给出的【参考知识切片】回答用户的金融问题。\n"
+            "严禁凭空捏造任何财务数据、增长率、指标或事实。\n"
+            "在回答中引用具体论点或数字时，请在句子末尾标注对应的引用角标，如 [1]、[2]。\n"
+            "若参考知识切片中未包含答案所需的信息，请明确告知'根据现有参考文档暂无法确认'。\n\n"
+            f"【参考知识切片】\n{context_str}"
+        )
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": query},
+            ],
+            "temperature": 0.1,
+            "stream": False,
+        }
+
+        url = f"{self.base_url}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0, trust_env=False) as client:
+                resp = await client.post(url, json=payload, headers=headers)
+                resp.raise_for_status()
+                res_json = resp.json()
+                return res_json.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        except Exception as e:
+            logger.error("Codex-Bridge LLM 非流式生成异常: %s", e)
+            return f"【服务提示】本地模型调用失败: {e}"
+
     async def generate_stream(
         self,
         query: str,
@@ -78,7 +130,7 @@ class QaGenerator:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=60.0, trust_env=False) as client:
                 async with client.stream("POST", url, json=payload, headers=headers) as resp:
                     resp.raise_for_status()
                     async for line in resp.aiter_lines():

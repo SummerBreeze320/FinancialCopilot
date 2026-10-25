@@ -38,3 +38,26 @@ def test_parser_registry_mapping():
     assert registry.get_parser_for_extension(".xlsx") is not None
     assert registry.get_parser_for_extension(".docx") is not None
     assert registry.get_parser_for_extension(".pdf") is not None
+
+
+def test_clean_financial_text_pipeline():
+    from app.ingest.pdf_parser import clean_financial_text
+
+    # 1. 汉字间异常断裂空格
+    raw_chinese = "公 募 基 金 份 额 净 值 表现"
+    assert clean_financial_text(raw_chinese) == "公募基金份额净值表现"
+
+    # 2. 英文连字符断行
+    raw_hyphen = "China semi-\nconductor market grew rapidly."
+    assert clean_financial_text(raw_hyphen) == "China semiconductor market grew rapidly."
+
+    # 3. 水印清洗与全角空格
+    raw_watermark = "重要提示：本基金已获批准。\u3000内部资料 严禁外传\xa0\xa0"
+    cleaned = clean_financial_text(raw_watermark)
+    assert "内部资料" not in cleaned
+    assert "严禁外传" not in cleaned
+    assert "重要提示：本基金已获批准。" in cleaned
+
+    # 4. 中文与数字间断行
+    raw_num = "增长率为\n12.5%且持续提升"
+    assert clean_financial_text(raw_num) == "增长率为 12.5%且持续提升"
