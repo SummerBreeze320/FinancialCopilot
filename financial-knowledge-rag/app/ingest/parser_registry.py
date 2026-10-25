@@ -43,7 +43,7 @@ class ParserRegistry:
     def infer_category(self, filename: str, content_preview: str = "") -> tuple[CognitiveLayer, str]:
         """根据文件名与前缀内容自动推断认知层与分类全路径。"""
         name = filename.lower()
-        if any(w in name for w in ["年度报告", "半年度报告", "一季度", "三季度", "annual", "quarterly"]):
+        if any(w in name for w in ["年度报告", "半年度报告", "季度", "一季度", "二季度", "三季度", "四季度", "annual", "quarter", "quarterly"]):
             if "基金" in name:
                 return (CognitiveLayer.GROUND_TRUTH, "GROUND_TRUTH.PERIODIC.FUND_PERIODIC")
             return (CognitiveLayer.GROUND_TRUTH, "GROUND_TRUTH.PERIODIC.STOCK_PERIODIC")

@@ -68,7 +68,7 @@ class VlmAnalyzer:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=self.timeout, trust_env=False) as client:
                 resp = await client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers)
                 if resp.status_code == 200:
                     data = resp.json()

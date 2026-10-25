@@ -1,4 +1,18 @@
-"""FastAPI 微服务主入口与应用生命周期管理。"""
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+import sys
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+try:
+    import torch
+    from sentence_transformers import CrossEncoder
+except Exception:
+    pass
 
 from contextlib import asynccontextmanager
 import logging
@@ -52,8 +66,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 挂载路由
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+# 挂载 API 路由
 app.include_router(router)
+
+# 静态资源与前端可视化界面
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def serve_index():
+    index_path = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "financial-knowledge-rag is running. Visit /docs for OpenAPI specifications."}
 
 
 @app.get("/health")

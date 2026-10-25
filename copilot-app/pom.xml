@@ -19,6 +19,10 @@
             <groupId>com.financial.copilot</groupId>
             <artifactId>copilot-agent-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.financial.copilot</groupId>
+            <artifactId>copilot-llm-gateway</artifactId>
+        </dependency>
 
         <!-- Spring Boot WebFlux (响应式与 SSE 引擎) -->
         <dependency>

@@ -1,0 +1,2640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinancialCopilot - 金融投研 RAG 全流程全景可视化观测台</title>
+  <style>
+    :root {
+      --bg-main: #080d1a;
+      --bg-panel: #0f172a;
+      --bg-card: rgba(17, 24, 39, 0.78);
+      --bg-card-hover: rgba(30, 41, 59, 0.9);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: #38bdf8;
+      --text-title: #f8fafc;
+      --text-body: #cbd5e1;
+      --text-muted: #64748b;
+      --accent-cyan: #38bdf8;
+      --accent-emerald: #10b981;
+      --accent-purple: #818cf8;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --font-code: "JetBrains Mono", Consolas, "SF Mono", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-body);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 顶部导航与微服务拓扑状态 */
+    header {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.7rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      z-index: 50;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--text-title);
+      text-decoration: none;
+    }
+
+    .logo-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.1rem;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.4);
+    }
+
+    .service-status-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+      display: inline-block;
+    }
+
+    /* 提问交互控制条 */
+    .query-toolbar {
+      background: rgba(15, 23, 42, 0.7);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      flex-shrink: 0;
+    }
+
+    .query-presets {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow-x: auto;
+      font-size: 0.8rem;
+    }
+
+    .preset-chip {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .preset-chip:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .doc-select-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.4rem 0.9rem;
+    }
+
+    .doc-select-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+    }
+
+    .doc-dropdown {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--border);
+      color: var(--text-title);
+      padding: 0.3rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      outline: none;
+      cursor: pointer;
+      flex: 1;
+      max-width: 520px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .doc-dropdown:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+    }
+
+    .doc-meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.76rem;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .search-box-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 1rem 0.6rem 2.4rem;
+      color: var(--text-title);
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .btn-run-pipeline {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.65rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-run-pipeline:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+    }
+
+    .btn-run-pipeline:active {
+      transform: translateY(1px);
+    }
+
+    /* 7 阶段流水线 Stepper 导航 */
+    .pipeline-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0b1120;
+      border-bottom: 1px solid var(--border);
+      padding: 0.4rem 1.5rem;
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .step-item:hover {
+      color: var(--text-title);
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    .step-item.active {
+      color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.35);
+      font-weight: 600;
+    }
+
+    .step-badge {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .step-item.active .step-badge {
+      background: var(--accent-cyan);
+      color: #041426;
+    }
+
+    .step-item.all-view {
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+    }
+
+    .step-item.all-view.active {
+      background: rgba(168, 85, 247, 0.15);
+      border-color: var(--accent-purple);
+      color: #c084fc;
+    }
+
+    .step-arrow {
+      color: var(--border);
+      font-size: 0.75rem;
+      user-select: none;
+    }
+
+    /* 主内容视口 */
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* 各阶段卡片容器 */
+    .stage-section {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      scroll-margin-top: 1rem;
+    }
+
+    .stage-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+
+    .stage-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .stage-tag {
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .tag-blue { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .tag-green { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .tag-purple { background: rgba(129, 140, 248, 0.15); color: var(--accent-purple); border: 1px solid rgba(129, 140, 248, 0.3); }
+    .tag-amber { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .stage-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-title);
+    }
+
+    .stage-latency {
+      font-family: var(--font-code);
+      font-size: 0.8rem;
+      color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.1);
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+    }
+
+    /* 栅格指标卡 */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .metric-card {
+      background: rgba(2, 6, 23, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-title);
+      font-family: var(--font-code);
+    }
+
+    /* 表格切片样式 */
+    .chunk-card {
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      transition: all 0.2s;
+    }
+
+    .chunk-card:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      background: rgba(2, 6, 23, 0.85);
+    }
+
+    .chunk-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .rendered-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      margin-top: 0.4rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .rendered-table th {
+      background: rgba(30, 41, 59, 0.9);
+      color: var(--accent-cyan);
+      font-weight: 600;
+      padding: 0.45rem 0.65rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      text-align: left;
+    }
+
+    .rendered-table td {
+      padding: 0.4rem 0.65rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-body);
+      font-family: var(--font-code);
+    }
+
+    .rendered-table tr:nth-child(even) {
+      background: rgba(2, 6, 23, 0.4);
+    }
+
+    .rendered-table tr:hover {
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    /* 双路召回对比栏 */
+    .dual-lane-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .lane-panel {
+      background: rgba(2, 6, 23, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .lane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-title);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .lane-item {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      font-size: 0.8rem;
+    }
+
+    .lane-item:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    /* RRF 矩阵表格 */
+    .rrf-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .rrf-table th {
+      background: rgba(30, 41, 59, 0.8);
+      color: var(--text-title);
+      padding: 0.55rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .rrf-table td {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-family: var(--font-code);
+    }
+
+    .rrf-table tr:hover {
+      background: rgba(56, 189, 248, 0.06);
+    }
+
+    /* 生成回答与审计容器 */
+    .answer-box {
+      background: rgba(2, 6, 23, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 10px;
+      padding: 1.25rem;
+      line-height: 1.7;
+      color: #f1f5f9;
+      font-size: 0.95rem;
+      position: relative;
+    }
+
+    .citation-tag {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      padding: 0.05rem 0.4rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      margin: 0 0.15rem;
+      display: inline-block;
+      transition: all 0.2s;
+    }
+
+    .citation-tag:hover {
+      background: var(--accent-cyan);
+      color: #041426;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+    }
+
+    .claim-audit-card {
+      background: rgba(2, 6, 23, 0.5);
+      border-left: 4px solid var(--accent-emerald);
+      border-radius: 0 8px 8px 0;
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+    }
+
+    .claim-audit-card.warning {
+      border-left-color: var(--accent-rose);
+    }
+
+    /* 进度条与加载动效 */
+    .loading-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 滚动条 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  
+    /* --- 多工作台导航与设计系统增强 --- */
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(2, 6, 23, 0.7);
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.4rem;
+      border-radius: 12px;
+    }
+
+    .nav-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .nav-tab-btn.active {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.3), rgba(37, 99, 235, 0.3));
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .workbench-view {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    .workbench-view.hidden {
+      display: none !important;
+    }
+
+    /* 耗时瀑布流组件 */
+    .waterfall-panel {
+      background: rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid var(--border);
+      padding: 0.65rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      flex-shrink: 0;
+    }
+
+    .waterfall-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.82rem;
+    }
+
+    .waterfall-title {
+      font-weight: 700;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .waterfall-total-badge {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      font-family: var(--font-code);
+      font-size: 0.78rem;
+    }
+
+    .waterfall-legend {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .waterfall-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .waterfall-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    .waterfall-bar {
+      height: 14px;
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .waterfall-segment {
+      height: 100%;
+      transition: width 0.3s ease;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .waterfall-segment:hover {
+      filter: brightness(1.25);
+    }
+
+    /* 一键送检按钮 */
+    .btn-send-judge {
+      background: linear-gradient(135deg, rgba(129, 140, 248, 0.25), rgba(99, 102, 241, 0.35));
+      border: 1px solid rgba(129, 140, 248, 0.4);
+      color: #c7d2fe;
+      padding: 0.3rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-send-judge:hover {
+      background: rgba(129, 140, 248, 0.4);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(129, 140, 248, 0.3);
+    }
+
+    /* 质检台样式 */
+    .inspector-toolbar {
+      background: rgba(15, 23, 42, 0.8);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      flex-shrink: 0;
+    }
+
+    .inspector-stats-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      font-size: 0.8rem;
+    }
+
+    .stat-pill {
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.7rem;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .stat-pill strong {
+      font-family: var(--font-code);
+    }
+
+    .inspector-filters {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .inspector-input, .inspector-select {
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid var(--border);
+      color: var(--text-title);
+      padding: 0.4rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      outline: none;
+    }
+
+    .inspector-input:focus, .inspector-select:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .inspector-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 1rem;
+    }
+
+    .inspector-card {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .inspector-card:hover {
+      border-color: rgba(56, 189, 248, 0.35);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .inspector-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 0.4rem;
+      font-size: 0.8rem;
+    }
+
+    .inspector-card-body {
+      font-size: 0.82rem;
+      color: var(--text-body);
+      max-height: 240px;
+      overflow-y: auto;
+      background: rgba(2, 6, 23, 0.4);
+      padding: 0.6rem;
+      border-radius: 6px;
+    }
+
+    .inspector-card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-top: 0.2rem;
+    }
+
+    .btn-verify-pass {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--accent-emerald);
+      color: var(--accent-emerald);
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      cursor: pointer;
+    }
+
+    .btn-verify-defect {
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid var(--accent-rose);
+      color: var(--accent-rose);
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      cursor: pointer;
+    }
+
+    .btn-verify-reset {
+      background: rgba(100, 116, 139, 0.15);
+      border: 1px solid var(--text-muted);
+      color: var(--text-muted);
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      cursor: pointer;
+    }
+
+    /* 效果评估中心样式 */
+    .eval-subnav {
+      background: rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .eval-subtab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 0.35rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .eval-subtab-btn:hover {
+      color: var(--text-title);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .eval-subtab-btn.active {
+      background: rgba(129, 140, 248, 0.15);
+      border-color: rgba(129, 140, 248, 0.4);
+      color: #c7d2fe;
+    }
+
+    .eval-subpanel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .eval-subpanel.hidden {
+      display: none !important;
+    }
+
+    /* Toast 通知 */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+
+    .toast-item {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--border);
+      color: var(--text-title);
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      animation: toastIn 0.25s ease;
+    }
+
+    .toast-item.info { border-left: 4px solid var(--accent-cyan); }
+    .toast-item.success { border-left: 4px solid var(--accent-emerald); }
+    .toast-item.error { border-left: 4px solid var(--accent-rose); }
+
+    @keyframes toastIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <header>
+    <div class="header-left">
+      <div class="brand-logo">
+        <div class="logo-badge">⚡</div>
+        <div>
+          <div>Financial RAG Pipeline Studio</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal;">金融投研全链路 7 阶段结构化可视化观测台</div>
+        </div>
+      </div>
+    </div>
+    
+        <div class="nav-tabs">
+      <button class="nav-tab-btn active" id="tab-btn-pipeline" onclick="switchTab('pipeline')">⚡ 全流程全景监控</button>
+      <button class="nav-tab-btn" id="tab-btn-inspector" onclick="switchTab('inspector')">📑 文档与切分结果全景台</button>
+      <button class="nav-tab-btn" id="tab-btn-evaluation" onclick="switchTab('evaluation')">📊 效果评估中心</button>
+    </div>
+    <div class="service-status-bar">
+      <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.15rem 0.6rem; border-radius: 6px; color: var(--accent-cyan); font-weight: 600;">
+        📚 5 份核心投研文档全量已接入 (261 切块 · 112 表格 · 6 走势图)
+      </div>
+      <div style="color: var(--border);">|</div>
+      <div><span class="status-dot"></span> Codex-Bridge :9090 (gemini-3.8-flash-low)</div>
+      <div style="color: var(--border);">|</div>
+      <div><span class="status-dot"></span> PostgreSQL 16 pgvector :15432</div>
+      <div style="color: var(--border);">|</div>
+      <div><span class="status-dot"></span> Qwen3-Embedding :11434 (1024-dim)</div>
+    </div>
+  </header>
+
+  <!-- 工作台 1: ⚡ 全流程全景监控 -->
+  <div id="view-pipeline" class="workbench-view active">
+    <!-- 提问交互控制条 -->
+    <div class="query-toolbar">
+    <!-- 文档检索范围选择栏 -->
+    <div class="doc-select-bar">
+      <div class="doc-select-label">
+        <span>📂 检索范围:</span>
+      </div>
+                  <select id="doc-select" class="doc-dropdown" onchange="onDocSelectChange(this.value)">
+        <option value="all" selected>🌐 全量跨期联合检索 (聚合全部 5 份文档 · 261 切块)</option>
+        <option value="doc_4102085">📑 诺安成长混合型证券投资基金2026年第2季度报告 (47 切块 · 12 表格 · 2 走势图)</option>
+        <option value="doc_4102084">📑 诺安成长混合型证券投资基金2026年第1季度报告 (46 切块 · 12 表格 · 2 走势图)</option>
+        <option value="doc_ann_val_adj">⚖️ 诺安基金旗下基金持有股票估值调整公告 (1 切块 · 拓荆科技停牌估值)</option>
+        <option value="doc_fund_summary">📘 诺安成长混合型证券投资基金基金产品资料概要更新 (7 切块 · 7 表格 · 费率策略)</option>
+        <option value="doc_semi_annual_2026">📑 诺安成长混合型证券投资基金2026年中期报告 (160 切块 · 81 表格 · 2 走势图)</option>
+      </select>
+      <div class="doc-meta-badge" id="doc-active-badge">
+        <span>✓ 全部 4 份文档 103 切块全量就绪</span>
+      </div>
+    </div>
+
+    <!-- 丰富结构化预设问题 -->
+    <div class="query-presets">
+      <span style="color: var(--accent-cyan); font-weight: 600; white-space: nowrap; font-size: 0.78rem;">⚡ 核心投研预设:</span>
+      <div class="preset-chip" onclick="setPresetQuery('对比诺安成长2026年第1季度和第2季度的报告期末基金份额总额是多少？前三大重仓股票有何变动？', 'all')">
+        <span style="color: #38bdf8; font-weight: 700;">🔄 跨期对比</span> 份额与前三大重仓股变动
+      </div>
+      <div class="preset-chip" onclick="setPresetQuery('诺安基金对旗下基金持有的股票拓荆科技(688072)估值进行了怎样的调整？调整依据与生效日期是什么？', 'doc_ann_val_adj')">
+        <span style="color: #f59e0b; font-weight: 700;">⚖️ 估值调整</span> 拓荆科技(688072)指数收益法
+      </div>
+      <div class="preset-chip" onclick="setPresetQuery('诺安成长混合型基金的管理费率和托管费率分别是多少？投资于股票资产的比例限制是多少？', 'doc_fund_summary')">
+        <span style="color: #10b981; font-weight: 700;">📘 资料概要</span> 基金费率与股票投资限制
+      </div>
+      <div class="preset-chip" onclick="setPresetQuery('诺安成长2026年第2季度的运作方式、合同生效日、报告期末份额总额是多少？', 'doc_4102085')">
+        <span style="color: #818cf8; font-weight: 700;">📊 2026Q2</span> 基本概况与份额规模
+      </div>
+      <div class="preset-chip" onclick="setPresetQuery('诺安成长2026年第1季度末的基金总份额是多少？前三大重仓股票分别是什么？', 'doc_4102084')">
+        <span style="color: #a78bfa; font-weight: 700;">📑 2026Q1</span> 一季度份额与前三大重仓
+      </div>
+      <div class="preset-chip" onclick="setPresetQuery('基金经理在本报告期内对半导体芯片行业的投资策略和运作分析是什么？', 'doc_4102085')">
+        <span style="color: #38bdf8; font-weight: 700;">🎯 经理观点</span> 芯片半导体投资运作分析
+      </div>
+    </div>
+
+    <div class="search-box-row">
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input 
+          id="query-input" 
+          class="search-input" 
+          type="text" 
+          value="对比诺安成长2026年第1季度和第2季度的报告期末基金份额总额是多少？前三大重仓股票有何变动？"
+          placeholder="请输入金融投研问题或研报指标检索意图..."
+          onkeydown="if(event.key==='Enter') runPipelineTrace()"
+        />
+      </div>
+      <button id="btn-trace" class="btn-run-pipeline" onclick="runPipelineTrace()">
+        <span>🚀 运行全链路 7 阶段实时追踪</span>
+      </button>
+    </div>
+  </div>
+
+    <!-- 耗时瀑布流组件 -->
+    <div class="waterfall-panel" id="latency-waterfall-card">
+      <div class="waterfall-header">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span class="waterfall-title">⚡ 流水线 7 阶段端到端耗时瀑布流 (Latency Waterfall)</span>
+          <span class="waterfall-total-badge" id="waterfall-total-label">端到端耗时: 0.0 ms</span>
+        </div>
+        <div class="waterfall-legend" id="waterfall-legend"></div>
+      </div>
+      <div class="waterfall-bar" id="latency-waterfall"></div>
+    </div>
+  <!-- 7 阶段流水线 Stepper 导航 -->
+  <div class="pipeline-stepper">
+    <div class="step-item all-view active" onclick="switchView('all', this)">
+      <div class="step-badge">★</div>
+      <span>全景流水线 (All Stages)</span>
+    </div>
+    <div class="step-arrow">›</div>
+    <div class="step-item" onclick="switchView('stage_1', this)">
+      <div class="step-badge">1</div>
+      <span>文档解析 (Parsing)</span>
+    </div>
+    <div class="step-arrow">›</div>
+    <div class="step-item" onclick="switchView('stage_2', this)">
+      <div class="step-badge">2</div>
+      <span>表格切分 (Chunking)</span>
+    </div>
+    <div class="step-arrow">›</div>
+    <div class="step-item" onclick="switchView('stage_3', this)">
+      <div class="step-badge">3</div>
+      <span>向量编码 (Embedding)</span>
+    </div>
+    <div class="step-arrow">›</div>
+    <div class="step-item" onclick="switchView('stage_4', this)">
+      <div class="step-badge">4</div>
+      <span>双路召回 (Hybrid)</span>
+    </div>
+    <div class="step-arrow">›</div>
+    <div class="step-item" onclick="switchView('stage_5', this)">
+      <div class="step-badge">5</div>
+      <span>RRF 融合 (Fusion)</span>
+    </div>
+    <div class="step-arrow">›</div>
+    <div class="step-item" onclick="switchView('stage_6', this)">
+      <div class="step-badge">6</div>
+      <span>神经重排 (Reranker)</span>
+    </div>
+    <div class="step-arrow">›</div>
+    <div class="step-item" onclick="switchView('stage_7', this)">
+      <div class="step-badge">7</div>
+      <span>生成与审计 (Generator)</span>
+    </div>
+  </div>
+
+  <!-- 主内容视口 -->
+  <main id="main-viewport">
+    <div style="text-align: center; padding: 4rem; color: var(--text-muted);">
+      <div class="loading-spinner" style="width: 28px; height: 28px; border-width: 3px; margin-bottom: 1rem;"></div>
+      <div>正在初始化金融 RAG 全链路 7 阶段流水线追踪引擎...</div>
+    </div>
+  </main>
+  </div>
+
+  <!-- 工作台 2: 🔍 切片全量质检台 -->
+  <div id="view-inspector" class="workbench-view hidden" style="display:none;">
+
+    <!-- 📚 核心文档全景卡片库 -->
+    <div class="docs-hub-banner" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9)); border-bottom: 1px solid var(--border); padding: 1.2rem 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.9rem;">
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+            <span>📚</span>
+            <span>当前法定披露文档库与切分全景 (共 5 份核心文档 · 261 语义切块)</span>
+          </h2>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+            顺应大纲标题、跨页表格缝合与图表提取引擎驱动，点击任意文档卡片可即时筛选其对应的切分切块
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.6rem;">
+          <button class="btn-send-judge" onclick="loadAllDocumentsHub()" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;">🔄 刷新文档状态</button>
+        </div>
+      </div>
+
+      <!-- 5 份文档卡片网格 -->
+      <div class="doc-cards-grid" id="doc-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 0.85rem;">
+
+        <div class="doc-overview-card" id="doc-card-doc_4102085" onclick="filterByDoc('doc_4102085')" style="background: rgba(2, 6, 23, 0.65); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; cursor: pointer; transition: all 0.2s ease;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.45rem;">
+            <span style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; background: rgba(56, 189, 248, 0.12); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.25);">2026Q2</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">2026-07-21</span>
+          </div>
+          <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-title); line-height: 1.35; margin-bottom: 0.4rem; height: 2.7rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="诺安成长混合型证券投资基金2026年第2季度报告">
+            诺安成长混合型证券投资基金2026年第2季度报告
+          </div>
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; font-size: 0.75rem;">
+            <span style="background: rgba(255,255,255,0.04); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--text-muted);">📄 13 页 (474 KB)</span>
+            <span style="background: rgba(56, 189, 248, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-cyan); font-weight: 600;">🗂️ 47 切块</span>
+            <span style="background: rgba(16, 185, 129, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-emerald);">📊 12 表</span>
+            <span style="background: rgba(168, 85, 247, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-purple);">📈 2 图</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.45rem;">
+            <span style="font-size: 0.73rem; color: var(--accent-cyan); font-weight: 600;">🔍 查看该文档切块 &rarr;</span>
+            <button onclick="event.stopPropagation(); openPipelineWithDoc('doc_4102085')" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-body); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 4px; cursor: pointer;">⚡ 流水线检索</button>
+          </div>
+        </div>
+
+        <div class="doc-overview-card" id="doc-card-doc_4102084" onclick="filterByDoc('doc_4102084')" style="background: rgba(2, 6, 23, 0.65); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; cursor: pointer; transition: all 0.2s ease;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.45rem;">
+            <span style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; background: rgba(56, 189, 248, 0.12); color: var(--accent-blue); border: 1px solid rgba(56, 189, 248, 0.25);">2026Q1</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">2026-04-22</span>
+          </div>
+          <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-title); line-height: 1.35; margin-bottom: 0.4rem; height: 2.7rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="诺安成长混合型证券投资基金2026年第1季度报告">
+            诺安成长混合型证券投资基金2026年第1季度报告
+          </div>
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; font-size: 0.75rem;">
+            <span style="background: rgba(255,255,255,0.04); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--text-muted);">📄 13 页 (482 KB)</span>
+            <span style="background: rgba(56, 189, 248, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-cyan); font-weight: 600;">🗂️ 46 切块</span>
+            <span style="background: rgba(16, 185, 129, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-emerald);">📊 12 表</span>
+            <span style="background: rgba(168, 85, 247, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-purple);">📈 2 图</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.45rem;">
+            <span style="font-size: 0.73rem; color: var(--accent-cyan); font-weight: 600;">🔍 查看该文档切块 &rarr;</span>
+            <button onclick="event.stopPropagation(); openPipelineWithDoc('doc_4102084')" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-body); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 4px; cursor: pointer;">⚡ 流水线检索</button>
+          </div>
+        </div>
+
+        <div class="doc-overview-card" id="doc-card-doc_ann_val_adj" onclick="filterByDoc('doc_ann_val_adj')" style="background: rgba(2, 6, 23, 0.65); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; cursor: pointer; transition: all 0.2s ease;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.45rem;">
+            <span style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; background: rgba(56, 189, 248, 0.12); color: var(--accent-amber); border: 1px solid rgba(56, 189, 248, 0.25);">估值调整</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">2026-06-30</span>
+          </div>
+          <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-title); line-height: 1.35; margin-bottom: 0.4rem; height: 2.7rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="诺安基金管理有限公司关于旗下基金持有的股票估值调整的公告">
+            诺安基金管理有限公司关于旗下基金持有的股票估值调整的公告
+          </div>
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; font-size: 0.75rem;">
+            <span style="background: rgba(255,255,255,0.04); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--text-muted);">📄 1 页 (70 KB)</span>
+            <span style="background: rgba(56, 189, 248, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-cyan); font-weight: 600;">🗂️ 1 切块</span>
+            <span style="background: rgba(16, 185, 129, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-emerald);">📊 0 表</span>
+            
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.45rem;">
+            <span style="font-size: 0.73rem; color: var(--accent-cyan); font-weight: 600;">🔍 查看该文档切块 &rarr;</span>
+            <button onclick="event.stopPropagation(); openPipelineWithDoc('doc_ann_val_adj')" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-body); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 4px; cursor: pointer;">⚡ 流水线检索</button>
+          </div>
+        </div>
+
+        <div class="doc-overview-card" id="doc-card-doc_fund_summary" onclick="filterByDoc('doc_fund_summary')" style="background: rgba(2, 6, 23, 0.65); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; cursor: pointer; transition: all 0.2s ease;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.45rem;">
+            <span style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; background: rgba(56, 189, 248, 0.12); color: var(--accent-purple); border: 1px solid rgba(56, 189, 248, 0.25);">资料概要</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">2026-07-27</span>
+          </div>
+          <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-title); line-height: 1.35; margin-bottom: 0.4rem; height: 2.7rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="诺安成长混合型证券投资基金基金产品资料概要更新">
+            诺安成长混合型证券投资基金基金产品资料概要更新
+          </div>
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; font-size: 0.75rem;">
+            <span style="background: rgba(255,255,255,0.04); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--text-muted);">📄 5 页 (153 KB)</span>
+            <span style="background: rgba(56, 189, 248, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-cyan); font-weight: 600;">🗂️ 7 切块</span>
+            <span style="background: rgba(16, 185, 129, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-emerald);">📊 7 表</span>
+            
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.45rem;">
+            <span style="font-size: 0.73rem; color: var(--accent-cyan); font-weight: 600;">🔍 查看该文档切块 &rarr;</span>
+            <button onclick="event.stopPropagation(); openPipelineWithDoc('doc_fund_summary')" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-body); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 4px; cursor: pointer;">⚡ 流水线检索</button>
+          </div>
+        </div>
+
+        <div class="doc-overview-card" id="doc-card-doc_semi_annual_2026" onclick="filterByDoc('doc_semi_annual_2026')" style="background: rgba(2, 6, 23, 0.65); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; cursor: pointer; transition: all 0.2s ease;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.45rem;">
+            <span style="font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; background: rgba(56, 189, 248, 0.12); color: var(--accent-emerald); border: 1px solid rgba(56, 189, 248, 0.25);">2026H1 中报</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">2026-08-28</span>
+          </div>
+          <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-title); line-height: 1.35; margin-bottom: 0.4rem; height: 2.7rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;" title="诺安成长混合型证券投资基金2026年中期报告">
+            诺安成长混合型证券投资基金2026年中期报告
+          </div>
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; font-size: 0.75rem;">
+            <span style="background: rgba(255,255,255,0.04); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--text-muted);">📄 53 页 (1.53 MB)</span>
+            <span style="background: rgba(56, 189, 248, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-cyan); font-weight: 600;">🗂️ 160 切块</span>
+            <span style="background: rgba(16, 185, 129, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-emerald);">📊 81 表</span>
+            <span style="background: rgba(168, 85, 247, 0.1); padding: 0.1rem 0.45rem; border-radius: 4px; color: var(--accent-purple);">📈 2 图</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.45rem;">
+            <span style="font-size: 0.73rem; color: var(--accent-cyan); font-weight: 600;">🔍 查看该文档切块 &rarr;</span>
+            <button onclick="event.stopPropagation(); openPipelineWithDoc('doc_semi_annual_2026')" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-body); font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 4px; cursor: pointer;">⚡ 流水线检索</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="inspector-toolbar">
+      <div class="inspector-stats-bar" id="inspector-stats-bar">
+        <div class="stat-pill">总切片: <strong id="stat-total-chunks">103</strong></div>
+        <div class="stat-pill" style="color: var(--accent-emerald);">已通过: <strong id="stat-verified-chunks">0</strong></div>
+        <div class="stat-pill" style="color: var(--accent-rose);">标记瑕疵: <strong id="stat-defective-chunks">0</strong></div>
+        <div class="stat-pill" style="color: var(--accent-amber);">待质检: <strong id="stat-unverified-chunks">103</strong></div>
+        <div class="stat-pill" style="color: var(--accent-cyan);">含表格: <strong id="stat-table-chunks">31</strong></div>
+        <div class="stat-pill" style="color: var(--accent-purple);">含走势图: <strong id="stat-chart-chunks">4</strong></div>
+      </div>
+      <div class="inspector-filters">
+        <input type="text" id="inspector-search" class="inspector-input" placeholder="实时搜索切片内容、标题或 ID..." oninput="filterInspectorChunks()" style="min-width: 260px;" />
+        <select id="inspector-doc-select" class="inspector-select" onchange="onInspectorDocChange(this.value)">
+          <option value="all">🌐 全量所有文档切片 (5 份文档 · 261 切块)</option>
+          <option value="doc_4102085">📑 2026Q2 季报 (47 切块 · 12 表格)</option>
+          <option value="doc_4102084">📑 2026Q1 季报 (46 切块 · 12 表格)</option>
+          <option value="doc_ann_val_adj">⚖️ 股票估值调整公告 (1 切块)</option>
+          <option value="doc_fund_summary">📘 基金产品资料概要更新 (7 切块 · 7 表格)</option>
+          <option value="doc_semi_annual_2026">📑 2026年中期报告 (160 切块 · 81 表格)</option>
+        </select>
+        <select id="inspector-layer-select" class="inspector-select" onchange="filterInspectorChunks()">
+          <option value="ALL">全部认知层级</option>
+          <option value="GROUND_TRUTH">法定事实 (GROUND_TRUTH)</option>
+          <option value="AXIOM">规范公理 (AXIOM)</option>
+          <option value="OPINION">观点研报 (OPINION)</option>
+          <option value="SIGNAL">动态信号 (SIGNAL)</option>
+        </select>
+        <select id="inspector-status-select" class="inspector-select" onchange="filterInspectorChunks()">
+          <option value="ALL">全部核验状态</option>
+          <option value="UNVERIFIED">待质检 (UNVERIFIED)</option>
+          <option value="VERIFIED">已通过 (VERIFIED)</option>
+          <option value="DEFECTIVE">标记瑕疵 (DEFECTIVE)</option>
+        </select>
+        <label style="display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; cursor: pointer;">
+          <input type="checkbox" id="inspector-table-only" onchange="filterInspectorChunks()" /> 仅表格
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; cursor: pointer;">
+          <input type="checkbox" id="inspector-chart-only" onchange="filterInspectorChunks()" /> 仅走势图
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; cursor: pointer;">
+          <input type="checkbox" id="inspector-warning-only" onchange="filterInspectorChunks()" /> 仅告警瑕疵
+        </label>
+        <button class="btn-send-judge" onclick="loadInspectorChunks()" style="margin-left: auto;">🔄 刷新全量切片</button>
+      </div>
+    </div>
+    <div id="inspector-chunks-container" class="inspector-grid"></div>
+  </div>
+
+  <!-- 工作台 3: 📊 效果评估中心 -->
+  <div id="view-evaluation" class="workbench-view hidden" style="display:none;">
+    <div class="eval-subnav">
+      <button class="eval-subtab-btn active" id="eval-subtab-benchmark" onclick="switchEvalSubtab('benchmark')">三大策略跑分对比矩阵</button>
+      <button class="eval-subtab-btn" id="eval-subtab-golden" onclick="switchEvalSubtab('golden')">黄金基准评测集 (8题)</button>
+      <button class="eval-subtab-btn" id="eval-subtab-judge" onclick="switchEvalSubtab('judge')">LLM-as-a-Judge 智能裁判</button>
+      <button class="eval-subtab-btn" id="eval-subtab-reviews" onclick="switchEvalSubtab('reviews')">人工评估记录看板</button>
+    </div>
+
+    <!-- Benchmark 子面板 -->
+    <div id="eval-panel-benchmark" class="eval-subpanel active">
+      <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <span style="font-weight: 700; color: var(--text-title);">基准跑分配置:</span>
+          <span style="font-size: 0.82rem; color: var(--text-muted);">Top-K 窗口: <strong>5</strong> | 阈值: <strong>0.35</strong> | 评测样本: <strong>8 题</strong></span>
+        </div>
+        <button id="btn-run-benchmark" class="btn-run-pipeline" onclick="runBenchmark()">
+          <span>🚀 运行全集自动化基准跑分</span>
+        </button>
+      </div>
+      <div id="benchmark-results-container" style="display: flex; flex-direction: column; gap: 1rem;">
+        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">点击上方按钮运行三大策略跑分矩阵对比</div>
+      </div>
+    </div>
+
+    <!-- Golden 子面板 -->
+    <div id="eval-panel-golden" class="eval-subpanel hidden" style="display:none;">
+      <div id="golden-dataset-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1rem;"></div>
+    </div>
+
+    <!-- Judge 子面板 -->
+    <div id="eval-panel-judge" class="eval-subpanel hidden" style="display:none;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.8rem;">
+          <div style="font-weight: 700; color: var(--text-title);">⚖️ 裁判输入上下文</div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">用户提问 (Query):</label>
+            <input type="text" id="judge-query-input" class="inspector-input" style="width: 100%;" value="对比诺安成长2026年第1季度和第2季度的报告期末基金份额总额是多少？前三大重仓股票有何变动？" />
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">候选模型回答 (Answer):</label>
+            <textarea id="judge-answer-input" class="inspector-input" style="width: 100%; height: 90px; resize: vertical;">诺安成长混合型证券投资基金2026年第2季度末基金份额总额为14,561,421,790.31份；第1季度末总份额为14,815,224,964.71份。前三大重仓股票由一季度的北方华创、中微公司、圣邦股份调整为二季度的中芯国际、北方华创、中微公司。</textarea>
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">切片上下文 (Context Chunks, 每行一段):</label>
+            <textarea id="judge-context-input" class="inspector-input" style="width: 100%; height: 80px; resize: vertical;">诺安成长混合2026年第2季度报告期末基金份额总额为 14,561,421,790.31 份。前三大重仓股为中芯国际、北方华创、中微公司。</textarea>
+          </div>
+          <div>
+            <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">参考标准答案 (Standard Answer, 可选):</label>
+            <input type="text" id="judge-standard-input" class="inspector-input" style="width: 100%;" value="一季度末总份额为14,815,224,964.71份，二季度末总份额为14,561,421,790.31份。" />
+          </div>
+          <button id="btn-trigger-judge" class="btn-run-pipeline" onclick="runLlmJudge()" style="margin-top: 0.4rem;">
+            <span>⚖️ 启动大模型裁判打分</span>
+          </button>
+        </div>
+        <div id="judge-output-card" style="background: rgba(15, 23, 42, 0.75); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.8rem;">
+          <div style="font-weight: 700; color: var(--text-title);">📊 裁判量化结果</div>
+          <div id="judge-results-content" style="color: var(--text-muted); font-size: 0.85rem; padding: 2rem 0; text-align: center;">
+            请在左侧配置问答上下文后点击启动裁判打分
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews 子面板 -->
+    <div id="eval-panel-reviews" class="eval-subpanel hidden" style="display:none;">
+      <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-weight: 700; color: var(--text-title);">📋 人工四维核验归档看板</span>
+        <button class="btn-send-judge" onclick="loadHumanReviews()">🔄 刷新核验记录</button>
+      </div>
+      <div id="human-reviews-container" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto;">
+        <div style="padding: 2rem; text-align: center; color: var(--text-muted);">正在加载历史核验数据...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全局 Toast 容器 -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script>
+
+    // --- AppState 全局状态池 ---
+    const AppState = {
+      activeTab: 'pipeline',
+      pipeline: {
+        lastTrace: null,
+        currentView: 'all'
+      },
+      inspector: {
+        allChunks: [],
+        filteredChunks: [],
+        stats: { total: 0, verified: 0, defective: 0, unverified: 0, table: 0, chart: 0 }
+      },
+      evaluation: {
+        activeSubtab: 'benchmark',
+        goldenDataset: [],
+        benchmarkResults: null,
+        humanReviews: []
+      }
+    };
+
+    // --- RagApi 异步交互契约层 ---
+    const RagApi = {
+      getDocuments: () => fetch('/api/knowledge/documents').then(r => r.json()),
+      getDocumentChunks: (docId) => fetch(`/api/knowledge/documents/${docId}/chunks`).then(r => r.json()),
+      verifyChunk: (chunkId, data) => fetch(`/api/knowledge/chunks/${chunkId}/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(r => r.json()),
+      pipelineTrace: (data) => fetch('/api/knowledge/pipeline/trace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(r => r.json()),
+      getEvaluationDataset: () => fetch('/api/knowledge/evaluation/dataset').then(r => r.json()),
+      runBenchmark: (data) => fetch('/api/knowledge/evaluation/run_benchmark', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(r => r.json()),
+      llmJudge: (data) => fetch('/api/knowledge/evaluation/llm_judge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(r => r.json()),
+      getHumanReviews: () => fetch('/api/knowledge/evaluation/human_reviews').then(r => r.json()),
+      submitHumanReview: (data) => fetch('/api/knowledge/evaluation/human_review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(r => r.json())
+    };
+
+    // --- 全局 Tab 切换与 Toast 通知 ---
+    function switchTab(tabName) {
+      AppState.activeTab = tabName;
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      document.querySelectorAll('.workbench-view').forEach(view => {
+        view.classList.add('hidden');
+        view.style.display = 'none';
+      });
+
+      const activeView = document.getElementById(`view-${tabName}`);
+      if (activeView) {
+        activeView.classList.remove('hidden');
+        activeView.style.display = 'flex';
+      }
+
+      if (tabName === 'inspector' && AppState.inspector.allChunks.length === 0) {
+        loadInspectorChunks();
+      } else if (tabName === 'evaluation') {
+        if (AppState.evaluation.goldenDataset.length === 0) {
+          loadGoldenDataset();
+        }
+        if (AppState.evaluation.humanReviews.length === 0) {
+          loadHumanReviews();
+        }
+      }
+    }
+
+    function switchEvalSubtab(subtabName) {
+      AppState.evaluation.activeSubtab = subtabName;
+      document.querySelectorAll('.eval-subtab-btn').forEach(b => b.classList.remove('active'));
+      const btn = document.getElementById(`eval-subtab-${subtabName}`);
+      if (btn) btn.classList.add('active');
+
+      ['benchmark', 'golden', 'judge', 'reviews'].forEach(name => {
+        const p = document.getElementById(`eval-panel-${name}`);
+        if (p) {
+          if (name === subtabName) {
+            p.classList.remove('hidden');
+            p.style.display = 'flex';
+          } else {
+            p.classList.add('hidden');
+            p.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `toast-item ${type}`;
+      const icons = { info: '💡', success: '✅', error: '⚠️' };
+      toast.innerHTML = `<span>${icons[type] || '💡'}</span><span>${escapeHtml(msg)}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // --- 阶段耗时瀑布流渲染 ---
+    function renderLatencyWaterfall(timings) {
+      const bar = document.getElementById('latency-waterfall');
+      const label = document.getElementById('waterfall-total-label');
+      const legend = document.getElementById('waterfall-legend');
+      if (!bar || !timings) return;
+
+      const total = timings.total || 1.0;
+      if (label) label.textContent = `端到端总耗时: ${total.toFixed(1)} ms`;
+
+      const stages = [
+        { key: 'stage_1_parse', label: '1.解析', color: '#38bdf8' },
+        { key: 'stage_2_split', label: '2.切块', color: '#0284c7' },
+        { key: 'stage_3_embed', label: '3.向量', color: '#6366f1' },
+        { key: 'stage_4_recall', label: '4.粗召', color: '#818cf8' },
+        { key: 'stage_5_rrf', label: '5.融合', color: '#ec4899' },
+        { key: 'stage_6_rerank', label: '6.精排', color: '#f59e0b' },
+        { key: 'stage_7_generation', label: '7.生成&审计', color: '#10b981' }
+      ];
+
+      bar.innerHTML = '';
+      if (legend) legend.innerHTML = '';
+
+      stages.forEach(st => {
+        const val = timings[st.key] || 0.0;
+        const pct = Math.max(1.0, (val / total) * 100);
+
+        const seg = document.createElement('div');
+        seg.className = 'waterfall-segment';
+        seg.style.width = `${pct}%`;
+        seg.style.background = st.color;
+        seg.title = `${st.label}: ${val.toFixed(1)} ms (${((val / total) * 100).toFixed(1)}%)`;
+        bar.appendChild(seg);
+
+        if (legend) {
+          const leg = document.createElement('div');
+          leg.className = 'waterfall-legend-item';
+          leg.innerHTML = `<span class="waterfall-legend-dot" style="background:${st.color};"></span><span>${st.label} ${val.toFixed(0)}ms</span>`;
+          legend.appendChild(leg);
+        }
+      });
+    }
+
+    // --- Stage 7 送检闭环 ---
+    function sendStage7ToJudge() {
+      if (!g_pipelineData) {
+        showToast('请先运行流水线追踪以生成回答', 'error');
+        return;
+      }
+      const q = document.getElementById('query-input') ? document.getElementById('query-input').value.trim() : '';
+      const p = g_pipelineData.pipeline || {};
+      const s7 = p.stage_7_generation_audit || {};
+      const s6 = p.stage_6_neural_rerank || {};
+
+      const ans = s7.answer_text || '';
+      const topCandidates = s6.top_candidates || [];
+      const ctxText = topCandidates.map(c => c.content_preview || c.content || '').join('\n\n');
+
+      const qInput = document.getElementById('judge-query-input');
+      const aInput = document.getElementById('judge-answer-input');
+      const cInput = document.getElementById('judge-context-input');
+
+      if (qInput) qInput.value = q;
+      if (aInput) aInput.value = ans;
+      if (cInput) cInput.value = ctxText;
+
+      switchTab('evaluation');
+      switchEvalSubtab('judge');
+      showToast('已将 Stage 7 生成回答与切片上下文装载至智能裁判台', 'success');
+    }
+
+    // --- 切片质检台纯前端内存过滤与乐观更新 ---
+    
+    function filterByDoc(docId) {
+      const sel = document.getElementById('inspector-doc-select');
+      if (sel) {
+        sel.value = docId;
+      }
+      document.querySelectorAll('.doc-overview-card').forEach(c => {
+        c.style.borderColor = 'var(--border)';
+        c.style.background = 'rgba(2, 6, 23, 0.65)';
+      });
+      const targetCard = document.getElementById(`doc-card-${docId}`);
+      if (targetCard) {
+        targetCard.style.borderColor = 'var(--accent-cyan)';
+        targetCard.style.background = 'rgba(56, 189, 248, 0.08)';
+      }
+      loadInspectorChunks(docId);
+      showToast(`已筛选文档: ${docId}`, 'info');
+    }
+
+    function openPipelineWithDoc(docId) {
+      switchTab('pipeline');
+      const docSel = document.getElementById('doc-select');
+      if (docSel) {
+        docSel.value = docId;
+        onDocSelectChange(docId);
+      }
+      showToast(`已将检索范围锁定为: ${docId}`, 'info');
+    }
+
+    async function loadAllDocumentsHub() {
+      showToast('已刷新 5 份核心文档状态', 'success');
+      loadInspectorChunks('all');
+    }
+
+    async function loadInspectorChunks(docId = 'all') {
+      const container = document.getElementById('inspector-chunks-container');
+      if (container) {
+        container.innerHTML = '<div style="padding: 3rem; text-align: center; color: var(--text-muted);"><span class="loading-spinner"></span> 正在拉取切片与质检分析...</div>';
+      }
+      try {
+        const data = await RagApi.getDocumentChunks(docId);
+        const chunks = Array.isArray(data) ? data : (data.chunks || []);
+        AppState.inspector.allChunks = chunks;
+        updateInspectorStats();
+        filterInspectorChunks();
+        showToast(`已加载 ${chunks.length} 个切片`, 'info');
+      } catch (err) {
+        if (container) {
+          container.innerHTML = `<div style="padding: 2rem; color: var(--accent-rose); text-align: center;">拉取切片失败: ${err.message}</div>`;
+        }
+      }
+    }
+
+    function onInspectorDocChange(docId) {
+      loadInspectorChunks(docId);
+    }
+
+    function filterInspectorChunks() {
+      const search = (document.getElementById('inspector-search')?.value || '').toLowerCase().trim();
+      const layer = document.getElementById('inspector-layer-select')?.value || 'ALL';
+      const status = document.getElementById('inspector-status-select')?.value || 'ALL';
+      const tableOnly = document.getElementById('inspector-table-only')?.checked;
+      const chartOnly = document.getElementById('inspector-chart-only')?.checked;
+      const warningOnly = document.getElementById('inspector-warning-only')?.checked;
+
+      const t0 = performance.now();
+      const filtered = AppState.inspector.allChunks.filter(c => {
+        if (search) {
+          const matchContent = (c.content || '').toLowerCase().includes(search);
+          const matchTitle = (c.section_title || '').toLowerCase().includes(search);
+          const matchId = (c.chunk_id || '').toLowerCase().includes(search);
+          if (!matchContent && !matchTitle && !matchId) return false;
+        }
+        if (layer !== 'ALL' && c.cognitive_layer !== layer) return false;
+        if (status !== 'ALL' && (c.verification_status || 'UNVERIFIED') !== status) return false;
+        if (tableOnly && !c.has_table) return false;
+        if (chartOnly && !c.has_chart) return false;
+        if (warningOnly) {
+          const qa = c.quality_analysis || {};
+          if (!qa.warnings || qa.warnings.length === 0) return false;
+        }
+        return true;
+      });
+
+      const delay = (performance.now() - t0).toFixed(2);
+      AppState.inspector.filteredChunks = filtered;
+      renderInspectorCards(filtered);
+    }
+
+    function updateInspectorStats() {
+      const all = AppState.inspector.allChunks;
+      const verified = all.filter(c => c.verification_status === 'VERIFIED').length;
+      const defective = all.filter(c => c.verification_status === 'DEFECTIVE').length;
+      const unverified = all.length - verified - defective;
+      const table = all.filter(c => c.has_table).length;
+      const chart = all.filter(c => c.has_chart).length;
+
+      document.getElementById('stat-total-chunks').textContent = all.length;
+      document.getElementById('stat-verified-chunks').textContent = verified;
+      document.getElementById('stat-defective-chunks').textContent = defective;
+      document.getElementById('stat-unverified-chunks').textContent = unverified;
+      document.getElementById('stat-table-chunks').textContent = table;
+      document.getElementById('stat-chart-chunks').textContent = chart;
+    }
+
+    function renderInspectorCards(chunks) {
+      const container = document.getElementById('inspector-chunks-container');
+      if (!container) return;
+      if (chunks.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; padding: 4rem; text-align: center; color: var(--text-muted);">未找到符合条件的切片</div>';
+        return;
+      }
+
+      container.innerHTML = chunks.map(c => {
+        const qa = c.quality_analysis || {};
+        const status = c.verification_status || 'UNVERIFIED';
+        const statusColors = { VERIFIED: 'var(--accent-emerald)', DEFECTIVE: 'var(--accent-rose)', UNVERIFIED: 'var(--accent-amber)' };
+        const statusLabels = { VERIFIED: '✓ 已核验', DEFECTIVE: '✗ 瑕疵', UNVERIFIED: '⏳ 待质检' };
+        const chunkId = c.chunk_id || c.id || '';
+        const charLen = c.content_length || (c.content ? c.content.length : 0);
+        const tokenEst = c.estimated_tokens || Math.max(1, Math.round(charLen * 0.85));
+
+        return `
+          <div class="inspector-card" id="card-${chunkId}">
+            <div class="inspector-card-header">
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span style="font-weight: 700; color: var(--accent-cyan); font-family: var(--font-code);">${chunkId}</span>
+                <span class="chunk-token-badge" style="background: rgba(99, 102, 241, 0.18); border: 1px solid rgba(99, 102, 241, 0.38); color: #a5b4fc; font-family: var(--font-code); font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.25rem;" title="文本长度: ${charLen} 字符，模型预估分词: 约 ${tokenEst} Tokens">
+                  ⚡ <strong>${tokenEst}</strong> Tokens <span style="opacity: 0.65; font-size: 0.68rem;">(${charLen}字)</span>
+                </span>
+              </div>
+              <span style="color: ${statusColors[status]}; font-weight: 700; font-size: 0.76rem;" id="badge-status-${chunkId}">${statusLabels[status]}</span>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center;">
+              <span>P.${c.page_number}</span>
+              <span>•</span>
+              <span style="color: var(--text-title);">${c.section_title || '正文节'}</span>
+              <span>•</span>
+              <span style="color: var(--accent-purple);">${c.cognitive_layer || 'GROUND_TRUTH'}</span>
+              ${c.has_table ? '<span style="color: var(--accent-emerald);">[表格]</span>' : ''}
+              ${c.has_chart ? '<span style="color: var(--accent-purple);">[走势图]</span>' : ''}
+            </div>
+            <!-- 股票/基金代码徽章与所属文档 -->
+            <div style="font-size: 0.74rem; display: flex; gap: 0.4rem; flex-wrap: wrap;">
+              <span style="color: var(--accent-cyan); font-weight: 600;">📑 ${c.doc_title || '诺安成长披露文档'}</span>
+              ${(c.stock_codes && c.stock_codes.length) ? c.stock_codes.map(sc => `<span style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--accent-amber); padding: 0.05rem 0.35rem; border-radius: 3px;">🏷️ ${sc}</span>`).join('') : ''}
+              ${(c.fund_codes && c.fund_codes.length) ? c.fund_codes.map(fc => `<span style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--accent-cyan); padding: 0.05rem 0.35rem; border-radius: 3px;">💼 ${fc}</span>`).join('') : ''}
+            </div>
+
+            <div class="inspector-card-body" style="max-height: 280px; overflow-y: auto; font-family: var(--font-code); font-size: 0.78rem; line-height: 1.5; background: rgba(2, 6, 23, 0.6); padding: 0.6rem; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.05);">
+              ${formatContent(c.content)}
+            </div>
+            ${qa.warnings && qa.warnings.length ? `
+              <div style="font-size: 0.74rem; background: rgba(244, 63, 94, 0.1); border: 1px solid var(--accent-rose); border-radius: 4px; padding: 0.3rem 0.5rem; color: var(--accent-rose);">
+                ⚠️ 质检告警: ${qa.warnings.join('; ')}
+              </div>
+            ` : ''}
+            <div class="inspector-card-actions">
+              <input type="text" id="verify-notes-${c.chunk_id}" class="inspector-input" placeholder="核验备注..." value="${c.verification_notes || ''}" style="flex: 1; padding: 0.2rem 0.5rem; font-size: 0.76rem;" />
+              <button class="btn-verify-pass" onclick="verifyChunkOptimistic('${c.chunk_id}', 'VERIFIED')">通过</button>
+              <button class="btn-verify-defect" onclick="verifyChunkOptimistic('${c.chunk_id}', 'DEFECTIVE')">瑕疵</button>
+              <button class="btn-verify-reset" onclick="verifyChunkOptimistic('${c.chunk_id}', 'UNVERIFIED')">重置</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function verifyChunkOptimistic(chunkId, newStatus) {
+      const chunk = AppState.inspector.allChunks.find(c => c.chunk_id === chunkId);
+      if (!chunk) return;
+
+      const oldStatus = chunk.verification_status || 'UNVERIFIED';
+      const oldNotes = chunk.verification_notes || '';
+      const notesInput = document.getElementById(`verify-notes-${chunkId}`);
+      const newNotes = notesInput ? notesInput.value.trim() : oldNotes;
+
+      // 1. 0ms 乐观更新前端状态
+      chunk.verification_status = newStatus;
+      chunk.verification_notes = newNotes;
+      updateInspectorStats();
+
+      const badge = document.getElementById(`badge-status-${chunkId}`);
+      if (badge) {
+        const statusColors = { VERIFIED: 'var(--accent-emerald)', DEFECTIVE: 'var(--accent-rose)', UNVERIFIED: 'var(--accent-amber)' };
+        const statusLabels = { VERIFIED: '✓ 已核验', DEFECTIVE: '✗ 瑕疵', UNVERIFIED: '⏳ 待质检' };
+        badge.style.color = statusColors[newStatus];
+        badge.textContent = statusLabels[newStatus];
+      }
+      showToast(`切片 [${chunkId}] 已标记: ${newStatus}`, 'info');
+
+      // 2. 异步网络持久化
+      try {
+        const res = await RagApi.verifyChunk(chunkId, {
+          status: newStatus,
+          notes: newNotes,
+          verified_by: 'auditor_user'
+        });
+        if (!res || !res.success) {
+          throw new Error(res.message || 'Server rejected');
+        }
+      } catch (err) {
+        // 3. 失败快照回滚
+        chunk.verification_status = oldStatus;
+        chunk.verification_notes = oldNotes;
+        updateInspectorStats();
+        if (badge) {
+          const statusColors = { VERIFIED: 'var(--accent-emerald)', DEFECTIVE: 'var(--accent-rose)', UNVERIFIED: 'var(--accent-amber)' };
+          const statusLabels = { VERIFIED: '✓ 已核验', DEFECTIVE: '✗ 瑕疵', UNVERIFIED: '⏳ 待质检' };
+          badge.style.color = statusColors[oldStatus];
+          badge.textContent = statusLabels[oldStatus];
+        }
+        showToast(`打标失败已自动回滚: ${err.message}`, 'error');
+      }
+    }
+
+    // --- 效果评估中心交互 ---
+    async function loadGoldenDataset() {
+      const container = document.getElementById('golden-dataset-container');
+      if (container) container.innerHTML = '<div style="padding: 2rem; color: var(--text-muted);">正在加载黄金评测集...</div>';
+      try {
+        const data = await RagApi.getEvaluationDataset();
+        const samples = data.samples || [];
+        AppState.evaluation.goldenDataset = samples;
+        renderGoldenDataset(samples);
+      } catch (err) {
+        if (container) container.innerHTML = `<div style="padding: 2rem; color: var(--accent-rose);">加载失败: ${err.message}</div>`;
+      }
+    }
+
+    function renderGoldenDataset(samples) {
+      const container = document.getElementById('golden-dataset-container');
+      if (!container) return;
+      container.innerHTML = samples.map((s, i) => `
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 700; color: var(--accent-cyan);">#${i+1} ${s.sample_id}</span>
+            <span style="font-size: 0.76rem; background: rgba(56, 189, 248, 0.1); color: var(--accent-cyan); padding: 0.15rem 0.5rem; border-radius: 4px;">${s.category}</span>
+          </div>
+          <div style="font-size: 0.86rem; font-weight: 600; color: var(--text-title);">${s.query}</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); background: rgba(2, 6, 23, 0.5); padding: 0.5rem; border-radius: 6px;">
+            <strong style="color: var(--accent-emerald);">标准答案:</strong> ${s.standard_answer}
+          </div>
+          <div style="display: flex; gap: 0.5rem; margin-top: auto;">
+            <button class="btn-send-judge" onclick="runPipelineWithQuery('${escapeHtml(s.query)}')" style="font-size: 0.74rem;">▶️ 送入流水线追踪</button>
+            <button class="btn-send-judge" onclick="sendGoldenToJudge(${i})" style="font-size: 0.74rem;">⚖️ 送入裁判台</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function runPipelineWithQuery(q) {
+      const qInput = document.getElementById('query-input');
+      if (qInput) qInput.value = q;
+      switchTab('pipeline');
+      runPipelineTrace();
+    }
+
+    function sendGoldenToJudge(idx) {
+      const s = AppState.evaluation.goldenDataset[idx];
+      if (!s) return;
+      const qInput = document.getElementById('judge-query-input');
+      const stdInput = document.getElementById('judge-standard-input');
+      if (qInput) qInput.value = s.query;
+      if (stdInput) stdInput.value = s.standard_answer;
+      switchEvalSubtab('judge');
+      showToast('已带入黄金评测题至智能裁判台', 'info');
+    }
+
+    async function runBenchmark() {
+      const btn = document.getElementById('btn-run-benchmark');
+      const container = document.getElementById('benchmark-results-container');
+      const origText = btn.innerHTML;
+      btn.innerHTML = '<span class="loading-spinner"></span> 跑分计算中...';
+      btn.disabled = true;
+
+      try {
+        const res = await RagApi.runBenchmark({ strategy: 'all', top_k: 5, score_threshold: 0.35 });
+        AppState.evaluation.benchmarkResults = res;
+        renderBenchmarkMatrix(res);
+        showToast('三大检索策略横向跑分计算完成', 'success');
+      } catch (err) {
+        if (container) container.innerHTML = `<div style="padding: 2rem; color: var(--accent-rose); text-align: center;">跑分失败: ${err.message}</div>`;
+      } finally {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
+    }
+
+    function renderBenchmarkMatrix(res) {
+      const container = document.getElementById('benchmark-results-container');
+      if (!container || !res.comparison_matrix) return;
+
+      let html = `
+        <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; padding: 1rem;">
+          <table class="rrf-table">
+            <thead>
+              <tr>
+                <th>检索策略</th>
+                <th>Recall@5</th>
+                <th>Precision@5</th>
+                <th>Hit@5</th>
+                <th>MRR</th>
+                <th>NDCG@5</th>
+                <th>平均耗时 (ms)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${res.comparison_matrix.map(m => `
+                <tr>
+                  <td style="font-weight: 600; color: var(--text-title);">${m.strategy_name}</td>
+                  <td style="color: var(--accent-emerald); font-weight: 700;">${(m.metrics.recall_at_k * 100).toFixed(1)}%</td>
+                  <td>${(m.metrics.precision_at_k * 100).toFixed(1)}%</td>
+                  <td>${(m.metrics.hit_at_k * 100).toFixed(1)}%</td>
+                  <td>${m.metrics.mrr.toFixed(3)}</td>
+                  <td>${m.metrics.ndcg_at_k.toFixed(3)}</td>
+                  <td style="font-family: var(--font-code); color: var(--accent-cyan);">${m.metrics.avg_latency_ms.toFixed(1)} ms</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div style="margin-top: 0.8rem; font-size: 0.82rem; color: var(--accent-cyan);">${res.tuning_recommendation || ''}</div>
+        </div>
+      `;
+      container.innerHTML = html;
+    }
+
+    async function runLlmJudge() {
+      const btn = document.getElementById('btn-trigger-judge');
+      const content = document.getElementById('judge-results-content');
+      const q = document.getElementById('judge-query-input')?.value.trim();
+      const ans = document.getElementById('judge-answer-input')?.value.trim();
+      const ctx = document.getElementById('judge-context-input')?.value.trim();
+      const std = document.getElementById('judge-standard-input')?.value.trim();
+
+      if (!q || !ans) {
+        showToast('提问与回答不能为空', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      content.innerHTML = '<div style="padding: 2rem; text-align: center;"><span class="loading-spinner"></span> 正在请求本地 Codex-Bridge 智能裁判...</div>';
+
+      try {
+        const res = await RagApi.llmJudge({
+          query: q,
+          answer: ans,
+          context_chunks: ctx ? ctx.split('\n\n') : [],
+          standard_answer: std || undefined
+        });
+
+        const verdictColors = { PASS: 'var(--accent-emerald)', REVIEW: 'var(--accent-amber)', FAIL: 'var(--accent-rose)' };
+        content.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+              <span style="font-weight: 700; font-size: 1.1rem; color: ${verdictColors[res.verdict] || 'var(--text-title)'};">
+                判定结论: ${res.verdict}
+              </span>
+              <span style="font-size: 0.82rem; color: var(--text-muted);">置信度: ${(res.confidence * 100).toFixed(0)}%</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.82rem;">
+              <div class="metric-card"><span class="metric-label">正确性</span><strong style="color:var(--accent-emerald);">${res.scores.correctness}/5</strong></div>
+              <div class="metric-card"><span class="metric-label">完备性</span><strong style="color:var(--accent-cyan);">${res.scores.completeness}/5</strong></div>
+              <div class="metric-card"><span class="metric-label">引用一致性</span><strong style="color:var(--accent-purple);">${res.scores.citation_consistency}/5</strong></div>
+              <div class="metric-card"><span class="metric-label">无幻觉程度</span><strong style="color:var(--accent-amber);">${res.scores.no_hallucination}/5</strong></div>
+            </div>
+            <div style="background: rgba(2, 6, 23, 0.5); padding: 0.75rem; border-radius: 8px; font-size: 0.82rem; color: var(--text-body); line-height: 1.6;">
+              <strong style="color: var(--text-title);">裁判思维链理由:</strong> ${res.reasoning}
+            </div>
+          </div>
+        `;
+        showToast('大模型裁判打分完成', 'success');
+      } catch (err) {
+        content.innerHTML = `<div style="padding: 1.5rem; color: var(--accent-rose); text-align: center;">裁判请求异常: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function loadHumanReviews() {
+      const container = document.getElementById('human-reviews-container');
+      if (container) container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);"><span class="loading-spinner"></span> 加载核验记录...</div>';
+      try {
+        const res = await RagApi.getHumanReviews();
+        AppState.evaluation.humanReviews = res.reviews || [];
+        renderHumanReviewsTable(res);
+      } catch (err) {
+        if (container) container.innerHTML = `<div style="padding: 2rem; color: var(--accent-rose); text-align: center;">加载核验记录失败: ${err.message}</div>`;
+      }
+    }
+
+    function renderHumanReviewsTable(res) {
+      const container = document.getElementById('human-reviews-container');
+      if (!container) return;
+      const reviews = res.reviews || [];
+      if (reviews.length === 0) {
+        container.innerHTML = '<div style="padding: 3rem; text-align: center; color: var(--text-muted);">暂无人工核验记录</div>';
+        return;
+      }
+      container.innerHTML = `
+        <table class="rrf-table">
+          <thead>
+            <tr>
+              <th>提问 Query</th>
+              <th>评分</th>
+              <th>事实正确</th>
+              <th>忠实度</th>
+              <th>核验备注</th>
+              <th>评审员工号</th>
+              <th>时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${reviews.map(r => `
+              <tr>
+                <td style="max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(r.query)}</td>
+                <td style="color: var(--accent-emerald); font-weight: 700;">${r.score} / 5</td>
+                <td>${r.is_correct ? '✓ 是' : '✗ 否'}</td>
+                <td>${r.is_faithful ? '✓ 是' : '✗ 否'}</td>
+                <td>${escapeHtml(r.notes || '-')}</td>
+                <td>${escapeHtml(r.reviewer || 'auditor')}</td>
+                <td style="font-family: var(--font-code); font-size: 0.74rem;">${r.timestamp ? r.timestamp.slice(0, 19) : '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // 注入 Stage 7 按钮至 renderActiveView 中
+
+    let g_pipelineData = null;
+    let g_currentView = 'all';
+
+    function setQuery(q) {
+      document.getElementById('query-input').value = q;
+      runPipelineTrace();
+    }
+
+    function setPresetQuery(q, docId) {
+      document.getElementById('query-input').value = q;
+      if (docId && document.getElementById('doc-select')) {
+        document.getElementById('doc-select').value = docId;
+        onDocSelectChange(docId);
+      }
+      runPipelineTrace();
+    }
+
+    function onDocSelectChange(docId) {
+      const badge = document.getElementById('doc-active-badge');
+      if (!badge) return;
+      if (docId === 'all') {
+        badge.innerHTML = '<span>✓ 全部 5 份核心文档 261 切块联合就绪</span>';
+      } else if (docId === 'doc_4102085') {
+        badge.innerHTML = '<span>✓ 2026Q2季报 (47切块·12表·2图)</span>';
+      } else if (docId === 'doc_4102084') {
+        badge.innerHTML = '<span>✓ 2026Q1季报 (46切块·12表·2图)</span>';
+      } else if (docId === 'doc_ann_val_adj') {
+        badge.innerHTML = '<span>✓ 估值调整公告 (拓荆科技 688072)</span>';
+      } else if (docId === 'doc_fund_summary') {
+        badge.innerHTML = '<span>✓ 产品资料概要 (7切块·费率·投资限制)</span>';
+      } else if (docId === 'doc_semi_annual_2026') {
+        badge.innerHTML = '<span>✓ 2026年中期报告 (160切块·81表·2图)</span>';
+      }
+    }
+
+    async function runPipelineTrace() {
+      const q = document.getElementById('query-input').value.trim();
+      if (!q) return;
+
+      const docSelectEl = document.getElementById('doc-select');
+      const docId = docSelectEl ? docSelectEl.value : 'all';
+
+      const btn = document.getElementById('btn-trace');
+      const origHtml = btn.innerHTML;
+      btn.innerHTML = `<span class="loading-spinner"></span> <span>流水线计算中...</span>`;
+      btn.disabled = true;
+
+      const viewport = document.getElementById('main-viewport');
+      viewport.innerHTML = `
+        <div style="text-align: center; padding: 5rem; color: var(--text-muted);">
+          <div class="loading-spinner" style="width: 32px; height: 32px; border-width: 3px; margin-bottom: 1.2rem; border-top-color: var(--accent-cyan);"></div>
+          <div style="font-size: 1.1rem; color: var(--text-title); font-weight: 600;">正在执行全链路 7 阶段协同计算...</div>
+          <div style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">
+            [解析] ➔ [切分] ➔ [1024维向量化] ➔ [向量+全文并发粗召回] ➔ [RRF排名融合] ➔ [Cross-Encoder精排] ➔ [Codex-Bridge生成与事实审计]
+          </div>
+        </div>
+      `;
+
+      try {
+        const resp = await fetch('/api/knowledge/pipeline/trace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: q, document_id: docId, top_k: 5, score_threshold: 0.35 })
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        g_pipelineData = await resp.json();
+        renderLatencyWaterfall(g_pipelineData.timings);
+        renderActiveView();
+      } catch (err) {
+        viewport.innerHTML = `
+          <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid var(--accent-rose); border-radius: 12px; padding: 2rem; text-align: center;">
+            <div style="font-size: 1.2rem; color: var(--accent-rose); font-weight: 700;">全链路追踪请求异常</div>
+            <div style="margin-top: 0.5rem; color: var(--text-muted);">${err.message}</div>
+          </div>
+        `;
+      } finally {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+      }
+    }
+
+    function switchView(viewName, el) {
+      g_currentView = viewName;
+      document.querySelectorAll('.step-item').forEach(item => item.classList.remove('active'));
+      if (el) el.classList.add('active');
+      renderActiveView();
+    }
+
+    function renderActiveView() {
+      if (!g_pipelineData) return;
+      const viewport = document.getElementById('main-viewport');
+      const p = g_pipelineData.pipeline;
+      const t = g_pipelineData.timings;
+
+      let html = '';
+
+      // Stage 1: 文档解析
+      if (g_currentView === 'all' || g_currentView === 'stage_1') {
+        const s1 = p.stage_1_parsing;
+        html += `
+          <div class="stage-section" id="sec-stage-1">
+            <div class="stage-header">
+              <div class="stage-title-wrap">
+                <span class="stage-tag tag-blue">STAGE 1</span>
+                <span class="stage-title">${s1.stage_name}</span>
+              </div>
+              <span class="stage-latency">状态: ${s1.status}</span>
+            </div>
+
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <span class="metric-label">文档标题</span>
+                <span class="metric-value" style="font-size: 0.85rem; font-family: inherit;">${s1.document_title}</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">发布机构 / 披露日期</span>
+                <span class="metric-value" style="font-size: 0.92rem;">${s1.institution} (${s1.publish_date})</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">报告总页数</span>
+                <span class="metric-value" style="color: var(--accent-cyan);">${s1.total_pages} 页</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">检测到原生表格</span>
+                <span class="metric-value" style="color: var(--accent-emerald);">${s1.total_tables_detected} 张结构化表</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">净值表现走势图</span>
+                <span class="metric-value" style="color: var(--accent-purple);">${s1.total_charts_detected || 1} 张统计折线图</span>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem;">
+              <div style="background: rgba(2, 6, 23, 0.4); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem;">
+                <span style="color: var(--accent-emerald); font-weight: 600;">✓ 页眉页脚去噪: </span>
+                <span style="color: var(--text-body);">${s1.header_footer_cleaned || '已过滤运行页眉与物理页码 (y0<60 与 y0>735 坐标过滤)'}</span>
+              </div>
+              <div style="background: rgba(2, 6, 23, 0.4); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem;">
+                <span style="color: var(--accent-cyan); font-weight: 600;">✓ 跨页表格缝合: </span>
+                <span style="color: var(--text-body);">${s1.cross_page_stitching || '智能缝合跨页表格 (P.2-P.3 基金概况、P.9-P.10 行业配置)'}</span>
+              </div>
+              <div style="background: rgba(2, 6, 23, 0.4); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem;">
+                <span style="color: var(--accent-purple); font-weight: 600;">✓ 表格区域遮罩: </span>
+                <span style="color: var(--text-body);">${s1.table_masking || '激活表格坐标遮罩，消除表格内容被重复提取为乱序纯文本'}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Stage 2: 切分策略与结果
+      if (g_currentView === 'all' || g_currentView === 'stage_2') {
+        const s2 = p.stage_2_chunking;
+        html += `
+          <div class="stage-section" id="sec-stage-2">
+            <div class="stage-header">
+              <div class="stage-title-wrap">
+                <span class="stage-tag tag-green">STAGE 2</span>
+                <span class="stage-title">${s2.stage_name}</span>
+              </div>
+              <span class="stage-latency">切分器: ${s2.strategy.splitter_name}</span>
+            </div>
+
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <span class="metric-label">生成切片总数</span>
+                <span class="metric-value" style="color: var(--text-title);">${s2.statistics.total_chunks} 个</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">含表格切片数</span>
+                <span class="metric-value" style="color: var(--accent-emerald);">${s2.statistics.table_chunks_count} 个</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">含净值走势图切片</span>
+                <span class="metric-value" style="color: var(--accent-purple);">${s2.statistics.chart_chunks_count || 1} 个</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">纯文本大纲切片</span>
+                <span class="metric-value" style="color: var(--accent-cyan);">${s2.statistics.text_chunks_count} 个</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">平均切片字符数</span>
+                <span class="metric-value">${s2.statistics.avg_chunk_tokens} 字</span>
+              </div>
+            </div>
+
+            <div style="background: rgba(2, 6, 23, 0.4); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.82rem;">
+              <div style="font-weight: 600; color: var(--accent-cyan); margin-bottom: 0.4rem;">🎯 顺应大纲标题与块元素切分的核心原则:</div>
+              <div style="display: flex; flex-direction: column; gap: 0.3rem; color: var(--text-body);">
+                <div>• <strong>顺着章节切分：</strong>以一级大纲(§)与二级小节为语义硬边界，绝不跨章杂糅；</div>
+                <div>• <strong>块元素原子切分：</strong>段落、条款、列表项、表格与折线走势图作为独立语义块；</div>
+                <div>• <strong>跨页表格无损缝合：</strong>自动识别跨页大表并无缝拼接为单张 Markdown 表格，保留表头与合计项；</div>
+                <div>• <strong>走势图语义注入：</strong>将 3.2.2 净值变动走势图转换为结构化图表块，保留超额收益对比指标；</div>
+                <div>• <strong>元数据面包屑注入：</strong>每个切块自动注入【章节大纲: §X > Y.Z】与关联 6 位股票代码。</div>
+              </div>
+            </div>
+
+            <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-title); margin-top: 0.5rem;">
+              📋 代表性切块成果示例 (展示缝合表格、走势图与章节大纲面包屑):
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              ${s2.sample_chunks.map((c, i) => `
+                <div class="chunk-card">
+                  <div class="chunk-meta-bar">
+                    <span style="font-weight: 600; color: var(--accent-cyan);">切片 [${i+1}] · ${c.section_title} (P.${c.page_number})</span>
+                    <span style="display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                      ${c.has_chart ? '<span style="color: var(--accent-purple); font-weight: 600;">📈 含走势折线图</span>' : (c.has_table ? '<span style="color: var(--accent-emerald); font-weight: 600;">📊 含结构化表格</span>' : '📝 纯文本章节')} 
+                      <span style="background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4); color: #a5b4fc; padding: 0.08rem 0.4rem; border-radius: 4px; font-size: 0.72rem; font-family: var(--font-code);">
+                        ⚡ 约 ${c.estimated_tokens || Math.max(1, Math.round(c.length * 0.85))} Tokens (${c.length}字)
+                      </span>
+                      ${c.stock_codes && c.stock_codes.length ? `<span style="color: var(--accent-amber); margin-left: 0.3rem;">股票: ${c.stock_codes.join(', ')}</span>` : ''}
+                    </span>
+                  </div>
+                  <div>${formatContent(c.content_preview)}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // Stage 3: Embedding 向量化
+      if (g_currentView === 'all' || g_currentView === 'stage_3') {
+        const s3 = p.stage_3_embedding;
+        html += `
+          <div class="stage-section" id="sec-stage-3">
+            <div class="stage-header">
+              <div class="stage-title-wrap">
+                <span class="stage-tag tag-purple">STAGE 3</span>
+                <span class="stage-title">${s3.stage_name}</span>
+              </div>
+              <span class="stage-latency">耗时: ${s3.latency_ms} ms</span>
+            </div>
+
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <span class="metric-label">Embedding 驱动模型</span>
+                <span class="metric-value" style="font-size: 0.95rem; color: var(--accent-purple);">${s3.model_name}</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">稠密向量维度 (Dimensions)</span>
+                <span class="metric-value" style="color: var(--accent-cyan);">${s3.embedding_dim} 维</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">查询向量模长 (L2 Norm)</span>
+                <span class="metric-value">${s3.query_vector_norm}</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">底层数据库索引拓扑</span>
+                <span class="metric-value" style="font-size: 0.82rem;">${s3.vector_index_type} (m=16, ef=64)</span>
+              </div>
+            </div>
+
+            <div style="background: rgba(2, 6, 23, 0.6); border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1rem;">
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.35rem;">当前提问生成的 1024 维高维向量首 8 个标量投影 Preview:</div>
+              <div style="font-family: var(--font-code); font-size: 0.82rem; color: var(--accent-cyan); word-break: break-all;">
+                [ ${s3.query_vector_preview.join(', ')}, ... (共 ${s3.embedding_dim} 维) ]
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Stage 4: 双路并发混合检索
+      if (g_currentView === 'all' || g_currentView === 'stage_4') {
+        const s4 = p.stage_4_hybrid_retrieval;
+        const f = s4.funnel_metrics;
+        html += `
+          <div class="stage-section" id="sec-stage-4">
+            <div class="stage-header">
+              <div class="stage-title-wrap">
+                <span class="stage-tag tag-blue">STAGE 4</span>
+                <span class="stage-title">${s4.stage_name}</span>
+              </div>
+              <span class="stage-latency">检索并发耗时: ${s4.latency_ms} ms</span>
+            </div>
+
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <span class="metric-label">稠密向量路粗召回</span>
+                <span class="metric-value" style="color: var(--accent-cyan);">${f.vector_recalled_total} 条候选</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">稀疏关键词全文粗召回</span>
+                <span class="metric-value" style="color: var(--accent-purple);">${f.fulltext_recalled_total} 条候选</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">双路交叉命中 (Intersection)</span>
+                <span class="metric-value" style="color: var(--accent-emerald);">${f.intersection_count} 条</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">并集去重候选池 (Union)</span>
+                <span class="metric-value">${f.union_candidates_count} 条</span>
+              </div>
+            </div>
+
+            <div class="dual-lane-grid">
+              <!-- 向量检索路 -->
+              <div class="lane-panel">
+                <div class="lane-header">
+                  <span>🔵 稠密向量路 (pgvector HNSW)</span>
+                  <span style="font-size: 0.75rem; color: var(--accent-cyan);">Top 候选</span>
+                </div>
+                ${s4.vector_lane.top_candidates.slice(0, 5).map(c => `
+                  <div class="lane-item">
+                    <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                      <span>#${c.rank} · ${c.section_title} (P.${c.page_number})</span>
+                      <span style="color: var(--accent-cyan); font-family: var(--font-code);">余弦相似: ${c.similarity_score}</span>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.76rem;">${c.snippet}</div>
+                  </div>
+                `).join('')}
+              </div>
+
+              <!-- 全文检索路 -->
+              <div class="lane-panel">
+                <div class="lane-header">
+                  <span>🟣 稀疏全文路 (PostgreSQL Token Match)</span>
+                  <span style="font-size: 0.75rem; color: var(--accent-purple);">Top 候选</span>
+                </div>
+                ${s4.fulltext_lane.top_candidates.slice(0, 5).map(c => `
+                  <div class="lane-item">
+                    <div style="display: flex; justify-content: space-between; font-weight: 600;">
+                      <span>#${c.rank} · ${c.section_title} (P.${c.page_number})</span>
+                      <span style="color: var(--accent-purple); font-family: var(--font-code);">文本得分: ${c.text_score}</span>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.76rem;">${c.snippet}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Stage 5: RRF 倒数排名融合
+      if (g_currentView === 'all' || g_currentView === 'stage_5') {
+        const s5 = p.stage_5_rrf_fusion;
+        html += `
+          <div class="stage-section" id="sec-stage-5">
+            <div class="stage-header">
+              <div class="stage-title-wrap">
+                <span class="stage-tag tag-amber">STAGE 5</span>
+                <span class="stage-title">${s5.stage_name}</span>
+              </div>
+              <span class="stage-latency">融合计算耗时: ${s5.latency_ms} ms</span>
+            </div>
+
+            <div style="background: rgba(2, 6, 23, 0.5); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">融合公式: </span>
+                <span style="font-family: var(--font-code); color: var(--accent-amber); font-weight: 600; font-size: 0.95rem;">${s5.formula}</span>
+              </div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">平滑常数 k = ${s5.k_constant}</div>
+            </div>
+
+            <div style="overflow-x: auto; border: 1px solid var(--border); border-radius: 8px;">
+              <table class="rrf-table">
+                <thead>
+                  <tr>
+                    <th>综合排名</th>
+                    <th>章节与页码</th>
+                    <th>向量名次 $r_{vec}$</th>
+                    <th>全文名次 $r_{text}$</th>
+                    <th>融合算式拆解</th>
+                    <th>RRF 最终得分</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${s5.fused_ranking.slice(0, 7).map((item, idx) => `
+                    <tr>
+                      <td style="font-weight: 700; color: ${idx < 3 ? 'var(--accent-amber)' : 'inherit'};">#${idx+1}</td>
+                      <td style="color: var(--text-title);">${item.section_title} (P.${item.page_number})</td>
+                      <td style="color: var(--accent-cyan);">${item.vector_rank ? '#' + item.vector_rank : '-'}</td>
+                      <td style="color: var(--accent-purple);">${item.fulltext_rank ? '#' + item.fulltext_rank : '-'}</td>
+                      <td style="color: var(--text-muted); font-size: 0.78rem;">${item.formula_repr}</td>
+                      <td style="font-weight: 700; color: var(--accent-emerald);">${item.rrf_score.toFixed(6)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      // Stage 6: 神经重排与金融业务加权
+      if (g_currentView === 'all' || g_currentView === 'stage_6') {
+        const s6 = p.stage_6_neural_rerank;
+        html += `
+          <div class="stage-section" id="sec-stage-6">
+            <div class="stage-header">
+              <div class="stage-title-wrap">
+                <span class="stage-tag tag-purple">STAGE 6</span>
+                <span class="stage-title">${s6.stage_name}</span>
+              </div>
+              <span class="stage-latency">重排耗时: ${s6.latency_ms} ms</span>
+            </div>
+
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <span class="metric-label">重排模型 (Cross-Encoder)</span>
+                <span class="metric-value" style="font-size: 0.95rem; color: var(--accent-cyan);">${s6.model_name.split(' ')[0]}</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">命中 6 位股票/基金代码</span>
+                <span class="metric-value" style="color: ${s6.query_codes_detected.length ? 'var(--accent-emerald)' : 'var(--text-muted)'};">
+                  ${s6.query_codes_detected.length ? s6.query_codes_detected.join(', ') + ' (+0.15)' : '无'}
+                </span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">表格/报表数值意图加权</span>
+                <span class="metric-value" style="color: ${s6.table_intent_detected ? 'var(--accent-emerald)' : 'var(--text-muted)'};">
+                  ${s6.table_intent_detected ? '✓ 命中意图 (+0.10)' : '未触发'}
+                </span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">阈值截断与精排 Top-K</span>
+                <span class="metric-value" style="color: var(--accent-emerald);">${s6.selected_chunks_count} / ${s6.top_k_target} (阈值 ${s6.threshold})</span>
+              </div>
+            </div>
+
+            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-title); margin-top: 0.4rem;">
+              🎯 神经交互打分与金融业务加权拆解明细:
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+              ${s6.scored_candidates.slice(0, 6).map((c, i) => `
+                <div class="chunk-card" style="border-left: 4px solid ${c.is_selected ? 'var(--accent-cyan)' : 'var(--border)'};">
+                  <div class="chunk-meta-bar">
+                    <span style="font-weight: 600; color: ${c.is_selected ? 'var(--text-title)' : 'var(--text-muted)'}; display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                      ${c.is_selected ? '🌟 [入选生成上下文]' : '[未入选]'} #${i+1} · ${c.doc_title ? `<span style="background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.3); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.72rem; margin-right: 0.35rem;">${c.doc_title}</span>` : ''}${c.section_title} (P.${c.page_number})
+                      <span style="background: rgba(99, 102, 241, 0.18); border: 1px solid rgba(99, 102, 241, 0.35); color: #a5b4fc; padding: 0.05rem 0.35rem; border-radius: 4px; font-size: 0.7rem; font-family: var(--font-code);">
+                        ⚡ 约 ${Math.max(1, Math.round(c.content.length * 0.85))} Tokens (${c.content.length}字)
+                      </span>
+                    </span>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; font-family: var(--font-code); font-size: 0.8rem;">
+                      <span>基础神经分: ${c.base_neural_score}</span>
+                      ${c.code_match_bonus ? '<span style="color: var(--accent-emerald);">代码:+0.15</span>' : ''}
+                      ${c.table_intent_bonus ? '<span style="color: var(--accent-cyan);">表格:+0.10</span>' : ''}
+                      <span style="font-weight: 700; color: var(--accent-cyan); font-size: 0.95rem;">= ${c.final_score.toFixed(4)}</span>
+                    </div>
+                  </div>
+                  <div style="font-size: 0.8rem; color: var(--text-body); max-height: 120px; overflow-y: auto;">
+                    ${formatContent(c.content.slice(0, 300) + '...')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // Stage 7: Generator 问答生成与事实忠诚度双轨溯源审计
+      if (g_currentView === 'all' || g_currentView === 'stage_7') {
+        const s7 = p.stage_7_generation_audit;
+        html += `
+          <div class="stage-section" id="sec-stage-7">
+            <div class="stage-header">
+              <div class="stage-title-wrap">
+                <span class="stage-tag tag-green">STAGE 7</span>
+                <span class="stage-title">${s7.stage_name}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.8rem;">
+                <button class="btn-send-judge" id="btn-stage7-send-judge" onclick="sendStage7ToJudge()">
+                  🎯 一键送入 LLM Judge 智能裁判
+                </button>
+                <span class="stage-latency">生成与审计耗时: ${s7.latency_ms} ms</span>
+              </div>
+            </div>
+
+            <!-- 本地 LLM 回答展示框 -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-title);">
+                  🤖 本地 Codex-Bridge (${s7.llm_model}) 依据切片生成的法定事实回答:
+                </span>
+                <span style="font-size: 0.78rem; color: var(--accent-cyan); font-family: var(--font-code);">端点: ${s7.base_url}</span>
+              </div>
+              <div class="answer-box">
+                ${formatAnswer(s7.answer_text)}
+              </div>
+            </div>
+
+            <!-- 事实溯源与忠诚度双轨审计看板 -->
+            <div style="background: rgba(2, 6, 23, 0.4); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; gap: 0.85rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-title); display: flex; align-items: center; gap: 0.5rem;">
+                  <span>🛡️ 断言级事实与忠诚度双轨溯源审计 (Provenance Auditor):</span>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                  <span style="font-size: 0.82rem; color: var(--text-muted);">断言抽取总数: <strong style="color: var(--text-title);">${s7.total_claims}</strong></span>
+                  <span style="font-size: 0.82rem; color: var(--text-muted);">严格忠实数: <strong style="color: var(--accent-emerald);">${s7.faithful_claims_count}</strong></span>
+                  <span style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 700; font-size: 0.88rem;">
+                    忠诚度得分: ${(s7.faithfulness_score * 100).toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                ${s7.claims_audit.map((cl, i) => `
+                  <div class="claim-audit-card ${cl.is_faithful ? '' : 'warning'}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-weight: 600; color: var(--text-title);">断言 [${i+1}]: "${cl.claim_text}"</span>
+                      <span style="color: ${cl.is_faithful ? 'var(--accent-emerald)' : 'var(--accent-rose)'}; font-weight: 700;">
+                        ${cl.is_faithful ? '✓ 严格忠实 (Faithful)' : '✗ 存在幻觉风险'}
+                      </span>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 1rem;">
+                      <span>对应证据切片: <code style="color: var(--accent-cyan);">${cl.cited_chunk_id || '自动上下文推断'}</code></span>
+                      <span>幻觉类型判定: <code style="color: ${cl.hallucination_type === 'NONE' ? 'var(--accent-emerald)' : 'var(--accent-rose)'};">${cl.hallucination_type}</code></span>
+                    </div>
+                    ${cl.exact_quote ? `
+                      <div style="background: rgba(0, 0, 0, 0.3); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.78rem; color: var(--text-body);">
+                        <strong style="color: var(--accent-emerald);">切片原文精确证据:</strong> "${cl.exact_quote}"
+                      </div>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      viewport.innerHTML = html;
+    }
+
+    // 将回答中的 [1], [2] 渲染为可交互的角标药丸
+    function formatAnswer(text) {
+      if (!text) return '无回答';
+      let formatted = text.replace(/\[(\d+)\]/g, '<span class="citation-tag" onclick="highlightCitation($1)">[$1]</span>');
+      return formatted.replace(/\n/g, '<br/>');
+    }
+
+    // 格式化切片内容，将 Markdown 表格直接转成精美的 HTML 表格
+    function formatContent(content) {
+      if (!content) return '';
+      if (!content.includes('|')) {
+        return `<pre style="white-space: pre-wrap; font-family: inherit; font-size: 0.85rem; color: var(--text-body);">${escapeHtml(content)}</pre>`;
+      }
+
+      const lines = content.split('\n');
+      let inTable = false;
+      let tableRows = [];
+      let resultHtml = [];
+
+      for (let line of lines) {
+        let trimmed = line.trim();
+        if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+          if (!inTable) inTable = true;
+          tableRows.push(trimmed);
+        } else {
+          if (inTable) {
+            resultHtml.push(renderMarkdownTable(tableRows));
+            tableRows = [];
+            inTable = false;
+          }
+          if (trimmed) {
+            resultHtml.push(`<div style="margin: 0.25rem 0; font-size: 0.82rem;">${escapeHtml(trimmed)}</div>`);
+          }
+        }
+      }
+      if (inTable) {
+        resultHtml.push(renderMarkdownTable(tableRows));
+      }
+      return resultHtml.join('');
+    }
+
+    function renderMarkdownTable(rows) {
+      if (rows.length < 2) return '';
+      let html = '<table class="rendered-table">';
+      let headerCells = rows[0].split('|').slice(1, -1).map(c => c.trim());
+      html += '<thead><tr>';
+      headerCells.forEach(cell => {
+        html += `<th>${escapeHtml(cell)}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      for (let i = 2; i < rows.length; i++) {
+        let cells = rows[i].split('|').slice(1, -1).map(c => c.trim());
+        html += '<tr>';
+        cells.forEach(cell => {
+          html += `<td>${escapeHtml(cell)}</td>`;
+        });
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+
+    function highlightCitation(idx) {
+      const el = document.getElementById(`sec-stage-6`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // 页面加载即刻触发默认查询
+    window.addEventListener('DOMContentLoaded', () => {
+      runPipelineTrace();
+    });
+  </script>
+</body>
+</html>

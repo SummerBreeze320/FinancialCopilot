@@ -1,9 +1,21 @@
 """GPU 神经重排器 (Neural Cross-Encoder) 与金融业务加权引擎。"""
 
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 import logging
 import math
 import re
 from typing import Any, Dict, List, Optional, Set
+
+try:
+    import torch
+    from sentence_transformers import CrossEncoder
+    TORCH_AVAILABLE = True
+except Exception as _torch_err:
+    torch = None
+    CrossEncoder = None
+    TORCH_AVAILABLE = False
 
 from app.config import settings
 
@@ -29,6 +41,25 @@ TABLE_INTENT_KEYWORDS: Set[str] = {
     "roe",
     "同比",
     "环比",
+    "份额",
+    "总额",
+    "重仓",
+    "持仓",
+    "前十",
+    "前五",
+    "前三",
+    "变动",
+    "明细",
+    "费率",
+    "管理费",
+    "托管费",
+    "比例",
+    "资产配置",
+    "公允价值",
+    "组合",
+    "股票投资",
+    "净值",
+    "规模",
 }
 
 # 6 位数字股票与基金代码正则
@@ -53,28 +84,58 @@ class NeuralReranker:
         self._model = None
 
     def _ensure_model(self) -> Any:
-        """延迟懒加载重排模型。"""
+        """延迟懒加载重排模型，支持 ModelScope 自动镜像与 NVIDIA GPU 显卡加速。"""
         if self._model is None:
+            if not TORCH_AVAILABLE:
+                logger.warning("当前环境未安装 PyTorch 或 sentence-transformers，降级为中立重排")
+                return None
             try:
-                from sentence_transformers import CrossEncoder
-                import torch
-
                 actual_device = "cuda" if torch.cuda.is_available() and self.device == "cuda" else "cpu"
-                logger.info("加载 CrossEncoder 重排模型: %s, 设备: %s", self.model_name, actual_device)
-                self._model = CrossEncoder(self.model_name, device=actual_device)
+                model_path = self.model_name
+                
+                # 若为远程模型名，优先直接匹配 ModelScope 本地完整缓存，避免任何网络请求
+                clean_id = self.model_name.replace('/', '--')
+                ms_dir = os.path.expanduser(f"~/.cache/modelscope/models/{clean_id}/snapshots/master")
+                if os.path.exists(os.path.join(ms_dir, "model.safetensors")):
+                    model_path = ms_dir
+                elif not os.path.exists(model_path):
+                    try:
+                        from modelscope import snapshot_download
+                        ms_path = snapshot_download(
+                            self.model_name,
+                            allow_file_pattern=["*.json", "*.safetensors", "*.txt", "*sentencepiece*", "tokenizer*"]
+                        )
+                        if os.path.exists(ms_path):
+                            model_path = ms_path
+                    except Exception as ms_err:
+                        logger.debug("ModelScope 路径检查: %s", ms_err)
+
+                gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None"
+                logger.info("🔥 [NeuralReranker] 加载 CrossEncoder: %s (硬件: %s, GPU: %s)", model_path, actual_device, gpu_name)
+                self._model = CrossEncoder(model_path, max_length=512, device=actual_device)
+                logger.info("✅ [NeuralReranker] CrossEncoder 重排模型成功加载至 %s！", actual_device)
             except Exception as e:
-                logger.warning("未能初始化 CrossEncoder 模型 (%s)，将仅支持 RRF 或 Mock 重排: %s", self.model_name, e)
+                import traceback
+                logger.error("❌ [NeuralReranker] 初始化模型失败: %s\n%s", e, traceback.format_exc())
                 self._model = None
         return self._model
 
     def _score_pairs(self, query: str, texts: List[str]) -> List[float]:
-        """批量预测 Query 与各切片文本对的原始语义相似度得分。"""
+        """批量预测 Query 与各切片文本对的原始语义相似度得分 (带长度安全截断，防止 BERT 位置越界崩溃)。"""
         model = self._ensure_model()
         if model is None or not texts:
             return [0.5] * len(texts)
 
-        pairs = [[query, text] for text in texts]
-        raw_scores = model.predict(pairs)
+        # 严格截断文本长度至 480 字符，规避 RoBERTa/BERT 512 最大位置编码的越界段错误
+        clean_query = query[:128].strip()
+        safe_pairs = [[clean_query, (str(t)[:480] if len(str(t or '')) > 480 else str(t or ''))] for t in texts]
+        
+        try:
+            raw_scores = model.predict(safe_pairs, batch_size=16)
+        except Exception as e:
+            logger.warning("CrossEncoder 预测推理异常，安全回退为中立得分: %s", e)
+            return [0.5] * len(texts)
+
         # 将原始 Logit 分数通过 Sigmoid 归一化到 [0, 1]
         scores: List[float] = []
         for s in raw_scores:
@@ -124,6 +185,13 @@ class NeuralReranker:
             # 1. 代码硬匹配加权 (+0.15)
             c_codes = set(item.get("stock_codes") or []) | set(item.get("fund_codes") or [])
             meta = item.get("metadata") or {}
+            if isinstance(meta, str):
+                try:
+                    import json
+                    meta = json.loads(meta)
+                except Exception:
+                    meta = {}
+            item["metadata"] = meta
             c_codes |= set(meta.get("stock_codes") or []) | set(meta.get("fund_codes") or [])
             if query_codes and (query_codes & c_codes):
                 final_score += 0.15
@@ -142,7 +210,15 @@ class NeuralReranker:
 
         # 降序排序并截取 Top-K
         scored_candidates.sort(key=lambda x: x["score"], reverse=True)
-        return scored_candidates[:top_k]
+        top_results = scored_candidates[:top_k]
+
+        # 3. 表格保底路由：若查询具备明确的表格/指标/明细意图，而 Top-K 均为纯文本，尝试调入候选集最优表格切片保底
+        if has_table_intent and top_results and not any(x.get("has_table") for x in top_results):
+            table_candidates = [c for c in scored_candidates[top_k:] if c.get("has_table")]
+            if table_candidates:
+                top_results[-1] = table_candidates[0]
+
+        return top_results
 
     def rerank_rrf(
         self,
@@ -152,6 +228,7 @@ class NeuralReranker:
         k_const: int = 60,
     ) -> List[Dict[str, Any]]:
         """Reciprocal Rank Fusion (RRF) 倒数排名融合算法（CPU 纯算法兜底）。"""
+        has_table_intent = self._has_table_intent(query)
         scored_candidates: List[Dict[str, Any]] = []
         for candidate in candidates:
             item = dict(candidate)
@@ -161,8 +238,19 @@ class NeuralReranker:
             if "fulltext_rank" in item and item["fulltext_rank"] is not None:
                 score += 1.0 / (k_const + item["fulltext_rank"])
 
+            # 若具备表格意图且切片为表格，叠加轻微 RRF 加权
+            if has_table_intent and (item.get("has_table") or (item.get("metadata") or {}).get("has_table")):
+                score *= 1.25
+
             item["score"] = round(score, 6)
             scored_candidates.append(item)
 
         scored_candidates.sort(key=lambda x: x["score"], reverse=True)
-        return scored_candidates[:top_k]
+        top_results = scored_candidates[:top_k]
+
+        if has_table_intent and top_results and not any(x.get("has_table") for x in top_results):
+            table_candidates = [c for c in scored_candidates[top_k:] if c.get("has_table")]
+            if table_candidates:
+                top_results[-1] = table_candidates[0]
+
+        return top_results

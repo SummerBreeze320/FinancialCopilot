@@ -1,6 +1,7 @@
 package com.financial.copilot.agent.tools.fund;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.financial.copilot.agent.tools.cache.ToolCacheable;
 import com.financial.copilot.data.fund.mapper.FundReportVectorMapper;
 import com.financial.copilot.data.fund.po.FundReportVectorPO;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ public class FundReportRetrieverTool {
      * @param fundCode 6位基金代码
      * @return 格式化后的季报观点文本
      */
+    @ToolCacheable(value = "fund_report", ttlSeconds = 600)
     public String getLatestQuarterlyReportView(String fundCode) {
         log.info("[TOOL CALL-FUND] 查询基金定性季报策略观点: fundCode={}", fundCode);
         try {

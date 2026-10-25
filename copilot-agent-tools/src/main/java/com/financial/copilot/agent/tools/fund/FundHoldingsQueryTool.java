@@ -1,6 +1,7 @@
 package com.financial.copilot.agent.tools.fund;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financial.copilot.agent.tools.cache.ToolCacheable;
 import com.financial.copilot.domain.business.fund.entity.FundQuarterlyHolding;
 import com.financial.copilot.domain.business.fund.port.FundDataPort;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,7 @@ public class FundHoldingsQueryTool {
      * @param reportQuarter 报告期 (如 "2024Q2"，可为 null 则默认最新季度)
      * @return 季度持仓明细列表 JSON 格式
      */
+    @ToolCacheable(value = "fund_holdings", ttlSeconds = 600)
     public String getTopHoldings(String fundCode, String reportQuarter) {
         log.info("[TOOL CALL-FUND] 查询基金持仓明细: fundCode={}, quarter={}", fundCode, reportQuarter);
 

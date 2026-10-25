@@ -1,6 +1,7 @@
 package com.financial.copilot.agent.tools.fund;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financial.copilot.agent.tools.cache.ToolCacheable;
 import com.financial.copilot.common.fund.dto.FundMetricsDTO;
 import com.financial.copilot.domain.business.fund.port.FundDataPort;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ public class FundQuantAnalysisTool {
      * @param endDate   截止日期 (格式: YYYY-MM-DD，可选，为空默认最新日期)
      * @return 格式化量化指标结果 JSON 字符串
      */
+    @ToolCacheable(value = "fund_metrics", ttlSeconds = 300)
     public String getFundMetrics(String fundCode, String startDate, String endDate) {
         log.info("[TOOL CALL-FUND] 执行基金量化指标查询: fundCode={}, startDate={}, endDate={}", fundCode, startDate, endDate);
 
